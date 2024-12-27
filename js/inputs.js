@@ -24,7 +24,7 @@ export class Inputs {
 
     this.moveScale = 0.15
     this.rotateScale = 0.115
-    
+
     this.keys = {}
 
     // Disable default event listeners

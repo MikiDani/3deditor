@@ -1,0 +1,79 @@
+@charset "UTF-8";
+.view-screen {
+  width: 50% !important;
+  height: 50% !important;
+  background-color: purple !important;
+}
+
+body {
+  background-color: #000000 !important;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  box-sizing: border-box;
+}
+
+#root {
+  position: relative;
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  background-color: #000000 !important;
+  box-sizing: border-box;
+}
+
+#menu-top {
+  width: 100%;
+  height: 15%;
+  margin: 0;
+  padding: 0;
+  background-color: deeppink;
+  box-sizing: border-box;
+}
+
+#menu-right {
+  position: absolute;
+  top: 15%;
+  right: 0;
+  display: inline-block;
+  width: 20%;
+  min-height: 85%;
+  margin: 0;
+  padding: 0;
+  background-color: darkgreen;
+  box-sizing: border-box;
+}
+
+#container-screens {
+  display: grid; /* Grid layout */
+  grid-template-columns: repeat(2, 1fr); /* Két oszlop */
+  grid-template-rows: repeat(2, 1fr); /* Két sor */
+  justify-content: center;
+  align-items: center;
+  width: 80%;
+  min-height: 85%;
+  margin: 0;
+  padding: 0;
+  background-color: deepskyblue !important;
+  box-sizing: border-box;
+}
+
+.view-segment {
+  width: 100%; /* Teljes szélesség a cellában */
+  height: 100%; /* Teljes magasság a cellában */
+  border: 1px solid gray;
+  box-sizing: border-box !important;
+}
+
+.red {
+  background-color: red;
+}
+
+.green {
+  background-color: green;
+}
+
+.blue {
+  background-color: blue;
+}/*# sourceMappingURL=style.css.map */

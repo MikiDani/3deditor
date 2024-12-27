@@ -1,35 +1,19 @@
 import { Vec3D, Triangle, Mesh, Matrix4x4, Vec2D } from './data.js';
 
 export class Graphics {
-  textures;
-  state;
-  player;
-  angleToRandian; radianToAngle;
-  GAMEWIDTH; GAMEHEIGHT; RATIO;
-  SCREENWIDTH; SCREENHEIGHT;
-  screenCanvas; screenCtx;
-  memoryCanvas; memoryCtx;
-  screenData; buffer;
-  color;
-
-  numSect; numWall;
-
-  constructor(textures, state, inputs, angleToRandian, radianToAngle) {
-    this.angleToRandian = angleToRandian
-    this.radianToAngle = radianToAngle
-
+  constructor(textures, keys, options, mapObjects) {
+    
     this.textures = textures
-    // console.log(this.textures[4])
-
-    this.state = state
-    this.inputs = inputs
+    this.keys = keys
+    this.options = options
+    this.mapObjects = mapObjects
 
     //--- SCREEN ---
     // this.GAMEWIDTH = 160; this.GAMEHEIGHT = 120; this.RATIO = 3;
     // this.GAMEWIDTH = 800; this.GAMEHEIGHT = 600; this.RATIO = 1;
     // this.GAMEWIDTH = 1024; this.GAMEHEIGHT = 768; this.RATIO = 1;
     // this.GAMEWIDTH = 320; this.GAMEHEIGHT = 180; this.RATIO = 3;
-    this.GAMEWIDTH = 640; this.GAMEHEIGHT = 360; this.RATIO = 2;
+    this.GAMEWIDTH = 640; this.GAMEHEIGHT = 360; this.RATIO = 0.5;
     
     this.HALFWIDTH = this.GAMEWIDTH / 2
     this.HALFHEIGHT = this.GAMEHEIGHT / 2
@@ -53,11 +37,7 @@ export class Graphics {
 
     this.screenData = this.memoryCtx.createImageData(this.GAMEWIDTH, this.GAMEHEIGHT)
     this.buffer = new Uint32Array(this.screenData.data.buffer)
-
-    // this.depthBuffer = new Uint32Array(this.screenData.data.buffer)
     this.depthBuffer = new Array(this.GAMEWIDTH * this.GAMEHEIGHT).fill(0)
-
-    this.mapObjects = []
 
     this.mesh = new Mesh()
     this.matProj = this.matrix_MakeProjection(75, this.GAMEHEIGHT / this.GAMEWIDTH, 1, 1000)
@@ -69,34 +49,9 @@ export class Graphics {
 
     this.lightDirection = new Vec3D(0, 1, -1)
     this.fTheta = 0
-    // CAMERA THINGS
-
-    this.clipped = [new Triangle(), new Triangle()];
-
-    this.onUserCreate()
-  }
-
-  async onUserCreate() {
-    this.montains = new Mesh()
-    this.axis = new Mesh()
-    this.cube = new Mesh()
-
-    await this.montains.loadFromObjectFile("data/montains.obj");
-    await this.axis.loadFromObjectFile("data/axis.obj");
-    await this.cube.loadFromOwnObjectFile("data/cube.obj");
     
-    this.mapObjects.push(this.montains)
-    this.mapObjects.push(this.axis)
-    this.mapObjects.push(this.cube)
-
-    console.log(this.mapObjects)
-   
-    this.moveObject(0, 0, -8, 0)
+    this.clipped = [new Triangle(), new Triangle()];
   }
-
-  /////////////////////////////
-  ///         ENGINE
-  /////////////////////////////
 
   matrix_MultiplyVector(mM, i) {
     let m = mM.m
@@ -277,17 +232,16 @@ export class Graphics {
       return new Vec3D(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
   }
 
-  // Vektor szorzása egy skalárral
+  // Vektor szorzása egy egységgel
   multiply(v, scalar) {
       return new Vec3D(v.x * scalar, v.y * scalar, v.z * scalar);
   }
 
-  // Vektor osztása egy skalárral
+  // Vektor osztása egy egységgel
   divide(v, scalar) {
       return new Vec3D(v.x / scalar, v.y / scalar, v.z / scalar);
   }
 
-  // Két vektor skaláris szorzata
   dotProduct(v1, v2) {
       return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
   }
@@ -468,8 +422,8 @@ export class Graphics {
     this.vLookDir = this.matrix_MultiplyVector(matCameraRotY, vLookDirX)
 
     const vRight = this.vector_CrossProduct(vUp, this.vLookDir)               // Right direction vector
-    if (this.inputs.keys['KeyD'] && this.inputs.keys['ShiftLeft']) this.vCamera = this.vector_Sub(this.vCamera, this.vector_Mul(vRight, this.inputs.moveScale));
-    if (this.inputs.keys['KeyA'] && this.inputs.keys['ShiftLeft']) this.vCamera = this.vector_Add(this.vCamera, this.vector_Mul(vRight, this.inputs.moveScale));
+    if (this.keys['KeyD'] && this.keys['ShiftLeft']) this.vCamera = this.vector_Sub(this.vCamera, this.vector_Mul(vRight, this.moveScale));
+    if (this.keys['KeyA'] && this.keys['ShiftLeft']) this.vCamera = this.vector_Add(this.vCamera, this.vector_Mul(vRight, this.moveScale));
 
     const vTarget = this.vector_Add(this.vCamera, this.vLookDir)
     const matCamera = this.matrix_PointAt(this.vCamera, vTarget, vUp)
@@ -616,9 +570,9 @@ export class Graphics {
 
     // DRAW TRIANGLES
     drawTriangles.forEach(tri => {
-      if (this.inputs.options.textured) this.texturedTriangle(tri.p[0].x, tri.p[0].y, tri.t[0].u, tri.t[0].v, tri.t[0].w, tri.p[1].x, tri.p[1].y, tri.t[1].u, tri.t[1].v, tri.t[1].w, tri.p[2].x, tri.p[2].y, tri.t[2].u, tri.t[2].v, tri.t[2].w, tri.tid, tri.light);
-      if (this.inputs.options.fill) this.drawTriangleFill(tri.p[0], tri.p[1], tri.p[2], tri.light, tri.rgba);
-      if (this.inputs.options.grid) this.drawTriangleStroke(tri.p[0], tri.p[1], tri.p[2], tri.light, tri.rgba)
+      if (this.options.textured) this.texturedTriangle(tri.p[0].x, tri.p[0].y, tri.t[0].u, tri.t[0].v, tri.t[0].w, tri.p[1].x, tri.p[1].y, tri.t[1].u, tri.t[1].v, tri.t[1].w, tri.p[2].x, tri.p[2].y, tri.t[2].u, tri.t[2].v, tri.t[2].w, tri.tid, tri.light)
+      if (this.options.fill) this.drawTriangleFill(tri.p[0], tri.p[1], tri.p[2], tri.light, tri.rgba)
+      if (this.options.grid) this.drawTriangleStroke(tri.p[0], tri.p[1], tri.p[2], tri.light, tri.rgba)
     });
   }
 

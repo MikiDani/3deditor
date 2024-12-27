@@ -4,19 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="favicon.png" type="image/x-icon">
-    <title>TuccMann 3D engine</title>
-    <link href="./css/output.css" rel="stylesheet">
+    <title>TuccMann 3D Editor</title>
+    <link href="./css/style.css" rel="stylesheet">
 </head>
-<body id="root" class="bg-black p-0 m-0 text-center">
+<body id="root">
+    <div id="menu-top">
+        Elem 1
+    </div>
 
-    <div class="container p-0 m-0">
-        <div class="container-screen p-0 m-0">
-            <canvas id="screen-canvas"></canvas>
-            <div class="info-container p-0 m-0">
-                <h6 id="info-fps" class="text-white"></h6>
-            </div>
+    <div id="menu-right">
+        Elem 3
+        <div class="info-container p-0 m-0">
+            <h6 id="info-fps" class="text-white"></h6>
         </div>
     </div>
+
+    <div id="container-screens">
+        <div class="view-segment">
+            <canvas id="screen-canvas"></canvas>
+        </div>
+        <div class="view-segment">
+            <canvas id="XYview-canvas"></canvas>
+        </div>
+        <div class="view-segment">
+            <canvas id="ZYview-canvas"></canvas>
+        </div>
+        <div class="view-segment">
+            <canvas id="ZYview-canvas"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.2/dist/cdn.min.js" defer></script>
+    <script src="./modules/jquery/jquery.min.js" defer></script>
     <script type="module" src="js/editor.js"></script>
 </body>
 </html>
