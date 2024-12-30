@@ -26,14 +26,16 @@ class Editor {
     await this.loadTextures()
     await this.loadModels()
 
-    this.initInputs()
-    
     this.graph = new Graphics(this.textures, this.keys, this.options, this.mapObjects)
     this.graph.moveObject(0, 0, -10, 0)
 
-    this.viewXY = new ViewWindow('XYview-canvas', 320, 240, 10, 0, 0)
-    console.log(this.viewXY)
+    this.views = {
+      'XYview-canvas': new ViewWindow('XYview-canvas', 10, 0, 0),
+      'ZXview-canvas': new ViewWindow('ZXview-canvas', 10, 0, 0),
+      'ZYview-canvas': new ViewWindow('ZYview-canvas', 10, 0, 0),
+    }
 
+    this.initInputs()
     this.refreshScreen()
   }
 
@@ -70,26 +72,110 @@ class Editor {
     console.log(this.mapObjects)
   }
 
+  renderViewWindow (name, value) {
+    this.selectedView = name
+
+    let width = this.views[name].canvas.width
+    let height = this.views[name].canvas.height
+
+    console.log(value)
+    console.log(width, height)
+    
+    
+    // value.forEach(item => {
+    //   console.log(`Value item: ${item}`);
+    // });
+  }
+
+  refresViewSize() {
+    var clone = this
+    // all hide
+    $('#container-screens > .view-segment').show()
+
+    // show selected view
+    $(".view-buttons").each(function() {
+      let name = $(this).attr('name')
+      let value = $(this).val()
+      value = (value == 'false') ? false : true;
+
+      if (value) {
+        let newWidth = Math.floor($('#container-screens').width())
+        let newHeight = Math.floor($('#menu-right').height())
+
+        // selected show
+        $('#container-screens > .view-segment').hide()
+        $(`#container-screens > canvas[id='${name}']`).show()
+
+        $(`#container-screens > canvas[id='${name}']`).width(newWidth)
+        $(`#container-screens > canvas[id='${name}']`).height(newHeight)
+
+        if (name == 'screen-canvas') {
+          clone.graph.screenCanvas.width = newWidth
+          clone.graph.screenCanvas.height = newHeight
+        } else if (name == 'XYview-canvas' || name == 'ZXview-canvas' || name == 'ZYview-canvas') {
+          clone.views[name].canvas.width = newWidth
+          clone.views[name].canvas.height = newHeight
+        }
+
+      } else {
+        let newWidth = Math.floor($('#container-screens').width() / 2)
+        let newHeight = Math.floor($('#menu-right').height() / 2)
+
+        $(`#container-screens > canvas[id='${name}']`).width(newWidth)
+        $(`#container-screens > canvas[id='${name}']`).height(newHeight)
+
+        if (name == 'XYview-canvas' || name == 'ZXview-canvas' || name == 'ZYview-canvas') {
+          clone.views[name].canvas.width = newWidth
+          clone.views[name].canvas.height = newHeight
+        }
+      }
+    });
+  }
+
   initInputs() {
-    // Disable default event listeners
-    document.addEventListener('keydown', (event) => {
-      if (event.code == 'Space') event.preventDefault()
+    var clone = this
+
+    //1. VIEW BUTTONS
+    $(".view-buttons").on('click', function() {
+      let value = $(this).val()
+
+      // All OFF
+      $("button[class='view-buttons']").val(false).text('OFF')
+      
+      value = (value == 'false') ? true : false;
+      value ? $(this).text('ON') : $(this).text('OFF');
+
+      $(this).val(value)
+    
+      clone.refresViewSize()
+      clone.refreshScreen()
     });
 
+    // 2. Click ViewWindow    
+    Object.entries(this.views).forEach(([name, value]) => {
+      console.log(`Key: ${name}`);
+      $(`#${name}`).on('click', () => {
+        this.renderViewWindow(name, value)
+      });
+    });
+
+    ///////////
+    // KEYS
     // Add keys
     document.addEventListener('keydown', (event) => {
       // console.log(this.keys)
       this.keys[event.code] = true
+
+      this.checkKeyboardInputs()
 
       // Mouse move
       if (document.pointerLockElement == document.body) {
         this.moveViewInputs()
         setTimeout(() => {
           this.refreshScreen()
-        },this.refTime)
+        }, this.refTime)
       }
     });
-
     document.addEventListener('keyup', (event) => {
       this.keys[event.code] = false
     })
@@ -126,15 +212,70 @@ class Editor {
       } else {
         console.log("Pointer lock megszűnt")
         document.activeElement.blur()
+        this.selectedView = null
       }
     });
 
     window.addEventListener("resize", () => {
       setTimeout(() => {
+        this.refresViewSize()
         this.refreshScreen()
       },this.refTime)
     });
-    
+
+  }
+
+  drawView() {
+    let view = this.views[this.selectedView]
+
+    console.log('DRAWnál')
+    console.log(view)
+
+    const space = 15;
+
+    // Vonalszín
+    view.ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'; // Halvány szürke
+
+    // Függőleges vonalak
+    for (let x = space; x < view.canvas.width; x += space) {
+      view.ctx.beginPath()
+      view.ctx.moveTo(x, 0)
+      view.ctx.lineTo(x, view.canvas.height)
+      view.ctx.stroke()
+    }
+
+    // Vízszintes vonalak
+    for (let y = space; y < view.canvas.height; y += space) {
+      view.ctx.beginPath()
+      view.ctx.moveTo(0, y)
+      view.ctx.lineTo(view.canvas.width, y)
+      view.ctx.stroke()
+    }
+
+
+  }
+
+  checkKeyboardInputs() {
+    if (this.selectedView !== 'null' && typeof this.selectedView !== 'undefined') {
+      console.log(this.selectedView)
+      
+      if (this.keys['ArrowUp'] || this.keys['ArrowW']) {
+        console.log('move up')
+        this.drawView()
+      }
+
+      if (this.keys['ArrowDown']) {
+        console.log('move down')
+      }
+
+      if (this.keys['ArrowLeft']) {
+        console.log('move left')
+      }
+
+      if (this.keys['ArrowRight']) {
+        console.log('move right')
+      }
+    }
   }
 
   moveViewInputs() {
@@ -176,14 +317,12 @@ class Editor {
     }
 
     if (this.keys['KeyA'] && !this.keys['ShiftLeft']) {
-      // console.log('turn left')
-      // console.log(this.graph.fYaw)
+      // console.log('turn left') // console.log(this.graph.fYaw)
       this.graph.fYaw -= this.options.rotateScale
     }
 
     if (this.keys['KeyD'] && !this.keys['ShiftLeft']) {
-      // console.log('turn right')
-      // console.log(this.graph.fYaw)
+      // console.log('turn right') // console.log(this.graph.fYaw)
       this.graph.fYaw += this.options.rotateScale
     }
 
@@ -199,15 +338,13 @@ class Editor {
     }
 
     if (this.keys['KeyR'] && !this.keys['ShiftLeft']) {
-      // console.log('SEE UP')
-      // console.log(this.graph.fXaw)
+      // console.log('SEE UP') // console.log(this.graph.fXaw)
       
       if (this.graph.fXaw - this.options.rotateScale > -1.5 && this.graph.fXaw - this.options.rotateScale < 1.5) this.graph.fXaw -= this.options.rotateScale;
     }
 
     if (this.keys['KeyF'] && !this.keys['ShiftLeft']) {
-      // console.log('SEE DOWN')
-      // console.log(this.graph.fXaw)
+      // console.log('SEE DOWN') // console.log(this.graph.fXaw)
       if (this.graph.fXaw + this.options.rotateScale > -1.5 && this.graph.fXaw + this.options.rotateScale < 1.5) this.graph.fXaw += this.options.rotateScale;
     }
 
@@ -230,25 +367,11 @@ class Editor {
 
     if (this.keys['Escape']) {
       console.log('ESC');
+      this.selectedView = null
     }
   }
 
-  resizeScreens() {
-    let newWidth = Math.floor($('#container-screens').width() / 2)
-    let newHeight = Math.floor($('#menu-right').height() / 2)
-
-    // console.log(newWidth); console.log(newHeight);
-
-    $('#container-screens > .view-segment').width(newWidth)
-    $('#container-screens > .view-segment').height(newHeight)
-
-    this.graph.screenCanvas.width = newWidth
-    this.graph.screenCanvas.height = newHeight
-  }
-
-  refreshScreen = () => {
-    this.resizeScreens()
-    
+  refreshScreen = () => { 
     this.graph.clearScreen(this.graph.screenCanvas, this.graph.screenCtx)
     this.graph.buffer.fill(0)         // clear memoryCanvas
     this.graph.depthBuffer.fill(0)    // DELETE Depth Buffer
@@ -259,7 +382,7 @@ class Editor {
     this.graph.movePlayerInMatrix(0) // 0.005
     this.graph.moveObjectsInMatrix(0) // 0.005
     this.graph.renderScreen()
-    
+
     this.graph.memoryCtx.putImageData(this.graph.screenData, 0, 0)
     this.graph.infoTable()
 
@@ -268,22 +391,20 @@ class Editor {
 }
 
 class ViewWindow {
-  constructor(name, width, height, ratio, posX, posY) {
+  constructor(name, ratio, posX, posY) {
     this.name = name
-    this.width = width
-    this.height = height
     this.ratio = ratio
     this.posX = posX
     this.posY = posY
 
     this.canvas = (document.getElementById(this.name)) ? document.getElementById(this.name) : null;
-    
+
     if (this.canvas) {
       this.ctx = this.canvas.getContext("2d")
       this.ctx.imageSmoothingEnabled = false
       
-      this.canvas.width = this.width
-      this.canvas.height = this.height
+      this.canvas.width = 320
+      this.canvas.height = 240
     } else {
       console.error(`${name} is not isset!`)
     }

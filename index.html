@@ -9,7 +9,30 @@
 </head>
 <body id="root">
     <div id="menu-top">
-        Elem 1
+        <div class="top-screen-options">
+            <h4>screen-canvas</h4>
+            <div class="p-0 m-0">
+                <span>Full view: </span><button type="button" name="screen-canvas" class="view-buttons" value="false">OFF</button>
+            </div>
+        </div>
+        <div class="top-screen-options">
+            <h4>screen-X/Y</h4>
+            <div class="p-0 m-0">
+                <span>Full view: </span><button type="button" name="XYview-canvas" class="view-buttons red" value="false">OFF</button>
+            </div>
+        </div>
+        <div class="top-screen-options">
+            <h4>screen-X/Z</h4>
+            <div class="p-0 m-0">
+                <span>Full view: </span><button type="button" name="XZview-canvas" class="view-buttons green" value="false">OFF</button>
+            </div>
+        </div>
+        <div class="top-screen-options">
+            <h4>screen-Z/Y</h4>
+            <div class="p-0 m-0">
+                <span>Full view: </span><button type="button" name="YZview-canvas" class="view-buttons blue" value="false">OFF</button>
+            </div>
+        </div>
     </div>
 
     <div id="menu-right">
@@ -20,18 +43,10 @@
     </div>
 
     <div id="container-screens">
-        <div class="view-segment">
-            <canvas id="screen-canvas"></canvas>
-        </div>
-        <div class="view-segment">
-            <canvas id="XYview-canvas"></canvas>
-        </div>
-        <div class="view-segment">
-            <canvas id="ZYview-canvas"></canvas>
-        </div>
-        <div class="view-segment">
-            <canvas id="ZYview-canvas"></canvas>
-        </div>
+        <canvas id="screen-canvas" class="view-segment"></canvas>
+        <canvas id="XYview-canvas" class="view-segment dark"></canvas>
+        <canvas id="ZXview-canvas" class="view-segment green"></canvas>
+        <canvas id="ZYview-canvas" class="view-segment blue"></canvas>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.2/dist/cdn.min.js" defer></script>

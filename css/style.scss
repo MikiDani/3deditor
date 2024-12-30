@@ -28,9 +28,19 @@ body {
     height: 15%;
     margin: 0;
     padding: 0;
-    background-color: deeppink;
+    background-color: #d2d2d2;
     box-sizing: border-box;
 }
+
+    .top-screen-options {
+        display: inline-block;
+        flex-direction: column;
+        justify-content: start;
+        align-items: top;
+        padding: 5px;
+        width: 200px;
+        border: 1px solid gray;
+    }
 
 #menu-right {
     position: absolute;
@@ -69,6 +79,14 @@ body {
     box-sizing: border-box !important;
 }
 
+.p-0 {
+    padding: 0;
+}
+
+.m-0 {
+    margin: 0;
+}
+
 .red {
     background-color: red;
 }
@@ -79,4 +97,8 @@ body {
 
 .blue {
     background-color: blue;
+}
+
+.dark {
+    background-color: #121212;
 }
