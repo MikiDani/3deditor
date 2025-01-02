@@ -43,7 +43,7 @@ export class Graphics {
     this.matProj = this.matrix_MakeProjection(75, this.GAMEHEIGHT / this.GAMEWIDTH, 1, 1000)
 
     this.vLookDir = new Vec3D(0, 0, 1)
-    this.vCamera = new Vec3D(0, 5, 20)
+    this.vCamera = new Vec3D(0.5, 0.5, 4)
     this.fYaw = 0
     this.fXaw = 0
 

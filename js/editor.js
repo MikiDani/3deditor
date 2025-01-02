@@ -18,6 +18,7 @@ class Editor {
     
     this.mapObjects = []
     this.keys = {}
+    this.selectedView = null
 
     this.init()
   }
@@ -27,12 +28,12 @@ class Editor {
     await this.loadModels()
 
     this.graph = new Graphics(this.textures, this.keys, this.options, this.mapObjects)
-    this.graph.moveObject(0, 0, -10, 0)
+    this.graph.moveObject(0, 0, 0, 0)
 
     this.views = {
-      'XYview-canvas': new ViewWindow('XYview-canvas', 10, 0, 0),
-      'ZXview-canvas': new ViewWindow('ZXview-canvas', 10, 0, 0),
-      'ZYview-canvas': new ViewWindow('ZYview-canvas', 10, 0, 0),
+      'XYview-canvas': new ViewWindow('XYview-canvas', 'x', 'y', 0, 0, 10, 1),
+      'ZXview-canvas': new ViewWindow('ZXview-canvas', 'z', 'x', 0, 0, 10, 1),
+      'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', 0, 0, 10, 1),
     }
 
     this.initInputs()
@@ -61,11 +62,11 @@ class Editor {
     this.axis = new Mesh()
     this.cube = new Mesh()
 
-    await this.montains.loadFromObjectFile("data/montains.obj");
+    // await this.montains.loadFromObjectFile("data/montains.obj");
     await this.axis.loadFromObjectFile("data/axis.obj");
-    // await this.cube.loadFromOwnObjectFile("data/cube.obj");
+    await this.cube.loadFromOwnObjectFile("data/cube.obj");
     
-    this.mapObjects.push(this.montains)
+    // this.mapObjects.push(this.montains)
     this.mapObjects.push(this.axis)
     this.mapObjects.push(this.cube)
 
@@ -80,8 +81,7 @@ class Editor {
 
     console.log(value)
     console.log(width, height)
-    
-    
+
     // value.forEach(item => {
     //   console.log(`Value item: ${item}`);
     // });
@@ -151,17 +151,51 @@ class Editor {
       clone.refreshScreen()
     });
 
-    // 2. Click ViewWindow    
+    // 3. Click ViewWindow    
     Object.entries(this.views).forEach(([name, value]) => {
-      console.log(`Key: ${name}`);
+      console.log(`Key: ${name}`)
+      this.drawView(name)
+      
+      // ratio
+      $(`input[name='ratio'][data-name='${name}']`).on('input', () => {
+        let ratioInputValue = parseInt($(`input[name='ratio'][data-name='${name}']`).val())
+
+        console.log(name)
+        
+
+        if (ratioInputValue < 1) ratioInputValue = 1;
+        else if (ratioInputValue > 1000) ratioInputValue = 1000;
+
+        this.views[name].ratio = ratioInputValue
+
+        this.selectedView = name
+        this.drawView(this.selectedView)
+      });
+
+      // frequent
+      $(`input[name='frequent'][data-name='${name}']`).on('input', () => {
+        let frequentInputValue = parseInt($(`input[name='frequent'][data-name='${name}']`).val())
+
+        if (frequentInputValue < 1) frequentInputValue = 1;
+        else if (frequentInputValue > 16) frequentInputValue = 16;
+
+        this.views[name].frequent = frequentInputValue
+
+        this.selectedView = name
+        this.drawView(this.selectedView)
+      });
+
       $(`#${name}`).on('click', () => {
         this.renderViewWindow(name, value)
+        this.drawView(name)
       });
     });
 
     ///////////
     // KEYS
     // Add keys
+    ///////////
+
     document.addEventListener('keydown', (event) => {
       // console.log(this.keys)
       this.keys[event.code] = true
@@ -222,58 +256,158 @@ class Editor {
         this.refreshScreen()
       },this.refTime)
     });
-
   }
 
-  drawView() {
-    let view = this.views[this.selectedView]
+  ///DRAW
+  drawView(name) {
+    let view = this.views[name]
+    if (view) {
+      view.ctx.clearRect(0, 0, view.canvas.width, view.canvas.height);
+    
+      // POS ORIGO
+      view.ctx.strokeStyle = 'blue';
+      view.ctx.lineWidth = 4;
+      view.ctx.beginPath();
+      view.ctx.arc(view.posX, view.posY, 1, 0, 2 * Math.PI);
+      view.ctx.stroke();
+    
+      const space = (view.ratio / view.frequent < 1) ? 1 : view.ratio / view.frequent;
+          
+      if (space > 0) {
+        // Vonalszín
+        view.ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'; // Halvány szürke
+        view.ctx.lineWidth = 1;
+        
+        const startX = Math.floor(-view.posX / space) * space + view.posX;
+        const startY = Math.floor(-view.posY / space) * space + view.posY;        
+        
+        for (let x = startX; x < view.canvas.width; x += space) { view.ctx.beginPath(); view.ctx.moveTo(x, 0); view.ctx.lineTo(x, view.canvas.height); view.ctx.stroke(); }
+        for (let y = startY; y < view.canvas.height; y += space) { view.ctx.beginPath(); view.ctx.moveTo(0, y); view.ctx.lineTo(view.canvas.width, y); view.ctx.stroke(); }
+      }
 
-    console.log('DRAWnál')
-    console.log(view)
+      this.mapObjects.forEach(object => {
+        object.tris.forEach(tri => {
 
-    const space = 15;
+          function isTriangleOnScreen(vertices, screenWidth, screenHeight) {
+            const screenRect = { x1: 0, y1: 0, x2: screenWidth, y2: screenHeight };
+        
+            // Ellenőrizzük, hogy a pontok bármelyike a képernyőn van-e
+            for (const { x, y } of vertices) {
+                if (x >= screenRect.x1 && x <= screenRect.x2 && y >= screenRect.y1 && y <= screenRect.y2) {
+                    return true;
+                }
+            }
+        
+            // Ellenőrizzük, hogy a háromszög élei metszenek-e a képernyő szélével
+            const edges = [
+                [vertices[0], vertices[1]],
+                [vertices[1], vertices[2]],
+                [vertices[2], vertices[0]],
+            ];
+        
+            for (const [p1, p2] of edges) {
+                if (lineIntersectsRect(p1, p2, screenRect)) {
+                    return true;
+                }
+            }
+        
+            return false; // Ha semmi nem talál, a háromszög nem látszik
+          }
+        
+          function lineIntersectsRect(p1, p2, rect) {
+            // Definiáljuk a téglalap éleit
+            const rectEdges = [
+              [{ x: rect.x1, y: rect.y1 }, { x: rect.x2, y: rect.y1 }], // Felső
+              [{ x: rect.x2, y: rect.y1 }, { x: rect.x2, y: rect.y2 }], // Jobb
+              [{ x: rect.x2, y: rect.y2 }, { x: rect.x1, y: rect.y2 }], // Alsó
+              [{ x: rect.x1, y: rect.y2 }, { x: rect.x1, y: rect.y1 }], // Bal
+            ];
 
-    // Vonalszín
-    view.ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'; // Halvány szürke
+            for (const [q1, q2] of rectEdges) {
+                if (linesIntersect(p1, p2, q1, q2)) {
+                    return true;
+                }
+            }
 
-    // Függőleges vonalak
-    for (let x = space; x < view.canvas.width; x += space) {
-      view.ctx.beginPath()
-      view.ctx.moveTo(x, 0)
-      view.ctx.lineTo(x, view.canvas.height)
-      view.ctx.stroke()
+            return false;
+          }
+
+          function linesIntersect(p1, p2, q1, q2) {
+            // Ellenőrizzük, hogy a két egyenes szakasz metszi-e egymást
+            const orientation = (a, b, c) => (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y);
+            const o1 = orientation(p1, p2, q1);
+            const o2 = orientation(p1, p2, q2);
+            const o3 = orientation(q1, q2, p1);
+            const o4 = orientation(q1, q2, p2);
+        
+            if (o1 * o2 < 0 && o3 * o4 < 0) return true; // Átlépő orientációk
+            return false; // Ha nincs metszés
+          }
+  
+          let p0X = (view.canvas.width / 2) + view.posX + tri.p[0][view.vX] * view.ratio; let p0Y = (view.canvas.height / 2) + view.posY + tri.p[0][view.vY] * view.ratio;
+          let p1X = (view.canvas.width / 2) + view.posX + tri.p[1][view.vX] * view.ratio; let p1Y = (view.canvas.height / 2) + view.posY + tri.p[1][view.vY] * view.ratio;
+          let p2X = (view.canvas.width / 2) + view.posX + tri.p[2][view.vX] * view.ratio; let p2Y = (view.canvas.height / 2) + view.posY + tri.p[2][view.vY] * view.ratio;
+
+          const vertices = [
+            { x: p0X, y: p0Y },
+            { x: p1X, y: p1Y },
+            { x: p2X, y: p2Y },
+          ];
+
+          if (isTriangleOnScreen(vertices, view.canvas.width, view.canvas.height)) {
+
+            view.ctx.strokeStyle = 'yellow';
+            view.ctx.lineWidth = 1;
+
+            view.ctx.beginPath()
+            view.ctx.moveTo(p0X, p0Y)
+            view.ctx.lineTo(p1X, p1Y)
+            view.ctx.lineTo(p2X, p2Y)
+            view.ctx.lineTo(p0X, p0Y)
+            view.ctx.stroke()
+
+            view.ctx.strokeStyle = 'deeppink'
+            view.ctx.lineWidth = 2
+            view.ctx.beginPath(); view.ctx.arc(p0X, p0Y, 1, 0, 2 * Math.PI); view.ctx.stroke();
+            view.ctx.beginPath(); view.ctx.arc(p1X, p1Y, 1, 0, 2 * Math.PI); view.ctx.stroke();
+            view.ctx.beginPath(); view.ctx.arc(p2X, p2Y, 1, 0, 2 * Math.PI); view.ctx.stroke();
+          } else {
+            //console.log('NEM RAJZOLT'); console.log(view)
+          }
+        });
+      });
+
+    } else {
+      console.log('Error!')
     }
-
-    // Vízszintes vonalak
-    for (let y = space; y < view.canvas.height; y += space) {
-      view.ctx.beginPath()
-      view.ctx.moveTo(0, y)
-      view.ctx.lineTo(view.canvas.width, y)
-      view.ctx.stroke()
-    }
-
-
   }
 
   checkKeyboardInputs() {
     if (this.selectedView !== 'null' && typeof this.selectedView !== 'undefined') {
       console.log(this.selectedView)
-      
+
       if (this.keys['ArrowUp'] || this.keys['ArrowW']) {
-        console.log('move up')
-        this.drawView()
+        // console.log('move up')
+        this.views[this.selectedView].posY += 5
+        this.drawView(this.selectedView)
       }
 
       if (this.keys['ArrowDown']) {
-        console.log('move down')
+        this.views[this.selectedView].posY -= 5
+        // console.log('move down')
+        this.drawView(this.selectedView)
       }
 
       if (this.keys['ArrowLeft']) {
-        console.log('move left')
+        // console.log('move left')
+        this.views[this.selectedView].posX += 5
+        this.drawView(this.selectedView)
       }
 
       if (this.keys['ArrowRight']) {
-        console.log('move right')
+        // console.log('move right')
+        this.views[this.selectedView].posX -= 5
+        this.drawView(this.selectedView)
       }
     }
   }
@@ -386,14 +520,17 @@ class Editor {
     this.graph.memoryCtx.putImageData(this.graph.screenData, 0, 0)
     this.graph.infoTable()
 
-    this.graph.screenCtx.drawImage(this.graph.memoryCanvas, 0, 0, this.graph.screenCanvas.width, this.graph.screenCanvas.height)    
+    this.graph.screenCtx.drawImage(this.graph.memoryCanvas, 0, 0, this.graph.screenCanvas.width, this.graph.screenCanvas.height)
   }
 }
 
 class ViewWindow {
-  constructor(name, ratio, posX, posY) {
+  constructor(name, vX, vY, posX, posY, ratio, frequent) {
     this.name = name
+    this.vX = vX
+    this.vY = vY
     this.ratio = ratio
+    this.frequent = frequent
     this.posX = posX
     this.posY = posY
 
@@ -403,8 +540,8 @@ class ViewWindow {
       this.ctx = this.canvas.getContext("2d")
       this.ctx.imageSmoothingEnabled = false
       
-      this.canvas.width = 320
-      this.canvas.height = 240
+      // this.canvas.width = 320
+      // this.canvas.height = 240
     } else {
       console.error(`${name} is not isset!`)
     }
