@@ -422,8 +422,8 @@ export class Graphics {
     this.vLookDir = this.matrix_MultiplyVector(matCameraRotY, vLookDirX)
 
     const vRight = this.vector_CrossProduct(vUp, this.vLookDir)               // Right direction vector
-    if (this.keys['KeyD'] && this.keys['ShiftLeft']) this.vCamera = this.vector_Sub(this.vCamera, this.vector_Mul(vRight, this.moveScale));
-    if (this.keys['KeyA'] && this.keys['ShiftLeft']) this.vCamera = this.vector_Add(this.vCamera, this.vector_Mul(vRight, this.moveScale));
+    if (this.keys['KeyD'] && this.keys['ShiftLeft']) this.vCamera = this.vector_Sub(this.vCamera, this.vector_Mul(vRight, this.options.moveScale));
+    if (this.keys['KeyA'] && this.keys['ShiftLeft']) this.vCamera = this.vector_Add(this.vCamera, this.vector_Mul(vRight, this.options.moveScale));
 
     const vTarget = this.vector_Add(this.vCamera, this.vLookDir)
     const matCamera = this.matrix_PointAt(this.vCamera, vTarget, vUp)

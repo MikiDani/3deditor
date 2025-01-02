@@ -32,12 +32,12 @@ class Editor {
 
     this.views = {
       'XYview-canvas': new ViewWindow('XYview-canvas', 'x', 'y', 0, 0, 10, 1),
-      'ZXview-canvas': new ViewWindow('ZXview-canvas', 'z', 'x', 0, 0, 10, 1),
-      'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', 0, 0, 10, 1),
+      'XZview-canvas': new ViewWindow('XZview-canvas', 'x', 'z', 0, 0, 10, 1),
+      'YZview-canvas': new ViewWindow('YZview-canvas', 'y', 'z', 0, 0, 10, 1),
     }
 
-    this.initInputs()
-    this.refreshScreen()
+    this.initInputs()    
+    this.fullRefreshCanvasGraphics()
   }
 
   async loadTextures() {
@@ -62,9 +62,9 @@ class Editor {
     this.axis = new Mesh()
     this.cube = new Mesh()
 
-    // await this.montains.loadFromObjectFile("data/montains.obj");
-    await this.axis.loadFromObjectFile("data/axis.obj");
-    await this.cube.loadFromOwnObjectFile("data/cube.obj");
+    // await this.montains.loadFromObjectFile("data/montains.obj")
+    await this.axis.loadFromObjectFile("data/axis.obj")
+    await this.cube.loadFromOwnObjectFile("data/cube.obj")
     
     // this.mapObjects.push(this.montains)
     this.mapObjects.push(this.axis)
@@ -73,25 +73,10 @@ class Editor {
     console.log(this.mapObjects)
   }
 
-  renderViewWindow (name, value) {
-    this.selectedView = name
-
-    let width = this.views[name].canvas.width
-    let height = this.views[name].canvas.height
-
-    console.log(value)
-    console.log(width, height)
-
-    // value.forEach(item => {
-    //   console.log(`Value item: ${item}`);
-    // });
-  }
-
   refresViewSize() {
     var clone = this
     // all hide
     $('#container-screens > .view-segment').show()
-
     // show selected view
     $(".view-buttons").each(function() {
       let name = $(this).attr('name')
@@ -102,17 +87,17 @@ class Editor {
         let newWidth = Math.floor($('#container-screens').width())
         let newHeight = Math.floor($('#menu-right').height())
 
-        // selected show
+        // all hide
         $('#container-screens > .view-segment').hide()
-        $(`#container-screens > canvas[id='${name}']`).show()
-
+        // selected resize and show
         $(`#container-screens > canvas[id='${name}']`).width(newWidth)
         $(`#container-screens > canvas[id='${name}']`).height(newHeight)
+        $(`#container-screens > canvas[id='${name}']`).show()
 
-        if (name == 'screen-canvas') {
+        if (name == 'screen-canvas') {          
           clone.graph.screenCanvas.width = newWidth
           clone.graph.screenCanvas.height = newHeight
-        } else if (name == 'XYview-canvas' || name == 'ZXview-canvas' || name == 'ZYview-canvas') {
+        } else if (name == 'XYview-canvas' || name == 'XZview-canvas' || name == 'YZview-canvas') {
           clone.views[name].canvas.width = newWidth
           clone.views[name].canvas.height = newHeight
         }
@@ -124,7 +109,7 @@ class Editor {
         $(`#container-screens > canvas[id='${name}']`).width(newWidth)
         $(`#container-screens > canvas[id='${name}']`).height(newHeight)
 
-        if (name == 'XYview-canvas' || name == 'ZXview-canvas' || name == 'ZYview-canvas') {
+        if (name == 'XYview-canvas' || name == 'XZview-canvas' || name == 'YZview-canvas') {
           clone.views[name].canvas.width = newWidth
           clone.views[name].canvas.height = newHeight
         }
@@ -138,30 +123,30 @@ class Editor {
     //1. VIEW BUTTONS
     $(".view-buttons").on('click', function() {
       let value = $(this).val()
+      let name = $(this).attr('name')
 
       // All OFF
-      $("button[class='view-buttons']").val(false).text('OFF')
-      
-      value = (value == 'false') ? true : false;
-      value ? $(this).text('ON') : $(this).text('OFF');
+      $(".view-buttons").val(false).text('OFF')
 
+      value = (value == 'false') ? true : false;
       $(this).val(value)
-    
-      clone.refresViewSize()
-      clone.refreshScreen()
+      if (value) {
+        $(this).text('ON')
+        clone.selectedView = name        
+      } else {
+        $(this).text('OFF')
+      }
+
+      // refresh graphics
+      clone.fullRefreshCanvasGraphics()
     });
 
-    // 3. Click ViewWindow    
+    // 3. Click ViewWindow
     Object.entries(this.views).forEach(([name, value]) => {
-      console.log(`Key: ${name}`)
-      this.drawView(name)
       
       // ratio
       $(`input[name='ratio'][data-name='${name}']`).on('input', () => {
         let ratioInputValue = parseInt($(`input[name='ratio'][data-name='${name}']`).val())
-
-        console.log(name)
-        
 
         if (ratioInputValue < 1) ratioInputValue = 1;
         else if (ratioInputValue > 1000) ratioInputValue = 1000;
@@ -169,7 +154,7 @@ class Editor {
         this.views[name].ratio = ratioInputValue
 
         this.selectedView = name
-        this.drawView(this.selectedView)
+        this.fullRefreshCanvasGraphics()
       });
 
       // frequent
@@ -182,28 +167,28 @@ class Editor {
         this.views[name].frequent = frequentInputValue
 
         this.selectedView = name
-        this.drawView(this.selectedView)
+        this.fullRefreshCanvasGraphics()
       });
 
+      // canvas window click
       $(`#${name}`).on('click', () => {
-        this.renderViewWindow(name, value)
-        this.drawView(name)
+        this.selectedView = name
+        this.fullRefreshCanvasGraphics()
       });
     });
 
-    ///////////
-    // KEYS
-    // Add keys
-    ///////////
-
+    //////////////////
+    // KEYS | Add keys
+    //////////////////
     document.addEventListener('keydown', (event) => {
       // console.log(this.keys)
       this.keys[event.code] = true
 
       this.checkKeyboardInputs()
 
-      // Mouse move
+      // IF MOUSE USE
       if (document.pointerLockElement == document.body) {
+        // screen-canvas refresh
         this.moveViewInputs()
         setTimeout(() => {
           this.refreshScreen()
@@ -221,10 +206,11 @@ class Editor {
   // MOUSE MOVE
   lookMouseApi() {
     document.body.requestPointerLock = document.body.requestPointerLock || document.body.mozRequestPointerLock || document.body.webkitRequestPointerLock;
-    document.getElementById("screen-canvas").addEventListener('click', function() {
-      document.body.requestPointerLock();
-      // if (!(document.pointerLockElement == document.body)) {
-      // }
+    $("#screen-canvas").on('click', () => {
+      this.selectedView = "screen-canvas"
+      $("#screen-canvas").css('border-color', 'blue')
+      this.fullRefreshCanvasGraphics()
+      document.body.requestPointerLock()
     });
 
     document.addEventListener('mousemove', (event) => {
@@ -247,29 +233,38 @@ class Editor {
         console.log("Pointer lock megszűnt")
         document.activeElement.blur()
         this.selectedView = null
+        $("#screen-canvas").css('border-color', 'gray')
       }
     });
 
     window.addEventListener("resize", () => {
-      setTimeout(() => {
-        this.refresViewSize()
-        this.refreshScreen()
-      },this.refTime)
+      this.fullRefreshCanvasGraphics()
     });
+  }
+
+  fullRefreshCanvasGraphics() {
+    this.refresViewSize()
+    Object.entries(this.views).forEach(([name, value]) => {      
+      let borderColor = (name == this.selectedView) ? 'blue' : 'gray';
+      $(`#${name}`).css('border-color', borderColor)
+
+      this.drawView(name)
+    });
+    this.refreshScreen()
   }
 
   ///DRAW
   drawView(name) {
     let view = this.views[name]
     if (view) {
-      view.ctx.clearRect(0, 0, view.canvas.width, view.canvas.height);
-    
+      view.ctx.clearRect(0, 0, view.canvas.width, view.canvas.height)
+
       // POS ORIGO
-      view.ctx.strokeStyle = 'blue';
-      view.ctx.lineWidth = 4;
-      view.ctx.beginPath();
-      view.ctx.arc(view.posX, view.posY, 1, 0, 2 * Math.PI);
-      view.ctx.stroke();
+      view.ctx.strokeStyle = 'blue'
+      view.ctx.lineWidth = 4
+      view.ctx.beginPath()
+      view.ctx.arc(view.posX, view.posY, 1, 0, 2 * Math.PI)
+      view.ctx.stroke()
     
       const space = (view.ratio / view.frequent < 1) ? 1 : view.ratio / view.frequent;
           
@@ -290,30 +285,27 @@ class Editor {
 
           function isTriangleOnScreen(vertices, screenWidth, screenHeight) {
             const screenRect = { x1: 0, y1: 0, x2: screenWidth, y2: screenHeight };
-        
             // Ellenőrizzük, hogy a pontok bármelyike a képernyőn van-e
             for (const { x, y } of vertices) {
                 if (x >= screenRect.x1 && x <= screenRect.x2 && y >= screenRect.y1 && y <= screenRect.y2) {
                     return true;
                 }
             }
-        
             // Ellenőrizzük, hogy a háromszög élei metszenek-e a képernyő szélével
             const edges = [
                 [vertices[0], vertices[1]],
                 [vertices[1], vertices[2]],
                 [vertices[2], vertices[0]],
             ];
-        
+
             for (const [p1, p2] of edges) {
                 if (lineIntersectsRect(p1, p2, screenRect)) {
                     return true;
                 }
             }
-        
             return false; // Ha semmi nem talál, a háromszög nem látszik
           }
-        
+
           function lineIntersectsRect(p1, p2, rect) {
             // Definiáljuk a téglalap éleit
             const rectEdges = [
@@ -328,7 +320,6 @@ class Editor {
                     return true;
                 }
             }
-
             return false;
           }
 
@@ -343,7 +334,7 @@ class Editor {
             if (o1 * o2 < 0 && o3 * o4 < 0) return true; // Átlépő orientációk
             return false; // Ha nincs metszés
           }
-  
+
           let p0X = (view.canvas.width / 2) + view.posX + tri.p[0][view.vX] * view.ratio; let p0Y = (view.canvas.height / 2) + view.posY + tri.p[0][view.vY] * view.ratio;
           let p1X = (view.canvas.width / 2) + view.posX + tri.p[1][view.vX] * view.ratio; let p1Y = (view.canvas.height / 2) + view.posY + tri.p[1][view.vY] * view.ratio;
           let p2X = (view.canvas.width / 2) + view.posX + tri.p[2][view.vX] * view.ratio; let p2Y = (view.canvas.height / 2) + view.posY + tri.p[2][view.vY] * view.ratio;
@@ -354,6 +345,7 @@ class Editor {
             { x: p2X, y: p2Y },
           ];
 
+          // Ha van a vászonon megjelenő vonal akkor kirajzolja
           if (isTriangleOnScreen(vertices, view.canvas.width, view.canvas.height)) {
 
             view.ctx.strokeStyle = 'yellow';
@@ -371,9 +363,13 @@ class Editor {
             view.ctx.beginPath(); view.ctx.arc(p0X, p0Y, 1, 0, 2 * Math.PI); view.ctx.stroke();
             view.ctx.beginPath(); view.ctx.arc(p1X, p1Y, 1, 0, 2 * Math.PI); view.ctx.stroke();
             view.ctx.beginPath(); view.ctx.arc(p2X, p2Y, 1, 0, 2 * Math.PI); view.ctx.stroke();
-          } else {
-            //console.log('NEM RAJZOLT'); console.log(view)
           }
+
+          view.ctx.fillStyle = 'rgb(255, 255, 255)'
+          view.ctx.font = '16px Arial'
+          view.ctx.textAlign = 'left'
+          view.ctx.fillText(`${view.vX.toUpperCase()} / ${view.vY.toUpperCase()}`, 5, 17)
+
         });
       });
 
@@ -383,28 +379,29 @@ class Editor {
   }
 
   checkKeyboardInputs() {
-    if (this.selectedView !== 'null' && typeof this.selectedView !== 'undefined') {
-      console.log(this.selectedView)
+    if (this.selectedView !== 'screen-canvas' && this.selectedView !== 'null' && typeof this.selectedView !== 'undefined') {
 
-      if (this.keys['ArrowUp'] || this.keys['ArrowW']) {
+      // console.log(this.selectedView)
+
+      if (this.keys['ArrowUp'] || this.keys['KeyW']) {
         // console.log('move up')
         this.views[this.selectedView].posY += 5
         this.drawView(this.selectedView)
       }
 
-      if (this.keys['ArrowDown']) {
+      if (this.keys['ArrowDown'] || this.keys['KeyS']) {
         this.views[this.selectedView].posY -= 5
         // console.log('move down')
         this.drawView(this.selectedView)
       }
 
-      if (this.keys['ArrowLeft']) {
+      if (this.keys['ArrowLeft'] || this.keys['KeyA']) {
         // console.log('move left')
         this.views[this.selectedView].posX += 5
         this.drawView(this.selectedView)
       }
 
-      if (this.keys['ArrowRight']) {
+      if (this.keys['ArrowRight'] || this.keys['KeyD']) {
         // console.log('move right')
         this.views[this.selectedView].posX -= 5
         this.drawView(this.selectedView)
@@ -485,23 +482,13 @@ class Editor {
     //---
 
     if (this.keys['Digit1']) {
-      // console.log('Grid')
-      this.options.grid = !this.options.grid
-    }
-
-    if (this.keys['Digit2']) {
-      // console.log('Fill')
-      this.options.fill = !this.options.fill
-    }
-
-    if (this.keys['Digit3']) {
-      // console.log('Textured')
-      this.options.textured = !this.options.textured
+      // console.log('1 gomb')
     }
 
     if (this.keys['Escape']) {
       console.log('ESC');
       this.selectedView = null
+      this.fullRefreshCanvasGraphics()
     }
   }
 

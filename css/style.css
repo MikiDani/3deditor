@@ -24,22 +24,27 @@ body {
 }
 
 #menu-top {
+  position: relative;
   width: 100%;
   height: 15%;
   margin: 0;
-  padding: 0;
+  padding: 6px;
   background-color: #d2d2d2;
   box-sizing: border-box;
 }
 
 .top-screen-options {
   display: inline-block;
-  flex-direction: column;
-  justify-content: start;
-  align-items: top;
+  width: 15%;
+  height: 100%;
+  vertical-align: top;
+  letter-spacing: 1px;
+  font-size: 14px;
+  line-height: 22px;
+  margin: 0px;
   padding: 5px;
-  width: 200px;
   border: 1px solid gray;
+  box-sizing: border-box;
 }
 
 #menu-right {
@@ -51,8 +56,37 @@ body {
   min-height: 85%;
   margin: 0;
   padding: 0;
-  background-color: darkgreen;
+  background-color: #d2d2d2;
   box-sizing: border-box;
+}
+
+.title-box {
+  width: calc(100% - 10px);
+  height: 25px;
+  text-align: center;
+  font-weight: bold;
+  -webkit-text-decoration: double;
+          text-decoration: double;
+  border: 1px solid gray;
+  box-sizing: border-box;
+  padding: 3px;
+  margin: 5px;
+  margin-top: 0;
+}
+
+.box-1 {
+  width: calc(100% - 10px);
+  text-align: left;
+  border: 1px solid gray;
+  box-sizing: border-box;
+  padding: 3px;
+  margin: 5px;
+  margin-top: 0;
+}
+
+.box-1 li {
+  padding: 0;
+  margin: 0;
 }
 
 #container-screens {
@@ -89,13 +123,17 @@ body {
 }
 
 .green {
-  background-color: green;
+  background-color: #325332;
 }
 
 .blue {
-  background-color: blue;
+  background-color: #0c0c2b;
 }
 
 .dark {
   background-color: #121212;
+}
+
+.text-white {
+  color: white !important;
 }/*# sourceMappingURL=style.css.map */
