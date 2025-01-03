@@ -65,10 +65,11 @@ export class Triangle {
 export class Mesh {
     constructor() {
         this.tris = []; // Háromszögek listája (Triangle típusú elemek)
+        this.lineColor = 'yellow'
     }
 
     // Objektum fájl betöltése
-    async loadFromObjectFile(filename, hasTexture = false) {
+    async loadFromObjectFile(filename, name, lineColor, hasTexture = false) {
         const response = await fetch(filename)
         if (!response.ok) return false;
 
@@ -76,6 +77,9 @@ export class Mesh {
         const lines = text.split('\n')
         const verts = []
         const texs = []
+
+        this.name = name
+        this.lineColor = lineColor
 
         for (let line of lines) {
             const parts = line.trim().split(' ')
@@ -109,9 +113,12 @@ export class Mesh {
         return true;
     }
 
-    async loadFromOwnObjectFile(filename) {
+    async loadFromOwnObjectFile(filename, name, lineColor) {
         const response = await fetch(filename); // Fájl betöltése
         if (!response.ok) return false;         // Ha sikertelen, visszatérés false értékkel
+
+        this.name = name
+        this.lineColor = lineColor
 
         const text = await response.text();     // Fájl tartalmának olvasása szövegként        
         const lines = text.split('\n');         // Sorokra bontás

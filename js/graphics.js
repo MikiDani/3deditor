@@ -14,17 +14,17 @@ export class Graphics {
     // this.GAMEWIDTH = 1024; this.GAMEHEIGHT = 768; this.RATIO = 1;
     // this.GAMEWIDTH = 320; this.GAMEHEIGHT = 180; this.RATIO = 3;
     this.GAMEWIDTH = 640; this.GAMEHEIGHT = 360; this.RATIO = 0.5;
-    
+
     this.HALFWIDTH = this.GAMEWIDTH / 2
     this.HALFHEIGHT = this.GAMEHEIGHT / 2
-      
+
     this.SCREENWIDTH =  this.GAMEWIDTH * this.RATIO
     this.SCREENHEIGHT = this.GAMEHEIGHT * this.RATIO
 
     this.screenCanvas = (document.getElementById("screen-canvas")) ? document.getElementById("screen-canvas") : null;
     this.screenCtx = (this.screenCanvas) ? this.screenCanvas.getContext("2d") : null;
     this.screenCtx.imageSmoothingEnabled = false
-    
+
     this.screenCanvas.width = this.SCREENWIDTH
     this.screenCanvas.height = this.SCREENHEIGHT
 
@@ -40,7 +40,7 @@ export class Graphics {
     this.depthBuffer = new Array(this.GAMEWIDTH * this.GAMEHEIGHT).fill(0)
 
     this.mesh = new Mesh()
-    this.matProj = this.matrix_MakeProjection(75, this.GAMEHEIGHT / this.GAMEWIDTH, 1, 1000)
+    this.matProj = this.matrix_MakeProjection(75, this.GAMEHEIGHT / this.GAMEWIDTH, 1, 1000) //  FOV, ratio, near, far
 
     this.vLookDir = new Vec3D(0, 0, 1)
     this.vCamera = new Vec3D(0.5, 0.5, 4)
@@ -49,7 +49,7 @@ export class Graphics {
 
     this.lightDirection = new Vec3D(0, 1, -1)
     this.fTheta = 0
-    
+
     this.clipped = [new Triangle(), new Triangle()];
   }
 
@@ -812,14 +812,14 @@ export class Graphics {
   }
 
   infoTable() {
-    this.memoryCtx.fillStyle = 'rgb(0, 255, 100)'
-    this.memoryCtx.font = '8px Arial'
+    this.memoryCtx.fillStyle = 'rgb(0, 0, 0)'
+    this.memoryCtx.font = '12px Arial'
     this.memoryCtx.textAlign = 'left'
 
-    // this.memoryCtx.fillText(`Angle: ${this.vCamera.a}°`, 4, 10)
-    // this.memoryCtx.fillText(`A RAD: ${this.vCamera.aR.toFixed(2)} rad`, 4, 20)
-    this.memoryCtx.fillText(`X: ${this.vCamera.x.toFixed(2)}`, 4, 30)
-    this.memoryCtx.fillText(`Y: ${this.vCamera.y.toFixed(2)}`, 4, 40)
-    this.memoryCtx.fillText(`Z: ${this.vCamera.z.toFixed(2)}`, 4, 50)
+    this.memoryCtx.fillText(`fYaw: ${this.fYaw.toFixed(2)} rad`, 4, 12)
+    this.memoryCtx.fillText(`fXaw: ${this.fXaw.toFixed(2)} rad`, 4, 24)
+    this.memoryCtx.fillText(`X: ${this.vCamera.x.toFixed(2)}`, 4, 36)
+    this.memoryCtx.fillText(`Y: ${this.vCamera.y.toFixed(2)}`, 4, 48)
+    this.memoryCtx.fillText(`Z: ${this.vCamera.z.toFixed(2)}`, 4, 60)
   }
 }
