@@ -6,6 +6,7 @@
     <link rel="icon" href="favicon.png" type="image/x-icon">
     <title>TuccMann 3D Editor</title>
     <link href="./css/style.css" rel="stylesheet">
+    <link href="./css/menu.css" rel="stylesheet">
 </head>
 <body id="root">
     <div id="menu-top">
@@ -26,24 +27,139 @@
     </div>
 
     <div id="menu-right">
+        <button id="add-new-tri" class="title-box title-button">Add New Triangle</button>
+
         <div class="title-box">Objects</div>
-        <div id="object-list" class="box-1">
+        <div id="object-list" class="box-1 responsive-menu">
             <!-- javascript -->
+
+            <!-- <ul>
+                <li>Első szint
+                    <ul>
+                        <li>Második szint
+                            <ul>
+                                <li>Harmadik szint 1</li>
+                                <li>Harmadik szint 2</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li>Első szint - másik elem 1
+                <li>Első szint - másik elem 2
+                    <ul>
+                        <li>Második szint - másik elem
+                            <ul>
+                                <li>Harmadik szint - másik elem 1</li>
+                                <li>Harmadik szint - másik elem 2</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+            </ul> -->
+
         </div>
-        <div class="info-container p-0 m-0">
-            <h6 id="info-fps" class="text-white"></h6>
+
+        <div id="selected-tri-name" class="title-box">triangle name</div>
+        <div id="object-add-tri" class="box-1">
+            <div class="right-screen-options">
+                <div class="left-side">
+                    <div class="side-row">
+                        <span>p1X: </span><input type="number" name="p1-X" min="-10000" max="10000" step="0.01" value="0">
+                    </div>
+                    <div class="side-row">
+                        <span>p1Y: </span><input type="number" name="p1-Y" min="-10000" max="10000" step="0.01" value="0">
+                    </div>
+                    <div class="side-row">
+                        <span>p1Z: </span><input type="number" name="p1-Z" min="-10000" max="10000" step="0.01" value="0">
+                    </div>
+                </div>
+                <div class="right-side">
+                    <div class="side-row">
+                        <span>t1X: </span><input type="number" name="t1-X" min="0" max="1" step="0.001" value="0">
+                    </div>
+                    <div class="side-row">
+                        <span>t1Y: </span><input type="number" name="t1-Y" min="0" max="1" step="0.001" value="0">
+                    </div>
+                    <div class="side-row">
+                        <span>t1Z: </span><input type="number" name="t1-Z" min="0" max="1" step="0.001" value="0">
+                    </div>
+                </div>
+                <div class="left-side mt-3">
+                    <div class="side-row">
+                        <span>p2X: </span><input type="number" name="p2-X" min="-10000" max="10000" step="0.01" value="0">
+                    </div>
+                    <div class="side-row">
+                        <span>p2Y: </span><input type="number" name="p2-Y" min="-10000" max="10000" step="0.01" value="0">
+                    </div>
+                    <div class="side-row">
+                        <span>p2Z: </span><input type="number" name="p2-Z" min="-10000" max="10000" step="0.01" value="0">
+                    </div>
+                </div>
+                <div class="right-side mt-3">
+                    <div class="side-row">
+                        <span>t2X: </span><input type="number" name="t2-X" min="0" max="1" step="0.001" value="0">
+                    </div>
+                    <div class="side-row">
+                        <span>t2Y: </span><input type="number" name="t2-Y" min="0" max="1" step="0.001" value="0">
+                    </div>
+                    <div class="side-row">
+                        <span>t2Z: </span><input type="number" name="t2-Z" min="0" max="1" step="0.001" value="0">
+                    </div>
+                </div>
+                <div class="left-side mt-3">
+                    <div class="side-row">
+                        <span>p3X: </span><input type="number" name="p3-X" min="-10000" max="10000" step="0.01" value="0">
+                    </div>
+                    <div class="side-row">
+                        <span>p3Y: </span><input type="number" name="p3-Y" min="-10000" max="10000" step="0.01" value="0">
+                    </div>
+                    <div class="side-row">
+                        <span>p3Z: </span><input type="number" name="p3-Z" min="-10000" max="10000" step="0.01" value="0">
+                    </div>
+                </div>
+                <div class="right-side mt-3">
+                    <div class="side-row">
+                        <span>t3X: </span><input type="number" name="t3-X" min="0" max="1" step="0.001" value="0">
+                    </div>
+                    <div class="side-row">
+                        <span>t3Y: </span><input type="number" name="t3-Y" min="0" max="1" step="0.001" value="0">
+                    </div>
+                    <div class="side-row">
+                        <span>t3Z: </span><input type="number" name="t3-Z" min="0" max="1" step="0.001" value="0">
+                    </div>
+                </div>
+
+                <div class="left-side mt-3">
+                    <div class="side-row">
+                        <span>light: </span><input type="number" name="light" min="0" max="1" step="0.01" value="1">
+                    </div>
+                </div>
+                <div class="right-side mt-3">
+                    <div class="side-row">
+                        <span>text: </span>
+                        <select name="texture" data-type="short">
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <div id="container-screens">
         <canvas id="screen-canvas" class="view-segment"></canvas>
         <canvas id="XYview-canvas" class="view-segment dark"></canvas>
-        <canvas id="XZview-canvas" class="view-segment dark"></canvas>     <!-- green  -->
+        <canvas id="XZview-canvas" class="view-segment dark"></canvas>     <!-- green -->
         <canvas id="ZYview-canvas" class="view-segment dark"></canvas>     <!-- blue -->
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.2/dist/cdn.min.js" defer></script>
     <script src="./modules/jquery/jquery.min.js" defer></script>
     <script type="module" src="js/editor.js"></script>
+    <script type="module" src="js/menu.js"></script>
 </body>
 </html>

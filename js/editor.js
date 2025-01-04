@@ -26,6 +26,11 @@ class Editor {
       endX: 0,
       endY: 0,
       isMouseDown: false,
+      addTri: {
+        mode: false,
+        count: 0,
+        cords: [{x:0, y:0, z:0}, {x:0, y:0, z:0}, {x:0, y:0, z:0}],
+      }
     }
 
     this.init()
@@ -36,12 +41,15 @@ class Editor {
     await this.loadModels()
 
     this.graph = new Graphics(this.textures, this.keys, this.options, this.mapObjects)
-    this.graph.moveObject(0, 0, -30, 0)
+
+    // MOVE OBJECTS IN START
+    // this.graph.moveObject(0, 0, -30, 0)
 
     this.views = {
-      'XYview-canvas': new ViewWindow('XYview-canvas', 'x', 'y', 0, 0, 10, 1, true, true),
-      'XZview-canvas': new ViewWindow('XZview-canvas', 'x', 'z', 0, 0, 10, 1, true, true),
-      'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', 0, 0, 10, 1, true, true),
+      // name, vX, vY, posX, posY, ratio, frequent, showDots, showGrid
+      'XYview-canvas': new ViewWindow('XYview-canvas', 'x', 'y', 0, 0, 50, 2, true, true),
+      'XZview-canvas': new ViewWindow('XZview-canvas', 'x', 'z', 0, 0, 50, 2, true, true),
+      'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', 0, 0, 50, 2, true, true),
     }
 
     // ADD HTML ELEMENTS
@@ -58,10 +66,10 @@ class Editor {
                   <span>Full view: </span><button type="button" name="${name}" class="view-buttons" value="false">OFF</button>
               </div>
               <div class="side-row">
-                  <span>Ratio: </span><input type="number" name="ratio" data-name="${name}" min="0" max="200" step="10" value="10">
+                  <span>Ratio: </span><input type="number" name="ratio" data-name="${name}" min="0" max="200" step="10" value="50">
               </div>
               <div class="side-row">
-                  <span>Frequent: </span><input type="number" name="frequent" data-name="${name}" min="0" max="8" step="1" value="1">
+                  <span>Frequent: </span><input type="number" name="frequent" data-name="${name}" min="0" max="8" step="1" value="2">
               </div>
           </div>
           <div class="right-side">
@@ -77,13 +85,24 @@ class Editor {
     });
 
     // LIST OBJECTS
-    
-
+    let counter = 0
+    let element = `<ul>`;
     this.mapObjects.forEach(obj => {
-        let objName = (obj.name) ? obj.name : 'noname object';
-        let element = `<li>${objName}</li>`;
-        $('#object-list').append(element)
+      let objName = (obj.name) ? obj.name : 'noname object';
+      element += `<li data-id="${counter}">${objName} <span class="menu-icon triangle-up"></span></li>`;
+      if (obj.tris) {
+        element += `<ul parent-id="${counter}">`;
+        obj.tris.forEach((tri, i) => {
+          console.log(i)
+          element += `<li data-id="${counter}/${i}">${i} triangle</li>`;
+        });
+        element += `</ul>`;
+      }
+      counter++
     });
+    element += `</ul>`;
+
+    $('#object-list').append(element)
 
     this.initInputs()    
     this.fullRefreshCanvasGraphics()
@@ -111,11 +130,11 @@ class Editor {
     this.axis = new Mesh()
     this.cube = new Mesh()
 
-    await this.montains.loadFromObjectFile("data/montains.obj", 'Montains', 'yellow')
-    // await this.axis.loadFromObjectFile("data/axis.obj", 'Axis', 'green')
+    // await this.montains.loadFromObjectFile("data/montains.obj", 'Montains', 'yellow')
+    // await this.axis.loadFromObjectFile("data/axis.obj", 'Axis', 'yellow')
     await this.cube.loadFromOwnObjectFile("data/cube.obj", 'Cube', 'lime')
     
-    this.mapObjects.push(this.montains)
+    // this.mapObjects.push(this.montains)
     // this.mapObjects.push(this.axis)
     this.mapObjects.push(this.cube)
 
@@ -166,6 +185,15 @@ class Editor {
     });
   }
 
+  mouseAddTriReset () {
+    this.mouse.addTri = {
+      mode: false,
+      count: 0,
+      cords: [{x:0, y:0, z:0}, {x:0, y:0, z:0}, {x:0, y:0, z:0}],
+    }
+    $('#add-new-tri').removeClass('green2')
+  }
+
   initInputs() {
     var clone = this
 
@@ -186,7 +214,6 @@ class Editor {
         $(this).text('OFF')
       }
 
-      // refresh graphics
       clone.fullRefreshCanvasGraphics()
     });
 
@@ -265,6 +292,13 @@ class Editor {
         clone.mouse.startX = event.clientX - rect.left // Egér kezdő X
         clone.mouse.startY = event.clientY - rect.top // Egér kezdő Y
         clone.mouse.isMouseDown = true
+
+        // ADD TRI MODE
+        if (clone.mouse.addTri.mode) {
+          console.log('MODE TRUE!!!')
+          console.log('clone.mouse.startX: ', clone.mouse.startX)
+          console.log('clone.mouse.startY: ', clone.mouse.startY)
+        }
       });
 
       $(`#${name}`).on('mousemove', function (event) {
@@ -287,8 +321,8 @@ class Editor {
         const deltaY = clone.mouse.endY - clone.mouse.startY;
         // console.log(`Mouse moved: ΔX=${deltaX}, ΔY=${deltaY}`)
 
-        clone.views[name].posX += deltaX
-        clone.views[name].posY += deltaY
+        clone.views[name].posX -= deltaX
+        clone.views[name].posY -= deltaY
 
         clone.fullRefreshCanvasGraphics()
       });
@@ -296,22 +330,34 @@ class Editor {
       // reset views clicks
       $(`[class='reset-center-button'][data-name='${name}']`).on('click', function (event) {
         let name = $(this).attr('data-name')
-        console.log(name)
 
         clone.views[name].posX = 0; clone.views[name].posY = 0;
         clone.fullRefreshCanvasGraphics()
       });
     });
 
-    // reset view-screen
+    // 5. Reset view-screen
     $(`[class='reset-center-button'][data-name='screen-canvas']`).on('click', function () {
       clone.graph.vCamera.x = 0; clone.graph.vCamera.y = 0; clone.graph.vCamera.z = 0;
-      clone.graph.fYaw = 0; clone.graph.fXaw = 0;
+      clone.graph.fYaw = 0; clone.graph.fXaw = 0;     
 
       clone.fullRefreshCanvasGraphics()
     });
     
-    // Mouse wheel Zoom
+    // 6. Add new Triangle
+    $(document).on('click', '#add-new-tri', () => {
+      console.log('add new tri...')
+      if (!this.mouse.addTri.mode) {
+        this.mouse.addTri.mode = true
+        $('#add-new-tri').addClass('green2')
+        
+      } else {
+        this.mouse.addTri.mode = false
+        $('#add-new-tri').removeClass('green2')
+      }
+    });
+
+    // 7. Mouse wheel Zoom
     $(document).on('mousewheel', (event) => {
       if (this.selectedView) {
         if (this.selectedView == 'screen-canvas') {
@@ -363,8 +409,19 @@ class Editor {
     $("#screen-canvas").on('click', () => {
       this.selectedView = "screen-canvas"
       $("#screen-canvas").css('border-color', 'blue')
+
       this.fullRefreshCanvasGraphics()
       document.body.requestPointerLock()
+    });
+
+    $("#menu-top, #menu-right").on('click', () => {
+      //console.log('Move out canvas')
+      this.selectedView = null
+
+      // remove new triange if active
+      this.mouseAddTriReset()
+      
+      this.fullRefreshCanvasGraphics()
     });
 
     document.addEventListener('mousemove', (event) => {
@@ -410,152 +467,150 @@ class Editor {
   drawView(name) {
     let view = this.views[name];
     if (view) {
-        view.ctx.clearRect(0, 0, view.canvas.width, view.canvas.height);
+      view.ctx.clearRect(0, 0, view.canvas.width, view.canvas.height)
 
-        // Koordinátarendszer mentése és tükrözés beállítása
-        view.ctx.save(); // Mentjük az eredeti koordinátarendszert
-        view.ctx.translate(view.canvas.width / 2, view.canvas.height / 2); // Középpontba helyezés
-        view.ctx.scale(-1, -1); // Tükrözés X és Y tengely mentén
-        view.ctx.translate(-view.canvas.width / 2, -view.canvas.height / 2); // Visszahelyezés az eredeti helyre
+      // Koordinátarendszer mentése és tükrözés beállítása
+      view.ctx.save() // Mentjük az eredeti koordinátarendszert
+      view.ctx.translate(view.canvas.width / 2, view.canvas.height / 2) // Középpontba helyezés
+      view.ctx.scale(-1, -1) // Tükrözés X és Y tengely mentén
+      view.ctx.translate(-view.canvas.width / 2, -view.canvas.height / 2) // Visszahelyezés az eredeti helyre
 
-        // POS ORIGO
-        view.ctx.strokeStyle = 'blue';
-        view.ctx.lineWidth = 4;
-        view.ctx.beginPath();
-        view.ctx.arc(view.posX, view.posY, 1, 0, 2 * Math.PI);
-        view.ctx.stroke();
+      // POS ORIGO
+      view.ctx.strokeStyle = 'blue'
+      view.ctx.lineWidth = 4
+      view.ctx.beginPath()
+      view.ctx.arc(view.posX, view.posY, 1, 0, 2 * Math.PI)
+      view.ctx.stroke()
 
-        const space = (view.ratio / view.frequent < 1) ? 1 : view.ratio / view.frequent;
+      const space = (view.ratio / view.frequent < 1) ? 1 : view.ratio / view.frequent
 
-        if (view.showGrid) {
-            // Vonalszín
-            view.ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'; // Halvány szürke
-            view.ctx.lineWidth = 1;
+      if (view.showGrid) {
+        // Vonalszín
+        view.ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)' // Halvány szürke
+        view.ctx.lineWidth = 1
 
-            const startX = Math.floor(-view.posX / space) * space + view.posX;
-            const startY = Math.floor(-view.posY / space) * space + view.posY;
+        const startX = Math.floor(-view.posX / space) * space + view.posX
+        const startY = Math.floor(-view.posY / space) * space + view.posY
 
-            for (let x = startX; x < view.canvas.width; x += space) {
-                view.ctx.beginPath();
-                view.ctx.moveTo(x, 0);
-                view.ctx.lineTo(x, view.canvas.height);
-                view.ctx.stroke();
-            }
-            for (let y = startY; y < view.canvas.height; y += space) {
-                view.ctx.beginPath();
-                view.ctx.moveTo(0, y);
-                view.ctx.lineTo(view.canvas.width, y);
-                view.ctx.stroke();
-            }
+        for (let x = startX; x < view.canvas.width; x += space) {
+          view.ctx.beginPath()
+          view.ctx.moveTo(x, 0)
+          view.ctx.lineTo(x, view.canvas.height)
+          view.ctx.stroke()
         }
+        for (let y = startY; y < view.canvas.height; y += space) {
+          view.ctx.beginPath()
+          view.ctx.moveTo(0, y)
+          view.ctx.lineTo(view.canvas.width, y)
+          view.ctx.stroke()
+        }
+      }
 
-        this.mapObjects.forEach(object => {
-            var lineColor = object.lineColor;
+      this.mapObjects.forEach(object => {
+        var lineColor = object.lineColor
 
-            object.tris.forEach(tri => {
-                function isTriangleOnScreen(vertices, screenWidth, screenHeight) {
-                    const screenRect = { x1: 0, y1: 0, x2: screenWidth, y2: screenHeight };
-                    // Ellenőrizzük, hogy a pontok bármelyike a képernyőn van-e
-                    for (const { x, y } of vertices) {
-                        if (x >= screenRect.x1 && x <= screenRect.x2 && y >= screenRect.y1 && y <= screenRect.y2) {
-                            return true;
-                        }
-                    }
-                    // Ellenőrizzük, hogy a háromszög élei metszenek-e a képernyő szélével
-                    const edges = [
-                        [vertices[0], vertices[1]],
-                        [vertices[1], vertices[2]],
-                        [vertices[2], vertices[0]],
-                    ];
+        object.tris.forEach(tri => {
+          function isTriangleOnScreen(vertices, screenWidth, screenHeight) {
+            const screenRect = { x1: 0, y1: 0, x2: screenWidth, y2: screenHeight }
+            // Ellenőrizzük, hogy a pontok bármelyike a képernyőn van-e
+            for (const { x, y } of vertices) {
+              if (x >= screenRect.x1 && x <= screenRect.x2 && y >= screenRect.y1 && y <= screenRect.y2) {
+                return true;
+              }
+            }
+            // Ellenőrizzük, hogy a háromszög élei metszenek-e a képernyő szélével
+            const edges = [
+              [vertices[0], vertices[1]],
+              [vertices[1], vertices[2]],
+              [vertices[2], vertices[0]],
+            ];
 
-                    for (const [p1, p2] of edges) {
-                        if (lineIntersectsRect(p1, p2, screenRect)) {
-                            return true;
-                        }
-                    }
-                    return false; // Ha semmi nem talál, a háromszög nem látszik
-                }
+            for (const [p1, p2] of edges) {
+              if (lineIntersectsRect(p1, p2, screenRect)) {
+                return true;
+              }
+            }
+            return false; // Ha semmi nem talál, a háromszög nem látszik
+          }
 
-                function lineIntersectsRect(p1, p2, rect) {
-                    // Definiáljuk a téglalap éleit
-                    const rectEdges = [
-                        [{ x: rect.x1, y: rect.y1 }, { x: rect.x2, y: rect.y1 }], // Felső
-                        [{ x: rect.x2, y: rect.y1 }, { x: rect.x2, y: rect.y2 }], // Jobb
-                        [{ x: rect.x2, y: rect.y2 }, { x: rect.x1, y: rect.y2 }], // Alsó
-                        [{ x: rect.x1, y: rect.y2 }, { x: rect.x1, y: rect.y1 }], // Bal
-                    ];
+          function lineIntersectsRect(p1, p2, rect) {
+            // Definiáljuk a téglalap éleit
+            const rectEdges = [
+              [{ x: rect.x1, y: rect.y1 }, { x: rect.x2, y: rect.y1 }], // Felső
+              [{ x: rect.x2, y: rect.y1 }, { x: rect.x2, y: rect.y2 }], // Jobb
+              [{ x: rect.x2, y: rect.y2 }, { x: rect.x1, y: rect.y2 }], // Alsó
+              [{ x: rect.x1, y: rect.y2 }, { x: rect.x1, y: rect.y1 }], // Bal
+            ];
 
-                    for (const [q1, q2] of rectEdges) {
-                        if (linesIntersect(p1, p2, q1, q2)) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }
+            for (const [q1, q2] of rectEdges) {
+              if (linesIntersect(p1, p2, q1, q2)) {
+                return true;
+              }
+            }
+            return false;
+          }
 
-                function linesIntersect(p1, p2, q1, q2) {
-                    // Ellenőrizzük, hogy a két egyenes szakasz metszi-e egymást
-                    const orientation = (a, b, c) => (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y);
-                    const o1 = orientation(p1, p2, q1);
-                    const o2 = orientation(p1, p2, q2);
-                    const o3 = orientation(q1, q2, p1);
-                    const o4 = orientation(q1, q2, p2);
+          function linesIntersect(p1, p2, q1, q2) {
+            // Ellenőrizzük, hogy a két egyenes szakasz metszi-e egymást
+            const orientation = (a, b, c) => (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y)
+            const o1 = orientation(p1, p2, q1)
+            const o2 = orientation(p1, p2, q2)
+            const o3 = orientation(q1, q2, p1)
+            const o4 = orientation(q1, q2, p2)
 
-                    if (o1 * o2 < 0 && o3 * o4 < 0) return true; // Átlépő orientációk
-                    return false; // Ha nincs metszés
-                }
+            if (o1 * o2 < 0 && o3 * o4 < 0) return true; // Átlépő orientációk
+            return false; // Ha nincs metszés
+          }
 
-                let p0X = (view.canvas.width / 2) + view.posX + tri.p[0][view.vX] * view.ratio;
-                let p0Y = (view.canvas.height / 2) + view.posY + tri.p[0][view.vY] * view.ratio;
-                let p1X = (view.canvas.width / 2) + view.posX + tri.p[1][view.vX] * view.ratio;
-                let p1Y = (view.canvas.height / 2) + view.posY + tri.p[1][view.vY] * view.ratio;
-                let p2X = (view.canvas.width / 2) + view.posX + tri.p[2][view.vX] * view.ratio;
-                let p2Y = (view.canvas.height / 2) + view.posY + tri.p[2][view.vY] * view.ratio;
+          let p0X = (view.canvas.width / 2) + view.posX + tri.p[0][view.vX] * view.ratio
+          let p0Y = (view.canvas.height / 2) + view.posY + tri.p[0][view.vY] * view.ratio
+          let p1X = (view.canvas.width / 2) + view.posX + tri.p[1][view.vX] * view.ratio
+          let p1Y = (view.canvas.height / 2) + view.posY + tri.p[1][view.vY] * view.ratio
+          let p2X = (view.canvas.width / 2) + view.posX + tri.p[2][view.vX] * view.ratio
+          let p2Y = (view.canvas.height / 2) + view.posY + tri.p[2][view.vY] * view.ratio
 
-                const vertices = [
-                    { x: p0X, y: p0Y },
-                    { x: p1X, y: p1Y },
-                    { x: p2X, y: p2Y },
-                ];
+          const vertices = [
+            { x: p0X, y: p0Y },
+            { x: p1X, y: p1Y },
+            { x: p2X, y: p2Y },
+          ];
 
-                if (isTriangleOnScreen(vertices, view.canvas.width, view.canvas.height)) {
-                    view.ctx.strokeStyle = lineColor;
-                    view.ctx.lineWidth = 1;
+          if (isTriangleOnScreen(vertices, view.canvas.width, view.canvas.height)) {
+            view.ctx.strokeStyle = lineColor
+            view.ctx.lineWidth = 1
 
-                    view.ctx.beginPath();
-                    view.ctx.moveTo(p0X, p0Y);
-                    view.ctx.lineTo(p1X, p1Y);
-                    view.ctx.lineTo(p2X, p2Y);
-                    view.ctx.lineTo(p0X, p0Y);
-                    view.ctx.stroke();
+            view.ctx.beginPath()
+            view.ctx.moveTo(p0X, p0Y)
+            view.ctx.lineTo(p1X, p1Y)
+            view.ctx.lineTo(p2X, p2Y)
+            view.ctx.lineTo(p0X, p0Y)
+            view.ctx.stroke()
 
-                    if (view.showDots) {
-                        view.ctx.strokeStyle = 'deeppink';
-                        view.ctx.lineWidth = 2;
-                        view.ctx.beginPath();
-                        view.ctx.arc(p0X, p0Y, 1, 0, 2 * Math.PI);
-                        view.ctx.stroke();
-                        view.ctx.beginPath();
-                        view.ctx.arc(p1X, p1Y, 1, 0, 2 * Math.PI);
-                        view.ctx.stroke();
-                        view.ctx.beginPath();
-                        view.ctx.arc(p2X, p2Y, 1, 0, 2 * Math.PI);
-                        view.ctx.stroke();
-                    }
-                }
-            });
+            if (view.showDots) {
+              view.ctx.strokeStyle = 'deeppink'
+              view.ctx.lineWidth = 2
+              view.ctx.beginPath()
+              view.ctx.arc(p0X, p0Y, 1, 0, 2 * Math.PI)
+              view.ctx.stroke()
+              view.ctx.beginPath()
+              view.ctx.arc(p1X, p1Y, 1, 0, 2 * Math.PI)
+              view.ctx.stroke()
+              view.ctx.beginPath()
+              view.ctx.arc(p2X, p2Y, 1, 0, 2 * Math.PI)
+              view.ctx.stroke()
+            }
+          }
         });
+      });
+      view.ctx.restore() // Eredeti koordinátarendszer visszaállítása
 
-        view.ctx.restore(); // Eredeti koordinátarendszer visszaállítása
-
-        // Információk kirajzolása (nem tükrözve)
-        view.ctx.fillStyle = 'rgb(255, 255, 255)';
-        view.ctx.font = '16px Arial';
-        view.ctx.textAlign = 'left';
-        view.ctx.fillText(`${view.vX.toUpperCase()} / ${view.vY.toUpperCase()}`, 5, 17);
+      // Információk kirajzolása (nem tükrözve)
+      view.ctx.fillStyle = 'rgb(255, 255, 255)'
+      view.ctx.font = '16px Arial'
+      view.ctx.textAlign = 'left'
+      view.ctx.fillText(`${view.vX.toUpperCase()} / ${view.vY.toUpperCase()}`, 5, 17)
     }
-}
-
+  }
 
   checkKeyboardInputs() {
     if (this.selectedView != 'screen-canvas' && this.selectedView != null && typeof this.selectedView != 'undefined') {
@@ -686,7 +741,7 @@ class Editor {
     // this.graph.testTexture()
 
     this.graph.movePlayerInMatrix(0) // 0.005
-    this.graph.moveObjectsInMatrix(0) // 0.005
+    this.graph.moveObjectsInMatrix(0.00) // 0.005
     this.graph.renderScreen()
 
     this.graph.memoryCtx.putImageData(this.graph.screenData, 0, 0)

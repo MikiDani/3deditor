@@ -306,39 +306,39 @@ export class Graphics {
     else { outside_points[nOutsidePointCount++] = in_tri.p[2]; outside_tex[nOutsideTexCount++] = in_tri.t[2]; }
 
     if (nInsidePointCount === 0) {
-        return 0;
+      return 0;
     }
 
     if (nInsidePointCount === 3) {
-        this.clipped[0] = in_tri        
-        return 1;
+      this.clipped[0] = in_tri        
+      return 1;
     }
 
     var interPlaneValue;
     var tVal;
 
     if (nInsidePointCount === 1 && nOutsidePointCount === 2) {
-        out_tri1.p[0] = inside_points[0]
-        out_tri1.t[0] = inside_tex[0]
-        interPlaneValue = this.vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[0])
-        tVal = interPlaneValue[0]
-        out_tri1.p[1] = interPlaneValue[1]
-        out_tri1.t[1].u = tVal * (outside_tex[0].u - inside_tex[0].u) + inside_tex[0].u
-        out_tri1.t[1].v = tVal * (outside_tex[0].v - inside_tex[0].v) + inside_tex[0].v
-        out_tri1.t[1].w = tVal * (outside_tex[0].w - inside_tex[0].w) + inside_tex[0].w
-        
-        interPlaneValue = this.vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[1])
-        tVal = interPlaneValue[0]
-        out_tri1.p[2] = interPlaneValue[1]
-        out_tri1.t[2].u = tVal * (outside_tex[1].u - inside_tex[0].u) + inside_tex[0].u
-        out_tri1.t[2].v = tVal * (outside_tex[1].v - inside_tex[0].v) + inside_tex[0].v
-        out_tri1.t[2].w = tVal * (outside_tex[1].w - inside_tex[0].w) + inside_tex[0].w
-        out_tri1.tid = in_tri.tid
-        out_tri1.light = in_tri.light
-        out_tri1.rgba = in_tri.rgba
-        // out_tri1.rgba = [50, 170, 80, 1]
-        this.clipped[0] = out_tri1
-        return 1;
+      out_tri1.p[0] = inside_points[0]
+      out_tri1.t[0] = inside_tex[0]
+      interPlaneValue = this.vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[0])
+      tVal = interPlaneValue[0]
+      out_tri1.p[1] = interPlaneValue[1]
+      out_tri1.t[1].u = tVal * (outside_tex[0].u - inside_tex[0].u) + inside_tex[0].u
+      out_tri1.t[1].v = tVal * (outside_tex[0].v - inside_tex[0].v) + inside_tex[0].v
+      out_tri1.t[1].w = tVal * (outside_tex[0].w - inside_tex[0].w) + inside_tex[0].w
+      
+      interPlaneValue = this.vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[1])
+      tVal = interPlaneValue[0]
+      out_tri1.p[2] = interPlaneValue[1]
+      out_tri1.t[2].u = tVal * (outside_tex[1].u - inside_tex[0].u) + inside_tex[0].u
+      out_tri1.t[2].v = tVal * (outside_tex[1].v - inside_tex[0].v) + inside_tex[0].v
+      out_tri1.t[2].w = tVal * (outside_tex[1].w - inside_tex[0].w) + inside_tex[0].w
+      out_tri1.tid = in_tri.tid
+      out_tri1.light = in_tri.light
+      out_tri1.rgba = in_tri.rgba
+      // out_tri1.rgba = [50, 170, 80, 1]
+      this.clipped[0] = out_tri1
+      return 1;
     }
 
     if (nInsidePointCount === 2 && nOutsidePointCount === 1) {
@@ -434,8 +434,8 @@ export class Graphics {
 
   moveObjectsInMatrix(deltaTime = 0) {
     this.fTheta += deltaTime;
-    this.moveObject(0, 0, -0, 0)      // 0 land | x,y,z
-    this.moveObject(1, 0, -0, 0)      // 1 axis | x,y,z
+    // this.moveObject(0, 0, -0, 0)      // 0 land | x,y,z
+    // this.moveObject(1, 0, -0, 0)      // 1 axis | x,y,z
   }
 
   renderScreen() {

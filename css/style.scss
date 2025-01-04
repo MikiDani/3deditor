@@ -1,4 +1,6 @@
 $gray4: #d2d2d2;
+$gray5: #b8b8b8;
+$gray6: #9d9d9d;
 
 .view-screen {
 	width: 50% !important;
@@ -33,6 +35,13 @@ input[type='number'] {
     padding-left: 5px;
 }
 
+select[data-type='short'] {
+    width: 57px;
+    border-radius: 7px 7px 7px 7px;
+    border: 0;
+    padding-left: 1px;
+}
+
 
 button[class='view-buttons'],
 button[class='dots-buttons'],
@@ -54,18 +63,29 @@ button[class='grid-buttons'] {
     .top-screen-options {
         display: inline-block;
         vertical-align: top;
-        width: 20%;
         height: 100%;
-
         font-size: 0;
-
         margin: 0px;
         padding: 5px;
-
         border: 1px solid gray;
         box-sizing: border-box;
     }
 
+    .top-screen-options {
+        width: 20%;
+    }
+
+    .right-screen-options {
+        display: inline-block;
+        vertical-align: top;
+        width: 100%;
+        height: 100%;
+        font-size: 0;
+        margin: 0px;
+        padding: 5px;
+        box-sizing: border-box;
+    }
+    
         .left-side {
             display: inline-block;
             vertical-align: top;
@@ -127,6 +147,13 @@ button[class='grid-buttons'] {
     margin-top: 0;
 }
 
+.title-button {
+    &:hover {
+        cursor: pointer;
+        color: #0c0c2b;
+    }
+}
+
 .box-1 {
     width: calc(100% - 10px);
     text-align: left;
@@ -148,6 +175,16 @@ button[class='grid-buttons'] {
         cursor: pointer;
         color: red;
     }
+}
+
+#object-list {
+    max-height: 400px;
+    overflow:auto;
+}
+
+#object-add-tri {
+    position: relative;
+    display: block;
 }
 
 #container-screens {
@@ -182,12 +219,28 @@ button[class='grid-buttons'] {
     margin: 0;
 }
 
+.mt-1 {
+    margin-top: 4px !important;
+}
+
+.mt-2 {
+    margin-top: 6px !important;
+}
+
+.mt-3 {
+    margin-top: 8px !important;
+}
+
 .red {
     background-color: red;
 }
 
 .green {
     background-color: #325332;
+}
+
+.green2 {
+    background-color: #67b467;
 }
 
 .blue {
