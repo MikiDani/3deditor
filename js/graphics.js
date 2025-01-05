@@ -6,6 +6,13 @@ export class Graphics {
     this.textures = textures
     this.keys = keys
     this.options = options
+
+    this.options3D = {
+      textured: true,
+      fill: true,
+      grid: true,
+    }
+
     this.mapObjects = mapObjects
 
     //--- SCREEN ---
@@ -570,9 +577,9 @@ export class Graphics {
 
     // DRAW TRIANGLES
     drawTriangles.forEach(tri => {
-      if (this.options.textured) this.texturedTriangle(tri.p[0].x, tri.p[0].y, tri.t[0].u, tri.t[0].v, tri.t[0].w, tri.p[1].x, tri.p[1].y, tri.t[1].u, tri.t[1].v, tri.t[1].w, tri.p[2].x, tri.p[2].y, tri.t[2].u, tri.t[2].v, tri.t[2].w, tri.tid, tri.light)
-      if (this.options.fill) this.drawTriangleFill(tri.p[0], tri.p[1], tri.p[2], tri.light, tri.rgba)
-      if (this.options.grid) this.drawTriangleStroke(tri.p[0], tri.p[1], tri.p[2], tri.light, tri.rgba)
+      if (this.options3D.textured) this.texturedTriangle(tri.p[0].x, tri.p[0].y, tri.t[0].u, tri.t[0].v, tri.t[0].w, tri.p[1].x, tri.p[1].y, tri.t[1].u, tri.t[1].v, tri.t[1].w, tri.p[2].x, tri.p[2].y, tri.t[2].u, tri.t[2].v, tri.t[2].w, tri.tid, tri.light)
+      if (this.options3D.fill) this.drawTriangleFill(tri.p[0], tri.p[1], tri.p[2], tri.light, tri.rgba)
+      if (this.options3D.grid) this.drawTriangleStroke(tri.p[0], tri.p[1], tri.p[2], tri.light, tri.rgba)
     });
   }
 

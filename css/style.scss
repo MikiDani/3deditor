@@ -45,7 +45,8 @@ select[data-type='short'] {
 
 button[class='view-buttons'],
 button[class='dots-buttons'],
-button[class='grid-buttons'] {
+button[class='grid-buttons'],
+button[class='3d-buttons'] {
     border-radius: 7px 7px 7px 7px;
     border: 0;
 }
@@ -200,7 +201,8 @@ button[class='grid-buttons'] {
     margin: 0;
     padding: 0;
 
-    background-color: deepskyblue !important;
+    //background-color: deepskyblue;
+    background-color: rgb(157, 231, 255);
     box-sizing: border-box;
 }
 

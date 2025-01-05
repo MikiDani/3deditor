@@ -100,9 +100,7 @@ export class Mesh {
                     const indices = parts.slice(1).map(str => parseInt(str.split('/')[0]) - 1)
                     let randId = Math.floor(Math.random()* 6)
 
-                    console.log(verts[indices[0]])
-
-                    this.tris.push(new Triangle(verts[indices[0]], verts[indices[1]], verts[indices[2]], new Vec2D(0, 10, 10), new Vec2D(0, 0, 10), new Vec2D(10, 0, 10), randId, 1, [255, 200, 40, 1]))
+                    this.tris.push(new Triangle(verts[indices[0]], verts[indices[1]], verts[indices[2]], new Vec2D(0, 1), new Vec2D(0, 0), new Vec2D(1, 0), randId, 1, [255, 200, 40, 1]))
                 }
             } else { // Ha van textúra
                 if (parts[0] === 'f') {

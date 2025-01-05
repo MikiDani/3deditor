@@ -1,5 +1,5 @@
 import { Graphics } from './graphics.js'
-import { Texture, Vec3D, Mesh } from './data.js'
+import { Texture, Vec3D, Vec2D, Mesh, Triangle } from './data.js'
 
 class Editor {
   state;
@@ -30,6 +30,9 @@ class Editor {
         mode: false,
         count: 0,
         cords: [{x:0, y:0, z:0}, {x:0, y:0, z:0}, {x:0, y:0, z:0}],
+        texture: [{x:0, y:1, z:1}, {x:0, y:0, z:1}, {x:1, y:0, z:1}],
+        lineColor: 'yellow',
+        light: 1,
       }
     }
 
@@ -58,54 +61,59 @@ class Editor {
     Object.entries(this.views).forEach(([name, value]) => {
       let element = `
       <div class="top-screen-options">
-          <div class="left-side">
-              <div class="side-row">
-                  <span>screen-X/Y </span><span class="reset-center-button" data-name="${name}" title="Reset to default center.">&#9679;</span>
-              </div>
-              <div class="side-row">
-                  <span>Full view: </span><button type="button" name="${name}" class="view-buttons" value="false">OFF</button>
-              </div>
-              <div class="side-row">
-                  <span>Ratio: </span><input type="number" name="ratio" data-name="${name}" min="0" max="200" step="10" value="50">
-              </div>
-              <div class="side-row">
-                  <span>Frequent: </span><input type="number" name="frequent" data-name="${name}" min="0" max="8" step="1" value="2">
-              </div>
+        <div class="left-side">
+          <div class="side-row">
+              <span>screen-X/Y</span><span class="reset-center-button" data-name="${name}" title="Reset to default center.">&#9679;</span>
           </div>
-          <div class="right-side">
-              <div class="side-row">
-                  <span>Dots: </span><button type="button" class="dots-buttons" data-name="${name}" value="true">ON</button>
-              </div>
-              <div class="side-row">
-                  <span>Grid: </span><button type="button" class="grid-buttons" data-name="${name}" value="true">ON</button>
-              </div>
+          <div class="side-row">
+              <span>Ratio:</span><input type="number" name="ratio" data-name="${name}" min="0" max="200" step="10" value="50">
           </div>
+          <div class="side-row">
+              <span>Frequent:</span><input type="number" name="frequent" data-name="${name}" min="0" max="8" step="1" value="2">
+          </div>
+        </div>
+        <div class="right-side">
+          <div class="side-row">
+              <span>Fullscr.:</span><button type="button" name="${name}" class="view-buttons" value="false">OFF</button>
+          </div>
+          <div class="side-row">
+              <span>Dots:</span><button type="button" class="dots-buttons" data-name="${name}" value="true">ON</button>
+          </div>
+          <div class="side-row">
+              <span>Grid:</span><button type="button" class="grid-buttons" data-name="${name}" value="true">ON</button>
+          </div>
+        </div>
       </div>`;
       $(`#menu-top`).append(element)
     });
 
-    // LIST OBJECTS
-    let counter = 0
-    let element = `<ul>`;
-    this.mapObjects.forEach(obj => {
-      let objName = (obj.name) ? obj.name : 'noname object';
-      element += `<li data-id="${counter}">${objName} <span class="menu-icon triangle-up"></span></li>`;
-      if (obj.tris) {
-        element += `<ul parent-id="${counter}">`;
-        obj.tris.forEach((tri, i) => {
-          console.log(i)
-          element += `<li data-id="${counter}/${i}">${i} triangle</li>`;
-        });
-        element += `</ul>`;
-      }
-      counter++
-    });
-    element += `</ul>`;
-
-    $('#object-list').append(element)
-
+    this.refreshListObject()
+    
     this.initInputs()    
     this.fullRefreshCanvasGraphics()
+  }
+
+  refreshListObject() {
+     // LIST OBJECTS
+     $('#object-list').html('')
+     let counter = 0
+     let element = `<ul>`;
+     this.mapObjects.forEach(obj => {
+       let objName = (obj.name) ? obj.name : 'noname object';
+       element += `<li data-id="${counter}">${objName} <span class="menu-icon triangle-up"></span></li>`;
+       if (obj.tris) {
+         element += `<ul parent-id="${counter}">`;
+         obj.tris.forEach((tri, i) => {
+           console.log(i)
+           element += `<li data-id="${counter}/${i}">${i} triangle</li>`;
+         });
+         element += `</ul>`;
+       }
+       counter++
+     });
+     element += `</ul>`;
+ 
+     $('#object-list').append(element)
   }
 
   async loadTextures() {
@@ -132,10 +140,12 @@ class Editor {
 
     // await this.montains.loadFromObjectFile("data/montains.obj", 'Montains', 'yellow')
     // await this.axis.loadFromObjectFile("data/axis.obj", 'Axis', 'yellow')
+    
     await this.cube.loadFromOwnObjectFile("data/cube.obj", 'Cube', 'lime')
     
     // this.mapObjects.push(this.montains)
     // this.mapObjects.push(this.axis)
+
     this.mapObjects.push(this.cube)
 
     console.log(this.mapObjects)
@@ -162,9 +172,18 @@ class Editor {
         $(`#container-screens > canvas[id='${name}']`).height(newHeight)
         $(`#container-screens > canvas[id='${name}']`).show()
 
-        if (name == 'screen-canvas') {          
+        if (name == 'screen-canvas') {
+          console.log('+++++++')
+
+          console.log(newWidth, newHeight)
+                    
           clone.graph.screenCanvas.width = newWidth
           clone.graph.screenCanvas.height = newHeight
+
+          // ???
+          // clone.graph.SCREENWIDTH = newWidth
+          // clone.graph.SCREENHEIGHT = newHeight
+
         } else if (name == 'XYview-canvas' || name == 'XZview-canvas' || name == 'ZYview-canvas') {
           clone.views[name].canvas.width = newWidth
           clone.views[name].canvas.height = newHeight
@@ -190,6 +209,8 @@ class Editor {
       mode: false,
       count: 0,
       cords: [{x:0, y:0, z:0}, {x:0, y:0, z:0}, {x:0, y:0, z:0}],
+      texture: [{u:0, v:1}, {u:0, v:0}, {u:1, v:0}],
+      light: 1,
     }
     $('#add-new-tri').removeClass('green2')
   }
@@ -255,7 +276,25 @@ class Editor {
       clone.fullRefreshCanvasGraphics()
     });
 
-    // 4. Click ViewWindow
+    // 4.3D VIEW BUTTONS
+    $(".3d-buttons").on('click', function() {
+      let value = $(this).val()
+      let name = $(this).attr('name')
+
+      value = (value == 'false') ? true : false;
+      $(this).val(value)
+      clone.graph.options3D[name] = value
+
+      if (value) {
+        $(this).text('ON')
+      } else {
+        $(this).text('OFF')
+      }
+
+      clone.fullRefreshCanvasGraphics()
+    });
+
+    // 5. Click ViewWindow
     Object.entries(this.views).forEach(([name, value]) => {
       
       // ratio
@@ -289,6 +328,9 @@ class Editor {
         clone.selectedView = name
         clone.mouse.isOk = name
         const rect = this.getBoundingClientRect()
+
+        // console.log(rect.left, rect.top)
+        
         clone.mouse.startX = event.clientX - rect.left // Egér kezdő X
         clone.mouse.startY = event.clientY - rect.top // Egér kezdő Y
         clone.mouse.isMouseDown = true
@@ -298,18 +340,42 @@ class Editor {
           console.log('MODE TRUE!!!')
           console.log('clone.mouse.startX: ', clone.mouse.startX)
           console.log('clone.mouse.startY: ', clone.mouse.startY)
+
+          clone.mouse.addTri.cords[clone.mouse.addTri.count][clone.views[name].vX] = (clone.mouse.startX + clone.views[name].posX) * 0.01
+          clone.mouse.addTri.cords[clone.mouse.addTri.count][clone.views[name].vY] = (clone.mouse.startY + clone.views[name].posY) * 0.01
+
+          if (clone.mouse.addTri.count == 2) {
+            console.log('VEGE 3.')
+                       
+            let newObject = new Mesh()
+            newObject.name = 'New tri: ' + Math.floor(Math.random()*99999)
+
+            newObject.tris.push(
+              new Triangle(new Vec3D(clone.mouse.addTri.cords[0].x, clone.mouse.addTri.cords[0].y, clone.mouse.addTri.cords[0].z), new Vec3D(clone.mouse.addTri.cords[1].x, clone.mouse.addTri.cords[1].y, clone.mouse.addTri.cords[1].z), new Vec3D(clone.mouse.addTri.cords[2].x, clone.mouse.addTri.cords[2].y, clone.mouse.addTri.cords[2].z),
+              new Vec2D(clone.mouse.addTri.texture[0].u, clone.mouse.addTri.texture[0].v),
+              new Vec2D(clone.mouse.addTri.texture[1].u, clone.mouse.addTri.texture[1].v),
+              new Vec2D(clone.mouse.addTri.texture[2].u, clone.mouse.addTri.texture[2].v),
+              2, 1, [255, 200, 40, 1])
+            )
+
+            clone.mapObjects.push(newObject)
+            clone.mouseAddTriReset()
+
+            clone.refreshListObject()
+            
+          } else clone.mouse.addTri.count++
         }
       });
 
-      $(`#${name}`).on('mousemove', function (event) {
-        if (clone.mouse.isMouseDown) {
-          const rect = this.getBoundingClientRect()
-          clone.mouse.endX = event.clientX - rect.left
-          clone.mouse.endY = event.clientY - rect.top
-          // console.log(`Current move: (${clone.mouse.endX}, ${clone.mouse.endY})`)
-        }
-      });
-      
+      // $(`#${name}`).on('mousemove', function (event) {
+      //   if (clone.mouse.isMouseDown) {
+      //     // const rect = this.getBoundingClientRect()
+      //     // clone.mouse.endX = event.clientX - rect.left
+      //     // clone.mouse.endY = event.clientY - rect.top
+      //     // console.log(`Current move: (${clone.mouse.endX}, ${clone.mouse.endY})`)
+      //   }
+      // });
+
       $(`#${name}`).on('mouseup', function (event) {
         const rect = this.getBoundingClientRect()
         clone.mouse.endX = event.clientX - rect.left
@@ -336,7 +402,7 @@ class Editor {
       });
     });
 
-    // 5. Reset view-screen
+    // 6. Reset view-screen
     $(`[class='reset-center-button'][data-name='screen-canvas']`).on('click', function () {
       clone.graph.vCamera.x = 0; clone.graph.vCamera.y = 0; clone.graph.vCamera.z = 0;
       clone.graph.fYaw = 0; clone.graph.fXaw = 0;     
@@ -344,7 +410,7 @@ class Editor {
       clone.fullRefreshCanvasGraphics()
     });
     
-    // 6. Add new Triangle
+    // 7. Add new Triangle
     $(document).on('click', '#add-new-tri', () => {
       console.log('add new tri...')
       if (!this.mouse.addTri.mode) {
@@ -357,7 +423,7 @@ class Editor {
       }
     });
 
-    // 7. Mouse wheel Zoom
+    // 8. Mouse wheel Zoom
     $(document).on('mousewheel', (event) => {
       if (this.selectedView) {
         if (this.selectedView == 'screen-canvas') {
