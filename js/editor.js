@@ -50,9 +50,9 @@ class Editor {
 
     this.views = {
       // name, vX, vY, posX, posY, ratio, frequent, showDots, showGrid
-      'XYview-canvas': new ViewWindow('XYview-canvas', 'x', 'y', 0, 0, 50, 2, true, true),
-      'XZview-canvas': new ViewWindow('XZview-canvas', 'x', 'z', 0, 0, 50, 2, true, true),
-      'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', 0, 0, 50, 2, true, true),
+      'XYview-canvas': new ViewWindow('XYview-canvas', 'x', 'y', 0, 0, 10, 1, true, true),
+      'XZview-canvas': new ViewWindow('XZview-canvas', 'x', 'z', 0, 0, 10, 1, true, true),
+      'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', 0, 0, 10, 1, true, true),
     }
 
     // ADD HTML ELEMENTS
@@ -66,10 +66,10 @@ class Editor {
               <span>screen-X/Y</span><span class="reset-center-button" data-name="${name}" title="Reset to default center.">&#9679;</span>
           </div>
           <div class="side-row">
-              <span>Ratio:</span><input type="number" name="ratio" data-name="${name}" min="0" max="200" step="10" value="50">
+              <span>Ratio:</span><input type="number" name="ratio" data-name="${name}" min="0" max="200" step="10" value="${this.views[name].ratio}">
           </div>
           <div class="side-row">
-              <span>Frequent:</span><input type="number" name="frequent" data-name="${name}" min="0" max="8" step="1" value="2">
+              <span>Frequent:</span><input type="number" name="frequent" data-name="${name}" min="0" max="8" step="1" value="${this.views[name].frequent}">
           </div>
         </div>
         <div class="right-side">
@@ -104,7 +104,7 @@ class Editor {
        if (obj.tris) {
          element += `<ul parent-id="${counter}">`;
          obj.tris.forEach((tri, i) => {
-           console.log(i)
+           // console.log(i)
            element += `<li data-id="${counter}/${i}">${i} triangle</li>`;
          });
          element += `</ul>`;
@@ -337,16 +337,33 @@ class Editor {
 
         // ADD TRI MODE
         if (clone.mouse.addTri.mode) {
+
           console.log('MODE TRUE!!!')
           console.log('clone.mouse.startX: ', clone.mouse.startX)
           console.log('clone.mouse.startY: ', clone.mouse.startY)
 
-          clone.mouse.addTri.cords[clone.mouse.addTri.count][clone.views[name].vX] = (clone.mouse.startX + clone.views[name].posX) * 0.01
-          clone.mouse.addTri.cords[clone.mouse.addTri.count][clone.views[name].vY] = (clone.mouse.startY + clone.views[name].posY) * 0.01
+          let startX = clone.views[name].canvas.width - clone.mouse.startX
+          let startY = clone.views[name].canvas.height - clone.mouse.startY
+
+          console.log('startX: ', startX)
+          console.log('startY: ', startY)
+
+          console.log(startX, startY)
+
+          console.log('osztas:', clone.views[name].posX + startX / clone.views[name].ratio )
+          console.log('ratio marad.: ', (startX + clone.views[name].posX) % clone.views[name].ratio )
+
+          let sizeX = (clone.views[name].posX + startX) / clone.views[name].ratio + (startX + clone.views[name].posX) % clone.views[name].ratio
+          let sizeY = (clone.views[name].posY + startY) / clone.views[name].ratio + (startY + clone.views[name].posY) % clone.views[name].ratio
+
+          console.log(sizeX, sizeY)
+
+          clone.mouse.addTri.cords[clone.mouse.addTri.count][clone.views[name].vX] = sizeX
+          clone.mouse.addTri.cords[clone.mouse.addTri.count][clone.views[name].vY] = sizeY
 
           if (clone.mouse.addTri.count == 2) {
             console.log('VEGE 3.')
-                       
+
             let newObject = new Mesh()
             newObject.name = 'New tri: ' + Math.floor(Math.random()*99999)
 
