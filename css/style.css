@@ -152,6 +152,17 @@ button[class="3d-buttons"] {
   margin-top: 0;
 }
 
+#info-box {
+  width: calc(100% - 10px);
+  text-align: center;
+  border: 1px solid gray;
+  box-sizing: border-box;
+  padding: 3px;
+  margin: 5px;
+  margin-top: 0;
+  background-color: white;
+}
+
 .box-1 li {
   padding: 0;
   margin: 0;

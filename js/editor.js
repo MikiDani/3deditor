@@ -36,6 +36,8 @@ class Editor {
       }
     }
 
+    this.howMany = true
+
     this.init()
   }
 
@@ -50,9 +52,9 @@ class Editor {
 
     this.views = {
       // name, vX, vY, posX, posY, ratio, frequent, showDots, showGrid
-      'XYview-canvas': new ViewWindow('XYview-canvas', 'x', 'y', 0, 0, 10, 1, true, true),
-      'XZview-canvas': new ViewWindow('XZview-canvas', 'x', 'z', 0, 0, 10, 1, true, true),
-      'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', 0, 0, 10, 1, true, true),
+      'XYview-canvas': new ViewWindow('XYview-canvas', 'x', 'y', 0, 0, 100, 1, true, true),
+      'XZview-canvas': new ViewWindow('XZview-canvas', 'x', 'z', 0, 0, 100, 1, true, true),
+      'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', 0, 0, 100, 1, true, true),
     }
 
     // ADD HTML ELEMENTS
@@ -151,6 +153,19 @@ class Editor {
     console.log(this.mapObjects)
   }
 
+  getMousePosition(clone, event, rect, name) {
+    let startX = Math.floor(event.clientX - rect.left)    // Egér kezdő X
+    let startY = Math.floor(event.clientY - rect.top)     // Egér kezdő Y
+
+    let invertX = rect.width - startX; let invertY = rect.height - startY;
+    let plusMouseX = invertX - clone.views[name].posX; let plusMouseY = invertY - clone.views[name].posY;
+
+    let valueX = Math.round(plusMouseX / clone.views[name].ratio)
+    let valueY = Math.round(plusMouseY / clone.views[name].ratio)
+
+    return {sx: startX, sy: startY, ix:invertX, iy:invertY, vx: valueX, vy: valueY}
+  }
+
   refresViewSize() {
     var clone = this
     // all hide
@@ -209,9 +224,12 @@ class Editor {
       mode: false,
       count: 0,
       cords: [{x:0, y:0, z:0}, {x:0, y:0, z:0}, {x:0, y:0, z:0}],
-      texture: [{u:0, v:1}, {u:0, v:0}, {u:1, v:0}],
+      texture1: [{u:0, v:1}, {u:0, v:0}, {u:1, v:0}],
+      texture2: [{u:0, v:1}, {u:1, v:0}, {u:1, v:1}],
       light: 1,
     }
+    // new Triangle(new Vec3D(1, 0, 0, 1), new Vec3D(1, 1, 0, 1), new Vec3D(1, 1, 1, 1), new Vec2D(0, 1, 1), new Vec2D(0, 0, 1), new Vec2D(1, 0, 1)),
+    // new Triangle(new Vec3D(1, 0, 0, 1), new Vec3D(1, 1, 1, 1), new Vec3D(1, 0, 1, 1), new Vec2D(0, 1, 1), new Vec2D(1, 0, 1), new Vec2D(1, 1, 1)),
     $('#add-new-tri').removeClass('green2')
   }
 
@@ -297,6 +315,16 @@ class Editor {
     // 5. Click ViewWindow
     Object.entries(this.views).forEach(([name, value]) => {
       
+      $(`#${name}`).on('mousemove', function (event) {
+
+        const rect = this.getBoundingClientRect()
+
+        let pos = clone.getMousePosition(clone, event, rect, name)
+
+        $('#info-box').html(`X: ${pos.ix} y: ${pos.iy}<br>vX: ${pos.vx} vY:${pos.vy}`)
+
+      });
+
       // ratio
       $(`input[name='ratio'][data-name='${name}']`).on('input', () => {
         let ratioInputValue = parseInt($(`input[name='ratio'][data-name='${name}']`).val())
@@ -339,27 +367,20 @@ class Editor {
         if (clone.mouse.addTri.mode) {
 
           console.log('MODE TRUE!!!')
-          console.log('clone.mouse.startX: ', clone.mouse.startX)
-          console.log('clone.mouse.startY: ', clone.mouse.startY)
 
-          let startX = clone.views[name].canvas.width - clone.mouse.startX
-          let startY = clone.views[name].canvas.height - clone.mouse.startY
+          const rect = this.getBoundingClientRect()
+          let pos = clone.getMousePosition(clone, event, rect, name)
 
-          console.log('startX: ', startX)
-          console.log('startY: ', startY)
+          console.log(pos)
+          $('#info-box').html(`X: ${pos.ix} y: ${pos.iy}<br>vX: ${pos.vx} vY:${pos.vy}`)
 
-          console.log(startX, startY)
+          console.log(clone.views[name].posX, clone.views[name].posY)
 
-          console.log('osztas:', clone.views[name].posX + startX / clone.views[name].ratio )
-          console.log('ratio marad.: ', (startX + clone.views[name].posX) % clone.views[name].ratio )
+          clone.mouse.addTri.cords[clone.mouse.addTri.count][clone.views[name].vX] = pos.vx // - (clone.views[name].posX / clone.views[name].ratio)
+          clone.mouse.addTri.cords[clone.mouse.addTri.count][clone.views[name].vY] = pos.vy // - (clone.views[name].posY / clone.views[name].ratio)
 
-          let sizeX = (clone.views[name].posX + startX) / clone.views[name].ratio + (startX + clone.views[name].posX) % clone.views[name].ratio
-          let sizeY = (clone.views[name].posY + startY) / clone.views[name].ratio + (startY + clone.views[name].posY) % clone.views[name].ratio
-
-          console.log(sizeX, sizeY)
-
-          clone.mouse.addTri.cords[clone.mouse.addTri.count][clone.views[name].vX] = sizeX
-          clone.mouse.addTri.cords[clone.mouse.addTri.count][clone.views[name].vY] = sizeY
+          console.log(clone.views[name].posX, clone.views[name].posY)
+          
 
           if (clone.mouse.addTri.count == 2) {
             console.log('VEGE 3.')
@@ -367,11 +388,30 @@ class Editor {
             let newObject = new Mesh()
             newObject.name = 'New tri: ' + Math.floor(Math.random()*99999)
 
+            let t1, t2, t3 = null
+
+            if (clone.howMany) {
+              console.log('t1')
+              console.log(clone.howMany)
+              
+              t1 = new Vec2D(clone.mouse.addTri.texture1[0].u, clone.mouse.addTri.texture1[0].v)
+              t2 = new Vec2D(clone.mouse.addTri.texture1[1].u, clone.mouse.addTri.texture1[1].v)
+              t3 = new Vec2D(clone.mouse.addTri.texture1[2].u, clone.mouse.addTri.texture1[2].v)
+            } else {
+
+              console.log('t2')
+              console.log(clone.howMany)
+
+              t1 = new Vec2D(clone.mouse.addTri.texture2[0].u, clone.mouse.addTri.texture2[0].v)
+              t2 = new Vec2D(clone.mouse.addTri.texture2[1].u, clone.mouse.addTri.texture2[1].v)
+              t3 = new Vec2D(clone.mouse.addTri.texture2[2].u, clone.mouse.addTri.texture2[2].v)
+            }
+
+            clone.howMany = !clone.howMany
+
             newObject.tris.push(
               new Triangle(new Vec3D(clone.mouse.addTri.cords[0].x, clone.mouse.addTri.cords[0].y, clone.mouse.addTri.cords[0].z), new Vec3D(clone.mouse.addTri.cords[1].x, clone.mouse.addTri.cords[1].y, clone.mouse.addTri.cords[1].z), new Vec3D(clone.mouse.addTri.cords[2].x, clone.mouse.addTri.cords[2].y, clone.mouse.addTri.cords[2].z),
-              new Vec2D(clone.mouse.addTri.texture[0].u, clone.mouse.addTri.texture[0].v),
-              new Vec2D(clone.mouse.addTri.texture[1].u, clone.mouse.addTri.texture[1].v),
-              new Vec2D(clone.mouse.addTri.texture[2].u, clone.mouse.addTri.texture[2].v),
+              t1, t2, t3,
               2, 1, [255, 200, 40, 1])
             )
 
@@ -559,10 +599,10 @@ class Editor {
       view.ctx.translate(-view.canvas.width / 2, -view.canvas.height / 2) // Visszahelyezés az eredeti helyre
 
       // POS ORIGO
-      view.ctx.strokeStyle = 'blue'
-      view.ctx.lineWidth = 4
+      view.ctx.strokeStyle = 'white'
+      view.ctx.lineWidth = 8
       view.ctx.beginPath()
-      view.ctx.arc(view.posX, view.posY, 1, 0, 2 * Math.PI)
+      view.ctx.arc(view.posX, view.posY, 4, 0, 2 * Math.PI)
       view.ctx.stroke()
 
       const space = (view.ratio / view.frequent < 1) ? 1 : view.ratio / view.frequent
@@ -645,12 +685,19 @@ class Editor {
             return false; // Ha nincs metszés
           }
 
-          let p0X = (view.canvas.width / 2) + view.posX + tri.p[0][view.vX] * view.ratio
-          let p0Y = (view.canvas.height / 2) + view.posY + tri.p[0][view.vY] * view.ratio
-          let p1X = (view.canvas.width / 2) + view.posX + tri.p[1][view.vX] * view.ratio
-          let p1Y = (view.canvas.height / 2) + view.posY + tri.p[1][view.vY] * view.ratio
-          let p2X = (view.canvas.width / 2) + view.posX + tri.p[2][view.vX] * view.ratio
-          let p2Y = (view.canvas.height / 2) + view.posY + tri.p[2][view.vY] * view.ratio
+          // let p0X = (view.canvas.width / 2) + view.posX + tri.p[0][view.vX] * view.ratio
+          // let p0Y = (view.canvas.height / 2) + view.posY + tri.p[0][view.vY] * view.ratio
+          // let p1X = (view.canvas.width / 2) + view.posX + tri.p[1][view.vX] * view.ratio
+          // let p1Y = (view.canvas.height / 2) + view.posY + tri.p[1][view.vY] * view.ratio
+          // let p2X = (view.canvas.width / 2) + view.posX + tri.p[2][view.vX] * view.ratio
+          // let p2Y = (view.canvas.height / 2) + view.posY + tri.p[2][view.vY] * view.ratio
+
+          let p0X = view.posX + tri.p[0][view.vX] * view.ratio
+          let p0Y = view.posY + tri.p[0][view.vY] * view.ratio
+          let p1X = view.posX + tri.p[1][view.vX] * view.ratio
+          let p1Y = view.posY + tri.p[1][view.vY] * view.ratio
+          let p2X = view.posX + tri.p[2][view.vX] * view.ratio
+          let p2Y = view.posY + tri.p[2][view.vY] * view.ratio
 
           const vertices = [
             { x: p0X, y: p0Y },

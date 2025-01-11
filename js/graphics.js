@@ -483,7 +483,10 @@ export class Graphics {
       let vCameraRay = this.vector_Sub(triTransformed.p[0], this.vCamera)
 
       // CHECK NORMALS // if (normal.z < 0) // If ray is aligned with normal, then triangle is visible
+
       if (this.vector_DotProduct(normal, vCameraRay) < 0) {
+      
+      // if (this.vector_DotProduct(normal, vCameraRay)) {
 
         // Illumination
         this.lightDirection = this.vector_Normalise(this.lightDirection)
@@ -501,7 +504,7 @@ export class Graphics {
         triViewed.tid = triTransformed.tid
         // triViewed.light = (maplight > tri.light) ? maplight : tri.light;
         triViewed.light = maplight
-        triViewed.rgba = tri.rgba        
+        triViewed.rgba = tri.rgba
 
         let nClippedTriangles = 0;        
         nClippedTriangles = this.triangle_ClipAgainstPlane({ x: 0, y: 0, z: 0.1 }, { x: 0, y: 0, z: 1 }, triViewed)        
