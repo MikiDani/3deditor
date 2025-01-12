@@ -54,6 +54,7 @@ export class Vec2D {
 
 export class Triangle {
     constructor(p1 = new Vec3D(), p2 = new Vec3D(), p3 = new Vec3D(), t1 = new Vec2D, t2 = new Vec2D(), t3 = new Vec2D(), tid, light = 1, rgba = [255, 200, 40, 1]) {
+        this.id = Date.now().toString().slice(-5) + '-' + Math.floor(Math.random() * 99999)
         this.tid = tid
         this.p = [p1, p2, p3]
         this.t = [t1, t2, t3]
@@ -63,8 +64,11 @@ export class Triangle {
 }
 
 export class Mesh {
-    constructor() {
-        this.tris = []; // Háromszögek listája (Triangle típusú elemek)
+    constructor(id, parent_id) {
+        this.id = id
+        this.parent_id = parent_id
+        this.tris = []                      // Háromszögek listája (Triangle típusú elemek)
+        this.child = []                     // Gyerkekek - ha van
         this.lineColor = 'yellow'
         this.name = 'noname'
     }
@@ -114,7 +118,7 @@ export class Mesh {
         return true;
     }
 
-    async loadFromOwnObjectFile(filename, name, lineColor) {
+    async loadFromOwnTris(filename, name, lineColor) {
         const response = await fetch(filename); // Fájl betöltése
         if (!response.ok) return false;         // Ha sikertelen, visszatérés false értékkel
 
@@ -150,7 +154,7 @@ export class Mesh {
             }
 
             if (parts[0] == 'i') {
-                let data = parts[1].trim().split(',')
+                let data = parts[1].trim().split(',')               
 
                 texId = parseInt(data[0])
                 light = parseInt(data[1])

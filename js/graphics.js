@@ -1,7 +1,7 @@
 import { Vec3D, Triangle, Mesh, Matrix4x4, Vec2D } from './data.js';
 
 export class Graphics {
-  constructor(textures, keys, options, mapObjects) {
+  constructor(textures, keys, options, map) {
     
     this.textures = textures
     this.keys = keys
@@ -13,7 +13,7 @@ export class Graphics {
       grid: true,
     }
 
-    this.mapObjects = mapObjects
+    this.map = map
 
     //--- SCREEN ---
     // this.GAMEWIDTH = 160; this.GAMEHEIGHT = 120; this.RATIO = 3;
@@ -390,9 +390,9 @@ export class Graphics {
     // Hozz létre egy transzlációs mátrixot
     const matTranslate = this.matrix_MakeTranslation(deltaX, deltaY, deltaZ);
 
-    if (this.mapObjects[id]) {
+    if (this.map.data[id]) {
       // Válaszd ki az elmozdítani kívánt objektumot (például az elsőt)
-      let useObject = this.mapObjects[id];
+      let useObject = this.map.data[id];
     
       // Minden háromszög csúcspontján alkalmazzuk a transzlációs mátrixot
       useObject.tris.forEach(triangle => {
@@ -401,7 +401,7 @@ export class Graphics {
           triangle.p[2] = this.matrix_MultiplyVector(matTranslate, triangle.p[2]);
       });
   
-      this.mapObjects[id] = useObject
+      this.map.data[id] = useObject
     }
   }
 
@@ -447,8 +447,8 @@ export class Graphics {
 
   renderScreen() {
     // Draw Objects
-    this.mapObjects.forEach(object => {
-      this.drawObject(object)
+    this.map.data.forEach(mesh => {
+      this.drawObject(mesh)
     });
   }
 

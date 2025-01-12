@@ -35,12 +35,14 @@
     </div>
 
     <div id="menu-right">
+
         <button id="add-new-tri" class="title-box title-button">Add New Triangle</button>
 
         <div id="info-box"></div>
 
-        <div class="title-box">Objects</div>
-        <div id="object-list" class="box-1 responsive-menu">
+        <div class="title-box">Objects <span id="object-open-close-all" class="menu-icon-pos-3 circle" data-status="0"></span></div>
+
+        <div id="object-list" class="box-1 responsive-menu" style="display:none;">
             <!-- javascript -->
 
             <!-- <ul>
@@ -159,6 +161,14 @@
         <canvas id="XYview-canvas" class="view-segment dark"></canvas>
         <canvas id="XZview-canvas" class="view-segment dark"></canvas>     <!-- green -->
         <canvas id="ZYview-canvas" class="view-segment dark"></canvas>     <!-- blue -->
+    </div>
+
+    <!-- Modal Structure -->
+    <div id="customModal" class="modal">
+        <div class="modal-content">
+            <p id="modalMessage">This is a custom alert!</p>
+            <button id="closeModal" class="close-btn">OK</button>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.2/dist/cdn.min.js" defer></script>
