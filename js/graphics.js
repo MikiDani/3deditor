@@ -470,6 +470,7 @@ export class Graphics {
       triTransformed.tid = tri.tid
       triTransformed.light = tri.light
       triTransformed.rgba = tri.rgba
+      triTransformed.normal = tri.normal
 
       // Get lines either side of triangle
 			let line1 = this.vector_Sub(triTransformed.p[1], triTransformed.p[0])
@@ -483,8 +484,7 @@ export class Graphics {
       let vCameraRay = this.vector_Sub(triTransformed.p[0], this.vCamera)
 
       // CHECK NORMALS // if (normal.z < 0) // If ray is aligned with normal, then triangle is visible
-
-      if (this.vector_DotProduct(normal, vCameraRay) < 0) {
+      if ((triTransformed.normal != 'true') || (this.vector_DotProduct(normal, vCameraRay) < 0)) {
       
       // if (this.vector_DotProduct(normal, vCameraRay)) {
 
@@ -502,8 +502,11 @@ export class Graphics {
         triViewed.t[1] = triTransformed.t[1]
         triViewed.t[2] = triTransformed.t[2]
         triViewed.tid = triTransformed.tid
-        // triViewed.light = (maplight > tri.light) ? maplight : tri.light;
-        triViewed.light = maplight
+        triViewed.light = (maplight > tri.light) ? maplight : tri.light;
+        //triViewed.light = maplight + tri.light
+        
+        triViewed.light = parseInt(tri.light)
+
         triViewed.rgba = tri.rgba
 
         let nClippedTriangles = 0;        
@@ -531,7 +534,7 @@ export class Graphics {
           triProjected.p = triProjected.p.map(p => this.vector_Add(p, vOffsetView));
           triProjected.p.forEach(p => { p.x *= 0.5 * this.GAMEWIDTH; p.y *= 0.5 * this.GAMEHEIGHT; });
 
-          let addTriangle = new Triangle(triProjected.p[0], triProjected.p[1], triProjected.p[2],  triProjected.t[0],  triProjected.t[1],  triProjected.t[2], triProjected.tid, maplight, triProjected.rgba)
+          let addTriangle = new Triangle(triProjected.p[0], triProjected.p[1], triProjected.p[2],  triProjected.t[0],  triProjected.t[1],  triProjected.t[2], triProjected.tid, triViewed.light, triProjected.rgba)
           selectedTriangles.push(addTriangle)
         }
       }

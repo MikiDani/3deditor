@@ -109,20 +109,20 @@ class Editor {
           </div>
         </div>
       </div>`;
-      $(`#menu-top`).append(element)
+      $(`#axis-container`).append(element)
     });
 
-    this.refreshMenuList()
+    this.refreshObjectList()
     
     this.initInputs()    
     this.fullRefreshCanvasGraphics()
   }
 
-  refreshMenuList() {
+  refreshObjectList() {
     // LIST OBJECTS
     function recursiveMenu(item) {
         let element = `<ul>`;
-        element += `<li data-id="${item.id}">${item.name} <span class="menu-icon menu-icon-pos-1 triangle-up"></span></li>`;
+        element += `<li data-id="${item.id}" class="menu-name">${item.name} <span class="menu-icon menu-icon-pos-1 triangle-up"></span></li>`;
 
         if (Array.isArray(item.tris) && item.tris.length > 0) {
           element += `<ul data-parent-id="${item.id}">`;
@@ -187,17 +187,17 @@ class Editor {
     await this.cube.loadFromOwnTris("data/cube.obj", 'Cube', 'lime')
     this.map.data.push(this.cube)
 
-    this.cube2 = new Mesh(2, null)
-    await this.cube2.loadFromOwnTris("data/cube.obj", 'Cube2', 'green')
-    this.map.data.push(this.cube2)
+    // this.cube2 = new Mesh(2, null)
+    // await this.cube2.loadFromOwnTris("data/cube.obj", 'Cube2', 'green')
+    // this.map.data.push(this.cube2)
 
-    this.cube3 = new Mesh(3, 2)
-    await this.cube3.loadFromOwnTris("data/cube.obj", 'Cube3', 'orange')
-    this.map.data.push(this.cube3)
+    // this.cube3 = new Mesh(3, 2)
+    // await this.cube3.loadFromOwnTris("data/cube.obj", 'Cube3', 'orange')
+    // this.map.data.push(this.cube3)
 
-    this.cube4 = new Mesh(4, 3)
-    await this.cube4.loadFromOwnTris("data/cube.obj", 'Cube4', 'olive')
-    this.map.data.push(this.cube4)
+    // this.cube4 = new Mesh(4, 3)
+    // await this.cube4.loadFromOwnTris("data/cube.obj", 'Cube4', 'olive')
+    // this.map.data.push(this.cube4)
 
     console.log(this.map.data)
 
@@ -210,8 +210,15 @@ class Editor {
     const map = new Map()
     const root = []
 
+    console.log(data)
+    
+
     // Az összes elemet elmentjük egy Map-be az id alapján
     data.forEach(group => map.set(group.id, { ...group, child: [] }))
+
+
+    console.log(map)
+    
 
     map.forEach(item => {
       if (item.parent_id === null) {
@@ -466,13 +473,22 @@ class Editor {
               newGroup.tris.push(
                 new Triangle(new Vec3D(clone.mouse.addTri.cords[0].x, clone.mouse.addTri.cords[0].y, clone.mouse.addTri.cords[0].z), new Vec3D(clone.mouse.addTri.cords[1].x, clone.mouse.addTri.cords[1].y, clone.mouse.addTri.cords[1].z), new Vec3D(clone.mouse.addTri.cords[2].x, clone.mouse.addTri.cords[2].y, clone.mouse.addTri.cords[2].z),
                 t1, t2, t3,
-                2, 1, [255, 200, 40, 1])
+                2, 1, [255, 200, 40, 1], false)
               )
   
               clone.map.data.push(newGroup)
+              clone.map.structure = clone.buildStructure(clone.map.data)             
+
+              console.log(clone.map.structure)
+              
+
               clone.resetMouseAddTri()
-  
-              clone.refreshListObject()
+
+              clone.refreshObjectList()
+
+              console.log(clone.map.data)
+              
+
             }
           } else {
             clone.mouse.addTri.count++
@@ -551,10 +567,57 @@ class Editor {
       }
     });
 
+    ////////////////
+    // HTML inputs
+    let triangeInputs = [
+      'tri-p1-X', 'tri-p1-Y', 'tri-p1-Z', 'tri-t1-U', 'tri-t1-V',
+      'tri-p2-X', 'tri-p2-Y', 'tri-p2-Z', 'tri-t2-U', 'tri-t2-V',
+      'tri-p3-X', 'tri-p3-Y', 'tri-p3-Z', 'tri-t3-U', 'tri-t3-V',
+    ]
+
+    triangeInputs.forEach(name => {
+      $(`input[name='${name}']`).on('input', function () {
+        let type = $(this).attr('data-type')
+        let axis = $(this).attr('data-axis')
+        let num = $(this).attr('data-num')
+
+        console.log(type, num, axis)
+
+        if (typeof clone.mouse.selectedTri.id !== 'undefined') {
+          clone.mouse.selectedTri.tri[type][num][axis] = $(this).val()
+        }
+
+        console.log($(this).val())
+      });
+    });
+
+    $(`select[name='tri-texture']`).on('input', function () {
+      if (typeof clone.mouse.selectedTri.id !== 'undefined') {
+        clone.mouse.selectedTri.tri.tid = $(this).val()
+      }
+      console.log($(this).val())
+    });
+
+    $(`select[name='tri-normal']`).on('input', function () {
+      if (typeof clone.mouse.selectedTri.id !== 'undefined') {
+        clone.mouse.selectedTri.tri.normal = $(this).val()
+      }
+      console.log($(this).val())
+    });
+
+    $(`input[name='tri-light']`).on('input', function () {
+      if (typeof clone.mouse.selectedTri.id !== 'undefined') {
+        clone.mouse.selectedTri.tri.light = $(this).val()
+      }
+      console.log($(this).val())
+    });
+
     ////////////////////
     // Responsite menu
     // First load object list
     setTimeout(function() {
+
+
       $("#object-list").find(".menu-icon").each(function() {
           let id = $(this).closest('li').attr('data-id')
           if ($(this).hasClass('triangle-up')) {
@@ -610,10 +673,35 @@ class Editor {
       clone.mouse.selectedTri = {}
       clone.mouse.selectedTri.id = tri_id
 
+      let selectedId = clone.mouse.selectedTri.id;
+
+      clone.mouse.selectedTri.tri = null;
+
+      // ADD SELECTED TRIANGLE
+      for (let item of clone.map.structure) {
+          clone.mouse.selectedTri.tri = item.tris.find(tri => tri.id === selectedId);
+          if (clone.mouse.selectedTri.tri) break;
+      }
+
       $(document).find(`li[data-id='${tri_id}']`).addClass('menu-selected')
 
-      console.log(tri_id)
-        
+      $("input[name='tri-p1-X']").val(clone.mouse.selectedTri.tri.p[0].x); $("input[name='tri-p1-Y']").val(clone.mouse.selectedTri.tri.p[0].y)
+      $("input[name='tri-p1-Z']").val(clone.mouse.selectedTri.tri.p[0].z); $("input[name='tri-t1-U']").val(clone.mouse.selectedTri.tri.t[0].u)
+      $("input[name='tri-t1-V']").val(clone.mouse.selectedTri.tri.t[0].v)
+
+      $("input[name='tri-p2-X']").val(clone.mouse.selectedTri.tri.p[1].x); $("input[name='tri-p2-Y']").val(clone.mouse.selectedTri.tri.p[1].y)
+      $("input[name='tri-p2-Z']").val(clone.mouse.selectedTri.tri.p[1].z); $("input[name='tri-t2-U']").val(clone.mouse.selectedTri.tri.t[1].u)
+      $("input[name='tri-t2-V']").val(clone.mouse.selectedTri.tri.t[1].v);
+
+      $("input[name='tri-p3-X']").val(clone.mouse.selectedTri.tri.p[2].x); $("input[name='tri-p3-Y']").val(clone.mouse.selectedTri.tri.p[2].y)
+      $("input[name='tri-p3-Z']").val(clone.mouse.selectedTri.tri.p[2].z); $("input[name='tri-t3-U']").val(clone.mouse.selectedTri.tri.t[2].u)
+      $("input[name='tri-t3-V']").val(clone.mouse.selectedTri.tri.t[2].v);
+
+      $("select[name='tri-light']").val(clone.mouse.selectedTri.tri.light)
+      $("select[name='tri-texture']").val(clone.mouse.selectedTri.tri.tid)
+      $("select[name='tri-normal']").val(clone.mouse.selectedTri.tri.normal)
+
+      clone.fullRefreshCanvasGraphics()
     });
 
     //////////////////
@@ -748,110 +836,26 @@ class Editor {
         }
       }
 
-      // DRAW OBJECTS
+      // DRAW ALL OBJECTS
       this.map.data.forEach(object => {
         var lineColor = object.lineColor
+        var lineWidth = 1
 
         object.tris.forEach(tri => {
-
-          function isTriangleOnScreen(vertices, screenWidth, screenHeight) {
-            const screenRect = { x1: 0, y1: 0, x2: screenWidth, y2: screenHeight }
-            // Ellenőrizzük, hogy a pontok bármelyike a képernyőn van-e
-            for (const { x, y } of vertices) {
-              if (x >= screenRect.x1 && x <= screenRect.x2 && y >= screenRect.y1 && y <= screenRect.y2) {
-                return true;
-              }
-            }
-            // Ellenőrizzük, hogy a háromszög élei metszenek-e a képernyő szélével
-            const edges = [
-              [vertices[0], vertices[1]],
-              [vertices[1], vertices[2]],
-              [vertices[2], vertices[0]],
-            ];
-
-            for (const [p1, p2] of edges) {
-              if (lineIntersectsRect(p1, p2, screenRect)) {
-                return true;
-              }
-            }
-            return false; // Ha semmi nem talál, a háromszög nem látszik
-          }
-
-          function lineIntersectsRect(p1, p2, rect) {
-            // Definiáljuk a téglalap éleit
-            const rectEdges = [
-              [{ x: rect.x1, y: rect.y1 }, { x: rect.x2, y: rect.y1 }], // Felső
-              [{ x: rect.x2, y: rect.y1 }, { x: rect.x2, y: rect.y2 }], // Jobb
-              [{ x: rect.x2, y: rect.y2 }, { x: rect.x1, y: rect.y2 }], // Alsó
-              [{ x: rect.x1, y: rect.y2 }, { x: rect.x1, y: rect.y1 }], // Bal
-            ];
-
-            for (const [q1, q2] of rectEdges) {
-              if (linesIntersect(p1, p2, q1, q2)) {
-                return true;
-              }
-            }
-            return false;
-          }
-
-          function linesIntersect(p1, p2, q1, q2) {
-            // Ellenőrizzük, hogy a két egyenes szakasz metszi-e egymást
-            const orientation = (a, b, c) => (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y)
-            const o1 = orientation(p1, p2, q1)
-            const o2 = orientation(p1, p2, q2)
-            const o3 = orientation(q1, q2, p1)
-            const o4 = orientation(q1, q2, p2)
-
-            if (o1 * o2 < 0 && o3 * o4 < 0) return true; // Átlépő orientációk
-            return false; // Ha nincs metszés
-          }
-
-          let p0X = view.posX + tri.p[0][view.vX] * view.ratio; let p0Y = view.posY + tri.p[0][view.vY] * view.ratio;
-          let p1X = view.posX + tri.p[1][view.vX] * view.ratio; let p1Y = view.posY + tri.p[1][view.vY] * view.ratio;
-          let p2X = view.posX + tri.p[2][view.vX] * view.ratio; let p2Y = view.posY + tri.p[2][view.vY] * view.ratio;
-
-          const vertices = [
-            { x: p0X, y: p0Y },
-            { x: p1X, y: p1Y },
-            { x: p2X, y: p2Y },
-          ];
-
-          if (isTriangleOnScreen(vertices, view.canvas.width, view.canvas.height)) {
-
-            if (tri.id == this.mouse.selectedTri.id) {
-              view.ctx.strokeStyle = 'white'
-              view.ctx.lineWidth = 2
-
-            } else {
-              view.ctx.strokeStyle = lineColor
-              view.ctx.lineWidth = 1
-            }
-
-            view.ctx.beginPath()
-            view.ctx.moveTo(p0X, p0Y)
-            view.ctx.lineTo(p1X, p1Y)
-            view.ctx.lineTo(p2X, p2Y)
-            view.ctx.lineTo(p0X, p0Y)
-            view.ctx.stroke()
-
-            if (view.showDots) {
-              view.ctx.strokeStyle = 'deeppink'
-              view.ctx.lineWidth = 2
-              view.ctx.beginPath()
-              view.ctx.arc(p0X, p0Y, 1, 0, 2 * Math.PI)
-              view.ctx.stroke()
-              view.ctx.beginPath()
-              view.ctx.arc(p1X, p1Y, 1, 0, 2 * Math.PI)
-              view.ctx.stroke()
-              view.ctx.beginPath()
-              view.ctx.arc(p2X, p2Y, 1, 0, 2 * Math.PI)
-              view.ctx.stroke()
-            }
-          }
+          this.drawViewTriangeAction(view, lineColor, lineWidth, tri.p[0][view.vX], tri.p[0][view.vY], tri.p[1][view.vX], tri.p[1][view.vY], tri.p[2][view.vX], tri.p[2][view.vY])
         });
       });
 
-      // DRAW HELPLINE
+      // SELECTED TRIANGLE DRAW
+      if (typeof this.mouse.selectedTri.tri !== 'undefined') {
+        let selectTri = this.mouse.selectedTri.tri
+        // console.log(selectTri)
+        var lineWidth = 4
+        
+        this.drawViewTriangeAction(view, 'white', lineWidth, selectTri.p[0][view.vX], selectTri.p[0][view.vY], selectTri.p[1][view.vX], selectTri.p[1][view.vY], selectTri.p[2][view.vX], selectTri.p[2][view.vY])
+      }
+
+      // DRAW HELPLINE 
       if (this.mouse.addTri.mode && this.mouse.addTri.count > 0) {
         let np0X = view.posX + this.mouse.addTri.cords[0][view.vX] * view.ratio; let np0Y = view.posY + this.mouse.addTri.cords[0][view.vY] * view.ratio;
         view.ctx.strokeStyle = 'purple'
@@ -883,6 +887,97 @@ class Editor {
       view.ctx.font = '16px Arial'
       view.ctx.textAlign = 'left'
       view.ctx.fillText(`${view.vX.toUpperCase()} / ${view.vY.toUpperCase()}`, 5, 17)
+    }
+  }
+
+  isTriangleOnScreen(vertices, screenWidth, screenHeight) {
+    const screenRect = { x1: 0, y1: 0, x2: screenWidth, y2: screenHeight }
+    // Ellenőrizzük, hogy a pontok bármelyike a képernyőn van-e
+    for (const { x, y } of vertices) {
+      if (x >= screenRect.x1 && x <= screenRect.x2 && y >= screenRect.y1 && y <= screenRect.y2) {
+        return true;
+      }
+    }
+    // Ellenőrizzük, hogy a háromszög élei metszenek-e a képernyő szélével
+    const edges = [
+      [vertices[0], vertices[1]],
+      [vertices[1], vertices[2]],
+      [vertices[2], vertices[0]],
+    ];
+
+    for (const [p1, p2] of edges) {
+      if (this.lineIntersectsRect(p1, p2, screenRect)) {
+        return true;
+      }
+    }
+    return false; // Ha semmi nem talál, a háromszög nem látszik
+  }
+
+  lineIntersectsRect(p1, p2, rect) {
+    // Definiáljuk a téglalap éleit
+    const rectEdges = [
+      [{ x: rect.x1, y: rect.y1 }, { x: rect.x2, y: rect.y1 }], // Felső
+      [{ x: rect.x2, y: rect.y1 }, { x: rect.x2, y: rect.y2 }], // Jobb
+      [{ x: rect.x2, y: rect.y2 }, { x: rect.x1, y: rect.y2 }], // Alsó
+      [{ x: rect.x1, y: rect.y2 }, { x: rect.x1, y: rect.y1 }], // Bal
+    ];
+
+    for (const [q1, q2] of rectEdges) {
+      if (this.linesIntersect(p1, p2, q1, q2)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  linesIntersect(p1, p2, q1, q2) {
+    // Ellenőrizzük, hogy a két egyenes szakasz metszi-e egymást
+    const orientation = (a, b, c) => (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y)
+    const o1 = orientation(p1, p2, q1)
+    const o2 = orientation(p1, p2, q2)
+    const o3 = orientation(q1, q2, p1)
+    const o4 = orientation(q1, q2, p2)
+
+    if (o1 * o2 < 0 && o3 * o4 < 0) return true; // Átlépő orientációk
+    return false; // Ha nincs metszés
+  }
+
+  drawViewTriangeAction(view, lineColor, lineWidth, p0vX, p0vY, p1vX, p1vY, p2vX, p2vY) {
+    let p0X = view.posX + p0vX * view.ratio; let p0Y = view.posY + p0vY * view.ratio;
+    let p1X = view.posX + p1vX * view.ratio; let p1Y = view.posY + p1vY * view.ratio;
+    let p2X = view.posX + p2vX * view.ratio; let p2Y = view.posY + p2vY * view.ratio;
+
+    const vertices = [
+      { x: p0X, y: p0Y },
+      { x: p1X, y: p1Y },
+      { x: p2X, y: p2Y },
+    ];
+
+    if (this.isTriangleOnScreen(vertices, view.canvas.width, view.canvas.height)) {
+
+      view.ctx.strokeStyle = lineColor
+      view.ctx.lineWidth = lineWidth
+
+      view.ctx.beginPath()
+      view.ctx.moveTo(p0X, p0Y)
+      view.ctx.lineTo(p1X, p1Y)
+      view.ctx.lineTo(p2X, p2Y)
+      view.ctx.lineTo(p0X, p0Y)
+      view.ctx.stroke()
+
+      if (view.showDots) {
+        view.ctx.strokeStyle = 'deeppink'
+        view.ctx.lineWidth = 2
+        view.ctx.beginPath()
+        view.ctx.arc(p0X, p0Y, 1, 0, 2 * Math.PI)
+        view.ctx.stroke()
+        view.ctx.beginPath()
+        view.ctx.arc(p1X, p1Y, 1, 0, 2 * Math.PI)
+        view.ctx.stroke()
+        view.ctx.beginPath()
+        view.ctx.arc(p2X, p2Y, 1, 0, 2 * Math.PI)
+        view.ctx.stroke()
+      }
     }
   }
 

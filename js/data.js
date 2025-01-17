@@ -53,18 +53,19 @@ export class Vec2D {
 }
 
 export class Triangle {
-    constructor(p1 = new Vec3D(), p2 = new Vec3D(), p3 = new Vec3D(), t1 = new Vec2D, t2 = new Vec2D(), t3 = new Vec2D(), tid, light = 1, rgba = [255, 200, 40, 1]) {
+    constructor(p1 = new Vec3D(), p2 = new Vec3D(), p3 = new Vec3D(), t1 = new Vec2D, t2 = new Vec2D(), t3 = new Vec2D(), tid = 0, light = 1, rgba = [255, 200, 40, 1], normal = false) {
         this.id = Date.now().toString().slice(-5) + '-' + Math.floor(Math.random() * 99999)
         this.tid = tid
         this.p = [p1, p2, p3]
         this.t = [t1, t2, t3]
         this.light = light
         this.rgba = [rgba[0], rgba[1], rgba[2], rgba[3]]
+        this.normal = normal
     }
 }
 
 export class Mesh {
-    constructor(id, parent_id) {
+    constructor(id, parent_id = null) {
         this.id = id
         this.parent_id = parent_id
         this.tris = []                      // Háromszögek listája (Triangle típusú elemek)
@@ -125,13 +126,14 @@ export class Mesh {
         this.name = name
         this.lineColor = lineColor
 
-        const text = await response.text();     // Fájl tartalmának olvasása szövegként        
-        const lines = text.split('\n');         // Sorokra bontás
-        let v = [];                             // Lokális pontok listája
-        let vt = [];                            // Texture kordináták
-        let texId = [];                         // Texture ID
-        let light = [];                         // Light
-        let rgba = [];                          // color
+        const text = await response.text()     // Fájl tartalmának olvasása szövegként        
+        const lines = text.split('\n')         // Sorokra bontás
+        let v = []                             // Lokális pontok listája
+        let vt = []                            // Texture kordináták
+        let texId = []                         // Texture ID
+        let light = []                         // Light
+        let rgba = []                          // color
+        let normal                             // normal | true or false
 
         for (let line of lines) {
             if (line.startsWith('#') || line == '') continue;
@@ -159,8 +161,9 @@ export class Mesh {
                 texId = parseInt(data[0])
                 light = parseInt(data[1])
                 rgba = [parseInt(data[2]), parseInt(data[3]), parseInt(data[4]), parseInt(data[5])]
+                normal = data[6]
 
-                const row = new Triangle(v[0], v[1], v[2], vt[0], vt[1], vt[2], texId, light, rgba)
+                const row = new Triangle(v[0], v[1], v[2], vt[0], vt[1], vt[2], texId, light, rgba, normal)
 
                 this.tris.push(row)
             }
