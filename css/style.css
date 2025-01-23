@@ -55,7 +55,7 @@ button[class="3d-buttons"] {
   height: 15%;
   margin: 0;
   padding: 6px;
-  background-color: #d2d2d2;
+  background-color: #b7d8b7;
   box-sizing: border-box;
 }
 
@@ -65,17 +65,70 @@ button[class="3d-buttons"] {
   width: 80%;
   height: 100%;
   font-size: 0;
-  background-color: rgba(0, 0, 255, 0.089);
 }
 
 #toolbar-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
   width: 19.5%;
+  height: 100%;
   padding: 0;
   margin: 0;
   padding: 5px;
   border: 1px solid gray;
   box-sizing: border-box;
-  background-color: rgba(255, 192, 203, 0.438);
+}
+
+.menu-icons-between-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.menu-icons-center-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.toolbar-icon {
+  width: 34px;
+  height: 34px;
+  margin: 3px;
+  border-radius: 4px;
+  background-size: cover;
+}
+.toolbar-icon:hover {
+  cursor: pointer;
+}
+
+.move {
+  background-image: url("../img/icons/move.svg");
+}
+
+.new-triangle {
+  background-image: url("../img/icons/triangle.svg");
+}
+
+.point {
+  background-image: url("../img/icons/point.svg");
+}
+
+.toolbar-select {
+  background-color: white;
+  border: 1px solid black;
+}
+
+.menu-text-border {
+  border: 1px solid gray;
+  padding: 3px;
+}
+.menu-text-border:hover {
+  box-shadow: -2px 1px black;
+  background-color: #c2c2c2;
+  cursor: pointer;
 }
 
 .top-screen-options {
@@ -139,19 +192,23 @@ button[class="3d-buttons"] {
   position: absolute;
   top: 15%;
   right: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: start;
+  align-items: center;
   display: inline-block;
   width: 20%;
-  min-height: 85%;
-  max-width: 90vh;
+  min-height: 15%;
   margin: 0;
   padding: 0;
   background-color: #d2d2d2;
   box-sizing: border-box;
+  background-color: #b7d8b7;
 }
 
 .title-box {
   width: calc(100% - 10px);
-  height: 25px;
+  height: 28px;
   text-align: center;
   font-weight: bold;
   -webkit-text-decoration: double;
@@ -166,6 +223,33 @@ button[class="3d-buttons"] {
 .title-button:hover {
   cursor: pointer;
   color: #0c0c2b;
+}
+
+.text-small {
+  font-size: 0.7rem;
+}
+
+.title-box-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: calc(100% - 10px);
+  height: 28px;
+  font-weight: bold;
+  -webkit-text-decoration: double;
+          text-decoration: double;
+  border: 1px solid gray;
+  box-sizing: border-box;
+  padding: 3px;
+  margin: 5px;
+  margin-top: 0;
+}
+
+.input-name {
+  height: 14px;
+  display: inline-block;
+  width: 60%;
+  text-align: left;
 }
 
 .box-1 {
@@ -200,8 +284,10 @@ button[class="3d-buttons"] {
 }
 
 #object-list {
-  max-height: 400px;
+  flex: 1;
+  height: 150px;
   overflow: auto;
+  scroll-behavior: smooth;
 }
 
 #object-add-tri {
@@ -272,4 +358,57 @@ button[class="3d-buttons"] {
 
 .text-white {
   color: white !important;
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.w-50 {
+  width: 50%;
+}
+
+.w-25 {
+  width: 25%;
+}
+
+.text-start {
+  text-align: left;
+}
+
+.text-end {
+  text-align: right;
+}
+
+.text-uppercase {
+  text-transform: uppercase;
+}
+
+.grid-container {
+  width: 100%;
+  display: grid;
+  justify-content: center;
+  align-items: center;
+  grid-template-columns: 30px 30px 30px;
+  grid-template-rows: 30px 30px 30px;
+  gap: 2px;
+}
+
+.grid-item {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  font-weight: bold;
+  border: 1px solid #333;
+  background-color: #f0f0f0;
+}
+
+.arrow {
+  font-family: Arial, sans-serif;
+}
+
+.grid-item.arrow:hover {
+  cursor: pointer;
+  background-color: #999999;
 }/*# sourceMappingURL=style.css.map */

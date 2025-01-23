@@ -14,7 +14,7 @@
             <div class="top-screen-options">
                 <div class="left-side">
                     <div class="side-row">
-                        <span>screen-canvas </span><span class="reset-center-button" data-name="screen-canvas" title="Reset to default center.">&#9679;</span>
+                        <span><strong>screen-fps</strong>(F1)</span><span class="reset-center-button" data-name="screen-canvas" title="Reset to default center.">&#9679;</span>
                     </div>
                 </div>
                 <div class="right-side">
@@ -34,7 +34,19 @@
             </div>
             <!-- javascript -->
         </div>
-        <div id="toolbar-container" class="p-0 m-0 red">qwe</div>
+        <div id="toolbar-container" class="p-0 m-0">
+            <div class="menu-icons-between-container w-100">
+                <div class="menu-text-border">LOAD</div>
+                <div class="menu-text-border">SAVE</div>
+                <div class="menu-text-border">SETTINGS</div>
+            </div>
+
+            <div class="menu-icons-center-container">
+                <div class="toolbar-icon move" data-mode="move"></div>
+                <div class="toolbar-icon new-triangle" data-mode="new-triangle"></div>
+                <div class="toolbar-icon point" data-mode="point"></div>
+            </div>
+        </div>
     </div>
 
     <div id="menu-right">
@@ -43,107 +55,154 @@
 
         <div id="info-box"></div>
 
-        <div id="selected-tri-name" class="title-box">triangle name</div>
-        <div id="object-add-tri" class="box-1">
-            <div class="right-screen-options">
-                <div class="left-side">
-                    <div class="side-row">
-                        <span>p1X: </span><input type="number" name="tri-p1-X" data-type="p" data-axis="x" data-num="0" min="-10000" max="10000" step="0.1" value="0">
+        <div class="title-box">Objects <span id="object-open-close-all" class="menu-icon-pos-3 circle" data-status="0"></span></div>
+        <div id="object-list" class="box-1 responsive-menu" style="display:none;">
+            <!-- javascript -->
+        </div>
+
+        <div id="selected-mesh-container" class="p-0 m-0" style="display:none;">
+            <div class="title-box-flex text-start">
+                <span class="text-small">Mesh. name:</span>
+                <input type="text" id="selected-mesh-name" class="input-name" data-id="" value="">
+            </div>
+            <div id="object-add-tri" class="box-1">
+                <div class="right-screen-options">
+                    <div class="left-side">
+                        <div class="side-row">
+                            <span>Size: </span><input type="number" name="move-size" min="-1000" max="1000" step="0.1" value="1">
+                        </div>
                     </div>
-                    <div class="side-row">
-                        <span>p1Y: </span><input type="number" name="tri-p1-Y" data-type="p" data-axis="y" data-num="0" min="-10000" max="10000" step="0.1" value="0">
+                    <div class="right-side">
+                        <div class="grid-container">
+                            <div class="grid-item arrow">↖</div>
+                            <div class="grid-item arrow">↑</div>
+                            <div class="grid-item arrow">↗</div>
+                            <div class="grid-item arrow">←</div>
+                            <div class="grid-item arrow">●</div>
+                            <div class="grid-item arrow">→</div>
+                            <div class="grid-item arrow">↙</div>
+                            <div class="grid-item arrow">↓</div>
+                            <div class="grid-item arrow">↘</div>
+                        </div>
                     </div>
-                    <div class="side-row">
-                        <span>p1Z: </span><input type="number" name="tri-p1-Z" data-type="p" data-axis="z" data-num="0" min="-10000" max="10000" step="0.1" value="0">
+                    <div class="left-side">
+                        <div class="side-row">
+                            <span>Angle°</span><input type="number" name="move-size" min="-1000" max="1000" step="0.1" value="1">
+                        </div>
                     </div>
-                </div>
-                <div class="right-side">
-                    <div class="side-row">
-                        <span>t1U: </span><input type="number" name="tri-t1-U" data-type="t" data-axis="u" data-num="0" min="0" max="1" step="0.1" value="0">
-                    </div>
-                    <div class="side-row">
-                        <span>t1V: </span><input type="number" name="tri-t1-V" data-type="t" data-axis="v" data-num="0" min="0" max="1" step="0.1" value="0">
-                    </div>
-                </div>
-                <div class="left-side mt-3">
-                    <div class="side-row">
-                        <span>p2X: </span><input type="number" name="tri-p2-X" data-type="p" data-axis="x" data-num="1" min="-10000" max="10000" step="0.1" value="0">
-                    </div>
-                    <div class="side-row">
-                        <span>p2Y: </span><input type="number" name="tri-p2-Y" data-type="p" data-axis="y" data-num="1" min="-10000" max="10000" step="0.1" value="0">
-                    </div>
-                    <div class="side-row">
-                        <span>p2Z: </span><input type="number" name="tri-p2-Z" data-type="p" data-axis="z" data-num="1" min="-10000" max="10000" step="0.1" value="0">
-                    </div>
-                </div>
-                <div class="right-side mt-3">
-                    <div class="side-row">
-                        <span>t2U: </span><input type="number" name="tri-t2-U" data-type="t" data-axis="u" data-num="1" min="0" max="1" step="0.1" value="0">
-                    </div>
-                    <div class="side-row">
-                        <span>t2V: </span><input type="number" name="tri-t2-V" data-type="t" data-axis="v" data-num="1" min="0" max="1" step="0.1" value="0">
-                    </div>
-                </div>
-                <div class="left-side mt-3">
-                    <div class="side-row">
-                        <span>p3X: </span><input type="number" name="tri-p3-X" data-type="p" data-axis="x" data-num="2" min="-10000" max="10000" step="0.1" value="0">
-                    </div>
-                    <div class="side-row">
-                        <span>p3Y: </span><input type="number" name="tri-p3-Y" data-type="p" data-axis="y" data-num="2" min="-10000" max="10000" step="0.1" value="0">
-                    </div>
-                    <div class="side-row">
-                        <span>p3Z: </span><input type="number" name="tri-p3-Z" data-type="p" data-axis="z" data-num="2" min="-10000" max="10000" step="0.1" value="0">
-                    </div>
-                </div>
-                <div class="right-side mt-3">
-                    <div class="side-row">
-                        <span>t3U: </span><input type="number" name="tri-t3-U" data-type="t" data-axis="u" data-num="2" min="0" max="1" step="0.1" value="0">
-                    </div>
-                    <div class="side-row">
-                        <span>t3V: </span><input type="number" name="tri-t3-V" data-type="t" data-axis="v" data-num="2" min="0" max="1" step="0.1" value="0">
-                    </div>
-                </div>
-                <div class="left-side mt-3">
-                    <div class="side-row">
-                        <span>light: </span><input type="number" name="tri-light" data-axis="light" min="0" max="1" step="0.1" value="1">
-                    </div>
-                </div>
-                <div class="right-side mt-3">
-                    <div class="side-row">
-                        <span>text: </span>
-                        <select name="tri-texture" data-type="short">
-                            <option value="0">0</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="left-side mt-3">
-                    <div class="side-row">
-                        <span>Normal: </span>
-                        <select name="tri-normal" data-type="short">
-                            <option value="false">Off</option>
-                            <option value="true">On</option>
-                        </select>
+                    <div class="right-side">
+                        <div class="grid-container">
+                            <div class="grid-item arrow">↺</div>
+                            <div class="grid-item arrow">↻</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="title-box">Objects <span id="object-open-close-all" class="menu-icon-pos-3 circle" data-status="0"></span></div>
-
-        <div id="object-list" class="box-1 responsive-menu" style="display:none;">
-            <!-- javascript -->
+        <div id="selected-tri-container" class="p-0 m-0" style="display:none;">
+            <div class="title-box-flex text-start">
+                <span class="text-small">Tri. name:</span>
+                <input type="text" id="selected-tri-name" class="input-name" value="">
+            </div>
+            <div id="object-add-tri" class="box-1">
+                <div class="right-screen-options">
+                    <div class="left-side">
+                        <div class="side-row">
+                            <span>p1X: </span><input type="number" name="tri-p1-X" data-type="p" data-axis="x" data-num="0" min="-10000" max="10000" step="0.1" value="0">
+                        </div>
+                        <div class="side-row">
+                            <span>p1Y: </span><input type="number" name="tri-p1-Y" data-type="p" data-axis="y" data-num="0" min="-10000" max="10000" step="0.1" value="0">
+                        </div>
+                        <div class="side-row">
+                            <span>p1Z: </span><input type="number" name="tri-p1-Z" data-type="p" data-axis="z" data-num="0" min="-10000" max="10000" step="0.1" value="0">
+                        </div>
+                    </div>
+                    <div class="right-side">
+                        <div class="side-row">
+                            <span>t1U: </span><input type="number" name="tri-t1-U" data-type="t" data-axis="u" data-num="0" step="0.1" value="0">
+                        </div>
+                        <div class="side-row">
+                            <span>t1V: </span><input type="number" name="tri-t1-V" data-type="t" data-axis="v" data-num="0" step="0.1" value="0">
+                        </div>
+                    </div>
+                    <div class="left-side mt-3">
+                        <div class="side-row">
+                            <span>p2X: </span><input type="number" name="tri-p2-X" data-type="p" data-axis="x" data-num="1" min="-10000" max="10000" step="0.1" value="0">
+                        </div>
+                        <div class="side-row">
+                            <span>p2Y: </span><input type="number" name="tri-p2-Y" data-type="p" data-axis="y" data-num="1" min="-10000" max="10000" step="0.1" value="0">
+                        </div>
+                        <div class="side-row">
+                            <span>p2Z: </span><input type="number" name="tri-p2-Z" data-type="p" data-axis="z" data-num="1" min="-10000" max="10000" step="0.1" value="0">
+                        </div>
+                    </div>
+                    <div class="right-side mt-3">
+                        <div class="side-row">
+                            <span>t2U: </span><input type="number" name="tri-t2-U" data-type="t" data-axis="u" data-num="1" step="0.1" value="0">
+                        </div>
+                        <div class="side-row">
+                            <span>t2V: </span><input type="number" name="tri-t2-V" data-type="t" data-axis="v" data-num="1" step="0.1" value="0">
+                        </div>
+                    </div>
+                    <div class="left-side mt-3">
+                        <div class="side-row">
+                            <span>p3X: </span><input type="number" name="tri-p3-X" data-type="p" data-axis="x" data-num="2" min="-10000" max="10000" step="0.1" value="0">
+                        </div>
+                        <div class="side-row">
+                            <span>p3Y: </span><input type="number" name="tri-p3-Y" data-type="p" data-axis="y" data-num="2" min="-10000" max="10000" step="0.1" value="0">
+                        </div>
+                        <div class="side-row">
+                            <span>p3Z: </span><input type="number" name="tri-p3-Z" data-type="p" data-axis="z" data-num="2" min="-10000" max="10000" step="0.1" value="0">
+                        </div>
+                    </div>
+                    <div class="right-side mt-3">
+                        <div class="side-row">
+                            <span>t3U: </span><input type="number" name="tri-t3-U" data-type="t" data-axis="u" data-num="2" step="0.1" value="0">
+                        </div>
+                        <div class="side-row">
+                            <span>t3V: </span><input type="number" name="tri-t3-V" data-type="t" data-axis="v" data-num="2" step="0.1" value="0">
+                        </div>
+                    </div>
+                    <div class="left-side mt-3">
+                        <div class="side-row">
+                            <span>light: </span><input type="number" name="tri-light" data-axis="light" min="0" max="1" step="0.1" value="1">
+                        </div>
+                    </div>
+                    <div class="right-side mt-3">
+                        <div class="side-row">
+                            <span>text: </span>
+                            <select name="tri-texture" data-type="short">
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="left-side mt-3">
+                        <div class="side-row">
+                            <span>Normal: </span>
+                            <select name="tri-normal" data-type="short">
+                                <option value="false">Off</option>
+                                <option value="true">On</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+
     </div>
 
     <div id="container-screens">
         <canvas id="screen-canvas" class="view-segment"></canvas>
         <canvas id="XYview-canvas" class="view-segment dark"></canvas>
-        <canvas id="XZview-canvas" class="view-segment dark"></canvas>     <!-- green -->
-        <canvas id="ZYview-canvas" class="view-segment dark"></canvas>     <!-- blue -->
+        <canvas id="XZview-canvas" class="view-segment dark"></canvas>
+        <canvas id="ZYview-canvas" class="view-segment dark"></canvas>
     </div>
 
     <!-- Modal Structure -->
@@ -157,6 +216,5 @@
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.2/dist/cdn.min.js" defer></script>
     <script src="./modules/jquery/jquery.min.js" defer></script>
     <script type="module" src="js/editor.js"></script>
-    <script type="module" src="js/menu.js"></script>
 </body>
 </html>

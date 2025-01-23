@@ -53,7 +53,7 @@ export class Vec2D {
 }
 
 export class Triangle {
-    constructor(p1 = new Vec3D(), p2 = new Vec3D(), p3 = new Vec3D(), t1 = new Vec2D, t2 = new Vec2D(), t3 = new Vec2D(), tid = 0, light = 1, rgba = [255, 200, 40, 1], normal = false) {
+    constructor(p1 = new Vec3D(), p2 = new Vec3D(), p3 = new Vec3D(), t1 = new Vec2D, t2 = new Vec2D(), t3 = new Vec2D(), tid = 0, light = 1, rgba = [255, 200, 40, 1], normal = false, name = null) {
         this.id = Date.now().toString().slice(-5) + '-' + Math.floor(Math.random() * 99999)
         this.tid = tid
         this.p = [p1, p2, p3]
@@ -61,15 +61,18 @@ export class Triangle {
         this.light = light
         this.rgba = [rgba[0], rgba[1], rgba[2], rgba[3]]
         this.normal = normal
+        this.name = name ?? `Tri-${this.id}`
     }
 }
 
 export class Mesh {
-    constructor(id, parent_id = null) {
+    constructor(id, type, parent_id = null) {
         this.id = id
+        this.type = type
         this.parent_id = parent_id
         this.tris = []                      // Háromszögek listája (Triangle típusú elemek)
         this.child = []                     // Gyerkekek - ha van
+        this.textures = []      // !!! Ezt kikell dolgozni
         this.lineColor = 'yellow'
         this.name = 'noname'
     }

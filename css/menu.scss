@@ -10,11 +10,11 @@ li {
 .responsive-menu {
     position: relative;
     font-size: 12px;
+    padding: 0;
     
     & ul {
         margin: 0;
         padding: 0;
-        // padding-left: 15px;
         list-style-position: inside;
         list-style-type: none;
         // list-style-type: disc;
@@ -30,7 +30,6 @@ li {
     & ul ul {
         margin: 0;
         padding: 0;
-        margin-left: 5px;
         list-style-position: inside;
         list-style-type: none;
         // list-style-type: square;
@@ -55,6 +54,13 @@ li {
     }
 }
 
+.mesh-name {
+    padding: 0;
+    margin: 0;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
 .menu-icon-pos-1,
 .menu-icon-pos-2,
 .menu-icon-pos-3 {
@@ -76,7 +82,7 @@ li {
     right: 10px;
 }
 
-.menu-selected {
+.list-triangle-selected {
     color: green !important;
     border: 1px solid gray;
     background-color: #b1b1b1 !important;
@@ -171,3 +177,8 @@ li {
     left: 50%;
     transform: translateX(-50%);
 }    
+
+.list-mesh-selected {
+    color: white !important;
+    background-color: darkolivegreen !important;
+}

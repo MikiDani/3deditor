@@ -6,6 +6,7 @@ li:hover {
 .responsive-menu {
   position: relative;
   font-size: 12px;
+  padding: 0;
 }
 .responsive-menu ul {
   margin: 0;
@@ -21,7 +22,6 @@ li:hover {
 .responsive-menu ul ul {
   margin: 0;
   padding: 0;
-  margin-left: 5px;
   list-style-position: inside;
   list-style-type: none;
 }
@@ -38,6 +38,13 @@ li:hover {
   margin-left: 5px;
   list-style-position: inside;
   list-style-type: none;
+}
+
+.mesh-name {
+  padding: 0;
+  margin: 0;
+  font-weight: bold;
+  text-transform: uppercase;
 }
 
 .menu-icon-pos-1,
@@ -63,7 +70,7 @@ li:hover {
   right: 10px;
 }
 
-.menu-selected {
+.list-triangle-selected {
   color: green !important;
   border: 1px solid gray;
   background-color: #b1b1b1 !important;
@@ -153,4 +160,9 @@ li:hover {
   top: 0;
   left: 50%;
   transform: translateX(-50%);
+}
+
+.list-mesh-selected {
+  color: white !important;
+  background-color: darkolivegreen !important;
 }/*# sourceMappingURL=menu.css.map */

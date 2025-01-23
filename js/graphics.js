@@ -17,10 +17,11 @@ export class Graphics {
 
     //--- SCREEN ---
     // this.GAMEWIDTH = 160; this.GAMEHEIGHT = 120; this.RATIO = 3;
-    // this.GAMEWIDTH = 800; this.GAMEHEIGHT = 600; this.RATIO = 1;
+    this.GAMEWIDTH = 800; this.GAMEHEIGHT = 600; this.RATIO = 1;
     // this.GAMEWIDTH = 1024; this.GAMEHEIGHT = 768; this.RATIO = 1;
     // this.GAMEWIDTH = 320; this.GAMEHEIGHT = 180; this.RATIO = 3;
-    this.GAMEWIDTH = 640; this.GAMEHEIGHT = 360; this.RATIO = 0.5;
+    
+    // this.GAMEWIDTH = 640; this.GAMEHEIGHT = 360; this.RATIO = 0.5;
 
     this.HALFWIDTH = this.GAMEWIDTH / 2
     this.HALFHEIGHT = this.GAMEHEIGHT / 2
@@ -675,15 +676,17 @@ export class Graphics {
     let g = (packedColor >> 8) & 0xFF;
     let r = packedColor & 0xFF;
 
-    let mR = Math.min(255, Math.round(r * light))
-    let mG = Math.min(255, Math.round(g * light))
-    let mB = Math.min(255, Math.round(b * light))
-
-    let hexColor = (a << 24) | (mB << 16) | (mG << 8) | mR;
-
-    let memoryIndex = y * this.GAMEWIDTH + x;
-    this.buffer[memoryIndex] = hexColor;
-    this.depthBuffer[memoryIndex] = tex_w
+    if (packedColor != '0x00000000') {
+      let mR = Math.min(255, Math.round(r * light))
+      let mG = Math.min(255, Math.round(g * light))
+      let mB = Math.min(255, Math.round(b * light))
+  
+      let hexColor = (a << 24) | (mB << 16) | (mG << 8) | mR;
+  
+      let memoryIndex = y * this.GAMEWIDTH + x;
+      this.buffer[memoryIndex] = hexColor;
+      this.depthBuffer[memoryIndex] = tex_w
+    }
   }
 
   drawTriangleFill(p1, p2, p3, light, rgba) {
