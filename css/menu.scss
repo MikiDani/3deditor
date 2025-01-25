@@ -97,10 +97,6 @@ li {
     border-bottom: 8px solid black;
     display: inline-block;
     margin: 3px;
-    &:hover {
-        border-color: $iconbg !important;
-        color: $iconbg !important;
-    }
 }
 
 .triangle-down {
@@ -111,11 +107,27 @@ li {
     border-top: 8px solid black;
     display: inline-block;
     margin: 3px;
+}
+
+.triangle-delete {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin: 3px;
+    color: black;
+    font-size: 12px;
+    line-height: 10px;
+    text-align: center;
+
+    &::before {
+        content: '✖';
+    }
+
     &:hover {
-        border-color: $iconbg !important;
-        color: $iconbg !important;
+        color: red !important;
     }
 }
+
 
 .square {
     width: 12px;

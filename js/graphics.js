@@ -9,19 +9,20 @@ export class Graphics {
 
     this.options3D = {
       textured: true,
-      fill: true,
-      grid: true,
+      fill: false,
+      grid: false,
     }
 
     this.map = map
 
     //--- SCREEN ---
     // this.GAMEWIDTH = 160; this.GAMEHEIGHT = 120; this.RATIO = 3;
-    this.GAMEWIDTH = 800; this.GAMEHEIGHT = 600; this.RATIO = 1;
+    // this.GAMEWIDTH = 800; this.GAMEHEIGHT = 600; this.RATIO = 1;
     // this.GAMEWIDTH = 1024; this.GAMEHEIGHT = 768; this.RATIO = 1;
     // this.GAMEWIDTH = 320; this.GAMEHEIGHT = 180; this.RATIO = 3;
     
-    // this.GAMEWIDTH = 640; this.GAMEHEIGHT = 360; this.RATIO = 0.5;
+    //this.GAMEWIDTH = 640; this.GAMEHEIGHT = 360; this.RATIO = 0.5;
+    this.GAMEWIDTH = 640; this.GAMEHEIGHT = 480; this.RATIO = 0.5;
 
     this.HALFWIDTH = this.GAMEWIDTH / 2
     this.HALFHEIGHT = this.GAMEHEIGHT / 2

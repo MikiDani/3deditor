@@ -1,3 +1,4 @@
+@charset "UTF-8";
 li:hover {
   cursor: pointer;
   font-weight: bold;
@@ -85,10 +86,6 @@ li:hover {
   display: inline-block;
   margin: 3px;
 }
-.triangle-up:hover {
-  border-color: yellow !important;
-  color: yellow !important;
-}
 
 .triangle-down {
   width: 0;
@@ -99,9 +96,22 @@ li:hover {
   display: inline-block;
   margin: 3px;
 }
-.triangle-down:hover {
-  border-color: yellow !important;
-  color: yellow !important;
+
+.triangle-delete {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  color: black;
+  font-size: 12px;
+  line-height: 10px;
+  text-align: center;
+}
+.triangle-delete::before {
+  content: "✖";
+}
+.triangle-delete:hover {
+  color: red !important;
 }
 
 .square {

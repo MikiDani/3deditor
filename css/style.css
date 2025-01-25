@@ -71,7 +71,7 @@ button[class="3d-buttons"] {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  align-items: center;
+  align-items: start;
   width: 19.5%;
   height: 100%;
   padding: 0;
@@ -360,6 +360,38 @@ button[class="3d-buttons"] {
   color: white !important;
 }
 
+.d-block {
+  display: block;
+}
+
+.d-inline-block {
+  display: inline-block;
+}
+
+.d-flex {
+  display: flex;
+}
+
+.justify-content-center {
+  justify-content: center;
+}
+
+.justify-content-between {
+  justify-content: space-between;
+}
+
+.align-items-center {
+  align-items: center;
+}
+
+.align-items-start {
+  align-items: start;
+}
+
+.align-items-end {
+  align-items: end;
+}
+
 .w-100 {
   width: 100%;
 }
@@ -374,6 +406,10 @@ button[class="3d-buttons"] {
 
 .text-start {
   text-align: left;
+}
+
+.text-center {
+  text-align: center !important;
 }
 
 .text-end {
@@ -411,4 +447,27 @@ button[class="3d-buttons"] {
 .grid-item.arrow:hover {
   cursor: pointer;
   background-color: #999999;
+}
+
+.tri-move-up, .tri-move-down, .tri-all-move {
+  margin-left: 8px;
+  margin-right: 8px;
+}
+.tri-move-up:hover, .tri-move-down:hover, .tri-all-move:hover {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.cursor-move {
+  cursor: move;
+}
+
+.cursor-crosshair {
+  cursor: crosshair;
+}
+
+.tri-list, .list-mesh-selected {
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
 }/*# sourceMappingURL=style.css.map */

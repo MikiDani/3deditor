@@ -55,7 +55,8 @@ class Editor {
       selectedMeshId: null,
       isMouseDown: false,
       addTri: {},
-      selectedTri: {}
+      selectedTri: {},
+      moveTriPoint: null,
     }
     this.resetMouseAddTri()
     
@@ -82,6 +83,7 @@ class Editor {
       'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', 100, 1, true, true),
     }
 
+    /////////////////////
     // ADD HTML ELEMENTS
 
     console.log(this.views)
@@ -129,6 +131,7 @@ class Editor {
   }
 
   refreshObjectList() {
+    this.map.structure = this.buildStructure(this.map.data)
     // LIST OBJECTS
     function recursiveMenu(item) {
         let element = `<ul>`;
@@ -378,49 +381,41 @@ class Editor {
       $(this).val(value)
       clone.graph.options3D[name] = value
 
-      if (value) {
-        $(this).text('ON')
-      } else {
-        $(this).text('OFF')
-      }
+      if (value) $(this).text('ON'); else $(this).text('OFF');
 
       clone.fullRefreshCanvasGraphics()
     });
 
     // TOOLBAR BUTTONS
     this.refreshToolbar()
+
     $(".toolbar-icon").on('click', function() {
       let mode = $(this).attr('data-mode')
       clone.mouse.mode = mode
+
+      if (mode=='point' && (clone.mouse.selectedTri == null || Object.keys(clone.mouse.selectedTri).length === 0)) {
+        clone.mouse.mode = 'move'
+        alert('Not selected triangle!')
+      }
+
       clone.refreshToolbar()
     });
 
     // TRIANGLE NAME MODIFY
     $("#selected-mesh-name").on('input', function() {
-      console.log($(this).val())
-
       let selectedMesh = clone.map.data.find(mesh => mesh.id == clone.mouse.selectedMeshId)
       if (selectedMesh) {
         selectedMesh.name = $(this).val()
 
         $("#object-list").find(`[data-id='${selectedMesh.id}']`).text(selectedMesh.name)
       }
-
-      console.log(clone.map.data)
     })
 
     // TRIANGLE NAME MODIFY
     $("#selected-tri-name").on('input', function() {
-      console.log($(this).val())
-
-      console.log(clone.mouse.selectedTri)
-      
-
+      // console.log($(this).val())     
       clone.mouse.selectedTri.name = $(this).val()
-
       $("#object-list").find(`[data-id='${clone.mouse.selectedTri.id}']`).text(clone.mouse.selectedTri.name)
-
-      console.log(clone.map.data)
     })
 
     /////////////////////////////////////
@@ -462,6 +457,8 @@ class Editor {
       ///////////////////////
       // canvas window click
       $(`#${name}`).on('mousedown', function (event) {
+        if (clone.mouse.mode == 'move') $('body').addClass('cursor-move');
+
         clone.selectedView = name
         clone.mouse.isOk = name
         const rect = this.getBoundingClientRect()
@@ -470,16 +467,28 @@ class Editor {
         clone.mouse.startY = event.clientY - rect.top // Egér kezdő Y
         clone.mouse.isMouseDown = true
 
-        ////////////////
-        // ADD TRI MODE
-        if (clone.mouse.addTri.mode) {
-          // console.log('ADD TRIANGLE MODE!')
+        ///////////////////////
+        // MOVE TRIANGLE POINT
+        if (clone.mouse.selectedTri != null && clone.mouse.mode == 'point') {
+          $('body').addClass('cursor-crosshair')
+
+          let view = clone.views[name]
 
           const rect = this.getBoundingClientRect()
           let pos = clone.getMousePosition(clone, event, rect, name)
 
-          clone.mouse.addTri.cords[clone.mouse.addTri.count][clone.views[name].vX] = pos.vx // - (clone.views[name].posX / clone.views[name].ratio)
-          clone.mouse.addTri.cords[clone.mouse.addTri.count][clone.views[name].vY] = pos.vy // - (clone.views[name].posY / clone.views[name].ratio)
+          let findedPoint = clone.mouse.selectedTri.p.find(point => point[view.vX] == pos.vx && point[view.vY] == pos.vy)
+          if (findedPoint) clone.mouse.moveTriPoint = findedPoint;
+        }
+
+        ////////////////
+        // ADD TRI MODE
+        if (clone.mouse.addTri.mode) {
+          const rect = this.getBoundingClientRect()
+          let pos = clone.getMousePosition(clone, event, rect, name)
+
+          clone.mouse.addTri.cords[clone.mouse.addTri.count][clone.views[name].vX] = pos.vx
+          clone.mouse.addTri.cords[clone.mouse.addTri.count][clone.views[name].vY] = pos.vy
 
           if (clone.mouse.addTri.count == 2) {
             if ((clone.mouse.addTri.cords[0][clone.views[name].vX] == clone.mouse.addTri.cords[1][clone.views[name].vX] && clone.mouse.addTri.cords[1][clone.views[name].vX] == clone.mouse.addTri.cords[2][clone.views[name].vX])
@@ -490,7 +499,7 @@ class Editor {
             } else {
               // Add triangle
               let selectedMash = clone.map.data.find(data => data.id == clone.mouse.selectedMeshId)
-          
+
               if (selectedMash) {
                 let t1, t2, t3 = null
                 if (clone.howMany) {
@@ -504,9 +513,9 @@ class Editor {
                   t2 = new Vec2D(clone.mouse.addTri.texture2[1].u, clone.mouse.addTri.texture2[1].v)
                   t3 = new Vec2D(clone.mouse.addTri.texture2[2].u, clone.mouse.addTri.texture2[2].v)
                 }
-    
+
                 clone.howMany = !clone.howMany
-    
+
                 let newTriangleName = 'Tri-New-' + Math.floor(Math.random()*99999)
 
                 selectedMash.tris.unshift(
@@ -514,11 +523,10 @@ class Editor {
                   t1, t2, t3,
                   2, 1, [255, 200, 40, 1], false, newTriangleName)
                 )
-  
+
                 clone.resetMouseAddTri()
                 clone.refreshObjectList()
               }
-
             }
           } else {
             clone.mouse.addTri.count++
@@ -527,6 +535,23 @@ class Editor {
       });
 
       $(`#${name}`).on('mouseup', function (event) {
+        $('body').removeClass('cursor-crosshair')
+        $('body').removeClass('cursor-move')
+
+        // MOVE TRI POINT ENDING
+        if (clone.mouse.selectedTri != null && clone.mouse.mode == 'point' && clone.mouse.moveTriPoint) {
+          let view = clone.views[name]
+
+          const rect = this.getBoundingClientRect()
+          let pos = clone.getMousePosition(clone, event, rect, name)
+
+          clone.mouse.moveTriPoint[view.vX] = pos.vx
+          clone.mouse.moveTriPoint[view.vY] = pos.vy
+          clone.fullRefreshCanvasGraphics()
+
+          clone.mouse.moveTriPoint = null
+        }
+
         // MOUSE MODE: MOVE
         if (clone.mouse.mode == 'move') {
           const rect = this.getBoundingClientRect()
@@ -649,6 +674,30 @@ class Editor {
       }
     });
 
+    // move triangle points
+    $(`.tri-move-up`).on('click', () => {
+      let save = this.mouse.selectedTri.p[1]
+      this.mouse.selectedTri.p[1] = this.mouse.selectedTri.p[0]
+      this.mouse.selectedTri.p[0] = save
+      clone.refreshTriangleDatas()
+    });
+
+    $(`.tri-move-down`).on('click', () => {
+      let save = this.mouse.selectedTri.p[1]
+      this.mouse.selectedTri.p[1] = this.mouse.selectedTri.p[2]
+      this.mouse.selectedTri.p[2] = save
+      clone.refreshTriangleDatas()
+    });
+
+    $(`.tri-all-move`).on('click', () => {
+      console.log(this.mouse.selectedTri.p)
+      let save = this.mouse.selectedTri.p[0]
+      this.mouse.selectedTri.p[0] = this.mouse.selectedTri.p[1]
+      this.mouse.selectedTri.p[1] = this.mouse.selectedTri.p[2]
+      this.mouse.selectedTri.p[2] = save
+      clone.refreshTriangleDatas()
+    });
+
     ////////////////////
     // Responsite menu
     // First load object list
@@ -707,6 +756,7 @@ class Editor {
           clone.mouse.selectedMeshId = selectedMesh.id
           // discard selected triange
           clone.mouse.selectedTri = null
+          $('#object-list').find('.triangle-delete').remove()
           $("#object-list").find('.list-triangle-selected').removeClass('list-triangle-selected')
           $("#object-list").find('.list-mesh-selected').removeClass('list-mesh-selected')
           $("#selected-tri-container").hide()
@@ -734,7 +784,7 @@ class Editor {
 
       if (findedTri) {
         // remove selected class
-        if (clone.mouse.selectedTri && clone.mouse.selectedTri.id) $(document).find(`li[data-id='${clone.mouse.selectedTri.id}']`).removeClass('list-triangle-selected');
+        if (clone.mouse.selectedTri && clone.mouse.selectedTri.id) $(document).find(`li[data-id='${clone.mouse.selectedTri.id}']`).removeClass('list-triangle-selected').find('.triangle-delete').remove();
 
         // modify selested Mashid
         $(document).find(`li[data-id='${clone.mouse.selectedMeshId}'].mesh-name`).removeClass('list-mesh-selected')
@@ -749,26 +799,32 @@ class Editor {
         $("#selected-mesh-container").hide()
         $("#selected-tri-container").show()
 
-        $(document).find(`li[data-id='${triId}']`).addClass('list-triangle-selected')
+        $(document).find(`li[data-id='${triId}']`).addClass('list-triangle-selected').append('<span class="menu-icon menu-icon-pos-1 triangle-delete"></span>')
 
-        $("input[name='tri-p1-X']").val(clone.mouse.selectedTri.p[0].x); $("input[name='tri-p1-Y']").val(clone.mouse.selectedTri.p[0].y)
-        $("input[name='tri-p1-Z']").val(clone.mouse.selectedTri.p[0].z); $("input[name='tri-t1-U']").val(clone.mouse.selectedTri.t[0].u)
-        $("input[name='tri-t1-V']").val(clone.mouse.selectedTri.t[0].v)
-
-        $("input[name='tri-p2-X']").val(clone.mouse.selectedTri.p[1].x); $("input[name='tri-p2-Y']").val(clone.mouse.selectedTri.p[1].y)
-        $("input[name='tri-p2-Z']").val(clone.mouse.selectedTri.p[1].z); $("input[name='tri-t2-U']").val(clone.mouse.selectedTri.t[1].u)
-        $("input[name='tri-t2-V']").val(clone.mouse.selectedTri.t[1].v);
-
-        $("input[name='tri-p3-X']").val(clone.mouse.selectedTri.p[2].x); $("input[name='tri-p3-Y']").val(clone.mouse.selectedTri.p[2].y)
-        $("input[name='tri-p3-Z']").val(clone.mouse.selectedTri.p[2].z); $("input[name='tri-t3-U']").val(clone.mouse.selectedTri.t[2].u)
-        $("input[name='tri-t3-V']").val(clone.mouse.selectedTri.t[2].v);
-
-        $("select[name='tri-light']").val(clone.mouse.selectedTri.light)
-        $("select[name='tri-texture']").val(clone.mouse.selectedTri.tid)
-        $("select[name='tri-normal']").val(clone.mouse.selectedTri.normal)
-
+        clone.refreshTriangleDatas()
         clone.fullRefreshCanvasGraphics()
       }
+    });
+
+    // TRIANGLE SELECTING
+    $(document).on('click', ".triangle-delete", function() {
+      let triId = $(this).closest('.list-triangle-selected').attr('data-id')
+
+      let result = confirm(`Are you sure you want to delete the triangle with id ${triId}?`)
+      if (result) {
+        console.log("A felhasználó rákattintott az OK gombra.");
+      }
+
+      // Keressük meg azt az objektumot, amelyben a keresett háromszög van
+      let selectedObject = clone.map.data.find(obj => obj.tris.some(triangle => triangle.id == triId));
+      if (selectedObject) {
+        // felülírjuk hogy ne legyen benne a megtalált háromszög
+        selectedObject.tris = selectedObject.tris.filter(triangle => triangle.id != triId);
+      }
+      clone.mouse.selectedTri = null
+
+      clone.refreshObjectList()
+      clone.fullRefreshCanvasGraphics()
     });
 
     //////////////////
@@ -822,6 +878,24 @@ class Editor {
 
     // MOUSE INIT
     this.lookMouseApi()
+  }
+
+  refreshTriangleDatas() {
+    $("input[name='tri-p1-X']").val(this.mouse.selectedTri.p[0].x); $("input[name='tri-p1-Y']").val(this.mouse.selectedTri.p[0].y)
+    $("input[name='tri-p1-Z']").val(this.mouse.selectedTri.p[0].z); $("input[name='tri-t1-U']").val(this.mouse.selectedTri.t[0].u)
+    $("input[name='tri-t1-V']").val(this.mouse.selectedTri.t[0].v)
+
+    $("input[name='tri-p2-X']").val(this.mouse.selectedTri.p[1].x); $("input[name='tri-p2-Y']").val(this.mouse.selectedTri.p[1].y)
+    $("input[name='tri-p2-Z']").val(this.mouse.selectedTri.p[1].z); $("input[name='tri-t2-U']").val(this.mouse.selectedTri.t[1].u)
+    $("input[name='tri-t2-V']").val(this.mouse.selectedTri.t[1].v);
+
+    $("input[name='tri-p3-X']").val(this.mouse.selectedTri.p[2].x); $("input[name='tri-p3-Y']").val(this.mouse.selectedTri.p[2].y)
+    $("input[name='tri-p3-Z']").val(this.mouse.selectedTri.p[2].z); $("input[name='tri-t3-U']").val(this.mouse.selectedTri.t[2].u)
+    $("input[name='tri-t3-V']").val(this.mouse.selectedTri.t[2].v);
+
+    $("select[name='tri-light']").val(this.mouse.selectedTri.light)
+    $("select[name='tri-texture']").val(this.mouse.selectedTri.tid)
+    $("select[name='tri-normal']").val(this.mouse.selectedTri.normal)
   }
 
   refreshToolbar() {
@@ -888,6 +962,7 @@ class Editor {
   }
 
   fullRefreshCanvasGraphics() {
+    this.refreshToolbar()
     this.refresViewSize() // full screen or not
     Object.entries(this.views).forEach(([name, value]) => {
       let borderColor = (name == this.selectedView) ? 'blue' : 'gray';
@@ -958,9 +1033,10 @@ class Editor {
         this.drawViewTriangeAction(view, 'white', lineWidth, selectTri.p[0][view.vX], selectTri.p[0][view.vY], selectTri.p[1][view.vX], selectTri.p[1][view.vY], selectTri.p[2][view.vX], selectTri.p[2][view.vY])
       }
 
-      // DRAW HELPLINE 
+      // DRAW HELP POINT AND HELP LINE 
       if (this.mouse.addTri.mode && this.mouse.addTri.count > 0) {
         let np0X = view.posX + this.mouse.addTri.cords[0][view.vX] * view.ratio; let np0Y = view.posY + this.mouse.addTri.cords[0][view.vY] * view.ratio;
+
         view.ctx.strokeStyle = 'purple'
         view.ctx.lineWidth = 4
         view.ctx.beginPath()
