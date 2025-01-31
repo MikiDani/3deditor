@@ -17,6 +17,8 @@ class ViewWindow {
     if (this.canvas) {
       this.ctx = this.canvas.getContext("2d")
       this.ctx.imageSmoothingEnabled = false
+      this.ctx.lineCap = 'round'
+      this.ctx.lineJoin = 'round'
     } else {
       console.error(`${name} is not isset!`)
     }
@@ -82,11 +84,10 @@ class Editor {
       'XZview-canvas': new ViewWindow('XZview-canvas', 'x', 'z', 100, 1, true, true),
       'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', 100, 1, true, true),
     }
+    // console.log(this.views)
 
     /////////////////////
     // ADD HTML ELEMENTS
-
-    console.log(this.views)
 
     // VIEW-SCREEN OPTIONS
     Object.entries(this.views).forEach(([name, value]) => {
@@ -131,11 +132,22 @@ class Editor {
   }
 
   refreshObjectList() {
+    console.log('this.map.data:')
+    console.log(this.map.data)
+
     this.map.structure = this.buildStructure(this.map.data)
+
+    console.log('this.map.structure')
+    console.log(this.map.structure)
+
     // LIST OBJECTS
     function recursiveMenu(item) {
         let element = `<ul>`;
-        element += `<li data-id="${item.id}" class="mesh-name">${item.name} <span class="menu-icon menu-icon-pos-1 triangle-up"></span></li>`;
+        element += `<li data-id="${item.id}" class="mesh-name">
+          ${item.name}
+          <span class="menu-icon menu-icon-pos-1 triangle triangle-up"></span>
+          <span class="menu-icon menu-icon-pos-2 plus"></span>
+        </li>`;
 
         if (Array.isArray(item.tris) && item.tris.length > 0) {
           element += `<ul data-parent-id="${item.id}">`;
@@ -186,8 +198,8 @@ class Editor {
   }
 
   async loadModels() {
-    //this.montains = new Mesh(Date.now())
-    //this.axis = new Mesh(Date.now())
+    //this.montains = new Mesh()
+    //this.axis = new Mesh()
     
     // await this.montains.loadFromObjectFile("data/montains.obj", 'Montains', 'yellow')
     // await this.axis.loadFromObjectFile("data/axis.obj", 'Axis', 'yellow')
@@ -198,19 +210,19 @@ class Editor {
     // --- MOST teszt LOAD
     this.map.data = []
     
-    this.cube = new Mesh(1, null)
+    this.cube = new Mesh()
     await this.cube.loadFromOwnTris("data/cube2.obj", 'Cube', 'lime')
     this.map.data.push(this.cube)
 
-    this.cube2 = new Mesh(2, null)
+    this.cube2 = new Mesh()
     await this.cube2.loadFromOwnTris("data/cube.obj", 'Cube2', 'green')
     this.map.data.push(this.cube2)
 
-    // this.cube3 = new Mesh(3, 2)
+    // this.cube3 = new Mesh()
     // await this.cube3.loadFromOwnTris("data/cube.obj", 'Cube3', 'orange')
     // this.map.data.push(this.cube3)
 
-    // this.cube4 = new Mesh(4, 3)
+    // this.cube4 = new Mesh()
     // await this.cube4.loadFromOwnTris("data/cube.obj", 'Cube4', 'olive')
     // this.map.data.push(this.cube4)
 
@@ -226,7 +238,11 @@ class Editor {
     const root = []
 
     // Az összes elemet elmentjük egy Map-be az id alapján
-    data.forEach(group => map.set(group.id, { ...group, child: [] }))    
+    // data.forEach(group => map.set(group.id, { ...group, child: [] }))
+    data.forEach(group => map.set(group.id, { ...group }))
+
+    // 3 : data.forEach(group => map.set(group.id, { id: group.id, parent_id: group.parent_id, child:[] }));
+
     map.forEach(item => {
       if (item.parent_id === null) {
         root.push(map.get(item.id))
@@ -722,12 +738,12 @@ class Editor {
             let id = $(this).closest('li').attr('data-id')
 
             $(this).removeClass('triangle-up').removeClass('triangle-down')
-    
+
             if (status) {
-                $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).hide()
+                $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).hide(100)
                 $(this).addClass('triangle-down')
             } else {
-                $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).show()
+                $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).show(100)
                 $(this).addClass('triangle-up')
             }
         });
@@ -736,27 +752,30 @@ class Editor {
         $(this).attr('data-status', status)
     });
 
-    $(document).on('click', ".menu-icon", function() {
+    $(document).on('click', ".triangle", function(event) {
+        event.stopPropagation();
         let id = $(this).closest('li').attr('data-id')
 
         if ($(this).hasClass('triangle-up')) {
-            $(this).removeClass('triangle-up').addClass('triangle-down')
+          $(this).removeClass('triangle-up').addClass('triangle-down')
         } else if ($(this).hasClass('triangle-down')) {
-            $(this).removeClass('triangle-down').addClass('triangle-up')
+          $(this).removeClass('triangle-down').addClass('triangle-up')
         }
-    
+
         $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).slideToggle()
     });
 
     // MESH SELECTING
-    $(document).on('click', ".mesh-name", function() {
+    $(document).on('click', ".mesh-name", function(event) {
+        event.stopPropagation()
+
         let id = $(this).attr('data-id')
         let selectedMesh = clone.map.data.find(mesh => mesh.id == id)
         if (selectedMesh) {
           clone.mouse.selectedMeshId = selectedMesh.id
           // discard selected triange
           clone.mouse.selectedTri = null
-          $('#object-list').find('.triangle-delete').remove()
+          $('#object-list').find('.delete').remove()
           $("#object-list").find('.list-triangle-selected').removeClass('list-triangle-selected')
           $("#object-list").find('.list-mesh-selected').removeClass('list-mesh-selected')
           $("#selected-tri-container").hide()
@@ -766,7 +785,7 @@ class Editor {
           $("#selected-mesh-name").val(selectedMesh.name)
           $("#selected-mesh-name").attr('data-id', selectedMesh.id)
           $("#selected-mesh-container").show()
-  
+
           clone.fullRefreshCanvasGraphics()
         }
     });
@@ -784,7 +803,7 @@ class Editor {
 
       if (findedTri) {
         // remove selected class
-        if (clone.mouse.selectedTri && clone.mouse.selectedTri.id) $(document).find(`li[data-id='${clone.mouse.selectedTri.id}']`).removeClass('list-triangle-selected').find('.triangle-delete').remove();
+        if (clone.mouse.selectedTri && clone.mouse.selectedTri.id) $(document).find(`li[data-id='${clone.mouse.selectedTri.id}']`).removeClass('list-triangle-selected').find('.delete').remove();
 
         // modify selested Mashid
         $(document).find(`li[data-id='${clone.mouse.selectedMeshId}'].mesh-name`).removeClass('list-mesh-selected')
@@ -799,7 +818,7 @@ class Editor {
         $("#selected-mesh-container").hide()
         $("#selected-tri-container").show()
 
-        $(document).find(`li[data-id='${triId}']`).addClass('list-triangle-selected').append('<span class="menu-icon menu-icon-pos-1 triangle-delete"></span>')
+        $(document).find(`li[data-id='${triId}']`).addClass('list-triangle-selected').append('<span class="menu-icon menu-icon-pos-1 delete"></span>')
 
         clone.refreshTriangleDatas()
         clone.fullRefreshCanvasGraphics()
@@ -807,7 +826,7 @@ class Editor {
     });
 
     // TRIANGLE SELECTING
-    $(document).on('click', ".triangle-delete", function() {
+    $(document).on('click', ".delete", function() {
       let triId = $(this).closest('.list-triangle-selected').attr('data-id')
 
       let result = confirm(`Are you sure you want to delete the triangle with id ${triId}?`)
@@ -825,6 +844,37 @@ class Editor {
 
       clone.refreshObjectList()
       clone.fullRefreshCanvasGraphics()
+    });
+
+    // ADD MESH CHIND
+    $(document).on('click', ".menu-icon.plus", function(event) {
+      event.stopPropagation();
+      let meshId = $(this).closest('li').attr('data-id')
+      console.log(meshId)
+
+      clone.mouse.selectedTri = null
+      clone.mouse.selectedMeshId = meshId
+
+      let selectedMesh = clone.findMeshById(clone.map.data, meshId)
+
+      if (selectedMesh) {
+          if (!selectedMesh.child) selectedMesh.child = [];
+
+          let addedMesh = new Mesh(`${selectedMesh.name}-new`, selectedMesh.id)
+          selectedMesh.child.push(addedMesh);
+
+          console.log(clone.map.data); // A változások itt is megjelennek
+          console.log(selectedMesh);  // Megmutatja a frissített objektumot
+      } else {
+          console.error("Mesh not found");
+      }
+
+      console.log(selectedMesh)
+
+      clone.refreshObjectList()
+      clone.fullRefreshCanvasGraphics()
+
+      // this.recursiveDrawMeshs(selectedMesh, view, 'white', lineWidth)
     });
 
     //////////////////
@@ -878,6 +928,22 @@ class Editor {
 
     // MOUSE INIT
     this.lookMouseApi()
+  }
+
+  findMeshById(data, meshId) {
+    for (let mesh of data) {
+        if (mesh.id == meshId) {
+            return mesh;
+        }
+        // find child
+        if (mesh.child && mesh.child.length > 0) {
+            let found = findMeshById(mesh.child, meshId);
+            if (found) {
+                return found;
+            }
+        }
+    }
+    return null;
   }
 
   refreshTriangleDatas() {
@@ -985,18 +1051,14 @@ class Editor {
       view.ctx.translate(-view.canvas.width / 2, -view.canvas.height / 2) // Visszahelyezés az eredeti helyre
 
       // POS ORIGO
-      view.ctx.strokeStyle = 'blue'
-      view.ctx.lineWidth = 4
-      view.ctx.beginPath()
-      view.ctx.arc(view.posX, view.posY, 4, 0, 2 * Math.PI)
-      view.ctx.stroke()
+      view.ctx.strokeStyle = 'blue'; view.ctx.lineWidth = 4;
+      view.ctx.beginPath(); view.ctx.arc(view.posX, view.posY, 4, 0, 2 * Math.PI); view.ctx.stroke();
 
       const space = (view.ratio / view.frequent < 1) ? 1 : view.ratio / view.frequent
 
       // DRAW GRID
       if (view.showGrid) {
-        view.ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'
-        view.ctx.lineWidth = 1
+        view.ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'; view.ctx.lineWidth = 1;
 
         const startX = Math.floor(-view.posX / space) * space + view.posX
         const startY = Math.floor(-view.posY / space) * space + view.posY
@@ -1033,7 +1095,15 @@ class Editor {
         this.drawViewTriangeAction(view, 'white', lineWidth, selectTri.p[0][view.vX], selectTri.p[0][view.vY], selectTri.p[1][view.vX], selectTri.p[1][view.vY], selectTri.p[2][view.vX], selectTri.p[2][view.vY])
       }
 
-      // DRAW HELP POINT AND HELP LINE 
+      // SELECTED MASH DRAW
+      if (this.mouse.selectedMeshId && !this.mouse.selectedTri) {        
+        let selectedMesh = this.map.data.find(mesh => mesh.id == this.mouse.selectedMeshId)
+        
+        var lineWidth = 4
+        this.recursiveDrawMeshs(selectedMesh, view, 'white', lineWidth)
+      }
+
+      // WHEN DRAW: HELP POINT AND HELP LINE
       if (this.mouse.addTri.mode && this.mouse.addTri.count > 0) {
         let np0X = view.posX + this.mouse.addTri.cords[0][view.vX] * view.ratio; let np0Y = view.posY + this.mouse.addTri.cords[0][view.vY] * view.ratio;
 
@@ -1066,6 +1136,20 @@ class Editor {
       view.ctx.font = '16px Arial'
       view.ctx.textAlign = 'left'
       view.ctx.fillText(`${view.vX.toUpperCase()} / ${view.vY.toUpperCase()}`, 5, 17)
+    }
+  }
+
+  recursiveDrawMeshs(mesh, view, color, lineWidth) {
+    if (Array.isArray(mesh.tris) && mesh.tris.length > 0) {
+      mesh.tris.forEach(tri => {
+        this.drawViewTriangeAction(view, color, lineWidth, tri.p[0][view.vX], tri.p[0][view.vY], tri.p[1][view.vX], tri.p[1][view.vY], tri.p[2][view.vX], tri.p[2][view.vY])
+      });
+    }
+
+    if (Array.isArray(mesh.child) && mesh.child.length > 0) {
+      mesh.child.forEach(child => {
+        this.recursiveDrawMeshs(child, view, color, lineWidth)
+      });
     }
   }
 
@@ -1136,6 +1220,8 @@ class Editor {
 
       view.ctx.strokeStyle = lineColor
       view.ctx.lineWidth = lineWidth
+      view.ctx.lineCap = 'round'
+      view.ctx.lineJoin = 'round'
 
       view.ctx.beginPath()
       view.ctx.moveTo(p0X, p0Y)

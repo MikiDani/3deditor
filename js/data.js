@@ -66,15 +66,18 @@ export class Triangle {
 }
 
 export class Mesh {
-    constructor(id, type, parent_id = null) {
-        this.id = id
-        this.type = type
+    static instanceCount = 0;
+    constructor(name = 'noname', parent_id = null, type = null) {
+        this.name = name
+        Mesh.instanceCount++
+        this.id = Mesh.instanceCount
         this.parent_id = parent_id
+        this.type = type
         this.tris = []                      // Háromszögek listája (Triangle típusú elemek)
         this.child = []                     // Gyerkekek - ha van
-        this.textures = []      // !!! Ezt kikell dolgozni
         this.lineColor = 'yellow'
-        this.name = 'noname'
+
+        console.log('staticMash count: ', Mesh.instanceCount)   
     }
 
     // Objektum fájl betöltése

@@ -64,7 +64,7 @@ li:hover {
 }
 
 .menu-icon-pos-2 {
-  right: 20px;
+  right: 25px;
 }
 
 .menu-icon-pos-3 {
@@ -78,26 +78,40 @@ li:hover {
 }
 
 .triangle-up {
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-bottom: 8px solid black;
   display: inline-block;
+  width: 15px;
+  height: 15px;
   margin: 3px;
+  color: black;
+  font-size: 15px;
+  line-height: 10px;
+  text-align: center;
+}
+.triangle-up::before {
+  content: "▲";
+}
+.triangle-up:hover {
+  color: yellow !important;
 }
 
 .triangle-down {
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 8px solid black;
   display: inline-block;
+  width: 15px;
+  height: 15px;
   margin: 3px;
+  color: black;
+  font-size: 15px;
+  line-height: 10px;
+  text-align: center;
+}
+.triangle-down::before {
+  content: "▼";
+}
+.triangle-down:hover {
+  color: yellow !important;
 }
 
-.triangle-delete {
+.delete {
   display: inline-block;
   width: 10px;
   height: 10px;
@@ -107,11 +121,28 @@ li:hover {
   line-height: 10px;
   text-align: center;
 }
-.triangle-delete::before {
+.delete::before {
   content: "✖";
 }
-.triangle-delete:hover {
+.delete:hover {
   color: red !important;
+}
+
+.plus {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  color: black;
+  font-size: 12px;
+  line-height: 10px;
+  text-align: center;
+}
+.plus::before {
+  content: "✙";
+}
+.plus:hover {
+  color: yellow !important;
 }
 
 .square {
@@ -137,39 +168,6 @@ li:hover {
 .circle:hover {
   background-color: yellow !important;
   color: yellow !important;
-}
-
-.plus {
-  position: relative;
-  width: 12px;
-  height: 12px;
-  display: inline-block;
-}
-.plus:hover {
-  background-color: yellow !important;
-  color: yellow !important;
-}
-
-.plus::before, .plus::after {
-  content: "";
-  position: absolute;
-  background-color: black;
-}
-
-.plus::before {
-  width: 12px;
-  height: 2px;
-  top: 50%;
-  left: 0;
-  transform: translateY(-50%);
-}
-
-.plus::after {
-  width: 2px;
-  height: 12px;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
 }
 
 .list-mesh-selected {
