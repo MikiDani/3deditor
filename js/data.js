@@ -73,8 +73,7 @@ export class Mesh {
         this.id = Mesh.instanceCount
         this.parent_id = parent_id
         this.type = type
-        this.tris = []                      // Háromszögek listája (Triangle típusú elemek)
-        this.child = []                     // Gyerkekek - ha van
+        this.tris = []
         this.lineColor = 'yellow'
 
         console.log('staticMash count: ', Mesh.instanceCount)   

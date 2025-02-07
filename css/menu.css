@@ -50,12 +50,20 @@ li:hover {
 
 .menu-icon-pos-1,
 .menu-icon-pos-2,
-.menu-icon-pos-3 {
+.menu-icon-pos-3,
+.menu-icon-pos-4,
+.menu-icon-pos-5,
+.menu-icon-pos-6,
+.menu-icon-pos-7 {
   position: absolute;
 }
 .menu-icon-pos-1:hover,
 .menu-icon-pos-2:hover,
-.menu-icon-pos-3:hover {
+.menu-icon-pos-3:hover,
+.menu-icon-pos-4:hover,
+.menu-icon-pos-5:hover,
+.menu-icon-pos-6:hover,
+.menu-icon-pos-7:hover {
   cursor: pointer;
 }
 
@@ -68,7 +76,23 @@ li:hover {
 }
 
 .menu-icon-pos-3 {
-  right: 10px;
+  right: 45px;
+}
+
+.menu-icon-pos-4 {
+  right: 65px;
+}
+
+.menu-icon-pos-5 {
+  right: 85px;
+}
+
+.menu-icon-pos-6 {
+  right: 105px;
+}
+
+.menu-icon-pos-7 {
+  right: 125px;
 }
 
 .list-triangle-selected {
@@ -142,6 +166,74 @@ li:hover {
   content: "✙";
 }
 .plus:hover {
+  color: yellow !important;
+}
+
+.up {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  color: black;
+  font-size: 12px;
+  line-height: 10px;
+  text-align: center;
+}
+.up::before {
+  content: "⭡";
+}
+.up:hover {
+  color: yellow !important;
+}
+
+.down {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  color: black;
+  font-size: 12px;
+  line-height: 10px;
+  text-align: center;
+}
+.down::before {
+  content: "⭣";
+}
+.down:hover {
+  color: yellow !important;
+}
+
+.back {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  color: black;
+  font-size: 12px;
+  line-height: 10px;
+  text-align: center;
+}
+.back::before {
+  content: "⭠";
+}
+.back:hover {
+  color: yellow !important;
+}
+
+.back-blend-in {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  color: black;
+  font-size: 12px;
+  line-height: 10px;
+  text-align: center;
+}
+.back-blend-in::before {
+  content: "⇦";
+}
+.back-blend-in:hover {
   color: yellow !important;
 }
 

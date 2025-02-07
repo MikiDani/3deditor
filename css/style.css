@@ -285,7 +285,7 @@ button[class="3d-buttons"] {
 
 #object-list {
   flex: 1;
-  height: 150px;
+  height: 165px;
   overflow: auto;
   scroll-behavior: smooth;
 }

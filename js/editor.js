@@ -55,6 +55,7 @@ class Editor {
       endY: 0,
       mode: 'move',           // move, point, triangle
       selectedMeshId: null,
+      selectedMeshData: null,
       isMouseDown: false,
       addTri: {},
       selectedTri: {},
@@ -135,47 +136,54 @@ class Editor {
     console.log('this.map.data:')
     console.log(this.map.data)
 
-    this.map.structure = this.buildStructure(this.map.data)
-
     console.log('this.map.structure')
     console.log(this.map.structure)
 
     // LIST OBJECTS
-    function recursiveMenu(item) {
-        let element = `<ul>`;
-        element += `<li data-id="${item.id}" class="mesh-name">
-          ${item.name}
-          <span class="menu-icon menu-icon-pos-1 triangle triangle-up"></span>
-          <span class="menu-icon menu-icon-pos-2 plus"></span>
-        </li>`;
-
-        if (Array.isArray(item.tris) && item.tris.length > 0) {
-          element += `<ul data-parent-id="${item.id}">`;
-          item.tris.forEach(tri => {
-            element += `<li data-id="${tri.id}" class="tri-list">${tri.name}</li>`;
-          });
-          element += `</ul>`;
-        }
-
-        if (Array.isArray(item.child) && item.child.length > 0) {
-          item.child.forEach(child => {
-            element += recursiveMenu(child)
-          });
-        }
-
-        element += `</ul>`;
-        return element;
-    }
-    // start
     $('#object-list').html('');
     let element = `<ul>`;
 
     this.map.structure.forEach(item => {
-      element += recursiveMenu(item)
+      element += this.recursiveMenu(item)
     })
 
     element += `</ul>`;
     $('#object-list').html(element)
+    
+    if (this.mouse.selectedMeshId) this.selectedMeshClassChange(this.mouse.selectedMeshId);
+  }
+
+  recursiveMenu(item) {
+    const itemData = this.map.data.find(element => element.id == item.id)
+
+    let element = `<ul>`;
+    element += `
+    <li data-id="${item.id}" class="mesh-name">
+      ${itemData.name}
+      <span class="menu-icon menu-icon-pos-1 triangle triangle-down" title="open/close triangles"></span>
+      <span class="menu-icon menu-icon-pos-2 plus" title="Add group"></span>
+      <span class="menu-icon menu-icon-pos-3 up" data-type="prev" title="move up-brother"></span>
+      <span class="menu-icon menu-icon-pos-4 down" data-type="next" title="move down-brother"></span>
+      <span class="menu-icon menu-icon-pos-5 back" title="move back-parent"></span>
+      <span class="menu-icon menu-icon-pos-6 back-blend-in" title="blend in with parent"></span>
+    </li>`;
+
+    if (Array.isArray(itemData.tris) && itemData.tris.length > 0) {
+      element += `<ul data-parent-id="${item.id}" style="display:none;">`;
+      itemData.tris.forEach(tri => {
+        element += `<li data-id="${tri.id}" class="tri-list">${tri.name}</li>`;
+      });
+      element += `</ul>`;
+    }
+
+    if (Array.isArray(item.child) && item.child.length > 0) { // ?? > 0
+      item.child.forEach(child => {
+        element += this.recursiveMenu(child)
+      });
+    }
+
+    element += `</ul>`;
+    return element;
   }
 
   async loadTextures() {
@@ -210,51 +218,38 @@ class Editor {
     // --- MOST teszt LOAD
     this.map.data = []
     
-    this.cube = new Mesh()
-    await this.cube.loadFromOwnTris("data/cube2.obj", 'Cube', 'lime')
-    this.map.data.push(this.cube)
+    const cube = new Mesh()
+    await cube.loadFromOwnTris("data/cube2.obj", 'Cube', 'lime')    
+    const cube2 = new Mesh()
+    await cube2.loadFromOwnTris("data/cube.obj", 'Cube2', 'orange')
+    const cube3 = new Mesh('qwe', 1)
+    await cube3.loadFromOwnTris("data/cube.obj", 'Cube3', 'purple')
 
-    this.cube2 = new Mesh()
-    await this.cube2.loadFromOwnTris("data/cube.obj", 'Cube2', 'green')
-    this.map.data.push(this.cube2)
-
-    // this.cube3 = new Mesh()
-    // await this.cube3.loadFromOwnTris("data/cube.obj", 'Cube3', 'orange')
-    // this.map.data.push(this.cube3)
-
-    // this.cube4 = new Mesh()
-    // await this.cube4.loadFromOwnTris("data/cube.obj", 'Cube4', 'olive')
-    // this.map.data.push(this.cube4)
+    // MAP DATA
+    this.map.data.push(cube)
+    this.map.data.push(cube2)
+    this.map.data.push(cube3)
 
     console.log(this.map.data)
 
-    this.map.structure = this.buildStructure(this.map.data)
+    // MAP STRUCTURE
+    this.map.structure = [
+      {
+        id: cube.id,
+        child: [
+          {
+            id: cube3.id,
+            child: [],
+          }
+        ],
+      },
+      {
+        id: cube2.id,
+        child: [],
+      }
+    ]
 
     console.log(this.map.structure)
-  }
-
-  buildStructure(data) {
-    const map = new Map()
-    const root = []
-
-    // Az összes elemet elmentjük egy Map-be az id alapján
-    // data.forEach(group => map.set(group.id, { ...group, child: [] }))
-    data.forEach(group => map.set(group.id, { ...group }))
-
-    // 3 : data.forEach(group => map.set(group.id, { id: group.id, parent_id: group.parent_id, child:[] }));
-
-    map.forEach(item => {
-      if (item.parent_id === null) {
-        root.push(map.get(item.id))
-      } else {
-        const parent = map.get(item.parent_id)
-        if (parent) {
-          parent.child.push(map.get(item.id))
-        }
-      }
-    });
-
-    return root;
   }
 
   getMousePosition(clone, event, rect, name) {
@@ -268,6 +263,71 @@ class Editor {
     let valueY = Math.round(plusMouseY / clone.views[name].ratio)
 
     return {sx: startX, sy: startY, ix:invertX, iy:invertY, vx: valueX, vy: valueY}
+  }
+
+  findMeshById(data, meshId) {
+    if (!Array.isArray(data)) return null; // Ellenőrizzük, hogy a data valóban egy tömb-e
+
+    for (let mesh of data) {
+      if (!mesh || typeof mesh !== "object") continue; // Ellenőrizzük, hogy mesh egy objektum-e
+  
+      if (mesh.id == meshId) {
+        return mesh;
+      }
+      // find child
+      if (mesh.child && mesh.child.length > 0) {
+        let found = this.findMeshById(mesh.child, meshId);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return null;
+  }
+
+  findMeshBrothers(data, meshId) {
+    // If null level
+    let parentId = this.map.data.find(element => element.id == meshId).parent_id    
+    if (!parentId) {      
+      let returnData = []
+      for (let mesh of data) {
+        returnData.push(parseInt(mesh.id))
+      }
+      return returnData;
+    }
+    // if have child
+    for (let mesh of data) {
+      if (mesh.child) {
+        let found = mesh.child.find(child => child.id == meshId);
+        if (found) {
+          let returnData = []
+          for (let meshList of mesh.child) {
+            returnData.push(parseInt(meshList.id))
+          }
+          return returnData;
+        }
+        // find child
+        let deeperSearch = this.findMeshBrothers(mesh.child, meshId);
+        if (deeperSearch) {
+            return deeperSearch;
+        }
+      }
+    }
+    return null;
+  }
+
+  getMapNextOrPrevId(id, brotherIds, type) {
+    let returnData = null
+    id = parseInt(id)
+    const index = brotherIds.indexOf(id)
+    if (index !== -1) {
+      if (type == 'prev') {
+        returnData = index > 0 ? brotherIds[index - 1] : null;
+      } else if (type == 'next') {
+        returnData = index < brotherIds.length - 1 ? brotherIds[index + 1] : null;
+      }
+    }
+    return returnData;
   }
 
   refresViewSize() {
@@ -722,7 +782,7 @@ class Editor {
           let id = $(this).closest('li').attr('data-id')
           if ($(this).hasClass('triangle-down')) {
               $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).hide()
-          } else if ($(this).hasClass('triangle-up')) {
+          } else if ($(this).hasClass('triangle-down')) {
               $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).show()
           }
       });
@@ -768,26 +828,14 @@ class Editor {
     // MESH SELECTING
     $(document).on('click', ".mesh-name", function(event) {
         event.stopPropagation()
+        clone.mouse.selectedTri = null
 
         let id = $(this).attr('data-id')
-        let selectedMesh = clone.map.data.find(mesh => mesh.id == id)
-        if (selectedMesh) {
-          clone.mouse.selectedMeshId = selectedMesh.id
-          // discard selected triange
-          clone.mouse.selectedTri = null
-          $('#object-list').find('.delete').remove()
-          $("#object-list").find('.list-triangle-selected').removeClass('list-triangle-selected')
-          $("#object-list").find('.list-mesh-selected').removeClass('list-mesh-selected')
-          $("#selected-tri-container").hide()
-          // new Mesh selecting
-          $(document).find(`li[data-id='${selectedMesh.id}'].mesh-name`).addClass('list-mesh-selected')
 
-          $("#selected-mesh-name").val(selectedMesh.name)
-          $("#selected-mesh-name").attr('data-id', selectedMesh.id)
-          $("#selected-mesh-container").show()
+        console.log(id)
+        
 
-          clone.fullRefreshCanvasGraphics()
-        }
+        clone.selectedMeshClassChange(id)
     });
 
     // TRIANGLE SELECTING
@@ -826,7 +874,9 @@ class Editor {
     });
 
     // TRIANGLE SELECTING
-    $(document).on('click', ".delete", function() {
+    $(document).on('click', ".delete", function(event) {
+      event.stopPropagation()
+
       let triId = $(this).closest('.list-triangle-selected').attr('data-id')
 
       let result = confirm(`Are you sure you want to delete the triangle with id ${triId}?`)
@@ -848,33 +898,139 @@ class Editor {
 
     // ADD MESH CHIND
     $(document).on('click', ".menu-icon.plus", function(event) {
-      event.stopPropagation();
+      event.stopPropagation()
+
       let meshId = $(this).closest('li').attr('data-id')
-      console.log(meshId)
+      clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = meshId;
 
-      clone.mouse.selectedTri = null
-      clone.mouse.selectedMeshId = meshId
+      let parentMeshData = clone.map.data.find(element => element.id == meshId)
 
-      let selectedMesh = clone.findMeshById(clone.map.data, meshId)
+      if (parentMeshData) {
+        let addNewMesh = new Mesh('new', parentMeshData.id)
+        addNewMesh.name = `${parentMeshData.name}-${addNewMesh.id}`
+        clone.map.data.push(addNewMesh)
 
-      if (selectedMesh) {
-          if (!selectedMesh.child) selectedMesh.child = [];
+        let parentMeshStructure = clone.findMeshById(clone.map.structure, meshId)
 
-          let addedMesh = new Mesh(`${selectedMesh.name}-new`, selectedMesh.id)
-          selectedMesh.child.push(addedMesh);
+        if (parentMeshStructure) parentMeshStructure.child.push({id: addNewMesh.id, child: []})
+        clone.mouse.selectedMeshId = addNewMesh.id
 
-          console.log(clone.map.data); // A változások itt is megjelennek
-          console.log(selectedMesh);  // Megmutatja a frissített objektumot
       } else {
-          console.error("Mesh not found");
+        console.error("Mesh not found");
       }
-
-      console.log(selectedMesh)
 
       clone.refreshObjectList()
       clone.fullRefreshCanvasGraphics()
+    });
 
-      // this.recursiveDrawMeshs(selectedMesh, view, 'white', lineWidth)
+    // MOVE DATA BROTHER PREV / NEXT
+    $(document).on('click', ".menu-icon.up, .menu-icon.down", function(event) {
+      event.stopPropagation()
+
+      let type = $(this).attr('data-type')            
+      let meshId = $(this).closest('li').attr('data-id')
+
+      clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = meshId;
+
+      let structureAllBrothersIds = clone.findMeshBrothers(clone.map.structure, meshId)
+
+      let firstId = meshId
+      let secondId = clone.getMapNextOrPrevId(firstId, structureAllBrothersIds, type)
+
+      if (meshId && firstId && secondId) {  
+        // MAP.DATA CHANGE
+        let mapDataFirst = clone.map.data.find(element => element.id == firstId); let mapDataFirstCopy = { ...mapDataFirst };
+        let mapDataSecond = clone.map.data.find(element => element.id == secondId); let mapDataSecondCopy = { ...mapDataSecond };
+        [mapDataFirst, mapDataSecond] = [mapDataSecondCopy, mapDataFirstCopy]
+        
+        // MAP.STRUCTURE CHANGE
+        let mapStructureFirst = clone.findMeshById(clone.map.structure, firstId)
+        let mapStructureSecond = clone.findMeshById(clone.map.structure, secondId)
+        mapStructureFirst.id = parseInt(secondId); mapStructureSecond.id = parseInt(firstId);
+        
+        clone.refreshObjectList()
+        clone.fullRefreshCanvasGraphics()
+      }
+    });
+
+    // MOVE DATA BACK PARENT
+    $(document).on('click', ".menu-icon.back", function(event) {
+      event.stopPropagation()
+
+      let meshId = $(this).closest('li').attr('data-id')
+
+      clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = meshId;
+
+      // MOVED DATA
+      let mapDataSelected = clone.map.data.find(element => element.id == meshId)
+      let mapStructureSelected = clone.findMeshById(clone.map.structure, meshId)
+
+      if (mapDataSelected.parent_id != null) {
+        let mapStructureParent = clone.findMeshById(clone.map.structure, mapDataSelected.parent_id)
+        let mapDataParent = clone.map.data.find(element => element.id == mapStructureParent.id)
+        if (mapDataParent.parent_id != null) {
+          // PARENT + PARENT
+          let mapStructureParentParent = clone.findMeshById(clone.map.structure, mapDataParent.parent_id)
+
+          let mapStructureSelectedCopy = {...mapStructureSelected}
+          mapDataSelected.parent_id = mapStructureParentParent.id
+          mapStructureParentParent.child.push(mapStructureSelectedCopy)
+
+          const index = mapStructureParent.child.findIndex(element => element.id == meshId)
+          if (index !== -1) mapStructureParent.child.splice(index, 1);
+
+          clone.refreshObjectList()
+          clone.fullRefreshCanvasGraphics()
+        } else {
+          // PARENT + NULL
+          let mapStructureParentNull = clone.findMeshById(clone.map.structure, mapDataParent.id)
+
+          let mapStructureSelectedCopy = {...mapStructureSelected}
+          mapDataSelected.parent_id = null
+          clone.map.structure.push(mapStructureSelectedCopy)
+
+          const index = mapStructureParentNull.child.findIndex(element => element.id == meshId)
+          if (index !== -1) mapStructureParentNull.child.splice(index, 1);
+
+          clone.refreshObjectList()
+          clone.fullRefreshCanvasGraphics()
+        }
+      }
+    });
+
+    $(document).on('click', ".menu-icon.back-blend-in", function(event) {
+      event.stopPropagation()
+
+      let meshId = $(this).closest('li').attr('data-id')
+
+      clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = meshId;
+
+      // MOVED DATA
+      let mapDataSelected = clone.map.data.find(element => element.id == meshId)
+      let mapStructureSelected = clone.findMeshById(clone.map.structure, meshId)
+
+      if (mapStructureSelected.child.length == 0) {
+        if (mapDataSelected.parent_id != null) {
+          let mapStructureParent = clone.findMeshById(clone.map.structure, mapDataSelected.parent_id)
+          
+          let mapDataParent = clone.map.data.find(element => element.id == mapStructureParent.id)
+          // copy triangles
+          for (const [key, value] of Object.entries(mapDataSelected.tris)) mapDataParent.tris.push(value);
+          // delete structure
+          const indexS = mapStructureParent.child.findIndex(element => element.id == meshId)
+          if (indexS !== -1) mapStructureParent.child.splice(indexS, 1);
+          // delete data
+          let index = clone.map.data.findIndex(element => element.id == meshId)
+          if (index !== -1) clone.map.data.splice(index, 1);
+          // change selected mesh
+          clone.mouse.selectedMeshId = mapDataSelected.parent_id;       
+  
+          clone.refreshObjectList()
+          clone.fullRefreshCanvasGraphics()
+        }
+      } else {
+        alert('As long as the group has children, it cannot be merged with the parent element!')
+      }
     });
 
     //////////////////
@@ -906,7 +1062,7 @@ class Editor {
       if (event.code === 'F12') return;
       if (event.ctrlKey && event.shiftKey && event.code === 'KeyC') return;
       if (event.shiftKey && event.code === 'F5') return;
-      if (event.code.startsWith('Digit') || event.code.startsWith('Key')) return;
+      if (event.code.startsWith('Digit') || event.code.startsWith('Key') || event.code.startsWith('Arrow')) return;
       if (event.code === 'Backspace' || event.code === 'Period' || event.code === 'Minus' || event.code === 'NumpadSubtract' || event.code == 'Digit0' || event.code == 'Backquote' || event.code === 'Numpad0') return;
 
       if (['F1', 'F2', 'F3', 'F4'].includes(event.code)) {
@@ -930,22 +1086,6 @@ class Editor {
     this.lookMouseApi()
   }
 
-  findMeshById(data, meshId) {
-    for (let mesh of data) {
-        if (mesh.id == meshId) {
-            return mesh;
-        }
-        // find child
-        if (mesh.child && mesh.child.length > 0) {
-            let found = findMeshById(mesh.child, meshId);
-            if (found) {
-                return found;
-            }
-        }
-    }
-    return null;
-  }
-
   refreshTriangleDatas() {
     $("input[name='tri-p1-X']").val(this.mouse.selectedTri.p[0].x); $("input[name='tri-p1-Y']").val(this.mouse.selectedTri.p[0].y)
     $("input[name='tri-p1-Z']").val(this.mouse.selectedTri.p[0].z); $("input[name='tri-t1-U']").val(this.mouse.selectedTri.t[0].u)
@@ -962,6 +1102,26 @@ class Editor {
     $("select[name='tri-light']").val(this.mouse.selectedTri.light)
     $("select[name='tri-texture']").val(this.mouse.selectedTri.tid)
     $("select[name='tri-normal']").val(this.mouse.selectedTri.normal)
+  }
+
+  selectedMeshClassChange(mashId) {
+    let selectedMesh = this.map.data.find(mesh => mesh.id == mashId)
+    if (selectedMesh) {
+      this.mouse.selectedMeshId = selectedMesh.id
+      // discard selected triange
+      $('#object-list').find('.delete').remove()
+      $("#object-list").find('.list-triangle-selected').removeClass('list-triangle-selected')
+      $("#object-list").find('.list-mesh-selected').removeClass('list-mesh-selected')
+      $("#selected-tri-container").hide()
+      // new Mesh selecting
+      $(document).find(`li[data-id='${selectedMesh.id}'].mesh-name`).addClass('list-mesh-selected')
+  
+      $("#selected-mesh-name").val(selectedMesh.name)
+      $("#selected-mesh-name").attr('data-id', selectedMesh.id)
+      $("#selected-mesh-container").show()
+  
+      this.fullRefreshCanvasGraphics()
+    }
   }
 
   refreshToolbar() {
@@ -1097,10 +1257,12 @@ class Editor {
 
       // SELECTED MASH DRAW
       if (this.mouse.selectedMeshId && !this.mouse.selectedTri) {        
-        let selectedMesh = this.map.data.find(mesh => mesh.id == this.mouse.selectedMeshId)
-        
-        var lineWidth = 4
-        this.recursiveDrawMeshs(selectedMesh, view, 'white', lineWidth)
+        let selectedMesh = this.map.structure.find(mesh => mesh.id == this.mouse.selectedMeshId)       
+
+        if (selectedMesh) {
+          var lineWidth = 4
+          this.recursiveDrawMeshs(selectedMesh, view, 'white', lineWidth)
+        }
       }
 
       // WHEN DRAW: HELP POINT AND HELP LINE
@@ -1140,14 +1302,30 @@ class Editor {
   }
 
   recursiveDrawMeshs(mesh, view, color, lineWidth) {
-    if (Array.isArray(mesh.tris) && mesh.tris.length > 0) {
-      mesh.tris.forEach(tri => {
+    
+    console.log(mesh)
+    
+
+    let meshData = this.map.data.find(mapMesh => mapMesh.id == mesh.id)
+
+    console.log(meshData)
+    
+
+    if (Array.isArray(meshData.tris) && meshData.tris.length > 0) {
+      meshData.tris.forEach(tri => {
+        console.log('ITT')
+        console.log(color, tri.p[0][view.vX])
+        
+        
         this.drawViewTriangeAction(view, color, lineWidth, tri.p[0][view.vX], tri.p[0][view.vY], tri.p[1][view.vX], tri.p[1][view.vY], tri.p[2][view.vX], tri.p[2][view.vY])
       });
     }
 
-    if (Array.isArray(mesh.child) && mesh.child.length > 0) {
+    if (Array.isArray(mesh.child) && mesh.child.length) {
+      console.log(mesh.child)
+      
       mesh.child.forEach(child => {
+        console.log(child)
         this.recursiveDrawMeshs(child, view, color, lineWidth)
       });
     }
