@@ -311,6 +311,10 @@ button[class='3d-buttons'] {
     scroll-behavior: smooth;
 }
 
+.object-list-height-big {
+    height: 600px !important;
+}
+
 #object-add-tri {
     position: relative;
     display: block;
@@ -428,6 +432,46 @@ button[class='3d-buttons'] {
     width: 25%;
 }
 
+.w-20 {
+    width: 20%;
+}
+
+.w-15 {
+    width: 15%;
+}
+
+.w-10 {
+    width: 10%;
+}
+
+.w-5 {
+    width: 5%;
+}
+
+.pe-5 {
+    padding-right: 5px !important;
+}
+
+.pe-10 {
+    padding-right: 10px !important;
+}
+
+.mt-5 {
+    margin-top: 5px !important;
+}
+
+.mt-10 {
+    margin-top: 10px !important;
+}
+
+.me-5 {
+    margin-right: 5px !important;
+}
+
+.me-10 {
+    margin-right: 10px !important;
+}
+
 .text-start {
     text-align: left;
 }
@@ -442,6 +486,15 @@ button[class='3d-buttons'] {
 
 .text-uppercase {
     text-transform: uppercase;
+}
+
+.child-style {
+    background-color: skyblue !important;
+    border-radius: 5px 5px 5px 5px;
+    -webkit-border-radius: 5px 5px 5px 5px;
+    -moz-border-radius: 5px 5px 5px 5px;
+    -ms-border-radius: 5px 5px 5px 5px;
+    -o-border-radius: 5px 5px 5px 5px;
 }
 
 $cell-size: 30px;
@@ -497,4 +550,35 @@ $cell-size: 30px;
 
 .tri-list, .list-mesh-selected {
     user-select: none;
+}
+
+.menu-back-isset {
+    background-color: lime !important;
+    cursor: pointer;
+}
+
+.menu-back-empty {
+    color: gray !important;
+    background-color: #cecece;
+    cursor: default !important;
+}
+
+.combined {
+    position: relative;
+    display: inline-block;
+    font-size: 40px;
+}
+
+.combined span {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.no-list-style {
+    list-style-type: none;
+}
+
+.underline {
+    text-decoration: underline !important;
 }

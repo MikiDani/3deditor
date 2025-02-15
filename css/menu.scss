@@ -67,7 +67,9 @@ li {
 .menu-icon-pos-4,
 .menu-icon-pos-5,
 .menu-icon-pos-6,
-.menu-icon-pos-7 {
+.menu-icon-pos-7,
+.menu-icon-pos-8,
+.menu-icon-pos-l1 {
     position: absolute;
     &:hover {
         cursor: pointer;
@@ -83,25 +85,32 @@ li {
 }
 
 .menu-icon-pos-3 {
-    right: 45px;
+    right: 40px;
 }
 
 .menu-icon-pos-4 {
-    right: 65px;
+    right: 55px;
 }
 
 .menu-icon-pos-5 {
-    right: 85px;
+    right: 70px;
 }
 
 .menu-icon-pos-6 {
-    right: 105px;
+    right: 85px;
 }
 
 .menu-icon-pos-7 {
-    right: 125px;
+    right: 100px;
 }
 
+.menu-icon-pos-8 {
+    right: 115px;
+}
+
+.menu-icon-pos-l1 {
+    left: 105px;
+}
 
 .list-triangle-selected {
     color: green !important;
@@ -148,7 +157,7 @@ li {
     }
 }
 
-.delete {
+.delete, .delete-group {
     display: inline-block;
     width: 10px;
     height: 10px;
@@ -262,6 +271,25 @@ li {
     }
 }
 
+.clipboard {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin: 3px;
+    color: black;
+    font-size: 12px;
+    line-height: 10px;
+    text-align: center;
+
+    &::before {
+        content: '🗎';
+    }
+
+    &:hover {
+        color: yellow !important;
+    }
+}
+
 .square {
     width: 12px;
     height: 12px;
@@ -292,4 +320,30 @@ li {
 .list-mesh-selected {
     color: white !important;
     background-color: darkolivegreen !important;
+}
+
+.d-inline-block {
+    display: inline-block;
+}
+
+.flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#clipboard-container {
+    height: auto !important;
+}
+
+#clipboard-content {
+    font-size: 12px;
+    text-align: left;
+
 }

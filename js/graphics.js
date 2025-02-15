@@ -62,6 +62,14 @@ export class Graphics {
     this.clipped = [new Triangle(), new Triangle()];
   }
 
+  angleToRandian(angle) {
+    return angle * (Math.PI / 180);
+  }
+
+  radianToAngle(rad) {
+    return rad * (180 / Math.PI);
+  }
+
   matrix_MultiplyVector(mM, i) {
     let m = mM.m
     let v = {x:0, y:0, z:0, w:0}
@@ -123,6 +131,15 @@ export class Graphics {
     matrix.m[3][0] = x;
     matrix.m[3][1] = y;
     matrix.m[3][2] = z;
+    return matrix;
+  }
+
+  matrix_MakeScale(s) {
+    const matrix = new Matrix4x4();
+    matrix.m[0][0] = s;   // X tengely mentén nagyítás
+    matrix.m[1][1] = s;   // Y tengely mentén nagyítás
+    matrix.m[2][2] = s;   // Z tengely mentén nagyítás
+    matrix.m[3][3] = 1.0; // Homogén koordináta
     return matrix;
   }
 
@@ -323,8 +340,8 @@ export class Graphics {
       return 1;
     }
 
-    var interPlaneValue;
-    var tVal;
+    var interPlaneValue
+    var tVal
 
     if (nInsidePointCount === 1 && nOutsidePointCount === 2) {
       out_tri1.p[0] = inside_points[0]
@@ -408,7 +425,7 @@ export class Graphics {
   }
 
   movePlayerInMatrix(deltaTime = 0) {
-    this.fTheta += deltaTime;
+    this.fTheta += deltaTime
 
     // World Matrix
     const matRotZ = this.matrix_MakeRotationZ(this.fTheta * 0.5)
@@ -664,7 +681,7 @@ export class Graphics {
     y = Math.floor(y)   
 
     light = light < 0.3 ? 0.3 : light;
-    
+
     let selectedTexture = this.textures[tid]
 
     // texture
@@ -691,7 +708,6 @@ export class Graphics {
   }
 
   drawTriangleFill(p1, p2, p3, light, rgba) {
-   
     light = (light < 0.3) ? 0.3 : light;
 
     if (rgba && Array.isArray(rgba)) {
