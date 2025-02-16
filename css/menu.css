@@ -76,11 +76,11 @@ li:hover {
 }
 
 .menu-icon-pos-2 {
-  right: 25px;
+  right: 30px;
 }
 
 .menu-icon-pos-3 {
-  right: 40px;
+  right: 43px;
 }
 
 .menu-icon-pos-4 {
@@ -310,13 +310,4 @@ li:hover {
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-#clipboard-container {
-  height: auto !important;
-}
-
-#clipboard-content {
-  font-size: 12px;
-  text-align: left;
 }/*# sourceMappingURL=menu.css.map */

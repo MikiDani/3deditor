@@ -23,6 +23,22 @@ body {
   box-sizing: border-box;
 }
 
+.d-block {
+  display: block !important;
+}
+
+.d-inline {
+  display: inline !important;
+}
+
+.d-inline-block {
+  display: inline-block !important;
+}
+
+.d-flex {
+  display: flex !important;
+}
+
 input[type=number] {
   width: 50px;
   border-radius: 7px 7px 7px 7px;
@@ -324,12 +340,16 @@ button[class="3d-buttons"] {
   padding: 0;
 }
 
+.pt-1 {
+  padding-top: 3px;
+}
+
 .m-0 {
   margin: 0;
 }
 
 .mt-1 {
-  margin-top: 4px !important;
+  margin-top: 3px !important;
 }
 
 .mt-2 {
@@ -483,6 +503,16 @@ button[class="3d-buttons"] {
   gap: 2px;
 }
 
+.grid-container-rotate {
+  width: 100%;
+  display: grid;
+  justify-content: center;
+  align-items: center;
+  grid-template-columns: 50%;
+  grid-template-rows: 2;
+  gap: 2px;
+}
+
 .grid-item {
   display: flex;
   justify-content: center;
@@ -554,4 +584,24 @@ button[class="3d-buttons"] {
 
 .underline {
   text-decoration: underline !important;
+}
+
+#clipboard-container {
+  position: relative;
+  height: auto !important;
+}
+
+#clipboard-content {
+  font-size: 12px;
+  text-align: left;
+}
+
+#clipboard-button {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+}
+
+.hover-pointer:hover {
+  cursor: pointer !important;
 }/*# sourceMappingURL=style.css.map */

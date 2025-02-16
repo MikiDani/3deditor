@@ -39,7 +39,7 @@
                 <div class="menu-text-border">LOAD</div>
                 <div class="menu-text-border">SAVE</div>
                 <div class="menu-text-border">TEXTURES</div>
-                <div class="menu-text-border">NONE</div>
+                <div class="menu-text-border">INFO</div>
             </div>
             <div class="menu-icons-between-container w-100">
                 <div class="menu-text-border menu-back" title="Step back.">BACK</div>
@@ -59,16 +59,22 @@
 
         <div id="info-box"><!-- javascript --></div>
 
-        <div class="title-box flex-between">
-            <span id="object-height-size-button" class="triangle-down" data-status="0" title="Object list height button"></span>
-            <span>Objects</span>
-            <span id="object-open-close-all" class="circle" data-status="0" title="Open/Close All"></span>
-        </div>
-
         <div id="clipboard-container" class="title-box" style="display:none;">
             <span>Clipboard</span>
             <div id="clipboard-content">
                 <!-- javascript -->
+            </div>
+            <button id="clipboard-button" type="button" class="hover-pointer">Insert</button>
+        </div>
+
+        <div class="title-box flex-between">
+            <div class="p-0 m-0 d-flex">
+                <span id="object-height-size-button" class="triangle-down hover-pointer" data-status="0" title="Object list height button"></span>
+                <span id="object-open-close-all" class="circle hover-pointer" data-status="0" title="Open/Close All"></span>
+            </div>
+            <span>Objects</span>
+            <div class="p-0 m-0">
+                <span id="object-add-new" class="plus hover-pointer" title="Open/Close All"></span>
             </div>
         </div>
 
@@ -110,9 +116,23 @@
                         </div>
                     </div>
                     <div class="right-side">
-                        <div class="grid-container">
+                        <div class="grid-container-rotate">
                             <div class="grid-item arrow" data-direction-sign="1"  data-type="rotate">↺</div>
                             <div class="grid-item arrow" data-direction-sign="-1" data-type="rotate">↻</div>
+                        </div>
+                    </div>
+                    <div class="left-side">
+                        <div class="side-row">
+                            <span>line-color: </span>
+                            <select name="line-color" data-type="short">
+                                <option value="red">red</option>
+                                <option value="green">green</option>
+                                <option value="blue">blue</option>
+                                <option value="orange">orange</option>
+                                <option value="purple">purple</option>
+                                <option value="lime">lime</option>
+                                <option value="gray">gray</option>
+                            </select>
                         </div>
                     </div>
                 </div>
