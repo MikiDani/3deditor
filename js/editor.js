@@ -91,8 +91,7 @@ class Editor {
       'XYview-canvas': new ViewWindow('XYview-canvas', 'x', 'y', 100, 1, true, true),
       'XZview-canvas': new ViewWindow('XZview-canvas', 'x', 'z', 100, 1, true, true),
       'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', 100, 1, true, true),
-    }
-    // console.log(this.views)
+    } // console.log(this.views)
 
     /////////////////////
     // ADD HTML ELEMENTS
@@ -760,7 +759,6 @@ class Editor {
       // reset views clicks
       $(`[class='reset-center-button'][data-name='${name}']`).on('click', function (event) {
         let name = $(this).attr('data-name')
-
         clone.views[name].posX = 0; clone.views[name].posY = 0;
         clone.fullRefreshCanvasGraphics()
       });
@@ -773,7 +771,7 @@ class Editor {
 
       clone.fullRefreshCanvasGraphics()
     });
-    
+
     // Add new Triangle
     $(document).on('click', '#add-new-tri', () => {
       $('#add-new-tri').removeClass('green2')
@@ -782,6 +780,7 @@ class Editor {
         //remove selected triangle
         this.mouse.selectedTri = null
         $('#object-list').find('.list-triangle-selected').removeClass('list-triangle-selected')
+        $('#object-list').find('.list-triangle-locket').removeClass('list-triangle-locket')
         $('#selected-tri-container').hide()
         clone.fullRefreshCanvasGraphics()
         
@@ -888,7 +887,7 @@ class Editor {
       }
     });
 
-    ////////////////
+    ///////////////
     // HTML inputs
     let triangeInputs = [
       'tri-p1-X', 'tri-p1-Y', 'tri-p1-Z', 'tri-t1-U', 'tri-t1-V',
@@ -976,31 +975,56 @@ class Editor {
       $("#object-list").show()
     }, 100);
 
-    $(document).on('click', '#object-open-close-all', function() {
-        let status = $(this).attr('data-status')
-        status = Number(status)
-
-        $("#object-list").find(".menu-icon").each(function() {
-            let id = Number($(this).closest('li').attr('data-id'))
-            if (id) {              
-              let thisMeshStructure = clone.findMeshById(clone.map.structure, id)
-              $(this).removeClass('triangle-up').removeClass('triangle-down')
-              if (status) {                
-                thisMeshStructure.status = 0
-                $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).hide(100)
-                $(this).addClass('triangle-down')
-              } else {
-                thisMeshStructure.status = 1
-                $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).show(100)
-                $(this).addClass('triangle-up')
-              }
-            }
-        });
-
-        status = status == 1 ? 0 : 1;
-        $(this).attr('data-status', status)
+    // Figyeljük, hogy lenyomva van-e a Control
+    $(document).keydown(function (e) {
+        if (e.ctrlKey) {
+          clone.ctrlPressed = true // console.log(clone.ctrlPressed)
+        }
     });
 
+    $(document).keyup(function (e) {
+        if (e.key == "Control") {
+          clone.ctrlPressed = false // console.log(clone.ctrlPressed)
+        }
+    });
+
+    // Ha a gombot kattintják és a Control is nyomva van
+    $(document).click(".tri-list", function(e) {
+      if (clone.ctrlPressed == true) {
+        clone.ctrlPressed = false
+        if (clone.mouse.selectedTri && Object.keys(clone.mouse.selectedTri).length > 0 && clone.mouse.selectedMeshId) {
+          if (clone.mouse.selectedTri?.locket) {
+            alert(`If a sibling of the triangle is selected, it will not choose another! It have: ${clone.mouse.selectedTri.locket}`)
+          } else {
+            let brotherTriId = $(e.target).attr('data-id')
+            let parentMeshData = clone.map.data.find(mesh => mesh.id == clone.mouse.selectedMeshId)  
+            let findBrother = parentMeshData.tris.find(list => list.id == brotherTriId && list.id != clone.mouse.selectedTri.id)
+
+            if (findBrother) {
+              if (!findBrother?.locket) {
+                // save brother locket id-s
+                clone.mouse.selectedTri.locket = findBrother.id
+                findBrother.locket = clone.mouse.selectedTri.id
+
+                $(document).find(`li[data-id='${clone.mouse.selectedTri.locket}']`).addClass('list-triangle-locket').append('<span class="menu-icon menu-icon-pos-1 delete-locket"></span>')
+                $("#selected-tri-container").hide(); $("#selected-locket-container").show();
+
+                clone.fullRefreshCanvasGraphics()
+
+              } else alert(`The selected triangle already has another sibling assigned to it. ${findBrother.locket}`);
+            } else alert(`You can only choose a sibling of the triangle!`);
+          }
+        } else alert('Not selected triangle!');
+      }
+    });
+
+    // DELETE LOCKETS
+    $(document).on('click', '.delete-locket', function(e) {
+      let triId = $(e.target).closest('li').attr('data-id')
+      clone.deleteLocketBrothers(triId)
+    });
+
+    // ADD NEW ROOT OBJECT
     $(document).on('click', '#object-add-new', function() {
       let addNewMesh = new Mesh('New Group', null)
       clone.map.data.push(addNewMesh)
@@ -1008,33 +1032,75 @@ class Editor {
       clone.refreshObjectList()
     });
 
-    $(document).on('click', '#object-height-size-button', function() {
-        let status = $(this).attr('data-status')
-        status = Number(status)
-        status = status == 1 ? 0 : 1;
-        
-        status == 1 ? $("#object-list").addClass("object-list-height-big") : $("#object-list").removeClass("object-list-height-big")
-        $("#object-height-size-button").removeClass("triangle-up triangle-down")
-        status == 1 ? $("#object-height-size-button").addClass("triangle-up") : $("#object-height-size-button").addClass("triangle-down")
+    // OPEN / CLOSE ALL OBJECT LIST
+    $(document).on('click', '#object-open-close-all', function() {
+      let status = $(this).attr('data-status')
+      status = Number(status)
 
-        $(this).attr('data-status', status)
+      $("#object-list").removeAttr("style")
+
+      $("#object-list").find(".menu-icon").each(function() {
+          let id = Number($(this).closest('li').attr('data-id'))
+          if (id) {
+            let thisMeshStructure = clone.findMeshById(clone.map.structure, id)
+            $(this).removeClass('triangle-up').removeClass('triangle-down')
+            if (status) {                
+              thisMeshStructure.status = 0                
+              $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).hide(40)
+              $(this).addClass('triangle-down')
+            } else {
+              thisMeshStructure.status = 1
+              $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).show(40)
+              $(this).addClass('triangle-up')
+            }
+          }
+      });
+
+      $("#object-open-close-all").removeClass("triangle-up triangle-down")
+      status == 1 ? $("#object-open-close-all").addClass("triangle-down") : $("#object-open-close-all").addClass("triangle-up")
+
+      status = status == 1 ? 0 : 1;
+      $(this).attr('data-status', status)
     });
 
+    // RESIZE OBJECT LIST
+    $(document).on('mousedown', '#object-list-size-button', function (e) {
+      clone.isResizing = true;
+      clone.startY = e.clientY;
+      clone.startHeight = $('#object-list').height();
+      e.preventDefault();
+    });
+    $(document).on('mousemove', function (e) {
+        if (clone.isResizing) {
+            let diffY = e.clientY - clone.startY
+            let newHeight = clone.startHeight + diffY
+            
+            if (newHeight < 51) newHeight = 50
+            if (newHeight > 600) newHeight = 600
+            
+            $('#object-list').height(newHeight);
+        }
+    });
+    $(document).on('mouseup', function () {
+        clone.isResizing = false;
+    });
+
+    // OPEN / CLOSE TRIANGLES
     $(document).on('click', ".triangle", function(event) {
-        event.stopPropagation()
-        let id = Number($(this).closest('li').attr('data-id'))
+      event.stopPropagation()
+        let id = Number($(this).closest('li').attr('data-id'))        
         if (id) {
           let thisMeshStructure = clone.findMeshById(clone.map.structure, id)
-          if ($(this).hasClass('triangle-up')) {
-            $(this).removeClass('triangle-up').addClass('triangle-down')
+          if (thisMeshStructure.status) {
             thisMeshStructure.status = 0
-          } else if ($(this).hasClass('triangle-down')) {
+            $(this).removeClass('triangle-up').addClass('triangle-down')
+            $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).hide(100)
+          } else {
             $(this).removeClass('triangle-down').addClass('triangle-up')
+            $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).show(100)
             thisMeshStructure.status = 1
-          }
+          }          
         }
-
-        $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).slideToggle()
     });
 
     // MESH SELECTING
@@ -1047,39 +1113,52 @@ class Editor {
 
     // TRIANGLE SELECTING
     $(document).on('click', ".tri-list", function() {
-      let triId = $(this).attr('data-id')
-
-      let findedTri = null
-      // SEARCH TRI
-      for (let item of clone.map.data) {
-        findedTri = item.tris.find(tri => tri.id == triId);
-        if (findedTri) break;
-      }
-
-      if (findedTri) {
-        // remove selected class
-        if (clone.mouse.selectedTri && clone.mouse.selectedTri.id) {
-          $(document).find(`li[data-id='${clone.mouse.selectedTri.id}']`).removeClass('list-triangle-selected').find('.delete').remove();
-          $(document).find(`li[data-id='${clone.mouse.selectedTri.id}']`).find('.clipboard').remove();
+      if (!clone.ctrlPressed) {   // not use controll
+        // all locket class remove
+        $("#object-list").find('*').removeClass('list-triangle-locket')
+        $("#object-list").find('span.delete-locket').remove()
+  
+        let triId = $(this).attr('data-id')
+  
+        let findedTri = null
+        // SEARCH TRI
+        for (let item of clone.map.data) {
+          findedTri = item.tris.find(tri => tri.id == triId);
+          if (findedTri) break;
         }
+  
+        if (findedTri) {
+          // remove selected class graph
+          if (clone.mouse.selectedTri && clone.mouse.selectedTri.id) {
+            $(document).find(`li[data-id='${clone.mouse.selectedTri.id}']`).removeClass('list-triangle-selected').find('.delete').remove();
+            $(document).find(`li[data-id='${clone.mouse.selectedTri.id}']`).removeClass('list-triangle-locket').find('.delete').remove();
+            $(document).find(`li[data-id='${clone.mouse.selectedTri.id}']`).find('.clipboard').remove();
+          }
+          // modify selected parent Mash graph
+          $(document).find(`li[data-id='${clone.mouse.selectedMeshId}'].mesh-name`).removeClass('list-mesh-selected')
+          clone.mouse.selectedMeshId = $(this).closest('ul').attr('data-parent-id')
+          $(document).find(`li[data-id='${clone.mouse.selectedMeshId}'].mesh-name`).addClass('list-mesh-selected')
+  
+          // add new selectedTri
+          clone.mouse.selectedTri = findedTri
+          $("#selected-tri-name").val(`Tri ${clone.mouse.selectedTri.name}`)
+          $("#selected-tri-name").attr('data-id', clone.mouse.selectedTri.id)
+          $("#selected-mesh-container").hide()
 
-        // modify selested Mashid
-        $(document).find(`li[data-id='${clone.mouse.selectedMeshId}'].mesh-name`).removeClass('list-mesh-selected')
-        clone.mouse.selectedMeshId = $(this).closest('ul').attr('data-parent-id')
-        $(document).find(`li[data-id='${clone.mouse.selectedMeshId}'].mesh-name`).addClass('list-mesh-selected')
-
-        // add new selectedTri
-        clone.mouse.selectedTri = findedTri
-
-        $("#selected-tri-name").val(`Tri ${clone.mouse.selectedTri.name}`)
-        $("#selected-tri-name").attr('data-id', clone.mouse.selectedTri.id)
-        $("#selected-mesh-container").hide()
-        $("#selected-tri-container").show()
-
-        $(document).find(`li[data-id='${triId}']`).addClass('list-triangle-selected').append('<span class="menu-icon menu-icon-pos-2 clipboard"></span><span class="menu-icon menu-icon-pos-1 delete"></span>')
-
-        clone.refreshTriangleDatas()
-        clone.fullRefreshCanvasGraphics()
+          // if isset Locket Brother
+          if (clone.mouse.selectedTri?.locket) {
+            $(document).find(`li[data-id='${clone.mouse.selectedTri.locket}']`).addClass('list-triangle-locket').append('<span class="menu-icon menu-icon-pos-1 delete-locket"></span>')
+            $("#selected-tri-container").hide(); $("#selected-locket-container").show();
+          } else {
+            $("#selected-locket-container").hide(); $("#selected-tri-container").show();
+          }
+  
+          // add selected triangle graph
+          $(document).find(`li[data-id='${triId}']`).addClass('list-triangle-selected').append('<span class="menu-icon menu-icon-pos-2 clipboard"></span><span class="menu-icon menu-icon-pos-1 delete"></span>')
+  
+          clone.refreshTriangleDatas()
+          clone.fullRefreshCanvasGraphics()
+        }
       }
     });
 
@@ -1101,7 +1180,7 @@ class Editor {
         }
         clone.mouse.selectedTri = null
   
-        clone.refreshObjectList(true)
+        clone.refreshObjectList()
         clone.fullRefreshCanvasGraphics()
       }
 
@@ -1116,6 +1195,7 @@ class Editor {
 
       let selectedObject = clone.map.data.find(obj => obj.tris.some(triangle => triangle.id == triId));
       if (selectedObject) {
+        clone.deleteLocketBrothers(triId) // delete locket brother
         clone.clipboardMemory.tris.push(selectedObject.tris.filter(triangle => triangle.id == triId)[0]) // copy clipboard
         selectedObject.tris = selectedObject.tris.filter(triangle => triangle.id != triId) // delete triangle
       }
@@ -1371,6 +1451,20 @@ class Editor {
     this.lookMouseApi()
   }
 
+  deleteLocketBrothers(triId) {
+    let selectedObject = this.map.data.find(obj => obj.tris.some(triangle => triangle.id == triId));
+    let selectedTriangle = selectedObject ? selectedObject.tris.find(triangle => triangle.id == triId) : null;
+    if (selectedTriangle) {
+      let locketId = (selectedTriangle?.locket) ? selectedTriangle.locket : false;
+      if (locketId) {
+        let locketTriangle = selectedObject.tris.find(triangle => triangle.id == locketId)
+
+        delete selectedTriangle.locket
+        delete locketTriangle.locket
+      }
+    }
+  }
+
   recursiveTransformMeshs(mesh, transformData) {
     let meshData = this.map.data.find(mapMesh => mapMesh.id == mesh.id)
 
@@ -1450,6 +1544,7 @@ class Editor {
       $('#object-list').find('.delete').remove()
       $('#object-list').find('.mesh-name').removeClass('child-style') // mesh child seledted class remove
       $("#object-list").find('.list-triangle-selected').removeClass('list-triangle-selected')
+      $("#object-list").find('.list-triangle-locket').removeClass('list-triangle-locket')
       $("#object-list").find('.list-mesh-selected').removeClass('list-mesh-selected')
       $("#selected-tri-container").hide()
       // new Mesh selecting
@@ -1488,8 +1583,6 @@ class Editor {
     });
 
     $("#menu-top, #menu-right").on('click', () => {
-      //console.log('Move out canvas')
-
       // remove new triange if active
       this.resetMouseAddTri()
       
@@ -1591,6 +1684,11 @@ class Editor {
         let selectTri = this.mouse.selectedTri
         var lineWidth = 4
         this.drawViewTriangeAction(view, 'white', lineWidth, selectTri.p[0][view.vX], selectTri.p[0][view.vY], selectTri.p[1][view.vX], selectTri.p[1][view.vY], selectTri.p[2][view.vX], selectTri.p[2][view.vY])
+        // DRAW LOCKET IF HAVE
+        if (selectTri?.locket) {
+          let locketTriangle = this.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == selectTri.locket)
+          this.drawViewTriangeAction(view, 'white', lineWidth, locketTriangle.p[0][view.vX], locketTriangle.p[0][view.vY], locketTriangle.p[1][view.vX], locketTriangle.p[1][view.vY], locketTriangle.p[2][view.vX], locketTriangle.p[2][view.vY])
+        }
       }
 
       // SELECTED MASH DRAW
@@ -1873,7 +1971,7 @@ class Editor {
   // DRAW GRAPHICS
   refreshScreen = () => { 
     this.graph.clearScreen(this.graph.screenCanvas, this.graph.screenCtx)
-    this.graph.buffer.fill(0)         // clear memoryCanvas
+    this.graph.buffer.fill(0)         // CLEAR memoryCanvas
     this.graph.depthBuffer.fill(0)    // DELETE Depth Buffer
 
     // this.graph.testFloor()

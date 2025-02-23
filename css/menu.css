@@ -113,6 +113,12 @@ li:hover {
   background-color: #b1b1b1 !important;
 }
 
+.list-triangle-locket {
+  color: darkblue !important;
+  border: 1px deeppink;
+  background-color: #2acf33 !important;
+}
+
 .triangle-up {
   display: inline-block;
   width: 15px;
@@ -162,6 +168,23 @@ li:hover {
 }
 .delete:hover, .delete-group:hover {
   color: red !important;
+}
+
+.delete-locket {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  color: black;
+  font-size: 12px;
+  line-height: 10px;
+  text-align: center;
+}
+.delete-locket::before {
+  content: "▬";
+}
+.delete-locket:hover {
+  color: orange !important;
 }
 
 .plus {

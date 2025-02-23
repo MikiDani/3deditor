@@ -56,6 +56,7 @@
     <div id="menu-right">
 
         <button id="add-new-tri" class="title-box title-button">Add New Triangle</button>
+        <button id="add-new-rec" class="title-box title-button">Add New Rectange</button>
 
         <div id="info-box"><!-- javascript --></div>
 
@@ -69,8 +70,7 @@
 
         <div class="title-box flex-between">
             <div class="p-0 m-0 d-flex">
-                <span id="object-height-size-button" class="triangle-down hover-pointer" data-status="0" title="Object list height button"></span>
-                <span id="object-open-close-all" class="circle hover-pointer" data-status="0" title="Open/Close All"></span>
+                <span id="object-open-close-all" class="triangle-down hover-pointer" data-status="0" title="Open/Close All"></span>
             </div>
             <span>Objects</span>
             <div class="p-0 m-0">
@@ -81,6 +81,7 @@
         <div id="object-list" class="box-1 responsive-menu" style="display:none;">
             <!-- javascript -->
         </div>
+        <div id="object-list-size-button"></div>
 
         <div id="selected-mesh-container" class="p-0 m-0" style="display:none;">
             <div class="title-box-flex text-start">
@@ -148,21 +149,21 @@
                 <div class="right-screen-options">
                     <div class="left-side">
                         <div class="side-row">
-                            <span>p1X: </span><input type="number" name="tri-p1-X" data-type="p" data-axis="x" data-num="0" min="-10000" max="10000" step="0.1" value="0">
+                            <span class="w-30">p1X: </span><input class="w-70" type="number" name="tri-p1-X" data-type="p" data-axis="x" data-num="0" min="-10000" max="10000" step="0.1" value="0">
                         </div>
                         <div class="side-row">
-                            <span>p1Y: </span><input type="number" name="tri-p1-Y" data-type="p" data-axis="y" data-num="0" min="-10000" max="10000" step="0.1" value="0">
+                            <span class="w-30">p1Y: </span><input class="w-70" type="number" name="tri-p1-Y" data-type="p" data-axis="y" data-num="0" min="-10000" max="10000" step="0.1" value="0">
                         </div>
                         <div class="side-row">
-                            <span>p1Z: </span><input type="number" name="tri-p1-Z" data-type="p" data-axis="z" data-num="0" min="-10000" max="10000" step="0.1" value="0">
+                            <span class="w-30">p1Z: </span><input class="w-70" type="number" name="tri-p1-Z" data-type="p" data-axis="z" data-num="0" min="-10000" max="10000" step="0.1" value="0">
                         </div>
                     </div>
                     <div class="right-side">
                         <div class="side-row">
-                            <span>t1U: </span><input type="number" name="tri-t1-U" data-type="t" data-axis="u" data-num="0" step="0.1" value="0">
+                            <span class="w-30">t1U: </span><input class="w-70" type="number" name="tri-t1-U" data-type="t" data-axis="u" data-num="0" step="0.1" value="0">
                         </div>
                         <div class="side-row">
-                            <span>t1V: </span><input type="number" name="tri-t1-V" data-type="t" data-axis="v" data-num="0" step="0.1" value="0">
+                            <span class="w-30">t1V: </span><input class="w-70" type="number" name="tri-t1-V" data-type="t" data-axis="v" data-num="0" step="0.1" value="0">
                         </div>
                         <div class="side-row w-100 text-center">
                             <span class="tri-all-move w-100" title="All points rotate">All move ↑</span>
@@ -170,21 +171,21 @@
                     </div>
                     <div class="left-side mt-3">
                         <div class="side-row">
-                            <span>p2X: </span><input type="number" name="tri-p2-X" data-type="p" data-axis="x" data-num="1" min="-10000" max="10000" step="0.1" value="0">
+                            <span class="w-30">p2X: </span><input class="w-70" type="number" name="tri-p2-X" data-type="p" data-axis="x" data-num="1" min="-10000" max="10000" step="0.1" value="0">
                         </div>
                         <div class="side-row">
-                            <span>p2Y: </span><input type="number" name="tri-p2-Y" data-type="p" data-axis="y" data-num="1" min="-10000" max="10000" step="0.1" value="0">
+                            <span class="w-30">p2Y: </span><input class="w-70" type="number" name="tri-p2-Y" data-type="p" data-axis="y" data-num="1" min="-10000" max="10000" step="0.1" value="0">
                         </div>
                         <div class="side-row">
-                            <span>p2Z: </span><input type="number" name="tri-p2-Z" data-type="p" data-axis="z" data-num="1" min="-10000" max="10000" step="0.1" value="0">
+                            <span class="w-30">p2Z: </span><input class="w-70" type="number" name="tri-p2-Z" data-type="p" data-axis="z" data-num="1" min="-10000" max="10000" step="0.1" value="0">
                         </div>
                     </div>
                     <div class="right-side mt-3">
                         <div class="side-row">
-                            <span>t2U: </span><input type="number" name="tri-t2-U" data-type="t" data-axis="u" data-num="1" step="0.1" value="0">
+                            <span class="w-30">t2U: </span><input class="w-70" type="number" name="tri-t2-U" data-type="t" data-axis="u" data-num="1" step="0.1" value="0">
                         </div>
                         <div class="side-row">
-                            <span>t2V: </span><input type="number" name="tri-t2-V" data-type="t" data-axis="v" data-num="1" step="0.1" value="0">
+                            <span class="w-30">t2V: </span><input class="w-70" type="number" name="tri-t2-V" data-type="t" data-axis="v" data-num="1" step="0.1" value="0">
                         </div>
                         <div class="side-row w-100 d-flex justify-content-center align-items-center">
                             <span class="tri-move-up" title="2. point move up">↑</span>
@@ -193,21 +194,21 @@
                     </div>
                     <div class="left-side mt-3">
                         <div class="side-row">
-                            <span>p3X: </span><input type="number" name="tri-p3-X" data-type="p" data-axis="x" data-num="2" min="-10000" max="10000" step="0.1" value="0">
+                            <span class="w-30">p3X: </span><input class="w-70" type="number" name="tri-p3-X" data-type="p" data-axis="x" data-num="2" min="-10000" max="10000" step="0.1" value="0">
                         </div>
                         <div class="side-row">
-                            <span>p3Y: </span><input type="number" name="tri-p3-Y" data-type="p" data-axis="y" data-num="2" min="-10000" max="10000" step="0.1" value="0">
+                            <span class="w-30">p3Y: </span><input class="w-70" type="number" name="tri-p3-Y" data-type="p" data-axis="y" data-num="2" min="-10000" max="10000" step="0.1" value="0">
                         </div>
                         <div class="side-row">
-                            <span>p3Z: </span><input type="number" name="tri-p3-Z" data-type="p" data-axis="z" data-num="2" min="-10000" max="10000" step="0.1" value="0">
+                            <span class="w-30">p3Z: </span><input class="w-70" type="number" name="tri-p3-Z" data-type="p" data-axis="z" data-num="2" min="-10000" max="10000" step="0.1" value="0">
                         </div>
                     </div>
                     <div class="right-side mt-3">
                         <div class="side-row">
-                            <span>t3U: </span><input type="number" name="tri-t3-U" data-type="t" data-axis="u" data-num="2" step="0.1" value="0">
+                            <span class="w-30">t3U: </span><input class="w-70" type="number" name="tri-t3-U" data-type="t" data-axis="u" data-num="2" step="0.1" value="0">
                         </div>
                         <div class="side-row">
-                            <span>t3V: </span><input type="number" name="tri-t3-V" data-type="t" data-axis="v" data-num="2" step="0.1" value="0">
+                            <span class="w-30">t3V: </span><input class="w-70" type="number" name="tri-t3-V" data-type="t" data-axis="v" data-num="2" step="0.1" value="0">
                         </div>
                     </div>
                     <div class="left-side mt-3">
@@ -217,7 +218,7 @@
                     </div>
                     <div class="right-side mt-3">
                         <div class="side-row">
-                            <span>text: </span>
+                            <span class="w-30">text: </span>
                             <select name="tri-texture" data-type="short">
                                 <option value="0">0</option>
                                 <option value="1">1</option>
@@ -233,6 +234,80 @@
                         <div class="side-row">
                             <span>Normal: </span>
                             <select name="tri-normal" data-type="short">
+                                <option value="false">Off</option>
+                                <option value="true">On</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="selected-locket-container" class="p-0 m-0" style="display:none;">
+            <div class="title-box-flex text-start">
+                <span class="text-small">Tri. name 1.:</span>
+                <input type="text" id="selected-tri-name-1" class="input-name" value="">
+            </div>
+            <div class="title-box-flex text-start">
+                <span class="text-small">Tri. name 2.:</span>
+                <input type="text" id="selected-tri-name-2" class="input-name" value="">
+            </div>
+            <div id="object-add-tri" class="box-1">
+                <div class="right-screen-options">
+                    <div class="left-side">
+                        <div class="side-row">
+                            <span class="w-30">t1U: </span><input class="w-70" type="number" name="l-tri-t1-U" data-type="t" data-axis="u" data-num="0" step="0.1" value="0">
+                        </div>
+                        <div class="side-row">
+                            <span class="w-30">t1V: </span><input class="w-70" type="number" name="l-tri-t1-V" data-type="t" data-axis="v" data-num="0" step="0.1" value="0">
+                        </div>
+                        <div class="side-row w-100 text-center">
+                            <span class="tri-all-move w-100" title="All points rotate">All move ↑</span>
+                        </div>
+                    </div>
+                    <div class="right-side">
+                        <div class="side-row">
+                            <span>light: </span><input type="number" name="l-tri-light" data-axis="light" min="0" max="1" step="0.1" value="1">
+                        </div>
+                    </div>
+                    <div class="left-side mt-3">
+                        <div class="side-row">
+                            <span class="w-30">t2U: </span><input class="w-70" type="number" name="l-tri-t2-U" data-type="t" data-axis="u" data-num="1" step="0.1" value="0">
+                        </div>
+                        <div class="side-row">
+                            <span class="w-30">t2V: </span><input class="w-70" type="number" name="l-tri-t2-V" data-type="t" data-axis="v" data-num="1" step="0.1" value="0">
+                        </div>
+                        <div class="side-row w-100 d-flex justify-content-center align-items-center">
+                            <span class="tri-move-up" title="2. point move up">↑</span>
+                            <span class="tri-move-down" title="2. point move down">↓</span>
+                        </div>
+                    </div>
+                    <div class="right-side mt-3">
+                        <div class="side-row">
+                            <span class="w-30">text: </span>
+                            <select name="l-tri-texture" data-type="short">
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="left-side mt-3">
+                        <div class="side-row">
+                            <span class="w-30">t3U: </span><input class="w-70" type="number" name="l-tri-t3-U" data-type="t" data-axis="u" data-num="2" step="0.1" value="0">
+                        </div>
+                        <div class="side-row">
+                            <span class="w-30">t3V: </span><input class="w-70" type="number" name="l-tri-t3-V" data-type="t" data-axis="v" data-num="2" step="0.1" value="0">
+                        </div>
+                    </div>
+                    <div class="right-side mt-3">
+                        <div class="side-row">
+                            <span>Normal: </span>
+                            <select name="l-tri-normal" data-type="short">
                                 <option value="false">Off</option>
                                 <option value="true">On</option>
                             </select>

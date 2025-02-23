@@ -118,6 +118,12 @@ li {
     background-color: #b1b1b1 !important;
 }
 
+.list-triangle-locket {
+    color: darkblue !important;
+    border: 1px deeppink;
+    background-color: #2acf33 !important;
+}
+
 //--- icons
 .triangle-up {
     display: inline-block;
@@ -173,6 +179,25 @@ li {
 
     &:hover {
         color: red !important;
+    }
+}
+
+.delete-locket {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin: 3px;
+    color: black;
+    font-size: 12px;
+    line-height: 10px;
+    text-align: center;
+
+    &::before {
+        content: '▬';
+    }
+
+    &:hover {
+        color: orange !important;
     }
 }
 
