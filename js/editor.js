@@ -65,10 +65,12 @@ class Editor {
       selectedMeshData: null,
       isMouseDown: false,
       addTri: {},
+      addRec: {},
       selectedTri: {},
       moveTriPoint: null,
     }
     this.resetMouseAddTri()
+    this.resetMouseAddRec()
     
     this.howMany = true
 
@@ -146,7 +148,7 @@ class Editor {
       });
     } else if (mode == 'save') {
       this.mapMemory.unshift(JSON.parse(JSON.stringify(this.map)))
-      if (this.mapMemory.length > 5) this.mapMemory.splice(5);
+      if (this.mapMemory.length > 8) this.mapMemory.splice(8);
     } else if (mode == 'back') {
       if (this.mapMemory.length > 0) {
         console.log('BACK')
@@ -163,7 +165,6 @@ class Editor {
         alert(`you can't go back`)
       }
     }
-    // console.log(this.mapMemory)
 
     // Button design
     $(".menu-text-border.menu-back").removeClass('menu-back-isset menu-back-empty');
@@ -204,12 +205,6 @@ class Editor {
   refreshObjectList() {
     this.refreshClipboard()
 
-    console.log('this.map.data:')
-    console.log(this.map.data)
-
-    console.log('this.map.structure')
-    console.log(this.map.structure)
-
     // LIST OBJECTS
     $('#object-list').html('');
     let element = `<ul>`;
@@ -218,7 +213,7 @@ class Editor {
     })
     element += `</ul>`;
     $('#object-list').html(element)
-    
+
     if (this.mouse.selectedMeshId) this.selectedMeshClassChange(this.mouse.selectedMeshId);
   }
 
@@ -376,18 +371,25 @@ class Editor {
     return null;
   }
 
+  getAllMeshTreeIds(data, ids = []) {      
+    if (data?.id) ids.push(data.id);
+    if (Array.isArray(data.child) && data.child.length > 0) for (let row of data.child) this.getAllMeshTreeIds(row, ids);
+
+    return ids;
+  }
+
   deleteMeshParent(parent, id) {
     if (!parent || !Array.isArray(parent)) return;
 
     for (let i = 0; i < parent.length; i++) {
-      if (parent[i].id == id) {
-          // DELETE
-          parent.splice(i, 1)
-          return;
+      if (parent[i].id == id) {        
+        // DELETE
+        parent.splice(i, 1)
+        // continue;
       }
 
-      if (parent[i].child) {
-          this.deleteMeshParent(parent[i].child, id)
+      if (parent[i]?.child && parent[i].child.length > 0) {        
+        this.deleteMeshParent(parent[i].child, id)
       }
     }
   }
@@ -488,14 +490,38 @@ class Editor {
       texture1: [{u:0, v:1}, {u:0, v:0}, {u:1, v:0}],
       texture2: [{u:0, v:1}, {u:1, v:0}, {u:1, v:1}],
       light: 1,
-    }   
+    }
+    // HELP
     // new Triangle(new Vec3D(1, 0, 0, 1), new Vec3D(1, 1, 0, 1), new Vec3D(1, 1, 1, 1), new Vec2D(0, 1, 1), new Vec2D(0, 0, 1), new Vec2D(1, 0, 1)),
     // new Triangle(new Vec3D(1, 0, 0, 1), new Vec3D(1, 1, 1, 1), new Vec3D(1, 0, 1, 1), new Vec2D(0, 1, 1), new Vec2D(1, 0, 1), new Vec2D(1, 1, 1)),
     $('#add-new-tri').removeClass('green2')
   }
 
+  resetMouseAddRec () {
+    this.mouse.addRec = {
+      mode: false,
+      count: 0,
+      cords: [{x:0, y:0, z:0}, {x:0, y:0, z:0}],
+      texture1: [{u:0, v:1}, {u:0, v:0}, {u:1, v:0}],
+      texture2: [{u:0, v:1}, {u:1, v:0}, {u:1, v:1}],
+      light: 1,
+    }
+    $('#add-new-rec').removeClass('green2')
+  }
+
   initInputs() {
     var clone = this
+
+    // MAP INFO TO THE CONSOL
+    $(document).on('keydown', (event) => {
+      if (event.key == 'i') {
+        console.log('this.map.data:')
+        console.log(this.map.data)
+    
+        console.log('this.map.structure')
+        console.log(this.map.structure)
+      }
+    });
 
     // VIEW BUTTONS
     $(".view-buttons").on('click', function() {
@@ -591,6 +617,8 @@ class Editor {
         selectedMesh.name = $(this).val()
 
         $("#object-list").find(`[data-id='${selectedMesh.id}']`).text(selectedMesh.name)
+
+        clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
       }
     })
 
@@ -673,6 +701,7 @@ class Editor {
           clone.mouse.addTri.cords[clone.mouse.addTri.count][clone.views[name].vX] = pos.vx
           clone.mouse.addTri.cords[clone.mouse.addTri.count][clone.views[name].vY] = pos.vy
 
+          // Count clicked cordinate points
           if (clone.mouse.addTri.count == 2) {
             if ((clone.mouse.addTri.cords[0][clone.views[name].vX] == clone.mouse.addTri.cords[1][clone.views[name].vX] && clone.mouse.addTri.cords[1][clone.views[name].vX] == clone.mouse.addTri.cords[2][clone.views[name].vX])
             || (clone.mouse.addTri.cords[0][clone.views[name].vY] == clone.mouse.addTri.cords[1][clone.views[name].vY] && clone.mouse.addTri.cords[1][clone.views[name].vY] == clone.mouse.addTri.cords[2][clone.views[name].vY])) {
@@ -708,13 +737,86 @@ class Editor {
                   t1, t2, t3,
                   2, 1, [255, 200, 40, 1], false, newTriangleName)
                 )
-
-                clone.resetMouseAddTri()
-                clone.refreshObjectList()
               }
             }
+            clone.resetMouseAddTri()
+            clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
           } else {
             clone.mouse.addTri.count++
+          }
+        }
+
+        /////////////////////
+        // ADD RECTANGLE MODE
+        if (clone.mouse.addRec.mode) {
+          const rect = this.getBoundingClientRect()
+          let pos = clone.getMousePosition(clone, event, rect, name)
+
+          clone.mouse.addRec.cords[clone.mouse.addRec.count][clone.views[name].vX] = pos.vx
+          clone.mouse.addRec.cords[clone.mouse.addRec.count][clone.views[name].vY] = pos.vy
+
+          // Count clicked cordinate points
+          if (clone.mouse.addRec.count == 1) {
+            if ((clone.mouse.addRec.cords[0][clone.views[name].vX] == clone.mouse.addRec.cords[1][clone.views[name].vX])
+            || (clone.mouse.addRec.cords[0][clone.views[name].vY] == clone.mouse.addRec.cords[1][clone.views[name].vY])) {
+              // Adding error
+              clone.resetMouseAddRec()
+              alert('Adding error!')
+            } else {
+              // Add rectangle
+              clone.saveMapMemory('save')
+
+              let selectedMash = clone.map.data.find(data => data.id == clone.mouse.selectedMeshId)
+
+              if (selectedMash) {                                
+                let p1 = clone.mouse.addRec.cords[0]; let p2 = clone.mouse.addRec.cords[1]
+                let vX = clone.views[clone.selectedView].vX; let vY = clone.views[clone.selectedView].vY;
+
+                // add triangle 1.
+                let t1_0 = { x: 0, y: 0, z: 0 }; let t1_1 = { x: 0, y: 0, z: 0 }; let t1_2 = { x: 0, y: 0, z: 0 };
+                t1_0[vX] = p1[vX]; t1_0[vY] = p2[vY]; t1_1[vX] = p2[vX]; t1_1[vY] = p2[vY]; t1_2[vX] = p2[vX]; t1_2[vY] = p1[vY];
+
+                let ta1 = new Vec2D(clone.mouse.addRec.texture1[0].u, clone.mouse.addRec.texture1[0].v)
+                let ta2 = new Vec2D(clone.mouse.addRec.texture1[1].u, clone.mouse.addRec.texture1[1].v)
+                let ta3 = new Vec2D(clone.mouse.addRec.texture1[2].u, clone.mouse.addRec.texture1[2].v)
+
+                let newTriangleName = 'Rec-New-A-' + Math.floor(Math.random()*99999)
+                let newTri1 = new Triangle(new Vec3D(t1_0.x, t1_0.y, t1_0.z), new Vec3D(t1_1.x, t1_1.y, t1_1.z), new Vec3D(t1_2.x, t1_2.y, t1_2.z),
+                ta1, ta2, ta3,
+                2, 1, [255, 200, 40, 1], false, newTriangleName)
+
+                // add triangle 2.
+                let t2_0 = { x: 0, y: 0, z: 0 }; let t2_1 = { x: 0, y: 0, z: 0 }; let t2_2 = { x: 0, y: 0, z: 0 };
+                t2_0[vX] = p1[vX]; t2_0[vY] = p2[vY]; t2_1[vX] = p2[vX]; t2_1[vY] = p1[vY]; t2_2[vX] = p1[vX]; t2_2[vY] = p1[vY];
+                
+                let tb1 = new Vec2D(clone.mouse.addRec.texture2[0].u, clone.mouse.addRec.texture2[0].v)
+                let tb2 = new Vec2D(clone.mouse.addRec.texture2[1].u, clone.mouse.addRec.texture2[1].v)
+                let tb3 = new Vec2D(clone.mouse.addRec.texture2[2].u, clone.mouse.addRec.texture2[2].v)
+                
+                let newTriangleName2 = 'Rec-New-B-' + Math.floor(Math.random()*99999)
+                
+                let newTri2 = new Triangle(new Vec3D(t2_0.x, t2_0.y, t2_0.z), new Vec3D(t2_1.x, t2_1.y, t2_1.z), new Vec3D(t2_2.x, t2_2.y, t2_2.z), tb1, tb2, tb3, 2, 1, [255, 200, 40, 1], false, newTriangleName2)
+                
+                newTri1.locket = newTri2.id
+                newTri2.locket = newTri1.id
+
+                console.log(newTri1)
+                console.log(newTri2)
+                
+                
+
+                // clone.mouse.selectedTri = newTri1
+                // clone.mouse.selectedLock = newTri2
+
+                selectedMash.tris.unshift(newTri1)
+                selectedMash.tris.unshift(newTri2)
+              }
+            }
+            clone.resetMouseAddRec()
+            clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
+          } else {
+            clone.mouse.addRec.count++
+            console.log('clone.mouse.addRec.count: ', clone.mouse.addRec.count)
           }
         }
       });
@@ -776,6 +878,9 @@ class Editor {
     $(document).on('click', '#add-new-tri', () => {
       $('#add-new-tri').removeClass('green2')
 
+      console.log('ITT TRI')
+      console.log(this.mouse.addTri.mode)
+
       if (this.mouse.selectedMeshId) {
         //remove selected triangle
         this.mouse.selectedTri = null
@@ -784,18 +889,44 @@ class Editor {
         $('#selected-tri-container').hide()
         clone.fullRefreshCanvasGraphics()
         
+        console.log(this.mouse.addTri.mode)
+
         if (this.mouse.addTri.mode == false) {
           this.mouse.addTri.mode = true
+
+          console.log(this.mouse.addTri.mode)
           $('#add-new-tri').addClass('green2')
+          this.resetMouseAddRec()
         } else {
           console.log('reset add trialgle....')
-          this.mouse.addTri.mode = false
           this.resetMouseAddTri()
-          $('#add-new-tri').removeClass('green2')
         }
-      } else {
-        alert('Not selected Mesh!')
-      }
+      } else alert('Not selected Mesh!')
+    });
+
+    // Add new Rectangle
+    $(document).on('click', '#add-new-rec', () => {
+      $('#add-new-rec').removeClass('green2')
+      if (this.mouse.selectedMeshId) {
+        //remove selected triangle
+        this.mouse.selectedTri = null
+        $('#object-list').find('.list-triangle-selected').removeClass('list-triangle-selected')
+        $('#object-list').find('.list-triangle-locket').removeClass('list-triangle-locket')
+        $('#selected-tri-container').hide()
+        clone.fullRefreshCanvasGraphics()
+
+        console.log(this.mouse.selectedMeshId)
+        
+        if (this.mouse.addRec.mode == false) {
+          this.mouse.addRec.mode = true
+          $('#add-new-rec').addClass('green2')
+          this.resetMouseAddTri()
+        } else {
+          console.log('reset add rectangle....')
+          this.mouse.addRec.mode = false
+          this.resetMouseAddRec()
+        }
+      } else alert('Not selected Mesh!')
     });
 
     $(document).on('click', '#clipboard-button', () => {
@@ -956,6 +1087,87 @@ class Editor {
       clone.refreshTriangleDatas()
     });
 
+    // LOCKET
+    let locketInputs = [
+      'lock-t1-U', 'lock-t1-V', 'lock-t2-U', 'lock-t2-V', 'lock-t3-U', 'lock-t3-V',
+      'lock-light', 'lock-texture', 'lock-normal',
+    ]
+
+    locketInputs.forEach(name => {
+      $(`input[name='${name}']`).on('input', function () {
+        let type = $(this).attr('data-type')
+        let axis = $(this).attr('data-axis')
+        let num = $(this).attr('data-num')
+        console.log(type, num, axis)
+
+        console.log(clone.mouse.selectedTri)
+        console.log(clone.mouse.selectedLock)
+        
+
+        if (typeof clone.mouse.selectedTri.id !== 'undefined' && typeof clone.mouse.selectedLock.id !== 'undefined') {
+
+          console.log('TRI')
+          console.log(clone.mouse.selectedTri)
+
+          console.log('LOCK')
+          console.log(clone.mouse.selectedLock)
+
+          clone.mouse.selectedTri[type][num][axis] = $(this).val()
+
+          let invertAxis = axis == 'u' ? 'v' : 'u';
+
+          // let newNum
+          // if (num == '2') newNum = '3'
+          // if (num == '3') newNum = '1'
+
+          clone.mouse.selectedLock[type][num][invertAxis] = $(this).val()
+          clone.fullRefreshCanvasGraphics()
+        }
+      });
+    });
+
+    $(`select[name='lock-texture']`).on('input', function () {
+      if (typeof clone.mouse.selectedTri.id !== 'undefined' && typeof clone.mouse.selectedLock.id !== 'undefined') {
+        clone.mouse.selectedTri.tid = $(this).val()
+        clone.mouse.selectedLock.tid = $(this).val()
+        clone.fullRefreshCanvasGraphics()
+      }
+    });
+
+    $(`select[name='lock-normal']`).on('input', function () {
+      if (typeof clone.mouse.selectedTri.id !== 'undefined' && typeof clone.mouse.selectedLock.id !== 'undefined') {
+        clone.mouse.selectedTri.normal = $(this).val()
+        clone.mouse.selectedLock.normal = $(this).val()
+        clone.fullRefreshCanvasGraphics()
+      }
+    });
+
+    $(`input[name='lock-light']`).on('input', function () {
+      if (typeof clone.mouse.selectedTri.id !== 'undefined' && typeof clone.mouse.selectedLock.id !== 'undefined') {
+        clone.mouse.selectedTri.light = $(this).val()
+        clone.mouse.selectedLock.light = $(this).val()
+        clone.fullRefreshCanvasGraphics()
+      }
+    });
+
+    $(`input[id='selected-tri-name-1']`).on('input', function () {
+      console.log($(this).val())
+      
+      if (typeof clone.mouse.selectedTri.id !== 'undefined' && typeof clone.mouse.selectedLock.id !== 'undefined') {
+        clone.mouse.selectedTri.name = $(this).val()
+        clone.refreshObjectList()
+      }
+    });
+
+    $(`input[id='selected-tri-name-2']`).on('input', function () {
+      console.log($(this).val())
+
+      if (typeof clone.mouse.selectedLock.id !== 'undefined') {
+        clone.mouse.selectedLock.name = $(this).val()
+        clone.refreshObjectList()
+      }
+    });
+
     ////////////////////
     // Responsite menu
     // First load object list
@@ -975,48 +1187,57 @@ class Editor {
       $("#object-list").show()
     }, 100);
 
-    // Figyeljük, hogy lenyomva van-e a Control
-    $(document).keydown(function (e) {
-        if (e.ctrlKey) {
-          clone.ctrlPressed = true // console.log(clone.ctrlPressed)
-        }
-    });
-
-    $(document).keyup(function (e) {
-        if (e.key == "Control") {
-          clone.ctrlPressed = false // console.log(clone.ctrlPressed)
-        }
-    });
-
-    // Ha a gombot kattintják és a Control is nyomva van
-    $(document).click(".tri-list", function(e) {
-      if (clone.ctrlPressed == true) {
-        clone.ctrlPressed = false
-        if (clone.mouse.selectedTri && Object.keys(clone.mouse.selectedTri).length > 0 && clone.mouse.selectedMeshId) {
-          if (clone.mouse.selectedTri?.locket) {
-            alert(`If a sibling of the triangle is selected, it will not choose another! It have: ${clone.mouse.selectedTri.locket}`)
-          } else {
-            let brotherTriId = $(e.target).attr('data-id')
-            let parentMeshData = clone.map.data.find(mesh => mesh.id == clone.mouse.selectedMeshId)  
-            let findBrother = parentMeshData.tris.find(list => list.id == brotherTriId && list.id != clone.mouse.selectedTri.id)
-
-            if (findBrother) {
-              if (!findBrother?.locket) {
-                // save brother locket id-s
-                clone.mouse.selectedTri.locket = findBrother.id
-                findBrother.locket = clone.mouse.selectedTri.id
-
-                $(document).find(`li[data-id='${clone.mouse.selectedTri.locket}']`).addClass('list-triangle-locket').append('<span class="menu-icon menu-icon-pos-1 delete-locket"></span>')
-                $("#selected-tri-container").hide(); $("#selected-locket-container").show();
-
-                clone.fullRefreshCanvasGraphics()
-
-              } else alert(`The selected triangle already has another sibling assigned to it. ${findBrother.locket}`);
-            } else alert(`You can only choose a sibling of the triangle!`);
+    // PUSH CONTROLL
+    if (true) {
+      // Figyeljük, hogy lenyomva van-e a Control
+      $(document).keydown(function (e) {
+          if (e.ctrlKey) {
+            clone.ctrlPressed = true
           }
-        } else alert('Not selected triangle!');
-      }
-    });
+      });
+      $(document).keyup(function (e) {
+          if (e.key == "Control") {
+            clone.ctrlPressed = false
+          }
+      });
+      // Ha a gombot kattintják és a Control is nyomva van
+      $(document).click(".tri-list", function(e) {
+        if (clone.ctrlPressed == true) {
+          clone.ctrlPressed = false
+          if (clone.mouse.selectedTri && Object.keys(clone.mouse.selectedTri).length > 0 && clone.mouse.selectedMeshId) {
+            if (clone.mouse.selectedTri?.locket) {
+              alert(`If a sibling of the triangle is selected, it will not choose another! It have: ${clone.mouse.selectedTri.locket}`)
+            } else {
+              let brotherTriId = $(e.target).attr('data-id')
+              let parentMeshData = clone.map.data.find(mesh => mesh.id == clone.mouse.selectedMeshId)  
+              let findBrother = parentMeshData.tris.find(list => list.id == brotherTriId && list.id != clone.mouse.selectedTri.id)
+  
+              if (findBrother) {
+                if (!findBrother?.locket) {
+                  // save brother locket id-s
+                  clone.mouse.selectedTri.locket = findBrother.id
+                  findBrother.locket = clone.mouse.selectedTri.id
+  
+                  clone.mouse.selectedLock = findBrother
+  
+                  $(document).find(`li[data-id='${clone.mouse.selectedTri.locket}']`).addClass('list-triangle-locket').append('<span class="menu-icon menu-icon-pos-1 delete-locket"></span>')
+  
+                  clone.refreshLocketDatas(clone.mouse.selectedTri, findBrother)
+  
+                  $("#selected-tri-container").hide();
+                  
+                  $("#selected-locket-container").show();
+  
+  
+                  clone.fullRefreshCanvasGraphics()
+  
+                } else alert(`The selected triangle already has another sibling assigned to it. ${findBrother.locket}`);
+              } else alert(`You can only choose a sibling of the triangle!`);
+            }
+          } else alert('Not selected triangle!');
+        }
+      });
+    }
 
     // DELETE LOCKETS
     $(document).on('click', '.delete-locket', function(e) {
@@ -1035,7 +1256,7 @@ class Editor {
     // OPEN / CLOSE ALL OBJECT LIST
     $(document).on('click', '#object-open-close-all', function() {
       let status = $(this).attr('data-status')
-      status = Number(status)
+      status = Number(status)     
 
       $("#object-list").removeAttr("style")
 
@@ -1064,26 +1285,28 @@ class Editor {
     });
 
     // RESIZE OBJECT LIST
-    $(document).on('mousedown', '#object-list-size-button', function (e) {
-      clone.isResizing = true;
-      clone.startY = e.clientY;
-      clone.startHeight = $('#object-list').height();
-      e.preventDefault();
-    });
-    $(document).on('mousemove', function (e) {
-        if (clone.isResizing) {
-            let diffY = e.clientY - clone.startY
-            let newHeight = clone.startHeight + diffY
-            
-            if (newHeight < 51) newHeight = 50
-            if (newHeight > 600) newHeight = 600
-            
-            $('#object-list').height(newHeight);
-        }
-    });
-    $(document).on('mouseup', function () {
-        clone.isResizing = false;
-    });
+    if (true) {
+      $(document).on('mousedown', '#object-list-size-button', function (e) {
+        clone.isResizing = true;
+        clone.startY = e.clientY;
+        clone.startHeight = $('#object-list').height();
+        e.preventDefault();
+      });
+      $(document).on('mousemove', function (e) {
+          if (clone.isResizing) {
+              let diffY = e.clientY - clone.startY
+              let newHeight = clone.startHeight + diffY
+              
+              if (newHeight < 51) newHeight = 50
+              if (newHeight > 600) newHeight = 600
+              
+              $('#object-list').height(newHeight);
+          }
+      });
+      $(document).on('mouseup', function () {
+          clone.isResizing = false;
+      });
+    }
 
     // OPEN / CLOSE TRIANGLES
     $(document).on('click', ".triangle", function(event) {
@@ -1362,12 +1585,24 @@ class Editor {
   
         clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = null;
   
-        // delete structure      
-        clone.deleteMeshParent(clone.map.structure, meshId)  
-        // delete data
-        let index = clone.map.data.findIndex(element => element.id == meshId)
-        if (index != -1) clone.map.data.splice(index, 1);
-        
+        let getMeshStructure = clone.findMeshById(clone.map.structure, meshId)
+
+        console.log(getMeshStructure)
+
+        // find mesh all tree ids
+        let deletedIds = clone.getAllMeshTreeIds(getMeshStructure)
+        console.log('deletedIds:')
+        console.log(deletedIds)
+        if (deletedIds) {
+          deletedIds.forEach(meshId => {
+            // delete structure
+            clone.deleteMeshParent(clone.map.structure, meshId)
+            // delete data
+            let index = clone.map.data.findIndex(element => element.id == meshId)
+            if (index != -1) clone.map.data.splice(index, 1);
+          });
+        }
+
         clone.refreshObjectList()
         clone.fullRefreshCanvasGraphics()
       }
@@ -1382,17 +1617,45 @@ class Editor {
 
       clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = null;
 
-      // delete structure
-      clone.deleteMeshParent(clone.map.structure, meshId)
-      // delete data
-      let index = clone.map.data.findIndex(element => element.id == meshId)
-      if (index != -1) {
+      //--
 
-        clone.clipboardMemory.meshs.push(clone.map.data[index])
-        clone.map.data.splice(index, 1)
+      let getMeshStructure = clone.findMeshById(clone.map.structure, meshId)
+
+      // find mesh all tree ids
+      let clipIds = clone.getAllMeshTreeIds(getMeshStructure)
+      console.log('clipIds:')
+      console.log(clipIds)
+      if (clipIds) {
+        clipIds.forEach(meshId => {
+          // copy clipboard memory
+          console.log(meshId)
+          console.log(typeof meshId)
+          
+          let mapdataRow = clone.map.data.find(mesh => mesh.id == meshId)
+          
+          clone.clipboardMemory.meshs.push(mapdataRow)
+          // delete structure
+          clone.deleteMeshParent(clone.map.structure, meshId)
+          // delete data
+          let index = clone.map.data.findIndex(element => element.id == meshId)
+          if (index != -1) clone.map.data.splice(index, 1);
+        });
         console.log(clone.clipboardMemory.meshs)
-        
       }
+
+      //--
+
+      // // delete structure
+      // clone.deleteMeshParent(clone.map.structure, meshId)
+      // // delete data
+      // let index = clone.map.data.findIndex(element => element.id == meshId)
+      // if (index != -1) {
+
+      //   clone.clipboardMemory.meshs.push(clone.map.data[index])
+      //   clone.map.data.splice(index, 1)
+      //   console.log(clone.clipboardMemory.meshs)
+        
+      // }
       
       clone.refreshObjectList()
       clone.fullRefreshCanvasGraphics()
@@ -1451,6 +1714,7 @@ class Editor {
     this.lookMouseApi()
   }
 
+  // DELETE LOCKET BROTHER
   deleteLocketBrothers(triId) {
     let selectedObject = this.map.data.find(obj => obj.tris.some(triangle => triangle.id == triId));
     let selectedTriangle = selectedObject ? selectedObject.tris.find(triangle => triangle.id == triId) : null;
@@ -1461,10 +1725,13 @@ class Editor {
 
         delete selectedTriangle.locket
         delete locketTriangle.locket
+
+        clone.mouse.selectedLock = null
       }
     }
   }
 
+  // TRANSFORM MESH
   recursiveTransformMeshs(mesh, transformData) {
     let meshData = this.map.data.find(mapMesh => mapMesh.id == mesh.id)
 
@@ -1516,6 +1783,7 @@ class Editor {
     }
   }
 
+  // TRIANGLE INPUTS
   refreshTriangleDatas() {
     $("input[name='tri-p1-X']").val(this.mouse.selectedTri.p[0].x); $("input[name='tri-p1-Y']").val(this.mouse.selectedTri.p[0].y)
     $("input[name='tri-p1-Z']").val(this.mouse.selectedTri.p[0].z); $("input[name='tri-t1-U']").val(this.mouse.selectedTri.t[0].u)
@@ -1534,6 +1802,27 @@ class Editor {
     $("select[name='tri-normal']").val(this.mouse.selectedTri.normal)
   }
 
+  // REVRITE LOCKET TRIANGLES
+  refreshLocketDatas(tri1, tri2) {
+    console.log(tri1)
+    console.log(tri2)
+
+    $(`input[id='selected-tri-name-1']`).val(tri1.id)
+    $(`input[id='selected-tri-name-2']`).val(tri2.id)
+
+    if (true) {
+      tri2.tid = tri1.tid
+      tri2.t[0] = { u: 0, v: 1, w: 1 };  // (0,0) → megegyezik tri1-gyel
+      tri2.t[1] = { u: 1, v: 0, w: 1 };  // (1,1) → megegyezik tri1-gyel
+      tri2.t[2] = { u: 1, v: 1, w: 1 };  // (1,0) → új érték
+    }
+
+    $("input[name='lock-t1-U']").val(tri1.t[0].u); $("input[name='lock-t1-V']").val(tri1.t[0].v);
+    $("input[name='lock-t2-U']").val(tri1.t[1].u); $("input[name='lock-t2-V']").val(tri1.t[1].v);
+    $("input[name='lock-t3-U']").val(tri1.t[2].u); $("input[name='lock-t3-V']").val(tri1.t[2].v);
+  }
+
+  // JQUERY MASH 
   selectedMeshClassChange(mashId) {
     let selectedMesh = this.map.data.find(mesh => mesh.id == mashId)
     if (selectedMesh) {
@@ -1552,12 +1841,14 @@ class Editor {
   
       $("#selected-mesh-name").val(selectedMesh.name)
       $("#selected-mesh-name").attr('data-id', selectedMesh.id)
-      $("#selected-mesh-container").show()
+
+      if (!$("#selected-locket-container").is(":visible")) $("#selected-mesh-container").show();
   
       this.fullRefreshCanvasGraphics()
     }
   }
 
+  // TOOLBAR
   refreshToolbar() {
     var clone = this
     $(".menu-icons-center-container > .toolbar-icon").each(function() {
@@ -1569,6 +1860,7 @@ class Editor {
     });
   }
 
+  // MOVE 3D
   lookMouseApi() {
     // MOUSE 3D VIEW SCREENLOCK MOVE
     document.body.requestPointerLock = document.body.requestPointerLock || document.body.mozRequestPointerLock || document.body.webkitRequestPointerLock;
@@ -1618,6 +1910,7 @@ class Editor {
     });
   }
 
+  // REFRESH GRAPHICS
   fullRefreshCanvasGraphics() {
     this.refreshToolbar()
     this.refresViewSize() // full screen or not
@@ -1701,15 +1994,16 @@ class Editor {
         }
       }
 
-      // WHEN DRAW: HELP POINT AND HELP LINE
+      // TRIANGLE: WHEN DRAW: HELP POINT AND HELP LINE
       if (this.mouse.addTri.mode && this.mouse.addTri.count > 0) {
-        let np0X = view.posX + this.mouse.addTri.cords[0][view.vX] * view.ratio; let np0Y = view.posY + this.mouse.addTri.cords[0][view.vY] * view.ratio;
+        let np0X = view.posX + this.mouse.addTri.cords[0][view.vX] * view.ratio;
+        let np0Y = view.posY + this.mouse.addTri.cords[0][view.vY] * view.ratio;
 
-        view.ctx.strokeStyle = 'purple'
-        view.ctx.lineWidth = 4
+        // point
+        view.ctx.fillStyle = 'purple'
         view.ctx.beginPath()
-        view.ctx.arc(np0X, np0Y, 4, 0, 2 * Math.PI)
-        view.ctx.stroke()
+        view.ctx.arc(np0X, np0Y, 3, 0, 2 * Math.PI)
+        view.ctx.fill()
       }
 
       if (this.mouse.addTri.mode && this.mouse.addTri.count == 2) {
@@ -1719,12 +2013,30 @@ class Editor {
         let np0X = view.posX + this.mouse.addTri.cords[prewPoint][view.vX] * view.ratio; let np0Y = view.posY + this.mouse.addTri.cords[prewPoint][view.vY] * view.ratio;
         let np1X = view.posX + this.mouse.addTri.cords[actPoint][view.vX] * view.ratio; let np1Y = view.posY + this.mouse.addTri.cords[actPoint][view.vY] * view.ratio;
 
+        // line
         view.ctx.strokeStyle = 'white'
         view.ctx.lineWidth = 3
         view.ctx.beginPath()
         view.ctx.moveTo(np0X, np0Y)
         view.ctx.lineTo(np1X, np1Y)
         view.ctx.stroke()
+        // point
+        view.ctx.fillStyle = 'purple'
+        view.ctx.beginPath()
+        view.ctx.arc(np1X, np1Y, 3, 0, 2 * Math.PI)
+        view.ctx.fill()
+      }
+      
+      // RECTANGLE: WHEN DRAW: HELP POINT
+      if (this.mouse.addRec.mode && this.mouse.addRec.count > 0) {
+        let np0X = view.posX + this.mouse.addRec.cords[0][view.vX] * view.ratio;
+        let np0Y = view.posY + this.mouse.addRec.cords[0][view.vY] * view.ratio;
+
+        // point
+        view.ctx.fillStyle = 'orange'
+        view.ctx.beginPath()
+        view.ctx.arc(np0X, np0Y, 3, 0, 2 * Math.PI)
+        view.ctx.fill()
       }
 
       view.ctx.restore() // Eredeti koordinátarendszer visszaállítása

@@ -219,10 +219,20 @@ button[class='3d-buttons'] {
             // background-color: deeppink;
         }
 
+#content-center-container {
+    display: flex;
+    justify-content: center;
+    align-items: start;
+}
+
 #menu-right {
-    position: absolute;
-    top: 15%;
-    right:0;
+    // position: absolute;
+    // top: 15%;
+    // right:0;
+    height: 85vh !important;
+
+    overflow-y: auto;
+
     display: flex;
     flex-direction: row;
     justify-content: start;

@@ -204,10 +204,15 @@ button[class="3d-buttons"] {
   align-items: center;
 }
 
+#content-center-container {
+  display: flex;
+  justify-content: center;
+  align-items: start;
+}
+
 #menu-right {
-  position: absolute;
-  top: 15%;
-  right: 0;
+  height: 85vh !important;
+  overflow-y: auto;
   display: flex;
   flex-direction: row;
   justify-content: start;
