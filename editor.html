@@ -9,6 +9,19 @@
     <link href="./css/menu.css" rel="stylesheet">
 </head>
 <body id="root">
+    <script>
+        localStorage.setItem('logged_in', 'true')
+        // console.log(localStorage.getItem('logged_in'))
+
+        if (localStorage.getItem('logged_in') !== 'true') {
+            window.location.href = 'login.html'
+        }
+
+        function logout() {
+            localStorage.removeItem('logged_in')
+            window.location.href = 'login.html'
+        }
+    </script>
     <div id="menu-top" class="p-0 m-0">
         <div id="axis-container" class="p-0 m-0">
             <div class="top-screen-options">
@@ -36,18 +49,26 @@
         </div>
         <div id="toolbar-container" class="p-0 m-0">
             <div class="menu-icons-between-container w-100">
-                <div class="menu-text-border">LOAD</div>
-                <div class="menu-text-border">SAVE</div>
-                <div class="menu-text-border">TEXTURES</div>
-                <div class="menu-text-border">INFO</div>
+                <div class="menu-text-border modal-button" data-mode="load">LOAD</div>
+                <div class="menu-text-border modal-button" data-mode="save">SAVE</div>
+                <div class="menu-text-border modal-button" data-mode="textures">TEXTURES</div>
+                <div class="menu-text-border modal-button" data-mode="info">INFO</div>
             </div>
             <div class="menu-icons-between-container w-100">
                 <div class="menu-text-border menu-back" title="Step back.">BACK</div>
+                <div class="menu-text-border" onclick="logout()" title="Step back.">LOG OUT</div>
             </div>
 
             <div class="menu-icons-center-container">
                 <div class="toolbar-icon move" data-mode="move" title="Moving view screens (hand)"></div>
                 <div class="toolbar-icon point" data-mode="point" title="Moving the points of a triangle"></div>
+                <div class="toolbar-icon"></div>
+                <div class="toolbar-icon"></div>
+                <div class="toolbar-icon"></div>
+                <div class="p-0 m-0 d-flex flex-column justify-content-center align-items-center">
+                    <span style="font-size: 13px;">Text. ratio:</span>
+                    <input type="number" id="text-ratio" value="1" class="text-end">
+                </div>
                 <!-- <div class="toolbar-icon new-triangle" data-mode="new-triangle"></div> -->
             </div>
         </div>
@@ -100,39 +121,31 @@
                     <div class="right-screen-options">
                         <div class="left-side">
                             <div class="side-row">
-                                <span>Size: </span><input type="number" name="move-size" min="-1000" max="1000" step="0.1" value="1.5">
+                                <span>Size: </span><input type="number" name="move-size" data-mode="mesh" min="-1000" max="1000" step="0.1" value="1.5">
                             </div>
                             <div class="side-row justify-content-center">
-                                <div class="grid-item arrow w-20 me-10" data-type="size">⤢</div>
+                                <div class="grid-item arrow w-20 me-10" data-mode="mesh" data-type="size">⤢</div>
                             </div>
                         </div>
                         <div class="right-side">
                             <div class="grid-container">
-                                <div class="grid-item arrow" data-direction-x="1"  data-direction-y="1" data-type="move">↖</div>
-                                <div class="grid-item arrow" data-direction-x="0"  data-direction-y="1" data-type="move">↑</div>
-                                <div class="grid-item arrow" data-direction-x="-1" data-direction-y="1" data-type="move">↗</div>
-                                <div class="grid-item arrow" data-direction-x="1"  data-direction-y="0" data-type="move">←</div>
-                                <div class="grid-item arrow" data-direction-x="0"  data-direction-y="0" data-type="?">●</div>
-                                <div class="grid-item arrow" data-direction-x="-1" data-direction-y="0" data-type="move">→</div>
-                                <div class="grid-item arrow" data-direction-x="1"  data-direction-y="-1" data-type="move">↙</div>
-                                <div class="grid-item arrow" data-direction-x="0"  data-direction-y="-1" data-type="move">↓</div>
-                                <div class="grid-item arrow" data-direction-x="-1" data-direction-y="-1" data-type="move">↘</div>
+                                <div class="grid-item arrow" data-mode="mesh" data-direction-x="1"  data-direction-y="1" data-type="move">↖</div>
+                                <div class="grid-item arrow" data-mode="mesh" data-direction-x="0"  data-direction-y="1" data-type="move">↑</div>
+                                <div class="grid-item arrow" data-mode="mesh" data-direction-x="-1" data-direction-y="1" data-type="move">↗</div>
+                                <div class="grid-item arrow" data-mode="mesh" data-direction-x="1"  data-direction-y="0" data-type="move">←</div>
+                                <div class="grid-item arrow" data-mode="mesh" data-direction-x="0"  data-direction-y="0" data-type="?">●</div>
+                                <div class="grid-item arrow" data-mode="mesh" data-direction-x="-1" data-direction-y="0" data-type="move">→</div>
+                                <div class="grid-item arrow" data-mode="mesh" data-direction-x="1"  data-direction-y="-1" data-type="move">↙</div>
+                                <div class="grid-item arrow" data-mode="mesh" data-direction-x="0"  data-direction-y="-1" data-type="move">↓</div>
+                                <div class="grid-item arrow" data-mode="mesh" data-direction-x="-1" data-direction-y="-1" data-type="move">↘</div>
                             </div>
                         </div>
-                        <div class="left-side">
-                            <div class="side-row">
-                                <span>Angle°</span><input type="number" name="angle-size" min="0" max="360" step="0.1" value="1">
+                        <div class="left-side mt-3">
+                            <div class="side-row mt-1">
+                                <span>Angle°</span><input type="number" name="angle-size" data-mode="mesh" min="0" max="360" step="0.1" value="1">
                             </div>
-                        </div>
-                        <div class="right-side">
-                            <div class="grid-container-rotate">
-                                <div class="grid-item arrow" data-direction-sign="1"  data-type="rotate">↺</div>
-                                <div class="grid-item arrow" data-direction-sign="-1" data-type="rotate">↻</div>
-                            </div>
-                        </div>
-                        <div class="left-side">
-                            <div class="side-row">
-                                <span>line-color: </span>
+                            <div class="side-row mt-1">
+                                <span>line-color:</span>
                                 <select name="line-color" data-type="short">
                                     <option value="red">red</option>
                                     <option value="green">green</option>
@@ -143,6 +156,15 @@
                                     <option value="gray">gray</option>
                                 </select>
                             </div>
+                        </div>
+                        <div class="right-side mt-3">
+                            <div class="grid-container-rotate">
+                                <div class="grid-item arrow" data-mode="mesh" data-direction-sign="1"  data-type="rotate">↺</div>
+                                <div class="grid-item arrow" data-mode="mesh" data-direction-sign="-1" data-type="rotate">↻</div>
+                            </div>
+                        </div>
+                        <div class="left-side">
+                            
                         </div>
                     </div>
                 </div>
@@ -270,7 +292,7 @@
                                 <span class="w-30">t1V: </span><input class="w-70" type="number" name="lock-t1-V" data-type="t" data-axis="v" data-num="0" step="0.1" value="0">
                             </div>
                             <div class="side-row w-100 text-center">
-                                <span class="lock-all-move w-100" title="All points rotate">All move ↑</span>
+                                <span class="rec-all-move w-100" title="All points rotate">All move ↑</span>
                             </div>
                         </div>
                         <div class="right-side">
@@ -286,8 +308,8 @@
                                 <span class="w-30">t2V: </span><input class="w-70" type="number" name="lock-t2-V" data-type="t" data-axis="v" data-num="1" step="0.1" value="0">
                             </div>
                             <div class="side-row w-100 d-flex justify-content-center align-items-center">
-                                <span class="lock-move-up" title="2. point move up">↑</span>
-                                <span class="lock-move-down" title="2. point move down">↓</span>
+                                <span class="rec-move-up" title="2. point move up">↑</span>
+                                <span class="rec-move-down" title="2. point move down">↓</span>
                             </div>
                         </div>
                         <div class="right-side mt-3">
@@ -321,6 +343,33 @@
                                 </select>
                             </div>
                         </div>
+
+                        <div class="left-side mt-3">
+                            <div class="side-row mt-2">
+                                <span>Size: </span><input type="number" name="move-size" data-mode="rectangle" min="-1000" max="1000" step="0.1" value="1.5">
+                            </div>
+                            <div class="side-row mt-2">
+                                <span>Angle°</span><input type="number" name="angle-size" data-mode="rectangle" min="0" max="360" step="0.1" value="1">
+                            </div>
+                            <div class="grid-container-rotate d-flex align-items-center justify-content-between mt-4">
+                                <div class="grid-item arrow w-30" data-mode="rectangle" data-direction-sign="1"  data-type="rotate">↺</div>
+                                <div class="grid-item arrow w-30" data-mode="rectangle" data-direction-sign="-1" data-type="rotate">↻</div>
+                            </div>
+                        </div>
+
+                        <div class="right-side mt-3">
+                            <div class="grid-container">
+                                <div class="grid-item arrow" data-mode="rectangle" data-direction-x="1"  data-direction-y="1" data-type="move">↖</div>
+                                <div class="grid-item arrow" data-mode="rectangle" data-direction-x="0"  data-direction-y="1" data-type="move">↑</div>
+                                <div class="grid-item arrow" data-mode="rectangle" data-direction-x="-1" data-direction-y="1" data-type="move">↗</div>
+                                <div class="grid-item arrow" data-mode="rectangle" data-direction-x="1"  data-direction-y="0" data-type="move">←</div>
+                                <div class="grid-item arrow" data-mode="rectangle" data-direction-x="0"  data-direction-y="0" data-type="?">●</div>
+                                <div class="grid-item arrow" data-mode="rectangle" data-direction-x="-1" data-direction-y="0" data-type="move">→</div>
+                                <div class="grid-item arrow" data-mode="rectangle" data-direction-x="1"  data-direction-y="-1" data-type="move">↙</div>
+                                <div class="grid-item arrow" data-mode="rectangle" data-direction-x="0"  data-direction-y="-1" data-type="move">↓</div>
+                                <div class="grid-item arrow" data-mode="rectangle" data-direction-x="-1" data-direction-y="-1" data-type="move">↘</div>
+                            </div>
+                        </div>                        
                     </div>
                 </div>
             </div>
@@ -329,10 +378,17 @@
     </div>
 
     <!-- Modal Structure -->
-    <div id="customModal" class="modal">
-        <div class="modal-content">
-            <p id="modalMessage">This is a custom alert!</p>
-            <button id="closeModal" class="close-btn">OK</button>
+    <div id="modal-bg" style="display:none;">
+        <div id="modal-container">
+            <div id="modal-close" class="modal-button">✖</div>
+
+            <div id="modal-title"><!-- javascript --></div>
+            
+            <div id="modal-load" class="commander-container" style="display:none;">
+               <!-- javascript -->
+            </div>
+
+            <button class="modal-button-ok cursor-pointer">OK</button>
         </div>
     </div>
 
