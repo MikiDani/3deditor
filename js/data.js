@@ -75,8 +75,17 @@ export class Mesh {
         this.type = type
         this.tris = []
         this.lineColor = 'yellow'
+        this.visible = 1
 
         console.log('staticMash count: ', Mesh.instanceCount)   
+    }
+
+    static setInstanceCount(value) {
+        Mesh.instanceCount = value;
+    }
+
+    static getInstanceCount() {
+        return Mesh.instanceCount;
     }
 
     // Objektum fájl betöltése

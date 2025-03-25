@@ -56,6 +56,17 @@ class Editor {
     this.selectedView = null
     this.textureRatio = 1
 
+    this.mouseVariableReset()
+
+    this.resetMouseAddTri()
+    this.resetMouseAddRec()
+    
+    this.howMany = true
+
+    this.init()
+  }
+
+  mouseVariableReset() {
     this.mouse = {
       startX: 0,
       startY: 0,
@@ -72,15 +83,21 @@ class Editor {
 
       moveTriPoint: null,
     }
-    this.resetMouseAddTri()
-    this.resetMouseAddRec()
-    
-    this.howMany = true
-
-    this.init()
   }
 
   async init() {
+
+    if (false) {
+      let filename = 'valamika'    
+      const responseIsset = await this.fetchData({ ajax: true, save: true, filename }, true)
+      if (responseIsset) {
+        console.log('---------------')
+        console.log('TEST')
+        console.log(responseIsset)
+        console.log('---------------')
+      }
+    }
+
     await this.loadTextures()
     await this.loadModels()
 
@@ -142,6 +159,22 @@ class Editor {
     this.initInputs()
     this.saveMapMemory('init')
     this.fullRefreshCanvasGraphics()
+  }
+
+  deepCopy(data) {
+    if (Array.isArray(data)) {
+      return data.map(item => this.deepCopy(item));
+    }
+    if (data !== null && typeof data === 'object') {
+      let copy = {};
+      for (let key in data) {
+        if (data.hasOwnProperty(key)) {
+          copy[key] = key === 'visible' ? 1 : this.deepCopy(data[key]);
+        }
+      }
+      return copy;
+    }
+    return data;
   }
 
   saveMapMemory(mode) {
@@ -208,18 +241,19 @@ class Editor {
   }
 
   refreshObjectList() {
-    this.refreshClipboard()
+    if (this.map.structure.length > 0) {
+      this.refreshClipboard()
+      // LIST OBJECTS
+      $('#object-list').html('');
+      let element = `<ul>`;
+      this.map.structure.forEach(item => {
+        element += this.recursiveMenu(item)
+      })
+      element += `</ul>`;
+      $('#object-list').html(element)
 
-    // LIST OBJECTS
-    $('#object-list').html('');
-    let element = `<ul>`;
-    this.map.structure.forEach(item => {
-      element += this.recursiveMenu(item)
-    })
-    element += `</ul>`;
-    $('#object-list').html(element)
-
-    if (this.mouse.selectedMeshId) this.selectedMeshClassChange(this.mouse.selectedMeshId);
+      if (this.mouse.selectedMeshId) this.selectedMeshClassChange(this.mouse.selectedMeshId);
+    }
   }
 
   recursiveMenu(item) {
@@ -229,8 +263,10 @@ class Editor {
     element += `
     <li data-id="${item.id}" class="mesh-name">
       <span>${itemData.name}</span>
-      <span class="menu-icon triangle triangle-down" title="Open/Close group triangles"></span>
-      <span class="menu-icon menu-icon-pos-2 plus" title="Add group"></span>
+      <span class="menu-icon triangle triangle-down p-0 m-0" title="Open/Close group triangles"></span>
+      <span class="menu-icon eye eye-up" title="Open/Close group triangles"></span>
+      <span class="menu-icon menu-icon-pos-1 plus" title="Add group"></span>
+      <span class="menu-icon menu-icon-pos-2 duplicate" title="Duplicaded group"></span>
       <span class="menu-icon menu-icon-pos-3 up" data-type="prev" title="Move up-brother"></span>
       <span class="menu-icon menu-icon-pos-4 down" data-type="next" title="Move down-brother"></span>
       <span class="menu-icon menu-icon-pos-5 back" title="Move back-parent"></span>
@@ -277,52 +313,72 @@ class Editor {
   }
 
   async loadModels() {
-    // this.montains = new Mesh()
-    // this.axis = new Mesh()
-    
-    // --- MOST teszt LOAD
     this.map.data = []
+    this.map.structure = []
 
-    // await this.montains.loadFromObjectFile("data/montains.obj", 'Montains', 'yellow')
-    // await this.axis.loadFromObjectFile("data/axis.obj", 'Axis', 'yellow')
+    // FIRST LOAD
+    if (true) {
+      let filename = 'testver'
+      const response = await this.fetchData({ ajax: true, load: true, filename: filename })
+      console.log(response)
 
-    // this.axis.id = 100
+      if (response?.data && response?.structure) {
+        console.log('response:'); console.log(response);
+  
+        this.map.data = response.data
+        this.map.structure = response.structure
 
-    // this.map.data.push(this.montains)
-    // this.map.data.push(this.axis)
+        const maxId = Math.max(...this.map.data.map(obj => obj.id));
+        Mesh.setInstanceCount(maxId + 1)
 
-    const cube = new Mesh()
-    await cube.loadFromOwnTris("data/cube2.obj", 'Cube', 'lime')    
-    const cube2 = new Mesh()
-    await cube2.loadFromOwnTris("data/cube.obj", 'Cube2', 'orange')
-    const cube3 = new Mesh('', 1)
-    await cube3.loadFromOwnTris("data/cube.obj", 'Cube3', 'purple')
-
-    // MAP DATA
-    this.map.data.push(cube)
-    this.map.data.push(cube2)
-    this.map.data.push(cube3)
-
-    console.log(this.map.data)
-
-    // MAP STRUCTURE
-    this.map.structure = [
-      {
-        id: cube.id,
-        child: [
-          {
-            id: cube3.id,
-            child: [],
-          }
-        ],
-      },
-      {
-        id: cube2.id,
-        child: [],
+        console.log(this.map.data)
+        console.log(this.map.structure)
       }
-    ]
+    }
 
-    console.log(this.map.structure)
+    if (false) {
+      // this.montains = new Mesh()
+      // this.axis = new Mesh()
+      
+      // --- MOST teszt LOAD
+  
+      // await this.montains.loadFromObjectFile("data/montains.obj", 'Montains', 'yellow')
+      // await this.axis.loadFromObjectFile("data/axis.obj", 'Axis', 'yellow')
+  
+      // this.axis.id = 100
+  
+      // this.map.data.push(this.montains)
+      // this.map.data.push(this.axis)
+      const cube = new Mesh()
+      await cube.loadFromOwnTris("data/cube2.obj", 'Cube', 'lime')    
+      const cube2 = new Mesh()
+      await cube2.loadFromOwnTris("data/cube.obj", 'Cube2', 'orange')
+      const cube3 = new Mesh('', 1)
+      await cube3.loadFromOwnTris("data/cube.obj", 'Cube3', 'purple')
+  
+      // MAP DATA
+      this.map.data.push(cube)
+      this.map.data.push(cube2)
+      this.map.data.push(cube3)
+
+      // MAP STRUCTURE
+      this.map.structure = [
+        {
+          id: cube.id,
+          child: [
+            {
+              id: cube3.id,
+              child: [],
+            }
+          ],
+        },
+        {
+          id: cube2.id,
+          child: [],
+        }
+      ]
+    }
+
   }
 
   getMousePosition(clone, event, rect, name) {
@@ -332,7 +388,7 @@ class Editor {
     let invertX = rect.width - startX; let invertY = rect.height - startY;
     let plusMouseX = invertX - clone.views[name].posX; let plusMouseY = invertY - clone.views[name].posY;
 
-    // old 
+    // old
     // let valueX = Math.round(plusMouseX / clone.views[name].ratio)
     // let valueY = Math.round(plusMouseY / clone.views[name].ratio)
 
@@ -382,7 +438,7 @@ class Editor {
 
   getAllMeshTreeIds(data, ids = []) {      
     if (data?.id) ids.push(data.id);
-    if (Array.isArray(data.child) && data.child.length > 0) for (let row of data.child) this.getAllMeshTreeIds(row, ids);
+    if (data?.child && Array.isArray(data.child) && data.child.length > 0) for (let row of data.child) this.getAllMeshTreeIds(row, ids);
 
     return ids;
   }
@@ -405,7 +461,7 @@ class Editor {
 
   findMeshBrothers(data, meshId) {
     // If null level
-    let parentId = this.map.data.find(element => element.id == meshId).parent_id    
+    let parentId = this.map.data.find(element => element.id == meshId).parent_id
     if (!parentId) {      
       let returnData = []
       for (let mesh of data) {
@@ -520,6 +576,23 @@ class Editor {
     $('#add-new-rec').removeClass('green2')
   }
 
+  fileListElementsMake(mode, files, showInput) {
+    showInput ? $("#modal-input").show() : $("#modal-input").hide();
+
+    $("#modal-content").html('')
+    $("#modal-message").html('')
+    let elements = ''
+    files.forEach(file => {
+      if (file.extension == 'tuc') {
+        elements += `<div class="list-element cursor-pointer" data-filename="${file.name}"><span>${file.name}</span><span>.${file.extension}</span></div>`
+      }
+    });
+    $("#modal-content").append(elements)
+    $("#modal-container .modal-action-button").text(mode).attr('mode', mode).prop('disabled', true)
+    $("#modal-container .modal-delete-button").prop('disabled', true)
+    $("#modal-content").show()
+  }
+
   initInputs() {
     var clone = this
 
@@ -554,71 +627,141 @@ class Editor {
       clone.fullRefreshCanvasGraphics()
     });
 
-    // MODAL
+    // MODAL CONTENT CREATE
     $(".modal-button").on('click', async function() {
       let mode = $(this).attr('data-mode')
       if (mode) $("#modal-title").html(mode);
 
       // LOAD
       if (mode == 'load') {
-        $("#modal-load").html('')
-
         const response = await clone.fetchData({ ajax: true, getfiles: true })
-        console.log('response:'); console.log(response);
-        
-        if (response?.files) {
-          let elements = ''
-          response.files.forEach(file => {
-            elements += `<div class="list-elemet cursor-pointer" data-filename="${file.name}.${file.extension}"><span>${file.name}</span><span>.${file.extension}</span></div>`
-          });
-          $("#modal-load").append(elements)
-        }
-
-        $("#modal-load").show()
+        if (response?.files) clone.fileListElementsMake(mode, response.files, false)
       }
 
       // SAVE
       if(mode == 'save') {
-        let mapData = JSON.stringify(clone.map)
-
-        const response = await clone.fetchData({ ajax: true, save: true, mapdata: mapData })
-        console.log('response:'); console.log(response);
-
+        const response = await clone.fetchData({ ajax: true, getfiles: true })
+        if (response?.files) clone.fileListElementsMake(mode, response.files, true)
       }
 
       // LOAD
       if(mode == 'textures') {
         console.log('TEXTURES')
-        
-        const response = await clone.fetchData({ ajax: true, load: true })
-        
-        if (response?.data && response?.structure) {
-
-          console.log('response:'); console.log(response);
-
-          console.log('LOADED YEEE : ) !')
-          
-          clone.map.data = response.data
-          clone.map.structure = response.structure
-
-          clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
-        }
-
       }
 
       $("#modal-bg").toggle()
     });
 
     // Load file
-    $(document).on('click', "#modal-load .list-elemet", function() {
-      $("#modal-load .list-elemet").each(function() {
+    $(document).on('click', "#modal-content .list-element", function() {
+      // remove class
+      $("#modal-content .list-element").each(function() {
         $(this).removeClass("list-selected-file")
       });
 
-      let filename = $(this).attr('data-filename')
-      $(this).addClass("list-selected-file")
+      let filename = $(this).attr('data-filename')     
 
-      console.log(filename)
+      $(this).addClass("list-selected-file")
+      if (filename) {
+        $("#modal-container .modal-action-button").prop('disabled', false).attr('data-filename', filename)
+        $("#modal-container .modal-delete-button").prop('disabled', false)
+      }
+
+      $('#modal-input').val(filename)
+    });
+
+    // AJAX ACTION
+    $(document).on('click', "#modal-container .modal-action-button", async function() {
+      let mode = $(this).attr('mode')
+      let filename = $(this).attr('data-filename')
+
+      // console.log('--------'); console.log(mode); console.log(filename); console.log('--------');
+
+      if (mode == 'load' && filename) {
+        // LOAD
+        const response = await clone.fetchData({ ajax: true, load: true, filename: filename }); // console.log(response)
+        if (response?.data && response?.structure) {
+          clone.mouseVariableReset()
+
+          clone.map.data = response.data
+          clone.map.structure = response.structure
+
+          clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
+
+          $("#modal-message").html('<div class="text-center text-success">successfully loaded!</div>')
+
+          setTimeout(() => {
+            $("#modal-close").click()
+            $('#modal-input').val('')
+            $("#modal-message").html('')
+          }, 500);
+
+        } else if (response?.error) {
+          $("#modal-message").html(`<span class="text-center text-warning">${response?.error}</span>`)
+        } else {
+          $("#modal-message").html(`<span class="text-center text-danger">${response?.error}</span>`)
+        }
+      }
+      
+      // SAVE
+      if (mode == 'save' && filename) { 
+        let save = true;
+
+        const responseIsset = await clone.fetchData({ ajax: true, issetfile: true, filename }); // console.log(responseIsset)
+        if (responseIsset[0]) save = (confirm(`File is isset: ${filename} Are you seure ovverrite?`)) ? true : false;
+
+        if (save) {
+          let saveMapData = JSON.stringify(clone.map)
+  
+          const responseSave = await clone.fetchData({ ajax: true, save: true, filename, mapdata: saveMapData }); // console.log('response:'); console.log(responseSave);
+          if (responseSave?.success) {
+            $("#modal-message").html(`<div class="text-center text-success">${responseSave?.success}</div>`)
+            setTimeout(() => {
+              $("#modal-close").click()
+              $('#modal-input').val('')
+              $("#modal-message").html('')
+            }, 1000);
+          } else {
+            $("#modal-message").html(`<span class="text-center text-danger">${responseSave?.error}</span>`)
+          }
+        }
+      }
+    });
+
+    // DELETE
+    $(document).on('click', "#modal-container .modal-delete-button", async () => {
+      let filename = $("#modal-container .modal-action-button").attr('data-filename')
+      const responseDelete = await this.fetchData({ ajax: true, delete: true, filename }); console.log('response:'); console.log(responseDelete);
+      if (responseDelete?.success) {
+        let mode = $("#modal-container .modal-action-button").attr('mode')
+
+        const response = await this.fetchData({ ajax: true, getfiles: true })
+        if (response?.files) this.fileListElementsMake(mode, response.files, true)
+
+        $("#modal-message").html(`<div class="text-center text-success">${responseDelete?.success}</div>`)
+
+        $('#modal-input').val('');
+        setTimeout(() => { $("#modal-message").html(''); }, 4000);
+      } else {
+        $('#modal-input').val('');
+        $("#modal-message").html(`<span class="text-center text-danger">${responseDelete?.error}</span>`)
+        setTimeout(() => { $("#modal-message").html(''); }, 4000);
+      }
+    });
+
+    $(document).on('input', "#modal-input", function() {
+      let value = $(this).val()
+      let actionButton = $("#modal-container .modal-action-button")
+
+      if (value.length > 0) {
+        actionButton.attr('data-filename', value).prop('disabled', false)
+      } else {
+        actionButton.attr('data-filename', null).prop('disabled', true)
+      }
+    });
+
+    $("#modal-close").on('click', function(){
+      $('#modal-input').val('')
     });
 
     // DOTS BUTTONS
@@ -766,6 +909,9 @@ class Editor {
         ///////////////////////
         // MOVE TRIANGLE POINT
         if (clone.mouse.selectedTri != null && clone.mouse.mode == 'point') {
+          event.stopPropagation()
+          clone.saveMapMemory('save')
+
           $('body').addClass('cursor-crosshair')
 
           let view = clone.views[name]
@@ -860,22 +1006,22 @@ class Editor {
                 // add triangle 1.
                 let t1_0 = { x: 0, y: 0, z: 0 }; let t1_1 = { x: 0, y: 0, z: 0 }; let t1_2 = { x: 0, y: 0, z: 0 };
                 t1_0[vX] = p1[vX]; t1_0[vY] = p2[vY]; t1_1[vX] = p2[vX]; t1_1[vY] = p2[vY]; t1_2[vX] = p2[vX]; t1_2[vY] = p1[vY];
-                
-                let ta1 = new Vec2D(clone.mouse.addRec.texture1[0].u, clone.mouse.addRec.texture1[0].v)
-                let ta2 = new Vec2D(clone.mouse.addRec.texture1[1].u, clone.mouse.addRec.texture1[1].v)
-                let ta3 = new Vec2D(clone.mouse.addRec.texture1[2].u, clone.mouse.addRec.texture1[2].v)
+
+                let ta1 = new Vec2D(clone.mouse.addRec.texture1[0].v, 1 - clone.mouse.addRec.texture1[0].u);
+                let ta2 = new Vec2D(clone.mouse.addRec.texture1[1].v, 1 - clone.mouse.addRec.texture1[1].u);
+                let ta3 = new Vec2D(clone.mouse.addRec.texture1[2].v, 1 - clone.mouse.addRec.texture1[2].u);
                 
                 let newTriangleName = 'Rec-New-A-' + Math.floor(Math.random()*99999)
                 let newTri1 = new Triangle(new Vec3D(t1_0.x, t1_0.y, t1_0.z), new Vec3D(t1_1.x, t1_1.y, t1_1.z), new Vec3D(t1_2.x, t1_2.y, t1_2.z), ta1, ta2, ta3, 2, 1, [255, 200, 40, 1], false, newTriangleName)
-                
+
                 // add triangle 2.
                 let t2_0 = { x: 0, y: 0, z: 0 }; let t2_1 = { x: 0, y: 0, z: 0 }; let t2_2 = { x: 0, y: 0, z: 0 };
                 t2_0[vX] = p1[vX]; t2_0[vY] = p2[vY]; t2_1[vX] = p2[vX]; t2_1[vY] = p1[vY]; t2_2[vX] = p1[vX]; t2_2[vY] = p1[vY];
-                
-                let tb1 = new Vec2D(clone.mouse.addRec.texture2[0].u, clone.mouse.addRec.texture2[0].v)
-                let tb2 = new Vec2D(clone.mouse.addRec.texture2[1].u, clone.mouse.addRec.texture2[1].v)
-                let tb3 = new Vec2D(clone.mouse.addRec.texture2[2].u, clone.mouse.addRec.texture2[2].v)
-                
+
+                let tb1 = new Vec2D(clone.mouse.addRec.texture2[0].v, 1 - clone.mouse.addRec.texture2[0].u);
+                let tb2 = new Vec2D(clone.mouse.addRec.texture2[1].v, 1 - clone.mouse.addRec.texture2[1].u);
+                let tb3 = new Vec2D(clone.mouse.addRec.texture2[2].v, 1 - clone.mouse.addRec.texture2[2].u);
+
                 let newTriangleName2 = 'Rec-New-B-' + Math.floor(Math.random()*99999)
                 
                 let newTri2 = new Triangle(new Vec3D(t2_0.x, t2_0.y, t2_0.z), new Vec3D(t2_1.x, t2_1.y, t2_1.z), new Vec3D(t2_2.x, t2_2.y, t2_2.z), tb1, tb2, tb3, 2, 1, [255, 200, 40, 1], false, newTriangleName2)
@@ -888,11 +1034,12 @@ class Editor {
                 clone.mouse.selectedTri = clone.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == newTri1.id)
                 clone.mouse.selectedLock = clone.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == newTri2.id)
 
-                $("#selected-tri-container").hide(); $("#selected-mesh-container").hide();
-                $("#selected-locket-container").show()
+                clone.resetMouseAddRec()
+                clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
 
-                clone.refreshObjectList()
-                clone.fullRefreshCanvasGraphics()
+                setTimeout(() => {
+                  $(`li.tri-list[data-id='${newTri1.id}']`).trigger('click');
+                }, 100);
               }
             }
             clone.resetMouseAddRec()
@@ -968,17 +1115,14 @@ class Editor {
         $('#object-list').find('.list-triangle-locket').removeClass('list-triangle-locket')
         $('#selected-tri-container').hide()
         clone.fullRefreshCanvasGraphics()
-        
-        console.log(this.mouse.addTri.mode)
 
         if (this.mouse.addTri.mode == false) {
           this.mouse.addTri.mode = true
 
-          console.log(this.mouse.addTri.mode)
           $('#add-new-tri').addClass('green2')
           this.resetMouseAddRec()
         } else {
-          console.log('reset add trialgle....')
+          console.log('reseting add trialgle...')
           this.resetMouseAddTri()
         }
       } else alert('Not selected Mesh!')
@@ -994,7 +1138,7 @@ class Editor {
         $('#object-list').find('.list-triangle-locket').removeClass('list-triangle-locket')
         $('#selected-tri-container').hide()
         clone.fullRefreshCanvasGraphics()
-
+        
         console.log(this.mouse.selectedMeshId)
         
         if (this.mouse.addRec.mode == false) {
@@ -1007,6 +1151,15 @@ class Editor {
           this.resetMouseAddRec()
         }
       } else alert('Not selected Mesh!')
+    });
+
+    $(document).on('click', '.size-number-box', function () {
+      let mode = $(this).attr('data-mode')
+      let number = $(this).attr('data-number')
+
+      console.log(mode, number)
+
+      $(`input[name='move-size'][data-mode='${mode}']`).val(number)
     });
 
     $(document).on('click', '#clipboard-button', () => {
@@ -1074,8 +1227,6 @@ class Editor {
           const directionX = parseInt($(this).attr("data-direction-x"))
           const directionY = parseInt($(this).attr("data-direction-y"))
           const directionSign = parseInt($(this).attr("data-direction-sign"))
-
-          console.log(moveSize, angleSize)
           
           let transformData = {
             type: type,
@@ -1369,11 +1520,6 @@ class Editor {
   
               if (findBrother) {
                 if (!findBrother?.locket) {
-
-                  console.log('TRI. ID:', clone.mouse.selectedTri.id)
-                  console.log('LOCK ID:', findBrother.id)
-                  
-
                   // save brother locket id-s
                   clone.mouse.selectedTri.locket = findBrother.id
                   findBrother.locket = clone.mouse.selectedTri.id
@@ -1407,7 +1553,7 @@ class Editor {
     $(document).on('click', '#object-add-new', function() {
       let addNewMesh = new Mesh('New Group', null)
       clone.map.data.push(addNewMesh)
-      clone.map.structure.push({id: addNewMesh.id, child: []})
+      clone.map.structure.push({id: addNewMesh.id, visible: true, child: []})
       clone.refreshObjectList()
     });
 
@@ -1480,14 +1626,32 @@ class Editor {
             $(this).removeClass('triangle-down').addClass('triangle-up')
             $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).show(100)
             thisMeshStructure.status = 1
-          }          
+          }
         }
+    });
+
+    // VISIBLE
+    $(document).on('click', ".eye", function(event) {
+      event.stopPropagation()
+        let id = Number($(this).closest('li').attr('data-id'))        
+        if (id) {
+          let thisMeshStructure = clone.findMeshById(clone.map.structure, id)
+          if (thisMeshStructure.visible) {
+            thisMeshStructure.visible = 0
+            $(this).removeClass('eye-up').addClass('eye-down')
+          } else {
+            $(this).removeClass('eye-down').addClass('eye-up')
+            thisMeshStructure.visible = 1
+          }
+          clone.fullRefreshCanvasGraphics()
+        } 
     });
 
     // MESH SELECTING
     $(document).on('click', ".mesh-name", function(event) {
         event.stopPropagation()
         clone.mouse.selectedTri = null
+        clone.mouse.selectedLock = null
         let id = $(this).attr('data-id')
         clone.selectedMeshClassChange(id)
     });
@@ -1597,6 +1761,71 @@ class Editor {
       clone.fullRefreshCanvasGraphics()
     });
 
+    // Duplicate
+    $(document).on('click', ".duplicate", function(event) {
+      event.stopPropagation()
+      clone.saveMapMemory('save')
+
+      let meshId = $(this).closest('.mesh-name').attr('data-id')
+
+      let selectedMeshStructure = clone.findMeshById(clone.map.structure, meshId)
+      let selectedMeshData = clone.map.data.find(mesh => mesh.id == meshId)
+
+      if (selectedMeshStructure && selectedMeshData) {
+        console.log(selectedMeshStructure, selectedMeshData)
+        // ACTION
+        let duplicatedFunction = function(dupicatedStructure, parent_id, mapData) {
+          console.log(dupicatedStructure)
+          console.log(parent_id)
+
+          let newMesh = new Mesh('', parent_id)
+          newMesh.name = 'duplicated-' + newMesh.id;
+          newMesh.lineColor = 'orange'
+          newMesh.tris = []
+
+          let addNum = $("input[name='move-size'][data-mode='mesh']").val() ? parseFloat($("input[name='move-size'][data-mode='mesh']").val()) : 0.5;
+          console.log(addNum)
+
+          // LEKELL VENNI A LOCK testvéreket a duklikálásnál !!!
+
+          let getDatas = mapData.find(mesh => mesh.id == dupicatedStructure.id)
+          getDatas.tris.forEach(tri => {
+            let cloneTri = clone.deepCopy(tri)
+
+            newMesh.tris.push(new Triangle(
+              new Vec3D(cloneTri.p[0].x + addNum, cloneTri.p[0].y + addNum, cloneTri.p[0].z + addNum),
+              new Vec3D(cloneTri.p[1].x + addNum, cloneTri.p[1].y + addNum, cloneTri.p[1].z + addNum),
+              new Vec3D(cloneTri.p[2].x + addNum, cloneTri.p[2].y + addNum, cloneTri.p[2].z + addNum),
+              cloneTri.t[0], cloneTri.t[1], cloneTri.t[2],
+              cloneTri.tid, cloneTri.light, cloneTri.rgba, cloneTri.normal, null))
+          });
+
+          mapData.push(newMesh)
+          dupicatedStructure.id = newMesh.id
+
+          if (Array.isArray(dupicatedStructure.child)) {
+            dupicatedStructure.child.forEach(child => duplicatedFunction(child, newMesh.id, mapData));
+          }
+
+          return dupicatedStructure;
+        }
+        // start
+        let dupicatedStructure = clone.deepCopy(selectedMeshStructure)
+        dupicatedStructure = duplicatedFunction(dupicatedStructure, selectedMeshData.parent_id, clone.map.data)
+
+        let parent = clone.findMeshParent(clone.map.structure, meshId)
+        // Have children or not        
+        parent ? parent.child.push(dupicatedStructure) : clone.map.structure.push(dupicatedStructure);
+      }
+
+
+
+      clone.mouse.selectedTri = null
+
+      clone.refreshObjectList()
+      clone.fullRefreshCanvasGraphics()
+    });
+
     // ADD MESH CHILD
     $(document).on('click', ".menu-icon.plus", function(event) {
       event.stopPropagation()
@@ -1647,7 +1876,7 @@ class Editor {
         [mapDataFirst, mapDataSecond] = [mapDataSecondCopy, mapDataFirstCopy]
 
         // MAP.STRUCTURE CHANGE
-        let parent = clone.findMeshParent(clone.map.structure, firstId);
+        let parent = clone.findMeshParent(clone.map.structure, firstId); 
         if (!parent) parent = { child: clone.map.structure }; // Ha a szülő maga a root structure
 
         let indexFirst = parent.child.findIndex(el => el.id == firstId);
@@ -1902,10 +2131,6 @@ class Editor {
 
   // TRANSFORM MESH
   recursiveTransform(mode, mesh, transformData) {
-    console.log(mode)
-    console.log(transformData)
-    console.log(transformData.type)
-
     let modifyData = { x: 0, y: 0, z: 0 }
     let transform = false
 
@@ -2038,7 +2263,10 @@ class Editor {
       $("#selected-mesh-name").val(selectedMesh.name)
       $("#selected-mesh-name").attr('data-id', selectedMesh.id)
 
-      if (!$("#selected-locket-container").is(":visible")) $("#selected-mesh-container").show();
+      // if (!$("#selected-locket-container").is(":visible")) $("#selected-mesh-container").show();
+
+      $("#selected-locket-container").hide()
+      $("#selected-mesh-container").show()
   
       this.fullRefreshCanvasGraphics()
     }
@@ -2159,13 +2387,20 @@ class Editor {
       }
 
       // DRAW ALL OBJECTS
-      this.map.data.forEach(object => {
-        var lineColor = object.lineColor
-        var lineWidth = 1
+      this.map.data.forEach(mesh => {
+        
+        let strucSelected = this.findMeshById(this.map.structure, mesh.id)
+        strucSelected.visible = strucSelected.visible ?? true;
 
-        object.tris.forEach(tri => {
-          this.drawViewTriangeAction(view, lineColor, lineWidth, tri.p[0][view.vX], tri.p[0][view.vY], tri.p[1][view.vX], tri.p[1][view.vY], tri.p[2][view.vX], tri.p[2][view.vY])
-        });
+        // CHECK VISIBLE
+        if (strucSelected?.visible) {
+          var lineColor = mesh.lineColor
+          var lineWidth = 1
+
+          mesh.tris.forEach(tri => {
+            this.drawViewTriangeAction(view, lineColor, lineWidth, tri.p[0][view.vX], tri.p[0][view.vY], tri.p[1][view.vX], tri.p[1][view.vY], tri.p[2][view.vX], tri.p[2][view.vY])
+          });
+        }
       });
 
       // SELECTED TRIANGLE DRAW
@@ -2184,9 +2419,12 @@ class Editor {
       if (this.mouse.selectedMeshId && !this.mouse.selectedTri) {
         let selectedMesh = this.findMeshById(this.map.structure, this.mouse.selectedMeshId)
 
-        if (selectedMesh) {
+        if (selectedMesh) {          
           var lineWidth = 3
-          this.recursiveDrawMeshs(selectedMesh, view, 'white', lineWidth)
+          // IF VISIBLE
+          if (selectedMesh.visible) {
+            this.recursiveDrawMeshs(selectedMesh, view, 'white', lineWidth)
+          }
         }
       }
 
@@ -2256,7 +2494,7 @@ class Editor {
       });
     }
 
-    if (Array.isArray(mesh.child) && mesh.child.length > 0) {    // && mesh.child.length
+    if (Array.isArray(mesh.child) && mesh.child.length > 0) {
       mesh.child.forEach(child => {
         this.recursiveDrawMeshs(child, view, color, lineWidth)
       });
@@ -2498,7 +2736,7 @@ class Editor {
   //--
 
   // AJAX
-  async fetchData(data) {
+  async fetchData(data, originaldata) {
     const response = await $.ajax({
         url: 'editor.php',
         type: 'POST',
@@ -2506,7 +2744,7 @@ class Editor {
         data: data,
     });
 
-    return JSON.parse(response);
+    return originaldata ? response : JSON.parse(response);
   } catch (error) {
       console.error("Hiba történt:", error);
   }

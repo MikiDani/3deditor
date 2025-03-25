@@ -103,7 +103,7 @@
                 </div>
                 <span>Objects</span>
                 <div class="p-0 m-0">
-                    <span id="object-add-new" class="plus hover-pointer" title="Open/Close All"></span>
+                    <span id="object-add-new" class="plus hover-pointer" title="Add new object"></span>
                 </div>
             </div>
     
@@ -119,6 +119,20 @@
                 </div>
                 <div id="object-add-tri" class="box-1">
                     <div class="right-screen-options">
+                        <div class="side-row">
+                            <div class="number-container">
+                                <div class="size-number-box" data-mode="mesh" data-number="0.1">0.1</div>
+                                <div class="size-number-box" data-mode="mesh" data-number="0.2">0.2</div>
+                                <div class="size-number-box" data-mode="mesh" data-number="0.3">0.3</div>
+                                <div class="size-number-box" data-mode="mesh" data-number="0.5">0.5</div>
+                                <div class="size-number-box" data-mode="mesh" data-number="1">1</div>
+                                <div class="size-number-box" data-mode="mesh" data-number="1.2">1.2</div>
+                                <div class="size-number-box" data-mode="mesh" data-number="1.3">1.3</div>
+                                <div class="size-number-box" data-mode="mesh" data-number="1.5">1.5</div>
+                                <div class="size-number-box" data-mode="mesh" data-number="2">2</div>
+                                <div class="size-number-box" data-mode="mesh" data-number="2.5">2.5</div>
+                            </div>
+                        </div>
                         <div class="left-side">
                             <div class="side-row">
                                 <span>Size: </span><input type="number" name="move-size" data-mode="mesh" min="-1000" max="1000" step="0.1" value="1.5">
@@ -343,7 +357,20 @@
                                 </select>
                             </div>
                         </div>
-
+                        <div class="side-row">
+                            <div class="number-container">
+                                <div class="size-number-box" data-mode="rectangle" data-number="0.1">0.1</div>
+                                <div class="size-number-box" data-mode="rectangle" data-number="0.2">0.2</div>
+                                <div class="size-number-box" data-mode="rectangle" data-number="0.3">0.3</div>
+                                <div class="size-number-box" data-mode="rectangle" data-number="0.5">0.5</div>
+                                <div class="size-number-box" data-mode="rectangle" data-number="1">1</div>
+                                <div class="size-number-box" data-mode="rectangle" data-number="1.2">1.2</div>
+                                <div class="size-number-box" data-mode="rectangle" data-number="1.3">1.3</div>
+                                <div class="size-number-box" data-mode="rectangle" data-number="1.5">1.5</div>
+                                <div class="size-number-box" data-mode="rectangle" data-number="2">2</div>
+                                <div class="size-number-box" data-mode="rectangle" data-number="2.5">2.5</div>
+                            </div>
+                        </div>
                         <div class="left-side mt-3">
                             <div class="side-row mt-2">
                                 <span>Size: </span><input type="number" name="move-size" data-mode="rectangle" min="-1000" max="1000" step="0.1" value="1.5">
@@ -381,14 +408,14 @@
     <div id="modal-bg" style="display:none;">
         <div id="modal-container">
             <div id="modal-close" class="modal-button">✖</div>
-
             <div id="modal-title"><!-- javascript --></div>
-            
-            <div id="modal-load" class="commander-container" style="display:none;">
-               <!-- javascript -->
+            <div id="modal-content" class="commander-container" style="display:none;"><!-- javascript --></div>
+            <div id="modal-message"><!-- javascript --></div>
+            <div class="div-box d-flex justify-content-center align-items-center p-0 m-0">
+                <input type="text" id="modal-input" name="filename" autocomplete="off">
+                <button class="modal-action-button text-uppercase" data-mode="" data-filename="" disabled><!-- javascript --></button>
+                <button class="modal-delete-button text-uppercase" disabled>delete</button>
             </div>
-
-            <button class="modal-button-ok cursor-pointer">OK</button>
         </div>
     </div>
 

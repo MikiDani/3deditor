@@ -1,10 +1,11 @@
 <?php
 
-$directory = './data/';
-
 // AJAX
+$directory = './data/';
+$ext = '.tuc';
 
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['ajax']) && isset($_POST['getfiles'])) {
+// GET FILES
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['getfiles'])) {
     $files = [];
     $files = get_files($directory);
 
@@ -12,48 +13,79 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['ajax']) && isset($_PO
     exit;
 }
 
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['ajax']) && isset($_POST['save'])) {
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['issetfile']) && isset($_POST['filename'])) {
 
+    $filename = basename($_POST['filename']);
+    $filepath = $directory . $filename . $ext;
+
+    $responseValue = file_exists($filepath);
+
+    echo json_encode([$responseValue]);
+    exit;
+}
+
+// SAVE
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['save']) && isset($_POST['filename'])) {
+
+    $filename = basename($_POST['filename']);
     $map_data = json_decode($_POST['mapdata'], true);
-    // Második paraméter: true -> asszociatív tömb lesz
 
-    if ($map_data === null) {
-        echo json_encode(['error' => 'Hibás JSON adatok!']);
+    if ($map_data == null) {
+        echo json_encode(['error' => 'Error in JSON data!']);
         exit;
     }
 
-    $filename = 'test.tes';
-
-    if (file_put_contents($directory. '/'. $filename, json_encode($map_data, JSON_PRETTY_PRINT))) {
-        echo json_encode(['success' => 'Sikeres mentés!']);
+    if (file_put_contents($directory. '/'. $filename . $ext, gzencode(json_encode($map_data), 9))) {
+        echo json_encode(['success' => 'Saving success!']);
     } else {
-        echo json_encode(['error' => 'Mentés sikertelen!']);
+        echo json_encode(['error' => 'Save error!']);
     }
     exit;
 }
 
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['ajax']) && isset($_POST['load'])) {
+// LOAD
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['load']) && isset($_POST['filename'])) {
 
-    $filename = 'test.tes';
+    $filename = basename($_POST['filename']);
 
-    if (file_exists($directory . '/' . $filename)) {
-        echo file_get_contents($directory . '/' . $filename);
-    } else {
-        echo json_encode(['error' => 'Nincs ilyen fájl']);
-    }
+    if (file_exists($directory . '/' . $filename. $ext)) {
+        $compressed_data = file_get_contents($directory . '/' . $filename . $ext);
+        $json_data = json_decode(gzdecode($compressed_data), true);
+
+        echo json_encode($json_data ?? ['error' => 'Error JSON file reading!']);
+
+    } else echo json_encode(['error' => 'A file not isset!']);
+
+    exit;
+}
+
+// DELETE
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['delete']) && isset($_POST['filename'])) {
+
+    $filename = basename($_POST['filename']);
+
+    if (file_exists($directory . '/' . $filename. $ext)) {
+        if (file_exists($directory . '/' . $filename . $ext)) {
+            if (unlink($directory . '/' . $filename . $ext)) {
+                echo json_encode(['success' => 'File deleted successfully!']);
+            } else {
+                echo json_encode(['error' => 'Failed to delete the file!']);
+            }
+        } else {
+            echo json_encode(['error' => 'File does not exist!']);
+        }
+    } else echo json_encode(['error' => 'A file not isset!']);
 
     exit;
 }
 
 // POST
-
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    echo json_encode(["success" => $_POST["password"] === "1234"]);
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    echo json_encode(["success" => $_POST["password"] == "1234"]);
     exit;
 }
 
 // FUNCTIONS
-
 function get_files($directory) {
 
     $files = [];
@@ -61,11 +93,10 @@ function get_files($directory) {
     if (is_dir($directory)) {
         $scanned_files = array_diff(scandir($directory), ['.', '..']);
 
-        // Fájlok bejárása és információk összegyűjtése
         foreach ($scanned_files as $file) {
             $files[] = [
-                'name' => pathinfo($file, PATHINFO_FILENAME), // Fájlnév kiterjesztés nélkül
-                'extension' => pathinfo($file, PATHINFO_EXTENSION) // Fájl kiterjesztése
+                'name' => pathinfo($file, PATHINFO_FILENAME),
+                'extension' => pathinfo($file, PATHINFO_EXTENSION),
             ];
         }
     }
