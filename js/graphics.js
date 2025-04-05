@@ -51,15 +51,19 @@ export class Graphics {
     this.mesh = new Mesh()
     this.matProj = this.matrix_MakeProjection(75, this.GAMEHEIGHT / this.GAMEWIDTH, 1, 1000) //  FOV, ratio, near, far
 
-    this.vLookDir = new Vec3D(0, 0, 1)
-    this.vCamera = new Vec3D(0.5, 0.5, 4)
-    this.fYaw = 0
-    this.fXaw = 0
+    this.resetCordinates()
 
     this.lightDirection = new Vec3D(0, 1, -1)
     this.fTheta = 0
 
     this.clipped = [new Triangle(), new Triangle()];
+  }
+
+  resetCordinates() {    
+    this.vLookDir = new Vec3D(0, 0, 1)
+    this.vCamera = new Vec3D(0.5, 0.5, 4)
+    this.fYaw = 0
+    this.fXaw = 0
   }
 
   angleToRandian(angle) {

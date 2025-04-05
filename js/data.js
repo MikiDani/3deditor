@@ -66,7 +66,7 @@ export class Triangle {
 }
 
 export class Mesh {
-    static instanceCount = 0;
+    static instanceCount = 1;
     constructor(name = 'noname', parent_id = null, type = null) {
         this.name = name
         Mesh.instanceCount++

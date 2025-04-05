@@ -46,6 +46,7 @@ class Editor {
     }
 
     this.mapMemory = []
+    this.textureDir = []
 
     this.clipboardMemory = {
       tris: [],
@@ -61,7 +62,7 @@ class Editor {
     this.resetMouseAddTri()
     this.resetMouseAddRec()
     
-    this.howMany = true
+    this.newTriSide = true
 
     this.init()
   }
@@ -110,9 +111,9 @@ class Editor {
 
     this.views = {
       // name, vX, vY, ratio, frequent, showDots, showGrid
-      'XYview-canvas': new ViewWindow('XYview-canvas', 'x', 'y', 100, 8, true, true),
-      'XZview-canvas': new ViewWindow('XZview-canvas', 'x', 'z', 100, 8, true, true),
-      'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', 100, 8, true, true),
+      'XYview-canvas': new ViewWindow('XYview-canvas', 'x', 'y', 100, 10, true, true),
+      'XZview-canvas': new ViewWindow('XZview-canvas', 'x', 'z', 100, 10, true, true),
+      'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', 100, 10, true, true),
     } // console.log(this.views)
 
     /////////////////////
@@ -136,7 +137,7 @@ class Editor {
               <span>Ratio:</span><input type="number" name="ratio" data-name="${name}" min="0" max="200" step="10" value="${this.views[name].ratio}">
           </div>
           <div class="side-row">
-              <span>Freq.:</span><input type="number" name="frequent" data-name="${name}" min="1" max="16" step="1" value="${this.views[name].frequent}">
+              <span>Freq.:</span><input type="number" name="frequent" data-name="${name}" min="1" max="20" step="1" value="${this.views[name].frequent}">
           </div>
         </div>
         <div class="right-side">
@@ -165,11 +166,11 @@ class Editor {
     if (Array.isArray(data)) {
       return data.map(item => this.deepCopy(item));
     }
-    if (data !== null && typeof data === 'object') {
+    if (data !== null && typeof data == 'object') {
       let copy = {};
       for (let key in data) {
         if (data.hasOwnProperty(key)) {
-          copy[key] = key === 'visible' ? 1 : this.deepCopy(data[key]);
+          copy[key] = key == 'visible' ? 1 : this.deepCopy(data[key]);
         }
       }
       return copy;
@@ -241,10 +242,10 @@ class Editor {
   }
 
   refreshObjectList() {
+    $('#object-list').html('');
     if (this.map.structure.length > 0) {
       this.refreshClipboard()
       // LIST OBJECTS
-      $('#object-list').html('');
       let element = `<ul>`;
       this.map.structure.forEach(item => {
         element += this.recursiveMenu(item)
@@ -257,14 +258,18 @@ class Editor {
   }
 
   recursiveMenu(item) {
-    const itemData = this.map.data.find(element => element.id == item.id)
+    const meshData = this.map.data.find(element => element.id == item.id)
+    let itemData = this.findMeshById(this.map.structure, meshData.id)
+
+    let classTriangle = itemData.status ? 'triangle-up' : 'triangle-down';
+    let classEye = itemData.visible ? 'eye-up' : 'eye-down';
 
     let element = `<ul>`;
     element += `
     <li data-id="${item.id}" class="mesh-name">
-      <span>${itemData.name}</span>
-      <span class="menu-icon triangle triangle-down p-0 m-0" title="Open/Close group triangles"></span>
-      <span class="menu-icon eye eye-up" title="Open/Close group triangles"></span>
+      <span>${meshData.name}</span>
+      <span class="menu-icon triangle ${classTriangle} p-0 m-0" title="Open/Close group triangles"></span>
+      <span class="menu-icon eye ${classEye}" title="Visible or hide group"></span>
       <span class="menu-icon menu-icon-pos-1 plus" title="Add group"></span>
       <span class="menu-icon menu-icon-pos-2 duplicate" title="Duplicaded group"></span>
       <span class="menu-icon menu-icon-pos-3 up" data-type="prev" title="Move up-brother"></span>
@@ -275,10 +280,10 @@ class Editor {
       <span class="menu-icon menu-icon-pos-8 delete-group" title="Delete group"></span>
     </li>`;
 
-    if (Array.isArray(itemData.tris) && itemData.tris.length > 0) {
+    if (Array.isArray(meshData.tris) && meshData.tris.length > 0) {
       let show = Number(item.status) ? 'block' : 'none'; 
       element += `<ul data-parent-id="${item.id}" style="display:${show};">`;
-      itemData.tris.forEach(tri => {
+      meshData.tris.forEach(tri => {
         element += `<li data-id="${tri.id}" class="tri-list">${tri.name}</li>`;
       });
       element += `</ul>`;
@@ -310,6 +315,8 @@ class Editor {
     console.log(`${this.textures[5].link} loaded...`)
     this.textures[6] = new Texture('img/texture3.png'); await this.textures[6].load()
     console.log(`${this.textures[6].link} loaded...`)
+    this.textures[7] = new Texture('img/f-1.png'); await this.textures[7].load()
+    console.log(`${this.textures[7].link} loaded...`)
   }
 
   async loadModels() {
@@ -317,16 +324,16 @@ class Editor {
     this.map.structure = []
 
     // FIRST LOAD
-    if (true) {
-      let filename = 'testver'
+    if (false) {
+      let filename = 'dani1'
       const response = await this.fetchData({ ajax: true, load: true, filename: filename })
       console.log(response)
 
       if (response?.data && response?.structure) {
         console.log('response:'); console.log(response);
   
-        this.map.data = response.data
-        this.map.structure = response.structure
+        this.map.data = this.deepCopy(response.data)
+        this.map.structure = this.deepCopy(response.structure)
 
         const maxId = Math.max(...this.map.data.map(obj => obj.id));
         Mesh.setInstanceCount(maxId + 1)
@@ -576,25 +583,68 @@ class Editor {
     $('#add-new-rec').removeClass('green2')
   }
 
-  fileListElementsMake(mode, files, showInput) {
+  fileListElementsMake(mode, listElements, showInput, isTextures) {
     showInput ? $("#modal-input").show() : $("#modal-input").hide();
 
     $("#modal-content").html('')
     $("#modal-message").html('')
     let elements = ''
-    files.forEach(file => {
-      if (file.extension == 'tuc') {
-        elements += `<div class="list-element cursor-pointer" data-filename="${file.name}"><span>${file.name}</span><span>.${file.extension}</span></div>`
+
+    let buttonText
+    if (mode == 'load') buttonText = 'Load'; else if (mode == 'save') buttonText = 'Save'; else if (mode == 'textures') buttonText = 'New Dir'; else buttonText = mode;
+
+    if (isTextures) {
+      $("#modal-input").show()
+      this.textureDir.length == 0 ? $("#modal-back").hide() : $("#modal-back").show();
+    }
+
+    listElements.forEach(fileOrDir => {
+      if (isTextures) {
+        elements += `
+        <div class="list-element cursor-pointer" data-filename="${fileOrDir}" data-mode="${mode}">
+          <span>${fileOrDir}</span>
+        </div>`
+      } else if (fileOrDir.extension == 'tuc') {
+        elements += `<div class="list-element cursor-pointer" data-filename="${fileOrDir.name}" data-mode="${mode}">
+          <span>${fileOrDir.name}</span><span>.${fileOrDir.extension}</span>
+        </div>`
       }
     });
+
+    if (isTextures && this.textureDir.length == 2) {
+      elements += `<div>${this.textureDir} Most kell a képlista !!!!</div>`
+    }
+
     $("#modal-content").append(elements)
-    $("#modal-container .modal-action-button").text(mode).attr('mode', mode).prop('disabled', true)
+    $("#modal-container .modal-action-button").html(buttonText).attr('mode', mode).prop('disabled', true)
     $("#modal-container .modal-delete-button").prop('disabled', true)
     $("#modal-content").show()
   }
 
+  makeDirStructure() {
+    let getdirs = '';
+    if (this.textureDir.length > 0) {
+      this.textureDir.forEach(list => {
+        getdirs += `${list}/`;
+      });
+    }
+    return getdirs;
+  }
+
+  async textureFunction(mode) {
+    let getdirs = this.makeDirStructure()
+    const response = await this.fetchData({ ajax: true, getdirs: getdirs })
+    if (response?.dirs) this.fileListElementsMake(mode, response.dirs, false, true)
+  }
+
   initInputs() {
     var clone = this
+
+    // mouse right button off
+    $(document).on("contextmenu", function(event) {
+      event.preventDefault();
+      console.log("Jobb klikk letiltva!");
+    });
 
     // MAP INFO TO THE CONSOL
     $(document).on('keydown', (event) => {
@@ -632,50 +682,103 @@ class Editor {
       let mode = $(this).attr('data-mode')
       if (mode) $("#modal-title").html(mode);
 
+      $("#modal-container").attr('data-mode', mode)
+
       // LOAD
       if (mode == 'load') {
         const response = await clone.fetchData({ ajax: true, getfiles: true })
-        if (response?.files) clone.fileListElementsMake(mode, response.files, false)
+        if (response?.files) clone.fileListElementsMake(mode, response.files, false, false)
       }
 
       // SAVE
       if(mode == 'save') {
         const response = await clone.fetchData({ ajax: true, getfiles: true })
-        if (response?.files) clone.fileListElementsMake(mode, response.files, true)
+        if (response?.files) clone.fileListElementsMake(mode, response.files, true, false)
       }
 
-      // LOAD
+      // TEXTURES
       if(mode == 'textures') {
-        console.log('TEXTURES')
+        await clone.textureFunction(mode)
       }
 
       $("#modal-bg").toggle()
     });
 
-    // Load file
-    $(document).on('click', "#modal-content .list-element", function() {
-      // remove class
+    // MODAL BACK
+    $("#modal-back").on('click', async () => {
+      if (this.textureDir.length > 0) {
+        this.textureDir.pop()
+        await clone.textureFunction('textures')
+      }      
+    });
+
+    $(document).on('click', "#modal-container", async function(event) {
+      if (!$(event.target).closest("#modal-inputdiv").length) {
+        event.stopPropagation()
+        // remove class
+        $("#modal-content .list-element").each(function() {
+          $(this).removeClass("list-selected-file")
+        });
+
+        let mode = $("#modal-container").attr('data-mode')
+        let buttonText
+        if (mode == 'load') buttonText = 'Load'; else if (mode == 'save') buttonText = 'Save'; else if (mode == 'textures') buttonText = 'New Dir'; else buttonText = mode;
+  
+        $("#modal-container .modal-action-button").html(buttonText).prop('disabled', true)
+        $("#modal-container .modal-delete-button").prop('disabled', true)
+        $('#modal-input').val('')
+  
+        console.log('STOP!!!')
+      }
+    });
+
+    $(document).on('click', "#modal-content .list-element", async function(event) {
+      event.stopPropagation()
+      // remove selected list-element class
       $("#modal-content .list-element").each(function() {
         $(this).removeClass("list-selected-file")
       });
 
-      let filename = $(this).attr('data-filename')     
+      let filename = $(this).attr('data-filename')
+
+      $(".modal-action-button").attr('data-original-filename', filename)
+
+      let mode = $("#modal-container").attr('data-mode')
+      let buttonText
+      if (mode == 'load') buttonText = 'Load'; else if (mode == 'save') buttonText = 'Save'; else if (mode == 'textures') buttonText = 'Rename'; else buttonText = mode;
+
+      if (mode=='textures') {
+        // ???
+        console.log('TEXTURE !!! Sima click!!!')
+      }
 
       $(this).addClass("list-selected-file")
       if (filename) {
-        $("#modal-container .modal-action-button").prop('disabled', false).attr('data-filename', filename)
+        $("#modal-container .modal-action-button").html(buttonText).prop('disabled', false).attr('data-filename', filename)
         $("#modal-container .modal-delete-button").prop('disabled', false)
+        $('#modal-input').val(filename)
       }
+    });
 
-      $('#modal-input').val(filename)
+    // DIR DUBBLE CLICK
+    $(document).on('dblclick', "#modal-content .list-element", async function() {
+      let mode = $(this).attr('data-mode')
+
+      if (mode=='textures') {
+        console.log('2click TEXTURESS')
+        $('#modal-input').val('')
+        let filename = $(this).attr('data-filename')
+        clone.textureDir.push(filename)
+        await clone.textureFunction(mode)  
+      }
     });
 
     // AJAX ACTION
     $(document).on('click', "#modal-container .modal-action-button", async function() {
-      let mode = $(this).attr('mode')
+      let mode = $("#modal-container").attr('data-mode')
       let filename = $(this).attr('data-filename')
 
-      // console.log('--------'); console.log(mode); console.log(filename); console.log('--------');
+      console.log('--------'); console.log(mode); console.log(filename); console.log('--------');
 
       if (mode == 'load' && filename) {
         // LOAD
@@ -683,6 +786,9 @@ class Editor {
         if (response?.data && response?.structure) {
           clone.mouseVariableReset()
 
+          clone.graph.resetCordinates()
+          clone.mapMemory = []
+          $('.menu-back').removeClass('menu-back-isset').addClass('menu-back-empty')
           clone.map.data = response.data
           clone.map.structure = response.structure
 
@@ -702,7 +808,7 @@ class Editor {
           $("#modal-message").html(`<span class="text-center text-danger">${response?.error}</span>`)
         }
       }
-      
+
       // SAVE
       if (mode == 'save' && filename) { 
         let save = true;
@@ -712,7 +818,7 @@ class Editor {
 
         if (save) {
           let saveMapData = JSON.stringify(clone.map)
-  
+
           const responseSave = await clone.fetchData({ ajax: true, save: true, filename, mapdata: saveMapData }); // console.log('response:'); console.log(responseSave);
           if (responseSave?.success) {
             $("#modal-message").html(`<div class="text-center text-success">${responseSave?.success}</div>`)
@@ -726,26 +832,84 @@ class Editor {
           }
         }
       }
+
+      // TEXTURES
+      if (mode == 'textures' && filename) {
+        let selectedDir = $("#modal-content .list-selected-file").length > 0 ? true : false;
+        if (selectedDir) {
+          // RENAME
+          let addgetdirs = clone.makeDirStructure()
+          let olddirname =  $(".modal-action-button").attr("data-original-filename")
+
+          const checkFile = await clone.fetchData({ ajax: true, addgetdirs: addgetdirs, olddirname: olddirname, renamedirname: filename });  
+          if (checkFile?.success) {
+            $("#modal-input").val('')
+            await clone.textureFunction('textures')
+          } else {
+            $("#modal-message").html(`<span class="text-center text-danger">${checkFile?.error}</span>`)
+            setTimeout(() => { $("#modal-message").html('') }, 4000)
+          }
+
+        } else {
+          // NEW DIR
+          let addgetdirs = clone.makeDirStructure()
+
+          const responseNewDir = await clone.fetchData({ ajax: true, addgetdirs: addgetdirs, newdirname: filename })  
+          if (responseNewDir?.success) {
+            $("#modal-input").val('')
+            await clone.textureFunction(mode)
+          } else {
+            $("#modal-message").html(`<span class="text-center text-danger">${responseNewDir.error}</span>`)
+            setTimeout(() => { $("#modal-message").html(''); }, 4000);
+          }
+        }
+      }
     });
 
     // DELETE
     $(document).on('click', "#modal-container .modal-delete-button", async () => {
-      let filename = $("#modal-container .modal-action-button").attr('data-filename')
-      const responseDelete = await this.fetchData({ ajax: true, delete: true, filename }); console.log('response:'); console.log(responseDelete);
-      if (responseDelete?.success) {
-        let mode = $("#modal-container .modal-action-button").attr('mode')
 
-        const response = await this.fetchData({ ajax: true, getfiles: true })
-        if (response?.files) this.fileListElementsMake(mode, response.files, true)
+      let mode = $("#modal-container").attr('data-mode')
 
-        $("#modal-message").html(`<div class="text-center text-success">${responseDelete?.success}</div>`)
+      if (mode == 'load' || mode == 'save') {
+        // DELETE FILE
+        let filename = $("#modal-container .modal-action-button").attr('data-filename')
+        let trueDelete = false;
 
-        $('#modal-input').val('');
-        setTimeout(() => { $("#modal-message").html(''); }, 4000);
-      } else {
-        $('#modal-input').val('');
-        $("#modal-message").html(`<span class="text-center text-danger">${responseDelete?.error}</span>`)
-        setTimeout(() => { $("#modal-message").html(''); }, 4000);
+        const checkFile = await clone.fetchData({ ajax: true, issetfile: true, filename }); // console.log(checkFile)
+        if (checkFile[0]) trueDelete = (confirm(`File is isset: ${filename} Are you seure delete?`)) ? true : false;
+
+        if (trueDelete) {
+          const responseDelete = await this.fetchData({ ajax: true, delete: true, filename }); console.log('response:'); console.log(responseDelete);
+          if (responseDelete?.success) {
+            let mode = $("#modal-container .modal-action-button").attr('data-mode')
+
+            const response = await this.fetchData({ ajax: true, getfiles: true })
+            if (response?.files) this.fileListElementsMake(mode, response.files, true)
+
+            $("#modal-message").html(`<div class="text-center text-success">${responseDelete?.success}</div>`)
+
+            $('#modal-input').val('');
+            setTimeout(() => { $("#modal-message").html(''); }, 4000);
+          } else {
+            $('#modal-input').val('');
+            $("#modal-message").html(`<span class="text-center text-danger">${responseDelete?.error}</span>`)
+            setTimeout(() => { $("#modal-message").html(''); }, 4000);
+          }
+        }
+      } else if (mode == 'textures') {        
+        // DELETE DIR
+        let deletedirname = $("#modal-container .modal-action-button").attr('data-filename')
+        let trueDelete = (confirm(`Are you seure delete? ${deletedirname} Directiry`)) ? true : false;
+        if (trueDelete) {
+          let addgetdirs = clone.makeDirStructure()
+
+          const checkFile = await clone.fetchData({ ajax: true, addgetdirs: addgetdirs, deletedirname: deletedirname });  
+          if (checkFile) {
+            $("#modal-input").val('')
+            await clone.textureFunction('textures')
+          }
+        }
       }
     });
 
@@ -885,7 +1049,7 @@ class Editor {
         let frequentInputValue = parseInt($(`input[name='frequent'][data-name='${name}']`).val())
 
         if (frequentInputValue < 1) frequentInputValue = 1;
-        else if (frequentInputValue > 16) frequentInputValue = 16;
+        else if (frequentInputValue > 20) frequentInputValue = 20;
 
         this.views[name].frequent = frequentInputValue
 
@@ -947,19 +1111,19 @@ class Editor {
 
               if (selectedMash) {
                 let t1, t2, t3 = null
-                if (clone.howMany) {
-                  // console.log('t1'); console.log(clone.howMany)
+                if (clone.newTriSide) {
+                  // console.log('t1'); console.log(clone.newTriSide)
                   t1 = new Vec2D(clone.mouse.addTri.texture1[0].u, clone.mouse.addTri.texture1[0].v)
                   t2 = new Vec2D(clone.mouse.addTri.texture1[1].u, clone.mouse.addTri.texture1[1].v)
                   t3 = new Vec2D(clone.mouse.addTri.texture1[2].u, clone.mouse.addTri.texture1[2].v)
                 } else {
-                  // console.log('t2'); console.log(clone.howMany)
+                  // console.log('t2'); console.log(clone.newTriSide)
                   t1 = new Vec2D(clone.mouse.addTri.texture2[0].u, clone.mouse.addTri.texture2[0].v)
                   t2 = new Vec2D(clone.mouse.addTri.texture2[1].u, clone.mouse.addTri.texture2[1].v)
                   t3 = new Vec2D(clone.mouse.addTri.texture2[2].u, clone.mouse.addTri.texture2[2].v)
                 }
 
-                clone.howMany = !clone.howMany
+                clone.newTriSide = !clone.newTriSide
 
                 let newTriangleName = 'Tri-New-' + Math.floor(Math.random()*99999)
 
@@ -1139,8 +1303,6 @@ class Editor {
         $('#selected-tri-container').hide()
         clone.fullRefreshCanvasGraphics()
         
-        console.log(this.mouse.selectedMeshId)
-        
         if (this.mouse.addRec.mode == false) {
           this.mouse.addRec.mode = true
           $('#add-new-rec').addClass('green2')
@@ -1156,9 +1318,6 @@ class Editor {
     $(document).on('click', '.size-number-box', function () {
       let mode = $(this).attr('data-mode')
       let number = $(this).attr('data-number')
-
-      console.log(mode, number)
-
       $(`input[name='move-size'][data-mode='${mode}']`).val(number)
     });
 
@@ -1188,24 +1347,26 @@ class Editor {
 
         clone.refreshObjectList()
         clone.fullRefreshCanvasGraphics()
-      } else {
-        alert('Not selected Mesh!')
-      }
+
+      } else alert('Not selected Mesh!');
     });
 
     // Mouse wheel Zoom
     $(document).on('mousewheel', (event) => {
       if (this.selectedView) {
-        if (this.selectedView == 'screen-canvas') {
-          let vForward = new Vec3D()
-          vForward = this.graph.vector_Mul(this.graph.vLookDir, this.options.moveScale)
-          this.graph.vCamera = (event.originalEvent.wheelDelta > 0) ? this.graph.vector_Add(this.graph.vCamera, vForward) : this.graph.vector_Sub(this.graph.vCamera, vForward);
-        } else {
-          let mod = (event.originalEvent.wheelDelta > 0) ? 5 : -5;
-          let element = $(`input[name='ratio'][data-name='${this.selectedView}']`)
-          let modifyNum = parseInt(element.val()) + mod
-          element.val(modifyNum)
-          element.trigger('input')
+        let isHover = $("#container-screens").is(":hover");
+        if (isHover) {
+          if (this.selectedView == 'screen-canvas') {
+            let vForward = new Vec3D()
+            vForward = this.graph.vector_Mul(this.graph.vLookDir, this.options.moveScale)
+            this.graph.vCamera = (event.originalEvent.wheelDelta > 0) ? this.graph.vector_Add(this.graph.vCamera, vForward) : this.graph.vector_Sub(this.graph.vCamera, vForward);
+          } else {
+            let mod = (event.originalEvent.wheelDelta > 0) ? 5 : -5;
+            let element = $(`input[name='ratio'][data-name='${this.selectedView}']`)
+            let modifyNum = parseInt(element.val()) + mod
+            element.val(modifyNum)
+            element.trigger('input')
+          }
         }
         clone.fullRefreshCanvasGraphics()
       }
@@ -1247,12 +1408,10 @@ class Editor {
           if (mode == 'rectangle') clone.recursiveTransform(mode, null, transformData);
 
         }
-      } else {
-        alert('Not selected view window!')
-      }
+      } else alert('Not selected view window!');
 
       if (mode == 'rectangle') {
-
+        //
       }
     });
 
@@ -1453,21 +1612,26 @@ class Editor {
       }
     });
 
-    $(`input[id='selected-tri-name-1']`).on('input', function () {
-      console.log($(this).val())
-      
+    $(`input[id='selected-tri-name-1']`).on('input', function (event) {
+      event.stopImmediatePropagation()      
       if (typeof clone.mouse.selectedTri.id !== 'undefined' && typeof clone.mouse.selectedLock.id !== 'undefined') {
         clone.mouse.selectedTri.name = $(this).val()
-        clone.refreshObjectList()
+        let triangle = clone.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == clone.mouse.selectedTri.id)
+        triangle.name = $(this).val()
+        $(document).find("#object-list").find(`li[data-id='${clone.mouse.selectedTri.id}']`).html($(this).val())
       }
     });
 
-    $(`input[id='selected-tri-name-2']`).on('input', function () {
+    $(`input[id='selected-tri-name-2']`).on('input', function (event) {
+      event.stopImmediatePropagation()
       console.log($(this).val())
 
       if (typeof clone.mouse.selectedLock.id !== 'undefined') {
         clone.mouse.selectedLock.name = $(this).val()
-        clone.refreshObjectList()
+        
+        let triangle = clone.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == clone.mouse.selectedLock.id)
+        triangle.name = $(this).val()
+        $(document).find("#object-list").find(`li[data-id='${clone.mouse.selectedLock.id}']`).html($(this).val())
       }
     });
 
@@ -1492,7 +1656,6 @@ class Editor {
 
     // PUSH CONTROLL
     if (true) {
-      // Figyeljük, hogy lenyomva van-e a Control
       $(document).keydown(function (e) {
           if (e.ctrlKey) {
             clone.ctrlPressed = true
@@ -1503,8 +1666,9 @@ class Editor {
             clone.ctrlPressed = false
           }
       });
-      // Ha a gombot kattintják és a Control is nyomva van
+
       $(document).click(".tri-list", function(e) {
+        // IF PUSH CONTROLL
         if (clone.ctrlPressed == true) {
           clone.ctrlPressed = false
           if (clone.mouse.selectedTri && Object.keys(clone.mouse.selectedTri).length > 0 && clone.mouse.selectedMeshId) {
@@ -1658,6 +1822,7 @@ class Editor {
 
     // TRIANGLE SELECTING
     $(document).on('click', ".tri-list", function() {
+      // NOT PUSH CONTROLL
       clone.refreshObjectList()
       if (!clone.ctrlPressed) {   // not use controll
         // all locket class remove
@@ -1685,7 +1850,7 @@ class Editor {
   
           // add new selectedTri
           clone.mouse.selectedTri = findedTri
-          $("#selected-tri-name").val(`Tri ${clone.mouse.selectedTri.name}`)
+          $("#selected-tri-name").val(clone.mouse.selectedTri.name)
           $("#selected-tri-name").attr('data-id', clone.mouse.selectedTri.id)
           $("#selected-mesh-container").hide()
 
@@ -1695,7 +1860,7 @@ class Editor {
 
             $(document).find(`li[data-id='${clone.mouse.selectedTri.locket}']`).addClass('list-triangle-locket').append('<span class="menu-icon menu-icon-pos-1 delete-locket"></span>')
 
-            // clone.refreshLocketDatas(clone.mouse.selectedTri, clone.mouse.selectedLock)
+            clone.refreshLocketDatas(clone.mouse.selectedTri, clone.mouse.selectedLock)
 
             $("#selected-tri-container").hide(); $("#selected-locket-container").show();
           } else {
@@ -1772,23 +1937,16 @@ class Editor {
       let selectedMeshData = clone.map.data.find(mesh => mesh.id == meshId)
 
       if (selectedMeshStructure && selectedMeshData) {
-        console.log(selectedMeshStructure, selectedMeshData)
         // ACTION
         let duplicatedFunction = function(dupicatedStructure, parent_id, mapData) {
-          console.log(dupicatedStructure)
-          console.log(parent_id)
-
           let newMesh = new Mesh('', parent_id)
           newMesh.name = 'duplicated-' + newMesh.id;
           newMesh.lineColor = 'orange'
           newMesh.tris = []
 
           let addNum = $("input[name='move-size'][data-mode='mesh']").val() ? parseFloat($("input[name='move-size'][data-mode='mesh']").val()) : 0.5;
-          console.log(addNum)
-
-          // LEKELL VENNI A LOCK testvéreket a duklikálásnál !!!
-
           let getDatas = mapData.find(mesh => mesh.id == dupicatedStructure.id)
+
           getDatas.tris.forEach(tri => {
             let cloneTri = clone.deepCopy(tri)
 
@@ -1814,11 +1972,9 @@ class Editor {
         dupicatedStructure = duplicatedFunction(dupicatedStructure, selectedMeshData.parent_id, clone.map.data)
 
         let parent = clone.findMeshParent(clone.map.structure, meshId)
-        // Have children or not        
+        // push use have children or not have
         parent ? parent.child.push(dupicatedStructure) : clone.map.structure.push(dupicatedStructure);
       }
-
-
 
       clone.mouse.selectedTri = null
 
@@ -1846,9 +2002,7 @@ class Editor {
         if (parentMeshStructure) parentMeshStructure.child.push({id: addNewMesh.id, child: []})
         clone.mouse.selectedMeshId = addNewMesh.id
 
-      } else {
-        console.error("Mesh not found");
-      }
+      } else console.error("Mesh not found");
 
       clone.refreshObjectList()
       clone.fullRefreshCanvasGraphics()
@@ -2089,7 +2243,7 @@ class Editor {
       if (event.ctrlKey && event.shiftKey && event.code == 'KeyC') return;
       if (event.shiftKey && event.code == 'F5') return;
       if (event.code.startsWith('Digit') || event.code.startsWith('Key') || event.code.startsWith('Arrow')) return;
-      if (event.code == 'Backspace' || event.code == 'Period' || event.code == 'Minus' || event.code == 'NumpadSubtract' || event.code == 'Digit0' || event.code == 'Backquote' || event.code == 'Numpad0') return;
+      if (event.code == 'Backspace' || event.code == 'Period' || event.code == 'Minus' || event.code == 'NumpadSubtract' || event.code == 'Digit0' || event.code == 'Backquote' || event.code == 'Numpad0' || event.code == 'Delete' || event.code == 'Home' || event.code == 'End' || event.code == 'Tab') return;
 
       if (['F1', 'F2', 'F3', 'F4'].includes(event.code)) {
         switch (event.code) {
@@ -2098,11 +2252,11 @@ class Editor {
           case 'F3': $("button[name='XZview-canvas']").trigger('click'); break;
           case 'F4': $("button[name='ZYview-canvas']").trigger('click'); break;
         }
-        event.preventDefault();
+        event.preventDefault(); // DISABLED
         return;
       }
      
-      event.preventDefault()
+      event.preventDefault()  // DISABLED
     });
     document.addEventListener('keyup', (event) => {
       this.keys[event.code] = false
@@ -2225,11 +2379,11 @@ class Editor {
 
   // REVRITE LOCKET TRIANGLES
   refreshLocketDatas(tri1, tri2) {
-    console.log(tri1)
-    console.log(tri2)
+    let tri1Data = this.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == tri1.id)
+    let tri2Data = this.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == tri2.id)
 
-    $(`input[id='selected-tri-name-1']`).val(tri1.id)
-    $(`input[id='selected-tri-name-2']`).val(tri2.id)
+    $(`input[id='selected-tri-name-1']`).val(tri1Data.name)
+    $(`input[id='selected-tri-name-2']`).val(tri2Data.name)
 
     if (false) {
       tri2.tid = tri1.tid
@@ -2320,9 +2474,9 @@ class Editor {
     // END POINTER CLICK (ESC)
     document.addEventListener('pointerlockchange', function() {
       if (document.pointerLockElement == document.body) {
-        console.log("Pointer lock aktív")
+        // console.log("Pointer lock aktív")
       } else {
-        console.log("Pointer lock megszűnt")
+        // console.log("Pointer lock megszűnt")
         document.activeElement.blur()
         this.selectedView = null
         $("#screen-canvas").css('border-color', 'gray')
@@ -2357,10 +2511,6 @@ class Editor {
       view.ctx.translate(view.canvas.width / 2, view.canvas.height / 2) // Középpontba helyezés
       view.ctx.scale(-1, -1) // Tükrözés X és Y tengely mentén
       view.ctx.translate(-view.canvas.width / 2, -view.canvas.height / 2) // Visszahelyezés az eredeti helyre
-
-      // POS ORIGO
-      view.ctx.strokeStyle = 'blue'; view.ctx.lineWidth = 4;
-      view.ctx.beginPath(); view.ctx.arc(view.posX, view.posY, 4, 0, 2 * Math.PI); view.ctx.stroke();
 
       const space = (view.ratio / view.frequent < 1) ? 1 : view.ratio / view.frequent
 
@@ -2406,7 +2556,7 @@ class Editor {
       // SELECTED TRIANGLE DRAW
       if (this.mouse.selectedTri && this.mouse.selectedTri.id) {
         let selectTri = this.mouse.selectedTri
-        var lineWidth = 4
+        var lineWidth = 3
         this.drawViewTriangeAction(view, 'white', lineWidth, selectTri.p[0][view.vX], selectTri.p[0][view.vY], selectTri.p[1][view.vX], selectTri.p[1][view.vY], selectTri.p[2][view.vX], selectTri.p[2][view.vY])
         // DRAW LOCKET IF HAVE
         if (selectTri?.locket) {
@@ -2472,6 +2622,10 @@ class Editor {
         view.ctx.arc(np0X, np0Y, 3, 0, 2 * Math.PI)
         view.ctx.fill()
       }
+
+      // POS ORIGO
+      view.ctx.fillStyle = 'green';
+      view.ctx.beginPath(); view.ctx.arc(view.posX, view.posY, 3, 0, 2 * Math.PI); view.ctx.fill();
 
       view.ctx.restore() // Eredeti koordinátarendszer visszaállítása
 
