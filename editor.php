@@ -4,10 +4,22 @@
 $directory = './data/';
 $ext = '.tuc';
 
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['test'])) {
+    $test = 'test';
+    echo json_encode($test);
+    exit;
+}
+
 // GET FILES
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['getfiles'])) {
+
+    if (isset($_POST['dirsstructure'])) $directory = $directory . $_POST['dirsstructure'];
+
     $files = [];
     $files = get_files($directory);
+    usort($files, function ($a, $b) {
+        return strnatcmp($a['name'], $b['name']);
+    });
 
     echo json_encode(['files' => $files]);
     exit;
@@ -36,7 +48,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
 // MAKE DIR
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['addgetdirs']) && isset($_POST['newdirname'])) {
 
-    $directory = $directory . $_POST['addgetdirs'].'/'.$_POST['newdirname'];
+    $newdirname = clear_filename($_POST['newdirname']);
+
+    $directory = $directory . $_POST['addgetdirs'].DIRECTORY_SEPARATOR.$newdirname;
 
     if (!is_dir($directory)) {
         if (mkdir($directory, 0777)) {
@@ -55,19 +69,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
 // RENAME DIR
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['addgetdirs']) && isset($_POST['olddirname']) && isset($_POST['renamedirname'])) {
 
-    $olddirectory = $directory . $_POST['addgetdirs'].'/'.$_POST['olddirname'];
-    $newdirectory = $directory . $_POST['addgetdirs'].'/'.$_POST['renamedirname'];
+    $renamedirname = mb_strtolower($_POST['renamedirname']);
+
+    $olddirectory = $directory . $_POST['addgetdirs'] . DIRECTORY_SEPARATOR . $_POST['olddirname'];
+    $newdirectory = $directory . $_POST['addgetdirs'] . DIRECTORY_SEPARATOR . $renamedirname;
 
     if (is_dir($directory)) {
 
         if (is_dir($newdirectory)) {
-            echo json_encode(['error' => 'The '. $_POST['renamedirname'] .' directory is exists!']);
+            echo json_encode(['error' => 'The '.  $renamedirname .' directory is exists!']);
             exit;
         }
 
-        // echo json_encode([$olddirectory, $newdirectory]); exit;
-
         if (rename($olddirectory, $newdirectory)) {
+
+            // RENAME ALL FILE IF NECESSARY
+            if (isset($_POST['renamefiles'])) rename_filelist($newdirectory,  $renamedirname);
+
             echo json_encode(['success' => true]);
             exit;
         } else {
@@ -83,7 +101,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
 // DELETE DIR
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['addgetdirs']) && isset($_POST['deletedirname'])) {
 
-    $directory = $directory . $_POST['addgetdirs'].'/'.$_POST['deletedirname'];
+    $directory = $directory . $_POST['addgetdirs'].DIRECTORY_SEPARATOR.$_POST['deletedirname'];
 
     // echo json_encode($directory); exit;
     
@@ -107,7 +125,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
     $addgetdirs = basename($_POST['addgetdirs']);
     $dirname = mb_strtolower($dirname);
 
-    $filepath = $directory . $addgetdirs . '/' . $dirname;
+    $filepath = $directory . $addgetdirs . DIRECTORY_SEPARATOR . $dirname;
 
     echo json_encode([$filepath]);
     exit;
@@ -127,11 +145,68 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
     exit;
 }
 
+// UPLOAD FILE
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['addgetdirs']) && isset($_POST['newfilename']) && isset($_FILES['filedata'])) {
+
+    $directory = $directory . $_POST['addgetdirs'];
+
+    if (!is_dir($directory)) {
+        echo json_encode(['error' => 'Directory is not exist!']);
+        exit;
+    }
+
+    function uploadFile($directory, $filedata) {
+        $target_file = $directory . DIRECTORY_SEPARATOR . basename($_POST['newfilename']);
+        return move_uploaded_file($filedata['tmp_name'], $target_file);
+    }
+
+    $responseValue = uploadFile($directory, $_FILES['filedata']);
+
+    if ($responseValue) {
+        echo json_encode(['success' => true]);
+        exit;
+    } else {
+        echo json_encode(['error' => 'Failed to upload file!']);
+        exit;
+    }
+}
+
+// CHANGE FILENAMES
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['actdir']) && isset($_POST['filename1']) && isset($_POST['filename2'])) {
+
+    $directory = $directory . $_POST['actdir'];
+
+    $response = changefilename($directory . DIRECTORY_SEPARATOR . $_POST['filename1'], $directory . DIRECTORY_SEPARATOR . $_POST['filename2']);
+
+    echo json_encode($response);
+    exit;
+}
+
+// DELETE FILE
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['addgetdirs']) && isset($_POST['deletefilename'])) {
+
+    $directoryandfile = $directory . $_POST['addgetdirs'] . $_POST['deletefilename'];
+
+    if (!file_exists($directoryandfile)) {
+        echo json_encode(['error' => 'File is not exist!']);
+        exit;
+    }
+
+    if (unlink($directoryandfile)) {
+        recount_filelist($directory . $_POST['addgetdirs']);
+        echo json_encode(['success' => [true]]);
+        exit;
+    } else {
+        echo json_encode(['error' => 'Failed to delete the file.']);
+        exit;
+    }
+}
+
 // SAVE
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['save']) && isset($_POST['filename'])) {
 
     $filename = basename($_POST['filename']);
-    $filename = mb_strtolower($filename);
+    $filename = clear_filename($filename);
 
     $map_data = json_decode($_POST['mapdata'], true);
 
@@ -140,7 +215,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
         exit;
     }
 
-    if (file_put_contents($directory. '/'. $filename . $ext, gzencode(json_encode($map_data), 9))) {
+    if (file_put_contents($directory. DIRECTORY_SEPARATOR . $filename . $ext, gzencode(json_encode($map_data), 9))) {
         echo json_encode(['success' => 'Saving success!']);
     } else {
         echo json_encode(['error' => 'Save error!']);
@@ -154,8 +229,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
     $filename = basename($_POST['filename']);
     $filename = mb_strtolower($filename);
 
-    if (file_exists($directory . '/' . $filename. $ext)) {
-        $compressed_data = file_get_contents($directory . '/' . $filename . $ext);
+    if (file_exists($directory . DIRECTORY_SEPARATOR . $filename. $ext)) {
+        $compressed_data = file_get_contents($directory . DIRECTORY_SEPARATOR . $filename . $ext);
         $json_data = json_decode(gzdecode($compressed_data), true);
 
         echo json_encode($json_data ?? ['error' => 'Error JSON file reading!']);
@@ -171,9 +246,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
     $filename = basename($_POST['filename']);
     $filename = mb_strtolower($filename);
 
-    if (file_exists($directory . '/' . $filename. $ext)) {
-        if (file_exists($directory . '/' . $filename . $ext)) {
-            if (unlink($directory . '/' . $filename . $ext)) {
+    if (file_exists($directory . DIRECTORY_SEPARATOR . $filename. $ext)) {
+        if (file_exists($directory . DIRECTORY_SEPARATOR . $filename . $ext)) {
+            if (unlink($directory . DIRECTORY_SEPARATOR . $filename . $ext)) {
                 echo json_encode(['success' => 'File deleted successfully!']);
             } else {
                 echo json_encode(['error' => 'Failed to delete the file!']);
@@ -192,6 +267,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     exit;
 }
 
+////////////
 // FUNCTIONS
 function get_files($directory) {
 
@@ -235,4 +311,104 @@ function deleteDirectory($dir) {
     }
 
     return rmdir($dir);
+}
+
+function clear_filename($getname) {
+    $converted = iconv('UTF-8', 'ASCII//TRANSLIT', $getname);
+    $clean = preg_replace('/[^A-Za-z0-9 -]/', '', $converted);
+    return mb_strtolower($clean);
+}
+
+function recount_filelist($directory) {
+    $allfiles = scandir($directory);
+
+    $newfilenames = [];
+    $counter = 0;
+
+    foreach ($allfiles as $file) {
+        if ($file === '.' || $file === '..') {
+            continue;
+        }
+
+        $oldpath = $directory . DIRECTORY_SEPARATOR . $file;
+
+        if (is_file($oldpath)) {
+            $parts = explode('_', $file, 2);
+            if (count($parts) == 2) {
+                $newname = $counter . '_' . $parts[1];
+            } else {
+                $newname = $counter . '_' . $file;
+            }
+
+            $newpath = $directory . DIRECTORY_SEPARATOR . $newname;
+
+            // Átnevezzük a fájlt
+            if (rename($oldpath, $newpath)) {
+                $newfilenames[] = $newname;
+            }
+
+            $counter++;
+        }
+    }
+
+    return $newfilenames;
+}
+
+function rename_filelist($directory, $newdirname) {
+    $allfiles = scandir($directory);
+
+    $newfilenames = [];
+
+    foreach ($allfiles as $file) {
+        if ($file === '.' || $file === '..') {
+            continue;
+        }
+
+        $oldpath = $directory . DIRECTORY_SEPARATOR . $file;
+
+        if (is_file($oldpath)) {
+            $parts = explode('_', $file, 2);
+            $newname = $parts[0] . '_' . mb_strtolower($newdirname) . '.png';
+
+            $newpath = $directory . DIRECTORY_SEPARATOR . $newname;
+
+            // Átnevezzük a fájlt
+            if (rename($oldpath, $newpath)) {
+                $newfilenames[] = $newname;
+            }
+        }
+    }
+
+    return $newfilenames;
+}
+
+function changefilename($file1, $file2) {
+    $return = [];
+
+    if (!file_exists($file1) || !file_exists($file2)) {
+        $return['error'] = 'One or both files do not exist.';
+        return $return;
+    }
+
+    $temp = $file1 . '.swap_' . uniqid();
+
+    if (!rename($file1, $temp)) {
+        $return['error'] = "Failed to rename: $file1 -> $temp";
+        return $return;
+    }
+
+    if (!rename($file2, $file1)) {
+        rename($temp, $file1);
+        $return['error'] = "Failed to rename: $file2 -> $file1";
+        return $return;
+    }
+
+    if (!rename($temp, $file2)) {
+        rename($file1, $file2);
+        rename($temp, $file1);
+        $return['error'] = "Failed to rename: $temp -> $file2";
+        return $return;
+    }
+
+    return ['success' => true];
 }

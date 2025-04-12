@@ -87,7 +87,6 @@ class Editor {
   }
 
   async init() {
-
     if (false) {
       let filename = 'valamika'    
       const responseIsset = await this.fetchData({ ajax: true, save: true, filename }, true)
@@ -583,37 +582,94 @@ class Editor {
     $('#add-new-rec').removeClass('green2')
   }
 
+  modalActionButtonText(mode, isTextures) {
+    let buttonText;
+    switch (mode) {
+      case 'load':
+        buttonText = 'Load';
+        break;
+      case 'save':
+        buttonText = 'Save';
+        break;
+      case 'textures':
+        if (isTextures && this.textureDir.length == 2) {
+          buttonText = 'Upload file';
+        } else {
+          buttonText = $("#modal-content").find(".list-selected-file").length > 0 ? 'Rename' : 'New Dir';
+        }
+        break;
+      default:
+        buttonText = mode;
+        break;
+    }
+    return buttonText;
+  }
+
   fileListElementsMake(mode, listElements, showInput, isTextures) {
+    this.listElelmentsLength = listElements.length
+    
     showInput ? $("#modal-input").show() : $("#modal-input").hide();
+    showInput ? $("#modal-file").show() : $("#modal-file").hide();
 
     $("#modal-content").html('')
     $("#modal-message").html('')
-    let elements = ''
+    $(".commander-container").css('grid-template-columns', '33% 33% 33%').css('margin-bottom', '0')
 
-    let buttonText
-    if (mode == 'load') buttonText = 'Load'; else if (mode == 'save') buttonText = 'Save'; else if (mode == 'textures') buttonText = 'New Dir'; else buttonText = mode;
+    let getdirs = this.makeDirStructure()
 
+    // button and input options
     if (isTextures) {
-      $("#modal-input").show()
+      $("#modal-file").hide(); $("#modal-input").show();
+
       this.textureDir.length == 0 ? $("#modal-back").hide() : $("#modal-back").show();
+
+      if (this.textureDir.length == 2) {
+        $("#modal-file").show(); $("#modal-input").hide();
+      } 
+    } else {
+      $("#modal-file").hide()
     }
 
+    let index = 0; let listElelmentsNum = listElements.length - 1; let elements = '';
     listElements.forEach(fileOrDir => {
+      // TEXTURES
       if (isTextures) {
-        elements += `
-        <div class="list-element cursor-pointer" data-filename="${fileOrDir}" data-mode="${mode}">
-          <span>${fileOrDir}</span>
-        </div>`
+        if (this.textureDir.length == 2) {
+          if (listElements.length == '1') $(".commander-container").css('grid-template-columns', '100%').css('margin-bottom', '30px')
+          // LIST TEXTURES
+          const timestamp = new Date().getTime()
+          elements += `
+          <div class="list-element pos-relative text-center" data-filename="${fileOrDir.name}" data-mode="${mode}">
+            <img src="./data/${getdirs}/${fileOrDir.name}.${fileOrDir.extension}?t=${timestamp}" alt="${fileOrDir.name}.${fileOrDir.extension}" class="pic-pix w-100 max-250px">`;
+            if (listElements.length > '1') {
+              if (index != 0) elements += `<div class="texturepic-left-icon" data-orientation="left">⇐</div>`;
+              if (index != listElelmentsNum) elements += `<div class="texturepic-right-icon" data-orientation="right">⇒</div>`;
+            }
+            elements += `
+            <div class="texturepic-del-icon">✖</div>
+            <div class="pic-name-div">
+              <span>${fileOrDir.name}</span><span>.${fileOrDir.extension}</span>
+            </div>
+          </div>`
+        } else {
+          // LIST DIRS
+          elements += `
+          <div class="list-element text-uppercase fw-bold" data-filename="${fileOrDir}" data-mode="${mode}">
+            <span class="cursor-pointer">${fileOrDir}</span>
+          </div>`
+        }
       } else if (fileOrDir.extension == 'tuc') {
+        // LOAD OR SAVE
         elements += `<div class="list-element cursor-pointer" data-filename="${fileOrDir.name}" data-mode="${mode}">
+        <div class="cursor-pointer">
           <span>${fileOrDir.name}</span><span>.${fileOrDir.extension}</span>
+        </div>
         </div>`
       }
+      index++
     });
 
-    if (isTextures && this.textureDir.length == 2) {
-      elements += `<div>${this.textureDir} Most kell a képlista !!!!</div>`
-    }
+    let buttonText = this.modalActionButtonText(mode, isTextures)
 
     $("#modal-content").append(elements)
     $("#modal-container .modal-action-button").html(buttonText).attr('mode', mode).prop('disabled', true)
@@ -621,8 +677,15 @@ class Editor {
     $("#modal-content").show()
   }
 
-  makeDirStructure() {
+  makeDirStructure(bring) {
     let getdirs = '';
+    if (bring) {
+      bring.forEach(list => {
+        getdirs += `${list}/`;
+      });
+      return getdirs;
+    }
+
     if (this.textureDir.length > 0) {
       this.textureDir.forEach(list => {
         getdirs += `${list}/`;
@@ -633,8 +696,16 @@ class Editor {
 
   async textureFunction(mode) {
     let getdirs = this.makeDirStructure()
-    const response = await this.fetchData({ ajax: true, getdirs: getdirs })
-    if (response?.dirs) this.fileListElementsMake(mode, response.dirs, false, true)
+    if (this.textureDir.length == 2) {
+      // load Textures
+      const response = await this.fetchData({ ajax: true, getfiles: true, dirsstructure: getdirs })
+      if (response?.files) this.fileListElementsMake(mode, response.files, false, true)
+      
+    } else {
+      // load diresctorys
+      const response = await this.fetchData({ ajax: true, getdirs: getdirs })
+      if (response?.dirs) this.fileListElementsMake(mode, response.dirs, false, true)
+    }
   }
 
   initInputs() {
@@ -654,6 +725,11 @@ class Editor {
     
         console.log('this.map.structure')
         console.log(this.map.structure)
+      }
+
+      if (event.key == 'o') {
+        console.log('this.textureDir')
+        console.log(this.textureDir)
       }
     });
 
@@ -677,21 +753,67 @@ class Editor {
       clone.fullRefreshCanvasGraphics()
     });
 
+    // MOVE PICTURES
+    $(document).on("click", ".list-element .texturepic-right-icon, .list-element .texturepic-left-icon", async function() {
+      let orientation = $(this).attr('data-orientation')
+
+      let filename1 = $(this).closest('.list-element').attr('data-filename') + '.png'
+
+      let filename2
+      if (orientation == 'right') filename2 = $(this).closest('.list-element').next().attr('data-filename')  + '.png';
+      else if (orientation == 'left') filename2 = $(this).closest('.list-element').prev().attr('data-filename')  + '.png';
+      else return;
+
+      if (filename1 && filename2) {
+        let actdir = clone.makeDirStructure()
+  
+        let response = await clone.fetchData({ ajax: true, actdir: actdir, filename1: filename1, filename2: filename2 })
+        if (response?.success) {
+          $('#modal-file').val('')
+          clone.textureFunction('textures')
+        } else {
+          $("#modal-message").html(`<span class="text-center text-danger">${response?.error}</span>`)
+          setTimeout(() => { $("#modal-message").html('') }, 4000)
+        }
+      }
+    });
+
+    // DELETE IMAGE
+    $(document).on("click", ".list-element .texturepic-del-icon", async function() {
+      let filename = $(this).closest('.list-element').attr('data-filename')
+      if (filename) {
+        let getdirs = clone.makeDirStructure()
+        let trueDelete = (confirm(`Are you seure delete the ${filename} picture?`)) ? true : false;
+        if (trueDelete) {
+          const response = await clone.fetchData({ ajax: true, addgetdirs: getdirs, deletefilename: filename + '.png' })
+          if (response?.success) {
+            $('#modal-file').val('')
+            clone.textureFunction('textures')
+          } else {
+            $("#modal-message").html(`<span class="text-center text-danger">${response?.error}</span>`)
+            setTimeout(() => { $("#modal-message").html('') }, 4000)
+          }
+        }
+      }
+    });
+
     // MODAL CONTENT CREATE
     $(".modal-button").on('click', async function() {
       let mode = $(this).attr('data-mode')
       if (mode) $("#modal-title").html(mode);
-
+      
       $("#modal-container").attr('data-mode', mode)
 
       // LOAD
       if (mode == 'load') {
-        const response = await clone.fetchData({ ajax: true, getfiles: true })
+        clone.textureDir = []
+        const response = await clone.fetchData({ ajax: true, getfiles: true, })
         if (response?.files) clone.fileListElementsMake(mode, response.files, false, false)
       }
 
       // SAVE
       if(mode == 'save') {
+        clone.textureDir = []
         const response = await clone.fetchData({ ajax: true, getfiles: true })
         if (response?.files) clone.fileListElementsMake(mode, response.files, true, false)
       }
@@ -720,43 +842,35 @@ class Editor {
           $(this).removeClass("list-selected-file")
         });
 
-        let mode = $("#modal-container").attr('data-mode')
-        let buttonText
-        if (mode == 'load') buttonText = 'Load'; else if (mode == 'save') buttonText = 'Save'; else if (mode == 'textures') buttonText = 'New Dir'; else buttonText = mode;
+        let mode = $("#modal-container").attr('data-mode')        
+        let buttonText = clone.modalActionButtonText(mode, mode == 'textures' ? true : false)
   
         $("#modal-container .modal-action-button").html(buttonText).prop('disabled', true)
         $("#modal-container .modal-delete-button").prop('disabled', true)
         $('#modal-input').val('')
-  
-        console.log('STOP!!!')
       }
     });
 
     $(document).on('click', "#modal-content .list-element", async function(event) {
-      event.stopPropagation()
-      // remove selected list-element class
-      $("#modal-content .list-element").each(function() {
-        $(this).removeClass("list-selected-file")
-      });
-
-      let filename = $(this).attr('data-filename')
-
-      $(".modal-action-button").attr('data-original-filename', filename)
-
-      let mode = $("#modal-container").attr('data-mode')
-      let buttonText
-      if (mode == 'load') buttonText = 'Load'; else if (mode == 'save') buttonText = 'Save'; else if (mode == 'textures') buttonText = 'Rename'; else buttonText = mode;
-
-      if (mode=='textures') {
-        // ???
-        console.log('TEXTURE !!! Sima click!!!')
-      }
-
-      $(this).addClass("list-selected-file")
-      if (filename) {
-        $("#modal-container .modal-action-button").html(buttonText).prop('disabled', false).attr('data-filename', filename)
-        $("#modal-container .modal-delete-button").prop('disabled', false)
-        $('#modal-input').val(filename)
+      if (clone.textureDir.length < 2) {
+        event.stopPropagation()
+        // remove selected list-element class
+        $("#modal-content .list-element").each(function() {
+          $(this).removeClass("list-selected-file")
+        });
+  
+        let mode = $("#modal-container").attr('data-mode')
+        let isTextures = mode == 'textures' ? true : false;
+        
+        let filename = $(this).attr('data-filename')
+        if (filename) {
+          $(this).addClass("list-selected-file")
+          let buttonText = clone.modalActionButtonText(mode, isTextures)
+          $(".modal-action-button").attr('data-original-filename', filename)
+          $("#modal-container .modal-action-button").html(buttonText).prop('disabled', false).attr('data-filename', filename)
+          $("#modal-container .modal-delete-button").prop('disabled', false)
+          $('#modal-input').val(filename)
+        }
       }
     });
 
@@ -765,7 +879,6 @@ class Editor {
       let mode = $(this).attr('data-mode')
 
       if (mode=='textures') {
-        console.log('2click TEXTURESS')
         $('#modal-input').val('')
         let filename = $(this).attr('data-filename')
         clone.textureDir.push(filename)
@@ -773,12 +886,12 @@ class Editor {
       }
     });
 
-    // AJAX ACTION
+    // AJAX ACTION BUTTON
     $(document).on('click', "#modal-container .modal-action-button", async function() {
       let mode = $("#modal-container").attr('data-mode')
       let filename = $(this).attr('data-filename')
 
-      console.log('--------'); console.log(mode); console.log(filename); console.log('--------');
+      // console.log('--------'); console.log(mode); console.log(filename); console.log('--------');
 
       if (mode == 'load' && filename) {
         // LOAD
@@ -810,7 +923,7 @@ class Editor {
       }
 
       // SAVE
-      if (mode == 'save' && filename) { 
+      if (mode == 'save' && filename) {
         let save = true;
 
         const responseIsset = await clone.fetchData({ ajax: true, issetfile: true, filename }); // console.log(responseIsset)
@@ -835,42 +948,74 @@ class Editor {
 
       // TEXTURES
       if (mode == 'textures' && filename) {
-        let selectedDir = $("#modal-content .list-selected-file").length > 0 ? true : false;
-        if (selectedDir) {
-          // RENAME
-          let addgetdirs = clone.makeDirStructure()
-          let olddirname =  $(".modal-action-button").attr("data-original-filename")
+        if (clone.textureDir.length == 2) {
+          // UPLOAD FILE
+          let newFileName = `${clone.listElelmentsLength}_${clone.textureDir[clone.textureDir.length - 1]}.png`;                    
+          if ($('#modal-file').prop('files').length > 0) {
+            const file = $('#modal-file').prop('files')[0];
+            if (file) {
+              const formData = new FormData();
+              formData.append('ajax', true);
+              formData.append('newfilename', newFileName);
+              formData.append('addgetdirs', clone.makeDirStructure());
+              formData.append('filedata', file);
 
-          const checkFile = await clone.fetchData({ ajax: true, addgetdirs: addgetdirs, olddirname: olddirname, renamedirname: filename });  
-          if (checkFile?.success) {
-            $("#modal-input").val('')
-            await clone.textureFunction('textures')
-          } else {
-            $("#modal-message").html(`<span class="text-center text-danger">${checkFile?.error}</span>`)
-            setTimeout(() => { $("#modal-message").html('') }, 4000)
+              await clone.fetchDataFile(formData).then(response => {                
+                if (response?.success) {
+                  $('#modal-file').val('')
+                  clone.textureFunction('textures')
+                } else {
+                  $("#modal-message").html(`<span class="text-center text-danger">${response?.error}</span>`)
+                  setTimeout(() => { $("#modal-message").html('') }, 4000)
+                }
+              });
+            }
           }
-
         } else {
-          // NEW DIR
-          let addgetdirs = clone.makeDirStructure()
+          let selectedDir = $("#modal-content .list-selected-file").length > 0 ? true : false;
+          if (selectedDir) {
+            // RENAME
+            let addgetdirs = clone.makeDirStructure()
+            let olddirname =  $(".modal-action-button").attr("data-original-filename")
 
-          const responseNewDir = await clone.fetchData({ ajax: true, addgetdirs: addgetdirs, newdirname: filename })  
-          if (responseNewDir?.success) {
-            $("#modal-input").val('')
-            await clone.textureFunction(mode)
+            const renameFiles = clone.textureDir.length == 1 ? true : false;
+
+            const checkFile = await clone.fetchData({ ajax: true, addgetdirs: addgetdirs, olddirname: olddirname, renamedirname: filename, renamefiles: renameFiles})
+            if (checkFile?.success) {
+              $("#modal-input").val('')
+              await clone.textureFunction('textures')
+            } else {
+              $("#modal-message").html(`<span class="text-center text-danger">${checkFile?.error}</span>`)
+              setTimeout(() => { $("#modal-message").html('') }, 4000)
+            }
+  
           } else {
-            $("#modal-message").html(`<span class="text-center text-danger">${responseNewDir.error}</span>`)
-            setTimeout(() => { $("#modal-message").html(''); }, 4000);
+            // NEW DIR
+            let addgetdirs = clone.makeDirStructure()
+  
+            const responseNewDir = await clone.fetchData({ ajax: true, addgetdirs: addgetdirs, newdirname: filename })  
+            if (responseNewDir?.success) {
+              $("#modal-input").val('')
+              await clone.textureFunction(mode)
+            } else {
+              $("#modal-message").html(`<span class="text-center text-danger">${responseNewDir.error}</span>`)
+              setTimeout(() => { $("#modal-message").html(''); }, 4000);
+            }
           }
         }
+
       }
+    });
+
+    // SELECTED UPLOAD FILE
+    $(document).on('input', "#modal-file", function () {
+      let $button = $("#modal-inputdiv .modal-action-button");
+      $(this).prop('files').length > 0 ? $button.prop('disabled', false) : $button.prop('disabled', true);
     });
 
     // DELETE
     $(document).on('click', "#modal-container .modal-delete-button", async () => {
-
       let mode = $("#modal-container").attr('data-mode')
-
       if (mode == 'load' || mode == 'save') {
         // DELETE FILE
         let filename = $("#modal-container .modal-action-button").attr('data-filename')
@@ -900,7 +1045,7 @@ class Editor {
       } else if (mode == 'textures') {        
         // DELETE DIR
         let deletedirname = $("#modal-container .modal-action-button").attr('data-filename')
-        let trueDelete = (confirm(`Are you seure delete? ${deletedirname} Directiry`)) ? true : false;
+        let trueDelete = (confirm(`Are you seure delete the ${deletedirname} directory?`)) ? true : false;
         if (trueDelete) {
           let addgetdirs = clone.makeDirStructure()
 
@@ -924,8 +1069,8 @@ class Editor {
       }
     });
 
-    $("#modal-close").on('click', function(){
-      $('#modal-input').val('')
+    $("#modal-close").on('click', function() {
+      $('#modal-input').val(''); $('#modal-file').val('');
     });
 
     // DOTS BUTTONS
@@ -2891,16 +3036,33 @@ class Editor {
 
   // AJAX
   async fetchData(data, originaldata) {
-    const response = await $.ajax({
+    try {
+      const response = await $.ajax({
         url: 'editor.php',
         type: 'POST',
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         data: data,
-    });
-
-    return originaldata ? response : JSON.parse(response);
-  } catch (error) {
-      console.error("Hiba történt:", error);
+      });
+      return originaldata ? response : JSON.parse(response);
+    } catch (error) {
+      // console.error("Hiba történt:", error);
+    }
+  }
+  
+  async fetchDataFile(data, originaldata) {
+    try {
+      const response = await $.ajax({
+        url: 'editor.php',
+        type: 'POST',
+        data: data,
+        cache: false,
+        contentType: false,
+        processData: false
+      });
+      return originaldata ? response : JSON.parse(response);
+    } catch (error) {
+      // console.error("Hiba történt:", error);
+    }
   }
 }
 
