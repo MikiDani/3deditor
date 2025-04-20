@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 18.1.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1"
+	 id="svg88" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:svg="http://www.w3.org/2000/svg" inkscape:version="1.2.2 (732a01da63, 2022-12-09)" sodipodi:docname="triangle.svg" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="94 -4 800 800"
+	 enable-background="new 94 -4 800 800" xml:space="preserve">
+<sodipodi:namedview  pagecolor="#ffffff" id="namedview90" inkscape:cy="554.36081" inkscape:cx="399.5221" inkscape:zoom="0.523125" showgrid="false" borderopacity="0.25" bordercolor="#000000" inkscape:window-height="1017" inkscape:window-width="1920" inkscape:pagecheckerboard="0" inkscape:pageopacity="0.0" inkscape:showpageshadow="2" inkscape:window-maximized="1" inkscape:window-y="-8" inkscape:window-x="1592" inkscape:current-layer="svg88" inkscape:deskcolor="#d1d1d1">
+	</sodipodi:namedview>
+<title  id="title76">application-line</title>
+<rect id="rect78" x="205.1" y="151.6" width="44.4" height="44.4"/>
+<rect id="rect80" x="294" y="151.6" width="44.4" height="44.4"/>
+<rect id="rect82" x="382.9" y="151.6" width="44.4" height="44.4"/>
+<path id="path84" d="M805.1,84.9H182.9c-24.5,0-44.4,19.9-44.4,44.4v533.3c0,24.5,19.9,44.4,44.4,44.4h622.2
+	c24.5,0,44.4-19.9,44.4-44.4V129.3C849.6,104.8,829.7,84.9,805.1,84.9z M182.9,129.3h622.2v93.3H182.9V129.3z M182.9,662.7V258.2
+	h622.2v404.4H182.9z"/>
+<rect id="rect86" x="94" y="-4" fill-opacity="0" width="800" height="800"/>
+<g id="Page-1" transform="matrix(-0.42365591,0,0,0.42365591,27.708494,20.27957)">
+	<g id="Dribbble-Light-Preview" transform="translate(-140,-8159)">
+		<g id="icons" transform="translate(56,160)">
+			<polygon id="mouse_x5F_pointer-_x5B__x23_6_x5D_" points="-1655.7,9240 -1528.8,9114.1 -1629.6,9013.3 -1211.3,8859.4 
+				-1365.1,9277.7 -1465.9,9177 -1591.8,9303.9 			"/>
+		</g>
+	</g>
+</g>
+<path id="path7836" sodipodi:arg2="1.5707963" sodipodi:arg1="0.52359878" sodipodi:cx="19.784946" sodipodi:cy="14.795699" sodipodi:sides="3" sodipodi:type="star" sodipodi:r2="4.314817" sodipodi:r1="8.6296329" inkscape:rounded="0" inkscape:randomized="0" inkscape:flatsided="false" inkscape:transform-center-y="-2.1574084" d="
+	M545.3,577.9h-150h-150l75-129.9l75-129.9l75,129.9L545.3,577.9z"/>
+<circle id="path7404" stroke="#FFFFFF" stroke-width="18" stroke-miterlimit="10" cx="533.5" cy="340" r="50.9"/>
+</svg>

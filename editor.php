@@ -10,6 +10,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
     exit;
 }
 
+// GET TEXTURESTRUCTURE
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['gettexturestructure'])) {
+    function recursive_builder($directory) {
+        $structure = [];
+        $files = get_files($directory);
+        foreach ($files as $row) {
+            $path = $directory . DIRECTORY_SEPARATOR . $row['name'];
+            if ($row['extension'] == '') {
+                $structure[$row['name']] = recursive_builder($path);
+            } else if ($row['extension'] == 'png') {
+                $structure[$row['name']] = $path;
+            }
+        }
+        return $structure;
+    }
+
+    $structure = recursive_builder('.'. DIRECTORY_SEPARATOR .'data');
+
+    echo json_encode(['structure' => $structure]);
+    exit;
+}
+
 // GET FILES
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['getfiles'])) {
 

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 18.1.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1"
+	 id="svg88" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:svg="http://www.w3.org/2000/svg" inkscape:version="1.2.2 (732a01da63, 2022-12-09)" sodipodi:docname="heand.svg"
+	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="94 -4 800 800"
+	 enable-background="new 94 -4 800 800" xml:space="preserve">
+<sodipodi:namedview  pagecolor="#ffffff" id="namedview90" inkscape:cy="401.43369" inkscape:cx="399.5221" inkscape:zoom="1.04625" showgrid="false" borderopacity="0.25" bordercolor="#000000" inkscape:window-height="1017" inkscape:window-width="1920" inkscape:pagecheckerboard="0" inkscape:pageopacity="0.0" inkscape:showpageshadow="2" inkscape:window-maximized="1" inkscape:window-y="-8" inkscape:window-x="1592" inkscape:current-layer="svg88" inkscape:deskcolor="#d1d1d1">
+	</sodipodi:namedview>
+<title  id="title76">application-line</title>
+<rect id="rect78" x="205.1" y="151.6" width="44.4" height="44.4"/>
+<rect id="rect80" x="294" y="151.6" width="44.4" height="44.4"/>
+<rect id="rect82" x="382.9" y="151.6" width="44.4" height="44.4"/>
+<path id="path84" d="M805.1,84.9H182.9c-24.5,0-44.4,19.9-44.4,44.4v533.3c0,24.5,19.9,44.4,44.4,44.4h622.2
+	c24.5,0,44.4-19.9,44.4-44.4V129.3C849.6,104.8,829.7,84.9,805.1,84.9z M182.9,129.3h622.2v93.3H182.9V129.3z M182.9,662.7V258.2
+	h622.2v404.4H182.9z"/>
+<rect id="rect86" x="94" y="-4" fill-opacity="0" width="800" height="800"/>
+<g>
+	<g>
+		<rect x="466.3" y="434.7" width="51.7" height="51.7"/>
+		<polygon points="660.2,434.7 660.2,460.6 647.3,460.6 647.3,434.7 634.4,434.7 634.4,447.6 621.4,447.6 621.4,434.7 608.5,434.7 
+			608.5,460.6 595.6,460.6 595.6,434.7 582.6,434.7 582.6,447.6 569.7,447.6 569.7,434.7 556.8,434.7 556.8,460.6 543.9,460.6 
+			543.9,434.7 530.9,434.7 530.9,486.4 673.1,486.4 673.1,434.7 		"/>
+		<polygon points="466.3,512.3 479.2,512.3 479.2,525.2 466.3,525.2 466.3,538.1 492.1,538.1 492.1,551.1 466.3,551.1 466.3,564 
+			479.2,564 479.2,576.9 466.3,576.9 466.3,589.9 492.1,589.9 492.1,602.8 466.3,602.8 466.3,615.7 479.2,615.7 479.2,628.6 
+			466.3,628.6 466.3,641.6 518,641.6 518,499.4 466.3,499.4 		"/>
+	</g>
+	<g>
+		<rect x="466.3" y="434.7" width="51.7" height="51.7"/>
+		<polygon points="324.1,486.4 324.1,460.6 337,460.6 337,486.4 349.9,486.4 349.9,473.5 362.9,473.5 362.9,486.4 375.8,486.4 
+			375.8,460.6 388.7,460.6 388.7,486.4 401.6,486.4 401.6,473.5 414.6,473.5 414.6,486.4 427.5,486.4 427.5,460.6 440.4,460.6 
+			440.4,486.4 453.4,486.4 453.4,434.7 311.1,434.7 311.1,486.4 		"/>
+		<polygon points="518,408.9 505.1,408.9 505.1,395.9 518,395.9 518,383 492.1,383 492.1,370.1 518,370.1 518,357.1 505.1,357.1 
+			505.1,344.2 518,344.2 518,331.3 492.1,331.3 492.1,318.4 518,318.4 518,305.4 505.1,305.4 505.1,292.5 518,292.5 518,279.6 
+			466.3,279.6 466.3,421.8 518,421.8 		"/>
+	</g>
+</g>
+<g>
+	<path d="M378,423.4c-36.5,0-58.2-20.9-58.2-59.7c0-41.1,24.2-70.8,65.5-70.8c36.5,0,56.2,24.8,56.2,59.5c0,43.6-21.9,71-63.2,71
+		H378z M382.2,419.5c19,0,26.4-25.2,26.4-63.6c0-30.1-9.5-59.3-27.9-59.3c-17.6,0-28.5,24.6-28.5,64.8c0,30.1,11.1,58,29.7,58H382.2
+		z"/>
+</g>
+</svg>

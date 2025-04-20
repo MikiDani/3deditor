@@ -6,7 +6,6 @@
     <link rel="icon" href="favicon.png" type="image/x-icon">
     <title>TuccMann 3D Editor</title>
     <link href="./css/style.css" rel="stylesheet">
-    <link href="./css/menu.css" rel="stylesheet">
 </head>
 <body id="root">
     <script>
@@ -43,26 +42,31 @@
                     <div class="side-row">
                         <span>Tex.View: </span><button type="button" name="textured" class="3d-buttons" value="true">ON</button>
                     </div>
+                    <div class="side-row">
+                        <span>Realtime: </span><button type="button" name="realtime" class="3d-buttons" value="true">ON</button>
+                    </div>
                 </div>
             </div>
             <!-- javascript -->
         </div>
         <div id="toolbar-container" class="p-0 m-0">
             <div class="menu-icons-between-container w-100">
+                <div class="menu-text-border modal-button" data-mode="new">NEW</div>
                 <div class="menu-text-border modal-button" data-mode="load">LOAD</div>
                 <div class="menu-text-border modal-button" data-mode="save">SAVE</div>
-                <div class="menu-text-border modal-button" data-mode="textures">TEXTURES</div>
+                <div class="menu-text-border modal-button" data-mode="import">IMPORT</div>
                 <div class="menu-text-border modal-button" data-mode="info">INFO</div>
             </div>
             <div class="menu-icons-between-container w-100">
                 <div class="menu-text-border menu-back" title="Step back.">BACK</div>
+                <div class="menu-text-border modal-button" data-mode="textures">TEXTURES</div>
                 <div class="menu-text-border" onclick="logout()" title="Step back.">LOG OUT</div>
             </div>
 
             <div class="menu-icons-center-container">
                 <div class="toolbar-icon move" data-mode="move" title="Moving view screens (hand)"></div>
                 <div class="toolbar-icon point" data-mode="point" title="Moving the points of a triangle"></div>
-                <div class="toolbar-icon"></div>
+                <div class="toolbar-icon origo" data-mode="origo" title="Moving the origo point"></div>
                 <div class="toolbar-icon"></div>
                 <div class="toolbar-icon"></div>
                 <div class="p-0 m-0 d-flex flex-column justify-content-center align-items-center">
@@ -83,7 +87,6 @@
         </div>
 
         <div id="menu-right">
-    
             <button id="add-new-tri" class="title-box title-button">Add New Triangle</button>
             <button id="add-new-rec" class="title-box title-button">Add New Rectange</button>
     
@@ -97,7 +100,7 @@
                 <button id="clipboard-button" type="button" class="hover-pointer">Insert</button>
             </div>
     
-            <div class="title-box flex-between">
+            <div id="object-list-head" class="title-box flex-between">
                 <div class="p-0 m-0 d-flex">
                     <span id="object-open-close-all" class="triangle-down hover-pointer" data-status="0" title="Open/Close All"></span>
                 </div>
@@ -183,6 +186,39 @@
                     </div>
                 </div>
             </div>
+
+            <div id="selected-texture-container" class="box-1" style="display:none;">
+                <div class="right-screen-options">
+                    <div class="left-side">
+
+                        <div class="side-row">
+                            <span class="w-50">Animate: </span>
+                            <select name="tri-animate" data-type="short" class="w-50">
+                                <option value="false">Off</option>
+                                <option value="true">On</option>
+                            </select>
+                        </div>
+
+                        <div class="side-row">
+                            <span class="w-50">Anim frame:</span><input type="number" name="tri-animframe" data-type="short" class="w-50" disabled>
+                        </div>
+
+                        <div class="side-row">
+                            <span class="w-50">Anim speed:</span><input class="w-50" type="number" name="tri-animspeed">
+                        </div>
+
+                    </div>
+
+                    <div class="right-side">
+                        <div class="side-row">
+                            <img src="#" alt="#" data-texture-name="#" class="texture-minipic pic-pix"/>
+                        </div>
+                        <div class="side-row text-center w-100">
+                            <div class="texture-minipic-name fw-bold text-uppercase text-mini text-center w-100"><!-- javascript --></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
     
             <div id="selected-tri-container" class="p-0 m-0" style="display:none;">
                 <div class="title-box-flex text-start">
@@ -255,26 +291,12 @@
                                 <span class="w-30">t3V: </span><input class="w-70" type="number" name="tri-t3-V" data-type="t" data-axis="v" data-num="2" step="0.1" value="0">
                             </div>
                         </div>
-                        <div class="left-side mt-3">
+                        <div class="left-side mt-4 mb-3">
                             <div class="side-row">
                                 <span>light: </span><input type="number" name="tri-light" data-axis="light" min="0" max="1" step="0.1" value="1">
                             </div>
                         </div>
-                        <div class="right-side mt-3">
-                            <div class="side-row">
-                                <span class="w-30">text: </span>
-                                <select name="tri-texture" data-type="short">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                    <option value="6">6</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="left-side mt-3">
+                        <div class="right-side mt-4 mb-3">
                             <div class="side-row">
                                 <span>Normal: </span>
                                 <select name="tri-normal" data-type="short">
@@ -284,7 +306,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>    
             </div>
     
             <div id="selected-locket-container" class="p-0 m-0" style="display:none;">
@@ -401,7 +423,13 @@
                     </div>
                 </div>
             </div>
-    
+
+            <div id="textures-container" class="p-0 m-0">
+                <div id="textures-list" class="p-0 m-0">
+                    <!-- javascript -->
+                </div>
+            </div>
+
         </div>
     </div>
 

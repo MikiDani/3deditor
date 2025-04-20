@@ -1,19 +1,24 @@
 import { Vec3D, Triangle, Mesh, Matrix4x4, Vec2D } from './data.js';
 
 export class Graphics {
-  constructor(textures, keys, options, map) {
-    
-    this.textures = textures
+  constructor(text, keys, options, map, findMeshById) {
+    this.findMeshById = findMeshById
+    this.text = text // console.log(this.text)
     this.keys = keys
     this.options = options
+    this.map = map
 
     this.options3D = {
       textured: true,
       fill: false,
       grid: false,
+      realtime: true,
     }
 
-    this.map = map
+    for(const [key, value] of Object.entries(this.options3D)) {
+      let html = value ? 'ON' : 'OFF';
+      $(`button[class='3d-buttons'][name='${key}']`).val(this.options3D[key]).html(html)
+    }
 
     //--- SCREEN ---
     // this.GAMEWIDTH = 160; this.GAMEHEIGHT = 120; this.RATIO = 3;
@@ -296,6 +301,22 @@ export class Graphics {
       );
   }
 
+  calculateMeshCenter(mesh) {
+    let total = { x: 0, y: 0, z: 0 }
+    let count = 0
+  
+    mesh.tris.forEach(tri => {
+      tri.p.forEach(p => {
+        total.x += p.x
+        total.y += p.y
+        total.z += p.z
+        count++
+      })
+    })
+  
+    return new Vec3D(total.x / count, total.y / count, total.z / count)
+  }
+
   vector_IntersectPlane(plane_p, plane_n, lineStart, lineEnd, t) {
     plane_n = this.vector_Normalise(plane_n)
     let plane_d = -this.vector_DotProduct(plane_n, plane_p)
@@ -363,7 +384,7 @@ export class Graphics {
       out_tri1.t[2].u = tVal * (outside_tex[1].u - inside_tex[0].u) + inside_tex[0].u
       out_tri1.t[2].v = tVal * (outside_tex[1].v - inside_tex[0].v) + inside_tex[0].v
       out_tri1.t[2].w = tVal * (outside_tex[1].w - inside_tex[0].w) + inside_tex[0].w
-      out_tri1.tid = in_tri.tid
+      out_tri1.texture = in_tri.texture
       out_tri1.light = in_tri.light
       out_tri1.rgba = in_tri.rgba
       // out_tri1.rgba = [50, 170, 80, 1]
@@ -383,7 +404,7 @@ export class Graphics {
       out_tri1.t[2].u = tVal * (outside_tex[0].u - inside_tex[0].u) + inside_tex[0].u
       out_tri1.t[2].v = tVal * (outside_tex[0].v - inside_tex[0].v) + inside_tex[0].v
       out_tri1.t[2].w = tVal * (outside_tex[0].w - inside_tex[0].w) + inside_tex[0].w
-      out_tri1.tid = in_tri.tid
+      out_tri1.texture = in_tri.texture
       out_tri1.light = in_tri.light
       out_tri1.rgba = in_tri.rgba
       // out_tri1.rgba = [50, 50, 170, 1]
@@ -398,7 +419,7 @@ export class Graphics {
       out_tri2.t[2].u = tVal * (outside_tex[0].u - inside_tex[1].u) + inside_tex[1].u
       out_tri2.t[2].v = tVal * (outside_tex[0].v - inside_tex[1].v) + inside_tex[1].v
       out_tri2.t[2].w = tVal * (outside_tex[0].w - inside_tex[1].w) + inside_tex[1].w
-      out_tri2.tid = in_tri.tid
+      out_tri2.texture = in_tri.texture
       out_tri2.light = in_tri.light
       out_tri2.rgba = in_tri.rgba
       // out_tri2.rgba = [170, 50, 150, 1]
@@ -471,7 +492,9 @@ export class Graphics {
   renderScreen() {
     // Draw Objects
     this.map.data.forEach(mesh => {
-      this.drawObject(mesh)
+      // console.log(mesh)
+      let structure = this.findMeshById(this.map.structure, mesh.id)
+      if (structure.visible == '1') this.drawObject(mesh)
     });
   }
 
@@ -490,7 +513,7 @@ export class Graphics {
       triTransformed.t[0] = tri.t[0]
       triTransformed.t[1] = tri.t[1]
       triTransformed.t[2] = tri.t[2]
-      triTransformed.tid = tri.tid
+      triTransformed.texture = tri.texture
       triTransformed.light = tri.light
       triTransformed.rgba = tri.rgba
       triTransformed.normal = tri.normal
@@ -524,7 +547,7 @@ export class Graphics {
         triViewed.t[0] = triTransformed.t[0]
         triViewed.t[1] = triTransformed.t[1]
         triViewed.t[2] = triTransformed.t[2]
-        triViewed.tid = triTransformed.tid
+        triViewed.texture = triTransformed.texture
         triViewed.light = (maplight > tri.light) ? maplight : tri.light;
         //triViewed.light = maplight + tri.light
         
@@ -537,7 +560,7 @@ export class Graphics {
 
         for (let n=0; n<nClippedTriangles; n++) {
           // Project triangles from 3D --> 2D
-          let triProjected = new Triangle(this.matrix_MultiplyVector(this.matProj, this.clipped[n].p[0]), this.matrix_MultiplyVector(this.matProj, this.clipped[n].p[1]), this.matrix_MultiplyVector(this.matProj, this.clipped[n].p[2]), this.clipped[n].t[0], this.clipped[n].t[1], this.clipped[n].t[2], triTransformed.tid, this.clipped[n].light, this.clipped[n].rgba)
+          let triProjected = new Triangle(this.matrix_MultiplyVector(this.matProj, this.clipped[n].p[0]), this.matrix_MultiplyVector(this.matProj, this.clipped[n].p[1]), this.matrix_MultiplyVector(this.matProj, this.clipped[n].p[2]), this.clipped[n].t[0], this.clipped[n].t[1], this.clipped[n].t[2], triTransformed.texture, this.clipped[n].light, this.clipped[n].rgba)
 
           let t0 = { ...triProjected.t[0]}; let t1 = { ...triProjected.t[1]}; let t2 = { ...triProjected.t[2]};
           let p0 = { ...triProjected.p[0]}; let p1 = { ...triProjected.p[1]}; let p2 = { ...triProjected.p[2]};
@@ -549,7 +572,7 @@ export class Graphics {
 
           p0 = this.vector_Div(p0, p0.w); p1 = this.vector_Div(p1, p1.w); p2 = this.vector_Div(p2, p2.w);
           triProjected.t = [t0, t1, t2]; triProjected.p = [p0, p1, p2];
-          triProjected.tid = triProjected.tid; triProjected.light = tLight; triProjected.rgba = tRgba;
+          triProjected.texture = triProjected.texture; triProjected.light = tLight; triProjected.rgba = tRgba;
 
           // SCALE START
           triProjected.p.forEach(p => { p.x *= -1; p.y *= -1; });
@@ -557,7 +580,7 @@ export class Graphics {
           triProjected.p = triProjected.p.map(p => this.vector_Add(p, vOffsetView));
           triProjected.p.forEach(p => { p.x *= 0.5 * this.GAMEWIDTH; p.y *= 0.5 * this.GAMEHEIGHT; });
 
-          let addTriangle = new Triangle(triProjected.p[0], triProjected.p[1], triProjected.p[2],  triProjected.t[0],  triProjected.t[1],  triProjected.t[2], triProjected.tid, triViewed.light, triProjected.rgba)
+          let addTriangle = new Triangle(triProjected.p[0], triProjected.p[1], triProjected.p[2],  triProjected.t[0],  triProjected.t[1],  triProjected.t[2], triProjected.texture, triViewed.light, triProjected.rgba)
           selectedTriangles.push(addTriangle)
         }
       }
@@ -606,13 +629,13 @@ export class Graphics {
 
     // DRAW TRIANGLES
     drawTriangles.forEach(tri => {
-      if (this.options3D.textured) this.texturedTriangle(tri.p[0].x, tri.p[0].y, tri.t[0].u, tri.t[0].v, tri.t[0].w, tri.p[1].x, tri.p[1].y, tri.t[1].u, tri.t[1].v, tri.t[1].w, tri.p[2].x, tri.p[2].y, tri.t[2].u, tri.t[2].v, tri.t[2].w, tri.tid, tri.light)
+      if (this.options3D.textured) this.texturedTriangle(tri.p[0].x, tri.p[0].y, tri.t[0].u, tri.t[0].v, tri.t[0].w, tri.p[1].x, tri.p[1].y, tri.t[1].u, tri.t[1].v, tri.t[1].w, tri.p[2].x, tri.p[2].y, tri.t[2].u, tri.t[2].v, tri.t[2].w, tri.texture, tri.light)
       if (this.options3D.fill) this.drawTriangleFill(tri.p[0], tri.p[1], tri.p[2], tri.light, tri.rgba)
       if (this.options3D.grid) this.drawTriangleStroke(tri.p[0], tri.p[1], tri.p[2], tri.light, tri.rgba)
     });
   }
 
-  texturedTriangle(x1, y1, u1, v1, w1, x2, y2, u2, v2, w2,x3, y3, u3, v3, w3, tid, light) {
+  texturedTriangle(x1, y1, u1, v1, w1, x2, y2, u2, v2, w2,x3, y3, u3, v3, w3, texture, light) {
     function swap(a, b) { return [b, a]; }
 
     x1 = Math.floor(x1); x2 = Math.floor(x2); x3 = Math.floor(x3);
@@ -642,7 +665,7 @@ export class Graphics {
           tex_u = (1.0 - t) * tex_su + t * tex_eu; tex_v = (1.0 - t) * tex_sv + t * tex_ev; tex_w = (1.0 - t) * tex_sw + t * tex_ew;
           if (this.depthBuffer[i * this.GAMEWIDTH + j] == 'undefined') this.depthBuffer[i * this.GAMEWIDTH + j] = 0
           if (tex_w > this.depthBuffer[i * this.GAMEWIDTH + j]) {
-            this.drawPixel(j, i, tex_u, tex_v, tex_w, tid, light)
+            this.drawPixel(j, i, tex_u, tex_v, tex_w, texture, light)
             t += tstep;
           }
         }
@@ -672,7 +695,7 @@ export class Graphics {
           tex_u = (1.0 - t) * tex_su + t * tex_eu; tex_v = (1.0 - t) * tex_sv + t * tex_ev; tex_w = (1.0 - t) * tex_sw + t * tex_ew;
           if (this.depthBuffer[i * this.GAMEWIDTH + j] == 'undefined') this.depthBuffer[i * this.GAMEWIDTH + j] = 0
           if (tex_w > this.depthBuffer[i * this.GAMEWIDTH + j]) {
-            this.drawPixel(j, i, tex_u, tex_v, tex_w, tid, light)
+            this.drawPixel(j, i, tex_u, tex_v, tex_w, texture, light)
             t += tstep;
           }
         }
@@ -680,35 +703,49 @@ export class Graphics {
     }
   }
 
-  drawPixel(x, y, tex_u, tex_v, tex_w, tid = 0, light = 1) {
+  drawPixel(x, y, tex_u, tex_v, tex_w, texture = 0, light = 1) {
     x = Math.floor(x)
     y = Math.floor(y)   
 
     light = light < 0.3 ? 0.3 : light;
 
-    let selectedTexture = this.textures[tid]
+    // light = 0.2  
+
+
+    // console.log(texture)
+    
+    let picIndex = 0
+
+    if (this.text.animTimer[texture.name]) picIndex = this.text.animTimer[texture.name].counter;
+    // console.log(picIndex)
+
+    let selectedTexture = (texture.name) ? this.text.pic[texture.name][picIndex] : this.text.pic['notexture'][0];
 
     // texture
-    let sampleU = Math.floor((((tex_u / tex_w) * selectedTexture.width) % selectedTexture.width + selectedTexture.width) % selectedTexture.width)
-    let sampleV = Math.floor((((tex_v / tex_w) * selectedTexture.height) % selectedTexture.height + selectedTexture.height) % selectedTexture.height)
 
-    let packedColor = selectedTexture.pixels[sampleV * selectedTexture.width + sampleU];
-    let a = (packedColor >> 24) & 0xFF;
-    let b = (packedColor >> 16) & 0xFF;
-    let g = (packedColor >> 8) & 0xFF;
-    let r = packedColor & 0xFF;
-
-    if (packedColor != '0x00000000') {
-      let mR = Math.min(255, Math.round(r * light))
-      let mG = Math.min(255, Math.round(g * light))
-      let mB = Math.min(255, Math.round(b * light))
+    if (selectedTexture?.width) {
+      let sampleU = Math.floor((((tex_u / tex_w) * selectedTexture.width) % selectedTexture.width + selectedTexture.width) % selectedTexture.width)
+      let sampleV = Math.floor((((tex_v / tex_w) * selectedTexture.height) % selectedTexture.height + selectedTexture.height) % selectedTexture.height)
   
-      let hexColor = (a << 24) | (mB << 16) | (mG << 8) | mR;
+      let packedColor = selectedTexture.pixels[sampleV * selectedTexture.width + sampleU];
+      let a = (packedColor >> 24) & 0xFF;
+      let b = (packedColor >> 16) & 0xFF;
+      let g = (packedColor >> 8) & 0xFF;
+      let r = packedColor & 0xFF;
   
-      let memoryIndex = y * this.GAMEWIDTH + x;
-      this.buffer[memoryIndex] = hexColor;
-      this.depthBuffer[memoryIndex] = tex_w
+      if (packedColor != '0x00000000') {
+        let mR = Math.min(255, Math.round(r * light))
+        let mG = Math.min(255, Math.round(g * light))
+        let mB = Math.min(255, Math.round(b * light))
+    
+        let hexColor = (a << 24) | (mB << 16) | (mG << 8) | mR;
+    
+        let memoryIndex = y * this.GAMEWIDTH + x;
+        this.buffer[memoryIndex] = hexColor;
+        this.depthBuffer[memoryIndex] = tex_w
+      }
     }
+
   }
 
   drawTriangleFill(p1, p2, p3, light, rgba) {

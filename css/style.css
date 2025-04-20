@@ -47,6 +47,10 @@ body {
   box-sizing: border-box;
 }
 
+#screen-canvas {
+  image-rendering: pixelated !important;
+}
+
 .d-block {
   display: block !important;
 }
@@ -91,11 +95,95 @@ body {
   position: absolute;
 }
 
+.py-1 {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.py-2 {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.py-3 {
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+.py-4 {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.py-5 {
+  padding-top: 15px;
+  padding-bottom: 15px;
+}
+
+.my-1 {
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.my-2 {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+.my-3 {
+  margin-top: 7px;
+  margin-bottom: 7px;
+}
+
+.my-4 {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.my-5 {
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+.mb-1 {
+  margin-bottom: 2px;
+}
+
+.mb-2 {
+  margin-bottom: 5px;
+}
+
+.mb-3 {
+  margin-bottom: 7px;
+}
+
+.mb-4 {
+  margin-bottom: 10px;
+}
+
+.mb-5 {
+  margin-bottom: 15px;
+}
+
 input[type=number] {
   width: 50px;
   border-radius: 7px 7px 7px 7px;
   border: 0;
   padding-left: 5px;
+  -webkit-border-radius: 7px 7px 7px 7px;
+  -moz-border-radius: 7px 7px 7px 7px;
+  -ms-border-radius: 7px 7px 7px 7px;
+  -o-border-radius: 7px 7px 7px 7px;
+}
+
+input[type=text] {
+  border-radius: 7px 7px 7px 7px;
+  border: 0;
+  padding-left: 5px;
+  -webkit-border-radius: 7px 7px 7px 7px;
+  -moz-border-radius: 7px 7px 7px 7px;
+  -ms-border-radius: 7px 7px 7px 7px;
+  -o-border-radius: 7px 7px 7px 7px;
 }
 
 input[type=text][name=filename] {
@@ -200,12 +288,12 @@ button[class="3d-buttons"] {
   background-image: url("../img/icons/move.svg");
 }
 
-.new-triangle {
-  background-image: url("../img/icons/triangle.svg");
+.point {
+  background-image: url("../img/icons/triangle-point.svg");
 }
 
-.point {
-  background-image: url("../img/icons/point.svg");
+.origo {
+  background-image: url("../img/icons/origo.svg");
 }
 
 .toolbar-select {
@@ -248,7 +336,7 @@ button[class="3d-buttons"] {
   font-size: 0;
   margin: 0px;
   padding: 5px;
-  box-sizing: border-box;
+  box-sizing: border-box !important;
 }
 
 .left-side {
@@ -357,7 +445,6 @@ button[class="3d-buttons"] {
   text-align: left;
   border: 1px solid gray;
   box-sizing: border-box;
-  padding: 3px;
   margin: 5px;
   margin-top: 0;
 }
@@ -947,9 +1034,545 @@ button[class="3d-buttons"] {
   right: 0;
   color: white;
   background-color: red;
+  padding: 2px;
   border-radius: 50% 50% 50% 50%;
 }
 .texturepic-del-icon:hover {
   font-weight: bold;
   color: pink;
+}
+
+li:hover {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.responsive-menu {
+  position: relative;
+  font-size: 12px;
+  padding: 0;
+}
+.responsive-menu ul {
+  margin: 0;
+  padding: 0;
+  list-style-position: inside;
+  list-style-type: none;
+}
+.responsive-menu li {
+  margin: 0;
+  padding: 0;
+  text-indent: 5px;
+}
+.responsive-menu ul ul {
+  margin: 0;
+  padding: 0;
+  list-style-position: inside;
+  list-style-type: none;
+}
+.responsive-menu ul ul ul {
+  margin: 0;
+  padding: 0;
+  margin-left: 5px;
+  list-style-position: inside;
+  list-style-type: none;
+}
+.responsive-menu ul ul ul ul {
+  margin: 0;
+  padding: 0;
+  margin-left: 5px;
+  list-style-position: inside;
+  list-style-type: none;
+}
+
+.mesh-name {
+  padding: 0;
+  margin: 0;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.menu-icon-pos-1,
+.menu-icon-pos-2,
+.menu-icon-pos-3,
+.menu-icon-pos-4,
+.menu-icon-pos-5,
+.menu-icon-pos-6,
+.menu-icon-pos-7,
+.menu-icon-pos-8,
+.menu-icon-pos-l1 {
+  position: absolute;
+}
+.menu-icon-pos-1:hover,
+.menu-icon-pos-2:hover,
+.menu-icon-pos-3:hover,
+.menu-icon-pos-4:hover,
+.menu-icon-pos-5:hover,
+.menu-icon-pos-6:hover,
+.menu-icon-pos-7:hover,
+.menu-icon-pos-8:hover,
+.menu-icon-pos-l1:hover {
+  cursor: pointer;
+}
+
+.menu-icon-pos-1 {
+  right: 5px;
+}
+
+.menu-icon-pos-2 {
+  right: 21px;
+}
+
+.menu-icon-pos-3 {
+  right: 30px;
+}
+
+.menu-icon-pos-4 {
+  right: 40px;
+}
+
+.menu-icon-pos-5 {
+  right: 53px;
+}
+
+.menu-icon-pos-6 {
+  right: 68px;
+}
+
+.menu-icon-pos-7 {
+  right: 83px;
+}
+
+.menu-icon-pos-8 {
+  right: 98px;
+}
+
+.menu-icon-pos-l1 {
+  left: 88px;
+}
+
+.list-triangle-selected {
+  color: green !important;
+  border: 1px solid gray;
+  background-color: #b1b1b1 !important;
+}
+
+.list-triangle-locket {
+  color: darkblue !important;
+  border: 1px deeppink;
+  background-color: #2acf33 !important;
+}
+
+.triangle-up {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  color: black;
+  font-size: 15px;
+  line-height: 10px;
+  text-align: center;
+}
+.triangle-up::before {
+  content: "▲";
+}
+.triangle-up:hover {
+  color: yellow !important;
+}
+
+.triangle-down {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  color: black;
+  font-size: 15px;
+  line-height: 10px;
+  text-align: center;
+}
+.triangle-down::before {
+  content: "▼";
+}
+.triangle-down:hover {
+  color: yellow !important;
+}
+
+.eye-up {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  color: black;
+  font-size: 15px;
+  line-height: 10px;
+  text-align: center;
+}
+.eye-up::before {
+  content: "◉";
+}
+.eye-up:hover {
+  color: yellow !important;
+}
+
+.eye-down {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  color: black;
+  font-size: 15px;
+  line-height: 10px;
+  text-align: center;
+  padding-left: 3px;
+}
+.eye-down::before {
+  content: "=";
+}
+.eye-down:hover {
+  color: yellow !important;
+}
+
+.delete, .delete-group {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  color: black;
+  font-size: 12px;
+  line-height: 10px;
+  text-align: center;
+}
+.delete::before, .delete-group::before {
+  content: "✖";
+}
+.delete:hover, .delete-group:hover {
+  color: red !important;
+}
+
+.delete-locket {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  color: black;
+  font-size: 12px;
+  line-height: 10px;
+  text-align: center;
+}
+.delete-locket::before {
+  content: "▬";
+}
+.delete-locket:hover {
+  color: orange !important;
+}
+
+.plus {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  color: black;
+  font-size: 12px;
+  line-height: 10px;
+  text-align: center;
+}
+.plus::before {
+  content: "✙";
+}
+.plus:hover {
+  color: yellow !important;
+}
+
+.duplicate {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  color: black;
+  font-size: 12px;
+  line-height: 10px;
+  text-align: center;
+}
+.duplicate::before {
+  content: "⧉";
+}
+.duplicate:hover {
+  color: yellow !important;
+}
+
+.up {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  color: black;
+  font-size: 12px;
+  line-height: 10px;
+  text-align: center;
+}
+.up::before {
+  content: "⭡";
+}
+.up:hover {
+  color: yellow !important;
+}
+
+.down {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  color: black;
+  font-size: 12px;
+  line-height: 10px;
+  text-align: center;
+}
+.down::before {
+  content: "⭣";
+}
+.down:hover {
+  color: yellow !important;
+}
+
+.back {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  color: black;
+  font-size: 12px;
+  line-height: 10px;
+  text-align: center;
+}
+.back::before {
+  content: "⭠";
+}
+.back:hover {
+  color: yellow !important;
+}
+
+.back-blend-in {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  color: black;
+  font-size: 12px;
+  line-height: 10px;
+  text-align: center;
+}
+.back-blend-in::before {
+  content: "⇦";
+}
+.back-blend-in:hover {
+  color: yellow !important;
+}
+
+.clipboard {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  color: black;
+  font-size: 12px;
+  line-height: 10px;
+  text-align: center;
+}
+.clipboard::before {
+  content: "🗎";
+}
+.clipboard:hover {
+  color: yellow !important;
+}
+
+.square {
+  width: 12px;
+  height: 12px;
+  background-color: black;
+  display: inline-block;
+  margin: 3px;
+}
+.square:hover {
+  background-color: yellow !important;
+  color: yellow !important;
+}
+
+.circle {
+  width: 12px;
+  height: 12px;
+  background-color: black;
+  border-radius: 50%;
+  display: inline-block;
+  margin: 3px;
+}
+.circle:hover {
+  background-color: yellow !important;
+  color: yellow !important;
+}
+
+.list-mesh-selected {
+  color: white !important;
+  background-color: darkolivegreen !important;
+}
+
+.d-inline-block {
+  display: inline-block;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.number-container {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 1px;
+  width: 100%;
+  height: 20px;
+  margin-top: 5px;
+}
+
+.size-number-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid gray;
+  cursor: pointer;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  font-size: 0.7rem;
+  color: black;
+}
+.size-number-box:hover {
+  background-color: rgba(128, 128, 128, 0.4156862745);
+}
+
+#textures-container {
+  position: relative;
+  display: block;
+  min-height: 400px;
+  font-size: 12px;
+  padding: 0;
+  margin: 0;
+  max-width: 100%;
+}
+#textures-container ul {
+  list-style: none !important;
+  list-style-type: none !important;
+  padding-left: 1em;
+  margin: 0;
+}
+#textures-container ul li {
+  margin: 4px 0;
+}
+#textures-container ul li:hover {
+  font-weight: normal;
+}
+#textures-container ul:hover {
+  font-weight: normal;
+}
+
+#textures-list {
+  display: block;
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+}
+
+.texture-minipic {
+  width: 100%;
+}
+
+.anim-style {
+  border: 1px solid blue;
+}
+
+.tree {
+  margin: 0 !important;
+  padding: 0 !important;
+  margin-left: 5px !important;
+  margin-right: 5px !important;
+}
+
+.tree ul {
+  list-style-type: none;
+}
+
+.tree li {
+  margin: 0px;
+}
+
+.tree .toggle {
+  cursor: pointer;
+  display: inline-block;
+  width: 1em;
+  transform: rotate(0deg);
+  transition: transform 0.2s;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+}
+
+.tree .nested {
+  display: none;
+}
+
+.tree .open > .toggle {
+  transform: rotate(90deg);
+  -webkit-transform: rotate(90deg);
+  -moz-transform: rotate(90deg);
+  -ms-transform: rotate(90deg);
+  -o-transform: rotate(90deg);
+}
+
+.tree .open > .nested {
+  display: block;
+}
+
+.leaf {
+  display: inline-block;
+  width: 30%;
+  padding: 2px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+.texture-parent-name {
+  font-weight: bold;
+  text-transform: uppercase;
+  width: 100%;
+  text-align: left;
+  border: 1px solid gray;
+  box-sizing: border-box;
+  padding: 3px;
+  padding-left: 10px;
+  margin: 0px !important;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  background-color: white;
+}
+
+.text-mini {
+  font-size: 11px;
+}
+
+.selected-texture-23 {
+  display: inline-block;
+  width: 30%;
+  padding: 2px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+#selected-texture-container {
+  position: relative;
+  display: block;
+  margin: 5px !important;
+  box-sizing: border-box !important;
 }/*# sourceMappingURL=style.css.map */

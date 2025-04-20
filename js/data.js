@@ -1,4 +1,4 @@
-export class Texture {
+export class Picture {
     constructor(link) {
         this.link = link
     }
@@ -35,6 +35,95 @@ export class Texture {
     }
 }
 
+export class Textures {
+    constructor() {
+        this.directory = []
+        this.pic = []
+        this.animTimer = {}
+    }
+
+    async multiTextureLoad(textData) {
+
+        this.removeAllAnimTextureTimer()
+
+        let noTexture = { 'notexture': { 'notexture': '.\\data\\notexture' } };
+        textData = {
+            ...noTexture,
+            ...textData
+        };
+        
+        for(const[key, value] of Object.entries(textData)) {
+            // console.log(key, value)
+            this.pic[key] = []
+            let count = 0
+            for(const[key2, value2] of Object.entries(value)) {
+                // console.log(key2, value2)
+                let link = `${value2}.png`
+                const picture = new Picture(link);
+                await picture.load()
+
+                this.pic[key][count] = picture
+                count++
+            }
+        }
+
+        console.log(this.pic)
+
+        // OPTIONS ANIM TEXTURES
+        for(const[name, value] of Object.entries(this.pic)) {
+            // console.log(value.length)
+            if (value.length > 1) {
+                this.addAnimTextureTimer(name, value, true)
+            }
+        }
+    }
+
+    addAnimTextureTimer(name, value, listmode = false) {        
+        let frames = value.length;
+        let link = value[0].link.replace('0_', '$_')
+
+        this.animTimer[name] = {
+            counter: 0,
+            interval: null,
+            listmode: listmode,
+            link: link,
+        };
+
+        this.animTimer[name].interval = setInterval(() => {            
+            this.animTimer[name].counter++;
+            if (this.animTimer[name].counter >= frames) this.animTimer[name].counter = 0;
+            // EDITOR MODE ANIM PICTURES IN LIST
+            if (this.animTimer[name].listmode) {
+                if ($(`img[data-texture-name='${name}']`).length > 0) {
+                    let link = this.animTimer[name].link.replace('$', this.animTimer[name].counter)
+                    $(`img[data-texture-name='${name}']`).attr('src', link)
+                }
+            }
+            // console.log(`${name} frame: ${this.animTimer[name].counter} (Interval ID: ${this.animTimer[name].interval})`);
+        }, 300);
+    }
+
+    removeAnimateTimer(name) {
+        if (this.animTimer[name]) {
+            clearInterval(this.animTimer[name].interval);
+            delete this.animTimer[name];
+            console.log(`AnimTimer '${name}' törölve.`);
+        } else {
+            console.warn(`AnimTimer '${name}' nem létezik.`);
+        }
+    }
+
+    removeAllAnimTextureTimer() {        
+        for (let name in this.animTimer) {
+            clearInterval(this.animTimer[name].interval);
+            console.log(`AnimTimer '${name}' törölve.`);
+        }
+        this.animTimer = {};
+        //console.log('Minden animTimer törölve.'); console.log(this.animTimer);
+        // for (let i = 1; i < 1000; i++) { clearInterval(i); }  // FORCE
+    }
+}
+
 export class Vec3D {
     constructor(x = 0, y = 0, z = 0, w = 1) {
         this.x = x
@@ -53,9 +142,9 @@ export class Vec2D {
 }
 
 export class Triangle {
-    constructor(p1 = new Vec3D(), p2 = new Vec3D(), p3 = new Vec3D(), t1 = new Vec2D, t2 = new Vec2D(), t3 = new Vec2D(), tid = 0, light = 1, rgba = [255, 200, 40, 1], normal = false, name = null) {
+    constructor(p1 = new Vec3D(), p2 = new Vec3D(), p3 = new Vec3D(), t1 = new Vec2D, t2 = new Vec2D(), t3 = new Vec2D(), textureObj = { name: 'notexture', animate: false, animframe: null, animspeed: 100 }, light = 1, rgba = [255, 200, 40, 1], normal = 'false', name = null) {
         this.id = Date.now().toString().slice(-5) + '-' + Math.floor(Math.random() * 99999)
-        this.tid = tid
+        this.texture = textureObj
         this.p = [p1, p2, p3]
         this.t = [t1, t2, t3]
         this.light = light
@@ -75,9 +164,8 @@ export class Mesh {
         this.type = type
         this.tris = []
         this.lineColor = 'yellow'
-        this.visible = 1
 
-        console.log('staticMash count: ', Mesh.instanceCount)   
+        // console.log('staticMash count: ', Mesh.instanceCount)   
     }
 
     static setInstanceCount(value) {
@@ -87,103 +175,6 @@ export class Mesh {
     static getInstanceCount() {
         return Mesh.instanceCount;
     }
-
-    // Objektum fájl betöltése
-    async loadFromObjectFile(filename, name, lineColor, hasTexture = false) {
-        const response = await fetch(filename)
-        if (!response.ok) return false;
-
-        const text = await response.text()
-        const lines = text.split('\n')
-        const verts = []
-        const texs = []
-
-        this.name = name
-        this.lineColor = lineColor
-
-        for (let line of lines) {
-            const parts = line.trim().split(' ')
-
-            if (parts[0] === 'v') { // Ha vertex (v) sor
-                if (parts[1] === 't') { // Ha textúra koordináta (vt)
-                    const v = new Vec2D(parseFloat(parts[2]), parseFloat(parts[3]))
-                    texs.push(v) // Textúra koordináták hozzáadása
-                } else { // Ha 3D pont (v)
-                    const v = new Vec3D(parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3]))
-                    verts.push(v) // Pont hozzáadása
-                }
-            }
-
-            if (!hasTexture) { // Ha nincs textúra
-                if (parts[0] === 'f') { // Face definíció
-                    const indices = parts.slice(1).map(str => parseInt(str.split('/')[0]) - 1)
-                    let randId = Math.floor(Math.random()* 6)
-
-                    this.tris.push(new Triangle(verts[indices[0]], verts[indices[1]], verts[indices[2]], new Vec2D(0, 1), new Vec2D(0, 0), new Vec2D(1, 0), randId, 1, [255, 200, 40, 1]))
-                }
-            } else { // Ha van textúra
-                if (parts[0] === 'f') {
-                    const tokens = parts.slice(1).flatMap(str => str.split('/').map(v => parseInt(v) - 1));
-                    this.tris.push(new Triangle(
-                        [verts[tokens[0]], verts[tokens[2]], verts[tokens[4]]], [texs[tokens[1]], texs[tokens[3]], texs[tokens[5]]]
-                    ));
-                }
-            }
-        }
-        return true;
-    }
-
-    async loadFromOwnTris(filename, name, lineColor) {
-        const response = await fetch(filename); // Fájl betöltése
-        if (!response.ok) return false;         // Ha sikertelen, visszatérés false értékkel
-
-        this.name = name
-        this.lineColor = lineColor
-
-        const text = await response.text()     // Fájl tartalmának olvasása szövegként        
-        const lines = text.split('\n')         // Sorokra bontás
-        let v = []                             // Lokális pontok listája
-        let vt = []                            // Texture kordináták
-        let texId = []                         // Texture ID
-        let light = []                         // Light
-        let rgba = []                          // color
-        let normal                             // normal | true or false
-
-        for (let line of lines) {
-            if (line.startsWith('#') || line == '') continue;
-            const parts = line.trim().split(' ')
-
-            if (parts[0] == 'v') {
-                let data = parts[1].trim().split(',');
-                v[0] = new Vec3D(parseInt(data[0]), parseInt(data[1]), parseInt(data[2]), parseInt(data[3]))
-                v[1] = new Vec3D(parseInt(data[4]), parseInt(data[5]), parseInt(data[6]), parseInt(data[7]))
-                v[2] = new Vec3D(parseInt(data[8]), parseInt(data[9]), parseInt(data[10]), parseInt(data[11]))
-                // console.log(v[0], v[1], v[2])
-            }
-
-            if (parts[0] == 'vt') {
-                let data = parts[1].trim().split(',');
-                vt[0] = new Vec2D(parseInt(data[0]), parseInt(data[1]), parseInt(data[2]))
-                vt[1] = new Vec2D(parseInt(data[3]), parseInt(data[4]), parseInt(data[5]))
-                vt[2] = new Vec2D(parseInt(data[6]), parseInt(data[7]), parseInt(data[8]))
-                // console.log(vt[0], vt[1], vt[2])
-            }
-
-            if (parts[0] == 'i') {
-                let data = parts[1].trim().split(',')               
-
-                texId = parseInt(data[0])
-                light = parseInt(data[1])
-                rgba = [parseInt(data[2]), parseInt(data[3]), parseInt(data[4]), parseInt(data[5])]
-                normal = data[6]
-
-                const row = new Triangle(v[0], v[1], v[2], vt[0], vt[1], vt[2], texId, light, rgba, normal)
-
-                this.tris.push(row)
-            }
-        }
-        return true;
-    }
 }
 
 export class Matrix4x4 {
@@ -191,3 +182,5 @@ export class Matrix4x4 {
         this.m = Array(4).fill(0).map(() => Array(4).fill(0));
     }
 }
+
+

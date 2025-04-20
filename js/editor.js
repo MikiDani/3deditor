@@ -1,5 +1,5 @@
 import { Graphics } from './graphics.js'
-import { Texture, Vec3D, Vec2D, Mesh, Triangle } from './data.js'
+import { Textures, Vec3D, Vec2D, Mesh, Triangle } from './data.js'
 
 class ViewWindow {
   constructor(name, vX, vY, ratio, frequent, showDots, showGrid) {
@@ -26,9 +26,8 @@ class ViewWindow {
 }
 
 class Editor {
-  state;
-  player;
   constructor () {
+    this.text = new Textures()
 
     this.refTime = 5
 
@@ -44,6 +43,8 @@ class Editor {
       data: {},
       structure: {},
     }
+
+    this.origo = new Vec3D(0,0,0)
 
     this.mapMemory = []
     this.textureDir = []
@@ -87,26 +88,22 @@ class Editor {
   }
 
   async init() {
-    if (false) {
-      let filename = 'valamika'    
-      const responseIsset = await this.fetchData({ ajax: true, save: true, filename }, true)
-      if (responseIsset) {
-        console.log('---------------')
-        console.log('TEST')
-        console.log(responseIsset)
-        console.log('---------------')
-      }
-    }
-
     await this.loadTextures()
+
+    console.log('LOADED TEXTURES:')
+    console.log(this.text.pic)
+
     await this.loadModels()
 
-    this.graph = new Graphics(this.textures, this.keys, this.options, this.map)
+    console.log('LOADING DATAS:')
+    console.log(this.map.data)
+    console.log(this.map.structure)
 
-    // MOVE OBJECTS IN START
-    this.graph.moveObject(1, 2,  0, 0)
-    this.graph.moveObject(2, 0, -2, 0)
-    this.graph.moveObject(3, 2, -2, 0)
+    this.graph = new Graphics(this.text, this.keys, this.options, this.map, this.findMeshById)
+
+    // console.log(this.map.data[0])
+    this.origo = this.graph.calculateMeshCenter(this.map.data[0])
+    // console.log('ORIGO'); console.log(this.origo)
 
     this.views = {
       // name, vX, vY, ratio, frequent, showDots, showGrid
@@ -159,6 +156,24 @@ class Editor {
     this.initInputs()
     this.saveMapMemory('init')
     this.fullRefreshCanvasGraphics()
+
+    this.realtimeOptions(this.graph.options3D.realtime)
+  }
+
+  realtimeOptions(value) {
+    if (value) {
+      console.log('BENT')
+      
+      if (this.refreshScreenInterval) {
+        clearInterval(this.refreshScreenInterval)
+      }
+      this.refreshScreenInterval = setInterval(() => {
+        this.refreshScreen()
+      }, this.refTime)
+    } else {
+      clearInterval(this.refreshScreenInterval)
+      this.refreshScreenInterval = null
+    }
   }
 
   deepCopy(data) {
@@ -205,6 +220,10 @@ class Editor {
     }
 
     // Button design
+    this.backButtonDesign()
+  }
+
+  backButtonDesign() {
     $(".menu-text-border.menu-back").removeClass('menu-back-isset menu-back-empty');
     if (this.mapMemory.length > 0) $(".menu-text-border.menu-back").addClass('menu-back-isset');
     else $(".menu-text-border.menu-back").addClass('menu-back-empty');
@@ -252,8 +271,16 @@ class Editor {
       element += `</ul>`;
       $('#object-list').html(element)
 
-      if (this.mouse.selectedMeshId) this.selectedMeshClassChange(this.mouse.selectedMeshId);
+      if (this.mouse.selectedMeshId) this.selectedMeshClassChange(this.mouse.selectedMeshId);      
     }
+    this.triangleContainerShowOptions()
+  }
+
+  triangleContainerShowOptions() {
+    // TRIANGLE CONTAINER TEXTURE
+    (this.mouse?.selectedTri && typeof this.mouse.selectedTri == "object" && Object.keys(this.mouse.selectedTri).length > 0)
+    ? $("#selected-texture-container").show()
+    : $("#selected-texture-container").hide();
   }
 
   recursiveMenu(item) {
@@ -297,25 +324,70 @@ class Editor {
     return element;
   }
 
-  async loadTextures() {
-    this.textures = []
+  async buildTexturesList(obj) {
+    var clone = this
 
-    this.textures[0] = new Texture('img/test.png'); await this.textures[0].load()
-    console.log(`${this.textures[0].link} loaded...`)
-    this.textures[1] = new Texture('img/a-2.png'); await this.textures[1].load()
-    console.log(`${this.textures[1].link} loaded...`)
-    this.textures[2] = new Texture('img/b-1.png'); await this.textures[2].load()
-    console.log(`${this.textures[2].link} loaded...`)
-    this.textures[3] = new Texture('img/c-1.png'); await this.textures[3].load()
-    console.log(`${this.textures[3].link} loaded...`)
-    this.textures[4] = new Texture('img/texture1.png'); await this.textures[4].load()
-    console.log(`${this.textures[4].link} loaded...`)
-    this.textures[5] = new Texture('img/test.png'); await this.textures[5].load()
-    console.log(`${this.textures[5].link} loaded...`)
-    this.textures[6] = new Texture('img/texture3.png'); await this.textures[6].load()
-    console.log(`${this.textures[6].link} loaded...`)
-    this.textures[7] = new Texture('img/f-1.png'); await this.textures[7].load()
-    console.log(`${this.textures[7].link} loaded...`)
+    let textData = []
+
+    let html = `
+    <div class="text-center py-2">TEXTURES</div>
+    <div class="tree">`;
+  
+    function recurse(current, name, clone) {
+      if (typeof current === 'object' && current !== null) {
+        let keys = Object.keys(current);
+        let isLeafLevel = keys.every(k => typeof current[k] !== 'object' || current[k] == null);
+
+        if (isLeafLevel && keys.length > 0) {
+          let firstKey = keys[0];
+          let firstValue = current[firstKey];
+
+          let animStyleClass = keys.length > 1 ? 'anim-style' : '';
+
+          return `
+          <div class="leaf">
+            <img src="${firstValue}.png" alt="${firstKey}" data-texture-name="${name}" class="texture-minipic pic-pix ${animStyleClass}"/>
+            <div class="fw-bold text-uppercase text-mini text-center">${firstKey}</div>
+          </div>`;
+        }
+  
+        let nestedHtml = '';
+        for (let key of keys) {
+          nestedHtml += recurse(current[key], key, clone);
+
+          // ADD DATA TO FILE LOAD PART
+          textData[key] = current[key]
+        }
+
+        return `
+          <div class="texture-parent-name">
+            <span class="toggle">&#9654;</span>
+            <strong>${name}</strong>
+            <div class="nested">
+              ${nestedHtml}
+            </div>
+          </div>`;
+      }
+      return '';
+    }
+  
+    for (const key in obj) {
+      html += recurse(obj[key], key, this);
+    }
+  
+    html += '</div>';
+
+    $('#textures-list').html('').append(html)
+
+    return textData;
+  }  
+
+  async loadTextures() {
+    const response = await this.fetchData({ ajax: true, gettexturestructure: true })
+    if (response?.structure) {      
+      let textData = await this.buildTexturesList(response.structure)
+      await this.text.multiTextureLoad(textData) // console.log(this.text.pic)
+    } else throw('Textures didn\'t load.');
   }
 
   async loadModels() {
@@ -323,68 +395,19 @@ class Editor {
     this.map.structure = []
 
     // FIRST LOAD
-    if (false) {
-      let filename = 'dani1'
+    if (true) {
+      let filename = 'text-test-1'
       const response = await this.fetchData({ ajax: true, load: true, filename: filename })
-      console.log(response)
-
       if (response?.data && response?.structure) {
-        console.log('response:'); console.log(response);
+        // console.log('response:'); console.log(response);
   
         this.map.data = this.deepCopy(response.data)
         this.map.structure = this.deepCopy(response.structure)
 
         const maxId = Math.max(...this.map.data.map(obj => obj.id));
         Mesh.setInstanceCount(maxId + 1)
-
-        console.log(this.map.data)
-        console.log(this.map.structure)
       }
     }
-
-    if (false) {
-      // this.montains = new Mesh()
-      // this.axis = new Mesh()
-      
-      // --- MOST teszt LOAD
-  
-      // await this.montains.loadFromObjectFile("data/montains.obj", 'Montains', 'yellow')
-      // await this.axis.loadFromObjectFile("data/axis.obj", 'Axis', 'yellow')
-  
-      // this.axis.id = 100
-  
-      // this.map.data.push(this.montains)
-      // this.map.data.push(this.axis)
-      const cube = new Mesh()
-      await cube.loadFromOwnTris("data/cube2.obj", 'Cube', 'lime')    
-      const cube2 = new Mesh()
-      await cube2.loadFromOwnTris("data/cube.obj", 'Cube2', 'orange')
-      const cube3 = new Mesh('', 1)
-      await cube3.loadFromOwnTris("data/cube.obj", 'Cube3', 'purple')
-  
-      // MAP DATA
-      this.map.data.push(cube)
-      this.map.data.push(cube2)
-      this.map.data.push(cube3)
-
-      // MAP STRUCTURE
-      this.map.structure = [
-        {
-          id: cube.id,
-          child: [
-            {
-              id: cube3.id,
-              child: [],
-            }
-          ],
-        },
-        {
-          id: cube2.id,
-          child: [],
-        }
-      ]
-    }
-
   }
 
   getMousePosition(clone, event, rect, name) {
@@ -590,6 +613,9 @@ class Editor {
         break;
       case 'save':
         buttonText = 'Save';
+        break;
+      case 'import':
+        buttonText = 'Import';
         break;
       case 'textures':
         if (isTextures && this.textureDir.length == 2) {
@@ -801,8 +827,41 @@ class Editor {
     $(".modal-button").on('click', async function() {
       let mode = $(this).attr('data-mode')
       if (mode) $("#modal-title").html(mode);
-      
       $("#modal-container").attr('data-mode', mode)
+
+      // NEW
+      if (mode == 'new') {
+        let result = confirm(`Are you sure you want to new map?`)
+        if (result) {
+          clone.map = { data: [], structure: [], }
+          clone.clipboardMemory = { tris: [], meshs: [], }
+          clone.graph.map =  clone.map
+          clone.origo = new Vec3D(0,0,0)
+          clone.mapMemory = []
+          clone.textureDir = []
+
+          clone.mouseVariableReset()
+          $("#selected-mesh-container, #selected-texture-container, #selected-tri-container, #selected-locket-container").hide()
+        }
+
+        clone.backButtonDesign()
+        clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
+        return;
+      }
+
+      // INFO
+      if (mode == 'info') {
+        
+        $("#modal-back").hide()
+        $("#modal-content").hide()
+        $("#modal-message").html('Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur!').show()
+
+        $("#modal-bg").show()
+        $("#modal-container").show()
+
+        $("#modal-inputdiv").css('visibility', 'hidden')
+        return;
+      }
 
       // LOAD
       if (mode == 'load') {
@@ -1069,8 +1128,15 @@ class Editor {
       }
     });
 
-    $("#modal-close").on('click', function() {
+    $("#modal-close").on('click', async function() {
+
+      let mode = $("#modal-container").attr('data-mode')
+
+      // RELOAD TEXTURES
+      if (mode == 'textures') await clone.loadTextures();
+
       $('#modal-input').val(''); $('#modal-file').val('');
+      $("#modal-inputdiv").css('visibility', 'visible')
     });
 
     // DOTS BUTTONS
@@ -1125,6 +1191,12 @@ class Editor {
       clone.fullRefreshCanvasGraphics()
     });
 
+    $(".3d-buttons[name='realtime']").on('click', function() {
+      let value = $(this).val()
+      if (value == 'true') value = true; else if (value == 'false') value = false;
+      clone.realtimeOptions(value)
+    });
+
     // TOOLBAR BUTTONS
     this.refreshToolbar()
 
@@ -1135,6 +1207,11 @@ class Editor {
       if (mode=='point' && (clone.mouse.selectedTri == null || Object.keys(clone.mouse.selectedTri).length == 0)) {
         clone.mouse.mode = 'move'
         alert('Not selected triangle!')
+      }
+
+      if (clone.mouse.selectedTri != null && clone.mouse.selectedLock != null) {
+        clone.mouse.mode = 'move'
+        alert('In triangle point mode, only one triangle can be selected! (do not use selected lock!)')
       }
 
       clone.refreshToolbar()
@@ -1227,9 +1304,30 @@ class Editor {
 
           const rect = this.getBoundingClientRect()
           let pos = clone.getMousePosition(clone, event, rect, name)
-
+         
           let findedPoint = clone.mouse.selectedTri.p.find(point => point[view.vX] == pos.vx && point[view.vY] == pos.vy)
           if (findedPoint) clone.mouse.moveTriPoint = findedPoint;
+
+        }
+
+        ///////////////////////
+        // MOVE ORIGO POINT
+        if (clone.mouse.mode == 'origo') {
+          console.log('ORIGÓ CLICK!!!')
+
+          event.stopPropagation()
+          clone.saveMapMemory('save')
+
+          let view = clone.views[name]
+
+          const rect = this.getBoundingClientRect()
+          let pos = clone.getMousePosition(clone, event, rect, name)
+          
+          clone.origo[view.vX] = pos.vx
+          clone.origo[view.vY] = pos.vy
+
+          console.log(clone.origo)
+          clone.fullRefreshCanvasGraphics();
         }
 
         ////////////////
@@ -1275,7 +1373,7 @@ class Editor {
                 selectedMash.tris.unshift(
                   new Triangle(new Vec3D(clone.mouse.addTri.cords[0].x, clone.mouse.addTri.cords[0].y, clone.mouse.addTri.cords[0].z), new Vec3D(clone.mouse.addTri.cords[1].x, clone.mouse.addTri.cords[1].y, clone.mouse.addTri.cords[1].z), new Vec3D(clone.mouse.addTri.cords[2].x, clone.mouse.addTri.cords[2].y, clone.mouse.addTri.cords[2].z),
                   t1, t2, t3,
-                  2, 1, [255, 200, 40, 1], false, newTriangleName)
+                  undefined, 1, [255, 200, 40, 1], false, newTriangleName)
                 )
               }
             }
@@ -1321,7 +1419,7 @@ class Editor {
                 let ta3 = new Vec2D(clone.mouse.addRec.texture1[2].v, 1 - clone.mouse.addRec.texture1[2].u);
                 
                 let newTriangleName = 'Rec-New-A-' + Math.floor(Math.random()*99999)
-                let newTri1 = new Triangle(new Vec3D(t1_0.x, t1_0.y, t1_0.z), new Vec3D(t1_1.x, t1_1.y, t1_1.z), new Vec3D(t1_2.x, t1_2.y, t1_2.z), ta1, ta2, ta3, 2, 1, [255, 200, 40, 1], false, newTriangleName)
+                let newTri1 = new Triangle(new Vec3D(t1_0.x, t1_0.y, t1_0.z), new Vec3D(t1_1.x, t1_1.y, t1_1.z), new Vec3D(t1_2.x, t1_2.y, t1_2.z), ta1, ta2, ta3, undefined, 1, [255, 200, 40, 1], false, newTriangleName)
 
                 // add triangle 2.
                 let t2_0 = { x: 0, y: 0, z: 0 }; let t2_1 = { x: 0, y: 0, z: 0 }; let t2_2 = { x: 0, y: 0, z: 0 };
@@ -1333,8 +1431,8 @@ class Editor {
 
                 let newTriangleName2 = 'Rec-New-B-' + Math.floor(Math.random()*99999)
                 
-                let newTri2 = new Triangle(new Vec3D(t2_0.x, t2_0.y, t2_0.z), new Vec3D(t2_1.x, t2_1.y, t2_1.z), new Vec3D(t2_2.x, t2_2.y, t2_2.z), tb1, tb2, tb3, 2, 1, [255, 200, 40, 1], false, newTriangleName2)
-                
+                let newTri2 = new Triangle(new Vec3D(t2_0.x, t2_0.y, t2_0.z), new Vec3D(t2_1.x, t2_1.y, t2_1.z), new Vec3D(t2_2.x, t2_2.y, t2_2.z), tb1, tb2, tb3, undefined, 1, [255, 200, 40, 1], false, newTriangleName2)
+
                 newTri1.locket = newTri2.id
                 newTri2.locket = newTri1.id
                 selectedMash.tris.unshift(newTri2)
@@ -1590,14 +1688,8 @@ class Editor {
       });
     });
 
-    $(`select[name='tri-texture']`).on('input', function () {
-      if (typeof clone.mouse.selectedTri.id !== 'undefined') {
-        clone.mouse.selectedTri.tid = $(this).val()
-        clone.fullRefreshCanvasGraphics()
-      }
-    });
-
     $(`select[name='tri-normal']`).on('input', function () {
+      console.log($(this).val())
       if (typeof clone.mouse.selectedTri.id !== 'undefined') {
         clone.mouse.selectedTri.normal = $(this).val()
         clone.fullRefreshCanvasGraphics()
@@ -1607,6 +1699,21 @@ class Editor {
     $(`input[name='tri-light']`).on('input', function () {
       if (typeof clone.mouse.selectedTri.id !== 'undefined') {
         clone.mouse.selectedTri.light = $(this).val()
+        clone.fullRefreshCanvasGraphics()
+      }
+    });
+
+    // TEXTURE OPTIONS
+    $(`select[name='tri-animate']`).on('input', function () {
+      if (typeof clone.mouse.selectedTri.id !== 'undefined') {
+        clone.mouse.selectedTri.texture.animate = $(this).val()
+        clone.fullRefreshCanvasGraphics()
+      }
+    });
+
+    $(`input[name='tri-animspeed']`).on('input', function () {      
+      if (typeof clone.mouse.selectedTri.id !== 'undefined') {
+        clone.mouse.selectedTri.texture.animspeed = $(this).val()
         clone.fullRefreshCanvasGraphics()
       }
     });
@@ -1735,8 +1842,8 @@ class Editor {
 
     $(`select[name='lock-texture']`).on('input', function () {
       if (typeof clone.mouse.selectedTri.id !== 'undefined' && typeof clone.mouse.selectedLock.id !== 'undefined') {
-        clone.mouse.selectedTri.tid = $(this).val()
-        clone.mouse.selectedLock.tid = $(this).val()
+        clone.mouse.selectedTri.texture = $(this).val()
+        clone.mouse.selectedLock.texture = $(this).val()
         clone.fullRefreshCanvasGraphics()
       }
     });
@@ -1849,6 +1956,7 @@ class Editor {
             }
           } else alert('Not selected triangle!');
         }
+        clone.triangleContainerShowOptions()
       });
     }
 
@@ -2014,10 +2122,10 @@ class Editor {
 
           // add selected triangle graph
           $(document).find(`li[data-id='${triId}']`).addClass('list-triangle-selected').append('<span class="menu-icon menu-icon-pos-2 clipboard"></span><span class="menu-icon menu-icon-pos-1 delete"></span>')
-  
           
           clone.refreshTriangleDatas()
           clone.fullRefreshCanvasGraphics()
+          clone.triangleContainerShowOptions()
         }
       }
     });
@@ -2100,7 +2208,7 @@ class Editor {
               new Vec3D(cloneTri.p[1].x + addNum, cloneTri.p[1].y + addNum, cloneTri.p[1].z + addNum),
               new Vec3D(cloneTri.p[2].x + addNum, cloneTri.p[2].y + addNum, cloneTri.p[2].z + addNum),
               cloneTri.t[0], cloneTri.t[1], cloneTri.t[2],
-              cloneTri.tid, cloneTri.light, cloneTri.rgba, cloneTri.normal, null))
+              cloneTri.texture, cloneTri.light, cloneTri.rgba, cloneTri.normal, null))
           });
 
           mapData.push(newMesh)
@@ -2305,6 +2413,22 @@ class Editor {
       }
     });
 
+    // CLICK TEXTURE
+    $(document).on('click', ".texture-minipic", function(event) {
+      let textureName = $(this).attr('data-texture-name')
+
+      if (clone.mouse.selectedTri && !(Object.keys(clone.mouse.selectedTri).length == 0)) {
+        if (clone.mouse.selectedTri.texture?.name) clone.mouse.selectedTri.texture.name = textureName;
+
+        $('#menu-right').animate({
+          scrollTop: $('#object-list-head').offset().top - $('#menu-right').offset().top + $('#menu-right').scrollTop()
+        }, 300, 'swing');
+
+        clone.refreshTriangleDatas()
+        clone.fullRefreshCanvasGraphics()
+      }
+    });
+
     // CLIPBOARD MESH
     $(document).on('click', ".menu-icon.clipboard", function(event) {
       event.stopPropagation()
@@ -2314,14 +2438,11 @@ class Editor {
 
       clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = null;
 
-      //--
-
       let getMeshStructure = clone.findMeshById(clone.map.structure, meshId)
 
       // find mesh all tree ids
       let clipIds = clone.getAllMeshTreeIds(getMeshStructure)
-      console.log('clipIds:')
-      console.log(clipIds)
+      // console.log('clipIds:'); console.log(clipIds)
       if (clipIds) {
         clipIds.forEach(meshId => {
           // copy clipboard memory
@@ -2339,23 +2460,13 @@ class Editor {
         });
         console.log(clone.clipboardMemory.meshs)
       }
-
-      //--
-
-      // // delete structure
-      // clone.deleteMeshParent(clone.map.structure, meshId)
-      // // delete data
-      // let index = clone.map.data.findIndex(element => element.id == meshId)
-      // if (index != -1) {
-
-      //   clone.clipboardMemory.meshs.push(clone.map.data[index])
-      //   clone.map.data.splice(index, 1)
-      //   console.log(clone.clipboardMemory.meshs)
-        
-      // }
       
       clone.refreshObjectList()
       clone.fullRefreshCanvasGraphics()
+    });
+
+    $(document).on('click', '.tree .toggle', function() {
+      $(this).parent().toggleClass('open');
     });
 
     //////////////////
@@ -2364,16 +2475,14 @@ class Editor {
     document.addEventListener('keydown', (event) => {
       // console.log(this.keys)
 
+
       this.keys[event.code] = true
       this.checkKeyboardInputs()
 
       // IF MOUSE USE
       if (document.pointerLockElement == document.body) {
         // screen-canvas refresh
-        this.moveViewInputs();
-        setTimeout(() => {
-          this.refreshScreen();
-        }, this.refTime);
+        this.moveViewInputs()
       }
       // ALLOWED BUTTONS
       if (event.code == 'Enter') {
@@ -2428,6 +2537,15 @@ class Editor {
     }
   }
 
+  maxDecimals(p) {
+    p.x = this.maxDecimalOptions(p.x); p.y = this.maxDecimalOptions(p.y); p.z = this.maxDecimalOptions(p.z);
+    return p;
+  }
+
+  maxDecimalOptions(num) {
+    return parseFloat(num.toFixed(3));
+  }
+
   // TRANSFORM MESH
   recursiveTransform(mode, mesh, transformData) {
     let modifyData = { x: 0, y: 0, z: 0 }
@@ -2444,9 +2562,26 @@ class Editor {
     if (transformData.type == 'rotate') {
       let value = transformData.directionsign * this.graph.angleToRandian(transformData.anglesize)
 
-      if (this.selectedView == 'XYview-canvas') transform = this.graph.matrix_MakeRotationX(value)
-      if (this.selectedView == 'XZview-canvas') transform = this.graph.matrix_MakeRotationY(value)
-      if (this.selectedView == 'ZYview-canvas') transform = this.graph.matrix_MakeRotationZ(value)
+      // Pivot pont, pl. mesh középpontja vagy bármi más    
+
+      console.log(this.origo)
+
+
+      // Eltolás az origóba
+      let matTranslateToOrigin = this.graph.matrix_MakeTranslation(-this.origo.x, -this.origo.y, -this.origo.z)
+    
+      // Forgatás
+      let matRotate = null
+      if (this.selectedView == 'XYview-canvas') matRotate = this.graph.matrix_MakeRotationX(value)
+      if (this.selectedView == 'XZview-canvas') matRotate = this.graph.matrix_MakeRotationY(value)
+      if (this.selectedView == 'ZYview-canvas') matRotate = this.graph.matrix_MakeRotationZ(value)
+    
+      // Visszatolás
+      let matTranslateBack = this.graph.matrix_MakeTranslation(this.origo.x, this.origo.y, this.origo.z)
+    
+      // Összekombinálás: Tback * R * Torigin
+      transform = this.graph.matrix_MultiplyMatrix(matRotate, matTranslateToOrigin)
+      transform = this.graph.matrix_MultiplyMatrix(matTranslateBack, transform)
     }
     // SIZE
     if (transformData.type == 'size') {
@@ -2455,16 +2590,16 @@ class Editor {
 
     // TRANSFORM
     if (transform) {
-      // console.log(transform)
+      console.log(transform)
 
       // MESH
       if (mode == 'mesh') {
         let meshData = this.map.data.find(mapMesh => mapMesh.id == mesh.id)
         if (Array.isArray(meshData.tris) && meshData.tris.length > 0) {
           meshData.tris.forEach(tri => {
-            tri.p[0] = this.graph.matrix_MultiplyVector(transform, tri.p[0])
-            tri.p[1] = this.graph.matrix_MultiplyVector(transform, tri.p[1])
-            tri.p[2] = this.graph.matrix_MultiplyVector(transform, tri.p[2])
+            tri.p[0] = this.maxDecimals(this.graph.matrix_MultiplyVector(transform, tri.p[0]))
+            tri.p[1] = this.maxDecimals(this.graph.matrix_MultiplyVector(transform, tri.p[1]))
+            tri.p[2] = this.maxDecimals(this.graph.matrix_MultiplyVector(transform, tri.p[2]))
           });
         }
   
@@ -2477,13 +2612,13 @@ class Editor {
 
       // RECTANGLE
       if (mode == 'rectangle') {
-        this.mouse.selectedTri.p[0] = this.graph.matrix_MultiplyVector(transform, this.mouse.selectedTri.p[0])
-        this.mouse.selectedTri.p[1] = this.graph.matrix_MultiplyVector(transform, this.mouse.selectedTri.p[1])
-        this.mouse.selectedTri.p[2] = this.graph.matrix_MultiplyVector(transform, this.mouse.selectedTri.p[2])
+        this.mouse.selectedTri.p[0] = this.maxDecimals(this.graph.matrix_MultiplyVector(transform, this.mouse.selectedTri.p[0]))
+        this.mouse.selectedTri.p[1] = this.maxDecimals(this.graph.matrix_MultiplyVector(transform, this.mouse.selectedTri.p[1]))
+        this.mouse.selectedTri.p[2] = this.maxDecimals(this.graph.matrix_MultiplyVector(transform, this.mouse.selectedTri.p[2]))
 
-        this.mouse.selectedLock.p[0] = this.graph.matrix_MultiplyVector(transform, this.mouse.selectedLock.p[0])
-        this.mouse.selectedLock.p[1] = this.graph.matrix_MultiplyVector(transform, this.mouse.selectedLock.p[1])
-        this.mouse.selectedLock.p[2] = this.graph.matrix_MultiplyVector(transform, this.mouse.selectedLock.p[2])
+        this.mouse.selectedLock.p[0] = this.maxDecimals(this.graph.matrix_MultiplyVector(transform, this.mouse.selectedLock.p[0]))
+        this.mouse.selectedLock.p[1] = this.maxDecimals(this.graph.matrix_MultiplyVector(transform, this.mouse.selectedLock.p[1]))
+        this.mouse.selectedLock.p[2] = this.maxDecimals(this.graph.matrix_MultiplyVector(transform, this.mouse.selectedLock.p[2]))
       }
     }
   }
@@ -2503,8 +2638,29 @@ class Editor {
     $("input[name='tri-t3-V']").val(this.mouse.selectedTri.t[2].v);
 
     $("select[name='tri-light']").val(this.mouse.selectedTri.light)
-    $("select[name='tri-texture']").val(this.mouse.selectedTri.tid)
     $("select[name='tri-normal']").val(this.mouse.selectedTri.normal)
+
+    console.log(this.mouse.selectedTri.texture.name)
+    
+
+    let textInfo = this.mouse.selectedTri.texture || null;
+    let textData = this.graph?.text?.pic?.[this.mouse?.selectedTri?.texture?.name]?.[0] ?? null;
+    textInfo.animframe = this.graph.text?.[this.mouse.selectedTri?.texture?.name]?.length || 1;
+
+    // console.log(textInfo); console.log(textData);
+
+    if (textData && textInfo) {
+      $("#selected-texture-container .texture-minipic").attr('src', textData.link).attr('alt', textData.name).attr('data-texture-name', textData.name)
+      $("#selected-texture-container .texture-minipic-name").html(textData.name)
+      
+      $("select[name='tri-animate']").val(textInfo.animate ? "true" : "false");
+      textInfo.animframe > 1 
+      ? $("select[name='tri-animate']").prop('disabled', false)
+      : $("select[name='tri-animate']").prop('disabled', true)
+      
+      $("input[name='tri-animframe']").val(textInfo.animframe)
+      $("input[name='tri-animspeed']").val(textInfo.animspeed)
+    }
   }
 
   // RECTANGLE INPUTS
@@ -2518,7 +2674,7 @@ class Editor {
 
     // ???
     // $("select[name='tri-light']").val(this.mouse.selectedTri.light)
-    // $("select[name='tri-texture']").val(this.mouse.selectedTri.tid)
+    // $("select[name='tri-texture']").val(this.mouse.selectedTri.texture)
     // $("select[name='tri-normal']").val(this.mouse.selectedTri.normal)
   }
 
@@ -2531,7 +2687,7 @@ class Editor {
     $(`input[id='selected-tri-name-2']`).val(tri2Data.name)
 
     if (false) {
-      tri2.tid = tri1.tid
+      tri2.texture = tri1.texture
       tri2.t[0] = { u: 0, v: 1, w: 1 };  // (0,0) → megegyezik tri1-gyel
       tri2.t[1] = { u: 1, v: 0, w: 1 };  // (1,1) → megegyezik tri1-gyel
       tri2.t[2] = { u: 1, v: 1, w: 1 };  // (1,0) → új érték
@@ -2607,12 +2763,11 @@ class Editor {
     document.addEventListener('mousemove', (event) => {
       if (document.pointerLockElement == document.body) {
         // console.log("Elmozdulás X:", event.movementX, "Elmozdulás Y:", event.movementY);
+
+        if (!this.graph.options3D.realtime) this.refreshScreen();
+
         if (this.graph.fXaw + event.movementY*0.01 > -1.5 && this.graph.fXaw + event.movementY*0.01 < 1.5) this.graph.fXaw += event.movementY*0.01;
         this.graph.fYaw += event.movementX*0.01
-
-        setTimeout(() => {
-          this.refreshScreen()
-        },this.refTime)
       }
     });
 
@@ -2758,8 +2913,8 @@ class Editor {
       
       // RECTANGLE: WHEN DRAW: HELP POINT
       if (this.mouse.addRec.mode && this.mouse.addRec.count > 0) {
-        let np0X = view.posX + this.mouse.addRec.cords[0][view.vX] * view.ratio;
-        let np0Y = view.posY + this.mouse.addRec.cords[0][view.vY] * view.ratio;
+        let np0X = view.posX + this.mouse.addRec.cords[0][view.vX] * view.ratio
+        let np0Y = view.posY + this.mouse.addRec.cords[0][view.vY] * view.ratio
 
         // point
         view.ctx.fillStyle = 'orange'
@@ -2771,6 +2926,12 @@ class Editor {
       // POS ORIGO
       view.ctx.fillStyle = 'green';
       view.ctx.beginPath(); view.ctx.arc(view.posX, view.posY, 3, 0, 2 * Math.PI); view.ctx.fill();
+
+      // POS OWN ORIGO
+      let orX = view.posX + this.origo[view.vX] * view.ratio
+      let orY = view.posY + this.origo[view.vY] * view.ratio
+      view.ctx.fillStyle = 'red';
+      view.ctx.beginPath(); view.ctx.arc(orX, orY, 4, 0, 2 * Math.PI); view.ctx.fill();
 
       view.ctx.restore() // Eredeti koordinátarendszer visszaállítása
 
