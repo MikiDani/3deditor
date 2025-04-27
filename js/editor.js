@@ -35,8 +35,8 @@ class Editor {
       fill: false,
       textured: true,
       grid: false,
-      moveScale: 0.15,
-      rotateScale: 0.115,
+      moveScale: 0.05,
+      rotateScale: 0.1,
     }
 
     this.map = {
@@ -130,7 +130,7 @@ class Editor {
               <span><strong class="text-uppercase">View ${this.views[name].vX}/${this.views[name].vY}(${funcKey})</strong></span><span class="reset-center-button" data-name="${name}" title="Reset to default center.">&#9679;</span>
           </div>
           <div class="side-row">
-              <span>Ratio:</span><input type="number" name="ratio" data-name="${name}" min="0" max="200" step="10" value="${this.views[name].ratio}">
+              <span>Ratio:</span><input type="number" name="ratio" data-name="${name}" min="0" max="1000" step="10" value="${this.views[name].ratio}">
           </div>
           <div class="side-row">
               <span>Freq.:</span><input type="number" name="frequent" data-name="${name}" min="1" max="20" step="1" value="${this.views[name].frequent}">
@@ -161,9 +161,7 @@ class Editor {
   }
 
   realtimeOptions(value) {
-    if (value) {
-      console.log('BENT')
-      
+    if (value) {      
       if (this.refreshScreenInterval) {
         clearInterval(this.refreshScreenInterval)
       }
@@ -284,44 +282,48 @@ class Editor {
   }
 
   recursiveMenu(item) {
-    const meshData = this.map.data.find(element => element.id == item.id)
-    let itemData = this.findMeshById(this.map.structure, meshData.id)
-
-    let classTriangle = itemData.status ? 'triangle-up' : 'triangle-down';
-    let classEye = itemData.visible ? 'eye-up' : 'eye-down';
-
-    let element = `<ul>`;
-    element += `
-    <li data-id="${item.id}" class="mesh-name">
-      <span>${meshData.name}</span>
-      <span class="menu-icon triangle ${classTriangle} p-0 m-0" title="Open/Close group triangles"></span>
-      <span class="menu-icon eye ${classEye}" title="Visible or hide group"></span>
-      <span class="menu-icon menu-icon-pos-1 plus" title="Add group"></span>
-      <span class="menu-icon menu-icon-pos-2 duplicate" title="Duplicaded group"></span>
-      <span class="menu-icon menu-icon-pos-3 up" data-type="prev" title="Move up-brother"></span>
-      <span class="menu-icon menu-icon-pos-4 down" data-type="next" title="Move down-brother"></span>
-      <span class="menu-icon menu-icon-pos-5 back" title="Move back-parent"></span>
-      <span class="menu-icon menu-icon-pos-6 back-blend-in" title="Blend in to parent"></span>
-      <span class="menu-icon menu-icon-pos-7 clipboard" title="Cut group to clipboard"></span>
-      <span class="menu-icon menu-icon-pos-8 delete-group" title="Delete group"></span>
-    </li>`;
-
-    if (Array.isArray(meshData.tris) && meshData.tris.length > 0) {
-      let show = Number(item.status) ? 'block' : 'none'; 
-      element += `<ul data-parent-id="${item.id}" style="display:${show};">`;
-      meshData.tris.forEach(tri => {
-        element += `<li data-id="${tri.id}" class="tri-list">${tri.name}</li>`;
-      });
-      element += `</ul>`;
+    if (this.map.data && this.map.structure) {      
+      const meshData = this.map.data.find(element => element.id == item.id)
+      if (meshData) {
+        let itemData = this.findMeshById(this.map.structure, meshData.id)
+    
+        let classTriangle = itemData.status ? 'triangle-up' : 'triangle-down';
+        let classEye = itemData.visible ? 'eye-up' : 'eye-down';
+    
+        let element = `<ul>`;
+        element += `
+        <li data-id="${item.id}" class="mesh-name">
+          <span>${meshData.name}</span>
+          <span class="menu-icon triangle ${classTriangle} p-0 m-0" title="Open/Close group triangles"></span>
+          <span class="menu-icon eye ${classEye}" title="Visible or hide group"></span>
+          <span class="menu-icon menu-icon-pos-1 plus" title="Add group"></span>
+          <span class="menu-icon menu-icon-pos-2 duplicate" title="Duplicaded group"></span>
+          <span class="menu-icon menu-icon-pos-3 up" data-type="prev" title="Move up-brother"></span>
+          <span class="menu-icon menu-icon-pos-4 down" data-type="next" title="Move down-brother"></span>
+          <span class="menu-icon menu-icon-pos-5 back" title="Move back-parent"></span>
+          <span class="menu-icon menu-icon-pos-6 back-blend-in" title="Blend in to parent"></span>
+          <span class="menu-icon menu-icon-pos-7 clipboard" title="Cut group to clipboard"></span>
+          <span class="menu-icon menu-icon-pos-8 delete-group" title="Delete group"></span>
+        </li>`;
+    
+        if (Array.isArray(meshData.tris) && meshData.tris.length > 0) {
+          let show = Number(item.status) ? 'block' : 'none'; 
+          element += `<ul data-parent-id="${item.id}" style="display:${show};">`;
+          meshData.tris.forEach(tri => {
+            element += `<li data-id="${tri.id}" class="tri-list">${tri.name}</li>`;
+          });
+          element += `</ul>`;
+        }
+    
+        if (Array.isArray(item.child) && item.child.length > 0) {
+          item.child.forEach(child => {
+            element += this.recursiveMenu(child)
+          });
+        }
+        element += `</ul>`;
+        return element;
+      }
     }
-
-    if (Array.isArray(item.child) && item.child.length > 0) {
-      item.child.forEach(child => {
-        element += this.recursiveMenu(child)
-      });
-    }
-    element += `</ul>`;
-    return element;
   }
 
   async buildTexturesList(obj) {
@@ -397,6 +399,7 @@ class Editor {
     // FIRST LOAD
     if (true) {
       let filename = 'text-test-1'
+      // let filename = 'room-1'
       const response = await this.fetchData({ ajax: true, load: true, filename: filename })
       if (response?.data && response?.structure) {
         // console.log('response:'); console.log(response);
@@ -405,7 +408,7 @@ class Editor {
         this.map.structure = this.deepCopy(response.structure)
 
         const maxId = Math.max(...this.map.data.map(obj => obj.id));
-        Mesh.setInstanceCount(maxId + 1)
+        Mesh.setInstanceCount(maxId)
       }
     }
   }
@@ -744,6 +747,15 @@ class Editor {
     });
 
     // MAP INFO TO THE CONSOL
+    $("button[name='addid']").on('click', (event) => {
+      // let qwe = event.target; console.log(qwe);
+      let act = Mesh.getInstanceCount()
+      console.log('1', act)
+      act++;
+      console.log('2', act)
+      Mesh.setInstanceCount(act)
+    });
+
     $(document).on('keydown', (event) => {
       if (event.key == 'i') {
         console.log('this.map.data:')
@@ -854,7 +866,7 @@ class Editor {
         
         $("#modal-back").hide()
         $("#modal-content").hide()
-        $("#modal-message").html('Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur!').show()
+        $("#modal-message").html('Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur!').show()
 
         $("#modal-bg").show()
         $("#modal-container").show()
@@ -872,6 +884,13 @@ class Editor {
 
       // SAVE
       if(mode == 'save') {
+        clone.textureDir = []
+        const response = await clone.fetchData({ ajax: true, getfiles: true })
+        if (response?.files) clone.fileListElementsMake(mode, response.files, true, false)
+      }
+
+      // IMPORT
+      if(mode == 'import') {
         clone.textureDir = []
         const response = await clone.fetchData({ ajax: true, getfiles: true })
         if (response?.files) clone.fileListElementsMake(mode, response.files, true, false)
@@ -950,7 +969,7 @@ class Editor {
       let mode = $("#modal-container").attr('data-mode')
       let filename = $(this).attr('data-filename')
 
-      // console.log('--------'); console.log(mode); console.log(filename); console.log('--------');
+      console.log('--------'); console.log(mode); console.log(filename); console.log('--------');
 
       if (mode == 'load' && filename) {
         // LOAD
@@ -963,6 +982,9 @@ class Editor {
           $('.menu-back').removeClass('menu-back-isset').addClass('menu-back-empty')
           clone.map.data = response.data
           clone.map.structure = response.structure
+
+          const maxId = Math.max(... clone.map.data.map(obj => obj.id));
+          Mesh.setInstanceCount(maxId)
 
           clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
 
@@ -1002,6 +1024,61 @@ class Editor {
           } else {
             $("#modal-message").html(`<span class="text-center text-danger">${responseSave?.error}</span>`)
           }
+        }
+      }
+
+      // IMPORT
+      if (mode == 'import' && filename) {
+        const response = await clone.fetchData({ ajax: true, load: true, filename: filename }); // console.log(response)
+        if (response?.data && response?.structure) {
+
+          clone.saveMapMemory('save')
+
+          let importData = response.data;
+          let importStructure = response.structure;
+          
+          let lastIdNumber = Mesh.getInstanceCount();
+          let idMapping = {}; // régiId => újId
+
+          importData.forEach(item => {
+            idMapping[item.id] = lastIdNumber++;
+          });
+
+          importData = importData.map(item => {
+            return {
+              ...item,
+              id: idMapping[item.id],
+              parent_id: item.parent_id !== null ? idMapping[item.parent_id] ?? null : null
+            };
+          });
+
+          importStructure = importStructure.map(item => {
+            return {
+              ...item,
+              id: idMapping[item.id],
+              child: item.child.map(childId => idMapping[childId] ?? childId)
+            };
+          });
+
+          Mesh.setInstanceCount(lastIdNumber)
+          
+          clone.map.data = [...clone.map.data, ...importData];
+          clone.map.structure = [...clone.map.structure, ...importStructure];
+
+          clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
+
+          $("#modal-message").html('<div class="text-center text-success">successfully imported!</div>')
+
+          setTimeout(() => {
+            $("#modal-close").click()
+            $('#modal-input').val('')
+            $("#modal-message").html('')
+          }, 500);
+
+        } else if (response?.error) {
+          $("#modal-message").html(`<span class="text-center text-warning">${response?.error}</span>`)
+        } else {
+          $("#modal-message").html(`<span class="text-center text-danger">${response?.error}</span>`)
         }
       }
 
@@ -1209,10 +1286,12 @@ class Editor {
         alert('Not selected triangle!')
       }
 
-      if (clone.mouse.selectedTri != null && clone.mouse.selectedLock != null) {
-        clone.mouse.mode = 'move'
-        alert('In triangle point mode, only one triangle can be selected! (do not use selected lock!)')
-      }
+      // !!!!!
+
+      // if (clone.mouse.selectedTri != null && clone.mouse.selectedLock != null) {
+      //   clone.mouse.mode = 'move'
+      //   alert('In triangle point mode, only one triangle can be selected! (do not use selected lock!)')
+      // }
 
       clone.refreshToolbar()
     });
@@ -1258,7 +1337,10 @@ class Editor {
         let ratioInputValue = parseInt($(`input[name='ratio'][data-name='${name}']`).val())
 
         if (ratioInputValue < 1) ratioInputValue = 1;
-        else if (ratioInputValue > 200) ratioInputValue = 200;
+        else if (ratioInputValue > 1000) {
+          ratioInputValue = 1000;
+          $(`input[name='ratio'][data-name='${name}']`).val(ratioInputValue)
+        }
 
         this.views[name].ratio = ratioInputValue
 
@@ -1604,7 +1686,7 @@ class Editor {
             vForward = this.graph.vector_Mul(this.graph.vLookDir, this.options.moveScale)
             this.graph.vCamera = (event.originalEvent.wheelDelta > 0) ? this.graph.vector_Add(this.graph.vCamera, vForward) : this.graph.vector_Sub(this.graph.vCamera, vForward);
           } else {
-            let mod = (event.originalEvent.wheelDelta > 0) ? 5 : -5;
+            let mod = (event.originalEvent.wheelDelta > 0) ? 10 : -10;
             let element = $(`input[name='ratio'][data-name='${this.selectedView}']`)
             let modifyNum = parseInt(element.val()) + mod
             element.val(modifyNum)
@@ -1631,7 +1713,8 @@ class Editor {
           const directionX = parseInt($(this).attr("data-direction-x"))
           const directionY = parseInt($(this).attr("data-direction-y"))
           const directionSign = parseInt($(this).attr("data-direction-sign"))
-          
+          const axis = $(this).attr("data-axis") 
+
           let transformData = {
             type: type,
             movesize: moveSize,
@@ -1641,8 +1724,9 @@ class Editor {
             directionx: directionX,
             directiony: directionY,
             directionsign: directionSign,
+            axis: axis,
           }
-         
+
           if (mode == 'mesh') {
             let selectedMesh = clone.findMeshById(clone.map.structure, clone.mouse.selectedMeshId)
             if (selectedMesh) clone.recursiveTransform(mode, selectedMesh, transformData)
@@ -2190,36 +2274,60 @@ class Editor {
       let selectedMeshData = clone.map.data.find(mesh => mesh.id == meshId)
 
       if (selectedMeshStructure && selectedMeshData) {
-        // ACTION
+
+
         let duplicatedFunction = function(dupicatedStructure, parent_id, mapData) {
-          let newMesh = new Mesh('', parent_id)
+          let newMesh = new Mesh('', parent_id);
           newMesh.name = 'duplicated-' + newMesh.id;
-          newMesh.lineColor = 'orange'
-          newMesh.tris = []
-
+          newMesh.lineColor = 'orange';
+          newMesh.tris = [];
+      
           let addNum = $("input[name='move-size'][data-mode='mesh']").val() ? parseFloat($("input[name='move-size'][data-mode='mesh']").val()) : 0.5;
-          let getDatas = mapData.find(mesh => mesh.id == dupicatedStructure.id)
 
+          addNum = 0    // !!!!
+
+          let getDatas = mapData.find(mesh => mesh.id == dupicatedStructure.id);
+      
           getDatas.tris.forEach(tri => {
-            let cloneTri = clone.deepCopy(tri)
-
+            let cloneTri = clone.deepCopy(tri);
             newMesh.tris.push(new Triangle(
               new Vec3D(cloneTri.p[0].x + addNum, cloneTri.p[0].y + addNum, cloneTri.p[0].z + addNum),
               new Vec3D(cloneTri.p[1].x + addNum, cloneTri.p[1].y + addNum, cloneTri.p[1].z + addNum),
               new Vec3D(cloneTri.p[2].x + addNum, cloneTri.p[2].y + addNum, cloneTri.p[2].z + addNum),
               cloneTri.t[0], cloneTri.t[1], cloneTri.t[2],
-              cloneTri.texture, cloneTri.light, cloneTri.rgba, cloneTri.normal, null))
+              cloneTri.texture, cloneTri.light, cloneTri.rgba, cloneTri.normal, null
+            ));
           });
-
-          mapData.push(newMesh)
-          dupicatedStructure.id = newMesh.id
-
+      
+          // ADD NEW ID-S
+          let lastIdNumber = Mesh.getInstanceCount();
+          let idMapping = {};
+          idMapping[dupicatedStructure.id] = newMesh.id;
+      
+          dupicatedStructure = {
+            ...dupicatedStructure,
+            id: newMesh.id,
+            parent_id: parent_id,
+            child: dupicatedStructure.child.map(childId => childId) // másoljuk le, később módosítjuk rekurzívan
+          };
+      
+          Mesh.setInstanceCount(lastIdNumber + 1);
+      
+          // ADD DUPLICATED IN DATA
+          mapData.push(newMesh);
+      
+          // RECURSION FOR CHILDREN
           if (Array.isArray(dupicatedStructure.child)) {
-            dupicatedStructure.child.forEach(child => duplicatedFunction(child, newMesh.id, mapData));
+            dupicatedStructure.child = dupicatedStructure.child.map(child => {
+              return duplicatedFunction(child, newMesh.id, mapData);
+            });
           }
-
+      
           return dupicatedStructure;
         }
+
+
+        
         // start
         let dupicatedStructure = clone.deepCopy(selectedMeshStructure)
         dupicatedStructure = duplicatedFunction(dupicatedStructure, selectedMeshData.parent_id, clone.map.data)
@@ -2475,7 +2583,6 @@ class Editor {
     document.addEventListener('keydown', (event) => {
       // console.log(this.keys)
 
-
       this.keys[event.code] = true
       this.checkKeyboardInputs()
 
@@ -2483,6 +2590,7 @@ class Editor {
       if (document.pointerLockElement == document.body) {
         // screen-canvas refresh
         this.moveViewInputs()
+        this.refreshScreen()
       }
       // ALLOWED BUTTONS
       if (event.code == 'Enter') {
@@ -2558,30 +2666,35 @@ class Editor {
 
       transform = this.graph.matrix_MakeTranslation(modifyData.x, modifyData.y, modifyData.z)
     }
+
+    // TÜKRÖZÉS
+    if (transformData.type == 'mirror') {
+
+      console.log(transformData)
+      console.log(transformData.axis)
+
+      transform = this.graph.matrix_MakeMirror(transformData.axis)
+    }
+
     // ROTATE
     if (transformData.type == 'rotate') {
-      let value = transformData.directionsign * this.graph.angleToRandian(transformData.anglesize)
+      
+      let angleValue = transformData.directionsign * this.graph.angleToRandian(transformData.anglesize)
 
-      // Pivot pont, pl. mesh középpontja vagy bármi más    
+      let meshData = this.map.data.find(mapMesh => mapMesh.id == mesh.id)
+      
+      let mPos = this.graph.calculateAveragePosition(meshData)
+      // console.log(mPos)
 
-      console.log(this.origo)
+      let matTranslateToOrigin = this.graph.matrix_MakeTranslation(-mPos.x + this.origo.x, -mPos.y + this.origo.y, -mPos.z + this.origo.z)
 
-
-      // Eltolás az origóba
-      let matTranslateToOrigin = this.graph.matrix_MakeTranslation(-this.origo.x, -this.origo.y, -this.origo.z)
-    
       // Forgatás
       let matRotate = null
-      if (this.selectedView == 'XYview-canvas') matRotate = this.graph.matrix_MakeRotationX(value)
-      if (this.selectedView == 'XZview-canvas') matRotate = this.graph.matrix_MakeRotationY(value)
-      if (this.selectedView == 'ZYview-canvas') matRotate = this.graph.matrix_MakeRotationZ(value)
-    
-      // Visszatolás
-      let matTranslateBack = this.graph.matrix_MakeTranslation(this.origo.x, this.origo.y, this.origo.z)
-    
-      // Összekombinálás: Tback * R * Torigin
-      transform = this.graph.matrix_MultiplyMatrix(matRotate, matTranslateToOrigin)
-      transform = this.graph.matrix_MultiplyMatrix(matTranslateBack, transform)
+      if (this.selectedView == 'XYview-canvas') matRotate = this.graph.matrix_MakeRotationX(angleValue)
+      if (this.selectedView == 'XZview-canvas') matRotate = this.graph.matrix_MakeRotationY(angleValue)
+      if (this.selectedView == 'ZYview-canvas') matRotate = this.graph.matrix_MakeRotationZ(angleValue)
+
+      transform = this.graph.matrix_MultiplyMatrix(matTranslateToOrigin, matRotate);
     }
     // SIZE
     if (transformData.type == 'size') {
@@ -2590,7 +2703,7 @@ class Editor {
 
     // TRANSFORM
     if (transform) {
-      console.log(transform)
+      // console.log(transform)
 
       // MESH
       if (mode == 'mesh') {
@@ -2638,10 +2751,7 @@ class Editor {
     $("input[name='tri-t3-V']").val(this.mouse.selectedTri.t[2].v);
 
     $("select[name='tri-light']").val(this.mouse.selectedTri.light)
-    $("select[name='tri-normal']").val(this.mouse.selectedTri.normal)
-
-    console.log(this.mouse.selectedTri.texture.name)
-    
+    $("select[name='tri-normal']").val(this.mouse.selectedTri.normal) 
 
     let textInfo = this.mouse.selectedTri.texture || null;
     let textData = this.graph?.text?.pic?.[this.mouse?.selectedTri?.texture?.name]?.[0] ?? null;
@@ -2840,16 +2950,18 @@ class Editor {
       this.map.data.forEach(mesh => {
         
         let strucSelected = this.findMeshById(this.map.structure, mesh.id)
-        strucSelected.visible = strucSelected.visible ?? true;
-
-        // CHECK VISIBLE
-        if (strucSelected?.visible) {
-          var lineColor = mesh.lineColor
-          var lineWidth = 1
-
-          mesh.tris.forEach(tri => {
-            this.drawViewTriangeAction(view, lineColor, lineWidth, tri.p[0][view.vX], tri.p[0][view.vY], tri.p[1][view.vX], tri.p[1][view.vY], tri.p[2][view.vX], tri.p[2][view.vY])
-          });
+        if (strucSelected) {
+          strucSelected.visible = strucSelected?.visible ?? true;
+  
+          // CHECK VISIBLE
+          if (strucSelected?.visible) {
+            var lineColor = mesh.lineColor
+            var lineWidth = 1
+  
+            mesh.tris.forEach(tri => {
+              this.drawViewTriangeAction(view, lineColor, lineWidth, tri.p[0][view.vX], tri.p[0][view.vY], tri.p[1][view.vX], tri.p[1][view.vY], tri.p[2][view.vX], tri.p[2][view.vY])
+            });
+          }
         }
       });
 

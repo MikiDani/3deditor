@@ -12,7 +12,7 @@ export class Graphics {
       textured: true,
       fill: false,
       grid: false,
-      realtime: true,
+      realtime: false,
     }
 
     for(const [key, value] of Object.entries(this.options3D)) {
@@ -172,6 +172,41 @@ export class Graphics {
           }
       }
       return matrix;
+  }
+
+  matrix_MakeMirror(axis) {    
+    const matrix = new Matrix4x4();
+    matrix.m[0][0] = (axis == 'x') ? -1.0 : 1.0;
+    matrix.m[1][1] = (axis == 'y') ? -1.0 : 1.0;
+    matrix.m[2][2] = (axis == 'z') ? -1.0 : 1.0;
+    matrix.m[3][3] = 1.0;
+    return matrix;
+  }
+
+  calculateAveragePosition(meshData) {
+    let sum = { x: 0, y: 0, z: 0 }
+    let count = 0
+  
+    if (Array.isArray(meshData.tris) && meshData.tris.length > 0) {
+      meshData.tris.forEach(tri => {
+        for (let i = 0; i < 3; i++) {
+          sum.x += tri.p[i].x
+          sum.y += tri.p[i].y
+          sum.z += tri.p[i].z
+          count++
+        }
+      })
+    }
+  
+    if (count > 0) {
+      return {
+        x: sum.x / count,
+        y: sum.y / count,
+        z: sum.z / count
+      }
+    } else {
+      return { x: 0, y: 0, z: 0 }  // Ha nem volt pont
+    }
   }
 
   matrix_PointAt(pos, target, up) {
@@ -489,12 +524,12 @@ export class Graphics {
     // this.moveObject(1, 0, -0, 0)      // 1 axis | x,y,z
   }
 
-  renderScreen() {
+  async renderScreen() {
     // Draw Objects
-    this.map.data.forEach(mesh => {
+    await this.map.data.forEach(mesh => {
       // console.log(mesh)
       let structure = this.findMeshById(this.map.structure, mesh.id)
-      if (structure.visible == '1') this.drawObject(mesh)
+      if (structure?.visible == '1') this.drawObject(mesh)
     });
   }
 
@@ -708,21 +743,15 @@ export class Graphics {
     y = Math.floor(y)   
 
     light = light < 0.3 ? 0.3 : light;
+    // light = 0.2
 
-    // light = 0.2  
-
-
-    // console.log(texture)
-    
+    // image index select
     let picIndex = 0
-
-    if (this.text.animTimer[texture.name]) picIndex = this.text.animTimer[texture.name].counter;
-    // console.log(picIndex)
-
+    if (this.options3D.realtime && this.text.animTimer[texture.name]) picIndex = this.text.animTimer[texture.name].counter;
+    // image select
     let selectedTexture = (texture.name) ? this.text.pic[texture.name][picIndex] : this.text.pic['notexture'][0];
 
     // texture
-
     if (selectedTexture?.width) {
       let sampleU = Math.floor((((tex_u / tex_w) * selectedTexture.width) % selectedTexture.width + selectedTexture.width) % selectedTexture.width)
       let sampleV = Math.floor((((tex_v / tex_w) * selectedTexture.height) % selectedTexture.height + selectedTexture.height) % selectedTexture.height)

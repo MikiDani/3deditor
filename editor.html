@@ -73,7 +73,7 @@
                     <span style="font-size: 13px;">Text. ratio:</span>
                     <input type="number" id="text-ratio" value="1" class="text-end">
                 </div>
-                <!-- <div class="toolbar-icon new-triangle" data-mode="new-triangle"></div> -->
+                <button type="button" name="addid">ADD +ID</button>
             </div>
         </div>
     </div>
@@ -137,11 +137,9 @@
                             </div>
                         </div>
                         <div class="left-side">
-                            <div class="side-row">
-                                <span>Size: </span><input type="number" name="move-size" data-mode="mesh" min="-1000" max="1000" step="0.1" value="0.1">
-                            </div>
-                            <div class="side-row justify-content-center">
-                                <div class="grid-item arrow w-20 me-10" data-mode="mesh" data-type="size">⤢</div>
+                            <div class="h-100-flex">
+                                <span>Size: </span><input type="number" name="move-size" class="w-30" data-mode="mesh" min="-1000" max="1000" step="0.1" value="0.1">
+                                <div class="grid-item arrow w-20 ms-2" data-mode="mesh" data-type="size">⤢</div>
                             </div>
                         </div>
                         <div class="right-side">
@@ -180,8 +178,9 @@
                                 <div class="grid-item arrow" data-mode="mesh" data-direction-sign="-1" data-type="rotate">↻</div>
                             </div>
                         </div>
-                        <div class="left-side">
-                            
+                        <div class="grid-container-mirror mt-3">
+                            <div class="grid-item arrow w-50" data-mode="mesh" data-axis="x" data-type="mirror">X ⇆</div>
+                            <div class="grid-item arrow w-50" data-mode="mesh" data-axis="y" data-type="mirror">Y ⇵</div>
                         </div>
                     </div>
                 </div>
@@ -190,7 +189,6 @@
             <div id="selected-texture-container" class="box-1" style="display:none;">
                 <div class="right-screen-options">
                     <div class="left-side">
-
                         <div class="side-row">
                             <span class="w-50">Animate: </span>
                             <select name="tri-animate" data-type="short" class="w-50">
@@ -198,17 +196,13 @@
                                 <option value="true">On</option>
                             </select>
                         </div>
-
                         <div class="side-row">
                             <span class="w-50">Anim frame:</span><input type="number" name="tri-animframe" data-type="short" class="w-50" disabled>
                         </div>
-
                         <div class="side-row">
                             <span class="w-50">Anim speed:</span><input class="w-50" type="number" name="tri-animspeed">
                         </div>
-
                     </div>
-
                     <div class="right-side">
                         <div class="side-row">
                             <img src="#" alt="#" data-texture-name="#" class="texture-minipic pic-pix"/>
@@ -219,7 +213,7 @@
                     </div>
                 </div>
             </div>
-    
+
             <div id="selected-tri-container" class="p-0 m-0" style="display:none;">
                 <div class="title-box-flex text-start">
                     <span class="text-small">Tri. name:</span>
@@ -308,7 +302,7 @@
                     </div>
                 </div>    
             </div>
-    
+
             <div id="selected-locket-container" class="p-0 m-0" style="display:none;">
                 <div class="title-box-flex text-start">
                     <span class="text-small">Selected Tri. name:</span>
@@ -322,10 +316,10 @@
                     <div class="right-screen-options">
                         <div class="left-side">
                             <div class="side-row">
-                                <span class="w-30">t1U: </span><input class="w-70" type="number" name="lock-t1-U" data-type="t" data-axis="u" data-num="0" step="0.1" value="0">
+                                <span class="w-30">t1U: </span><input class="w-70" type="number" name="lock-t1-U" data-type="t" data-axis="u" data-num="0" step="0.1" value="0" disabled>
                             </div>
                             <div class="side-row">
-                                <span class="w-30">t1V: </span><input class="w-70" type="number" name="lock-t1-V" data-type="t" data-axis="v" data-num="0" step="0.1" value="0">
+                                <span class="w-30">t1V: </span><input class="w-70" type="number" name="lock-t1-V" data-type="t" data-axis="v" data-num="0" step="0.1" value="0" disabled>
                             </div>
                             <div class="side-row w-100 text-center">
                                 <span class="rec-all-move w-100" title="All points rotate">All move ↑</span>
@@ -338,10 +332,10 @@
                         </div>
                         <div class="left-side mt-3">
                             <div class="side-row">
-                                <span class="w-30">t2U: </span><input class="w-70" type="number" name="lock-t2-U" data-type="t" data-axis="u" data-num="1" step="0.1" value="0">
+                                <span class="w-30">t2U: </span><input class="w-70" type="number" name="lock-t2-U" data-type="t" data-axis="u" data-num="1" step="0.1" value="0" disabled>
                             </div>
                             <div class="side-row">
-                                <span class="w-30">t2V: </span><input class="w-70" type="number" name="lock-t2-V" data-type="t" data-axis="v" data-num="1" step="0.1" value="0">
+                                <span class="w-30">t2V: </span><input class="w-70" type="number" name="lock-t2-V" data-type="t" data-axis="v" data-num="1" step="0.1" value="0" disabled>
                             </div>
                             <div class="side-row w-100 d-flex justify-content-center align-items-center">
                                 <span class="rec-move-up" title="2. point move up">↑</span>
@@ -350,6 +344,7 @@
                         </div>
                         <div class="right-side mt-3">
                             <div class="side-row">
+                                <!--
                                 <span class="w-30">text: </span>
                                 <select name="lock-texture" data-type="short">
                                     <option value="0">0</option>
@@ -360,15 +355,17 @@
                                     <option value="5">5</option>
                                     <option value="6">6</option>
                                     <option value="7">7</option>
-                                </select>
+                                </select> 
+                                -->
+                                YXC
                             </div>
                         </div>
                         <div class="left-side mt-3">
                             <div class="side-row">
-                                <span class="w-30">t3U: </span><input class="w-70" type="number" name="lock-t3-U" data-type="t" data-axis="u" data-num="2" step="0.1" value="0">
+                                <span class="w-30">t3U: </span><input class="w-70" type="number" name="lock-t3-U" data-type="t" data-axis="u" data-num="2" step="0.1" value="0" disabled>
                             </div>
                             <div class="side-row">
-                                <span class="w-30">t3V: </span><input class="w-70" type="number" name="lock-t3-V" data-type="t" data-axis="v" data-num="2" step="0.1" value="0">
+                                <span class="w-30">t3V: </span><input class="w-70" type="number" name="lock-t3-V" data-type="t" data-axis="v" data-num="2" step="0.1" value="0" disabled>
                             </div>
                         </div>
                         <div class="right-side mt-3">
@@ -402,11 +399,11 @@
                                 <span>Angle°</span><input type="number" name="angle-size" data-mode="rectangle" min="0" max="360" step="1" value="45">
                             </div>
                             <div class="grid-container-rotate d-flex align-items-center justify-content-between mt-4">
+                                <div class="grid-item arrow w-30" data-mode="rectangle" data-type="size">⤢</div>
                                 <div class="grid-item arrow w-30" data-mode="rectangle" data-direction-sign="1"  data-type="rotate">↺</div>
                                 <div class="grid-item arrow w-30" data-mode="rectangle" data-direction-sign="-1" data-type="rotate">↻</div>
                             </div>
                         </div>
-
                         <div class="right-side mt-3">
                             <div class="grid-container">
                                 <div class="grid-item arrow" data-mode="rectangle" data-direction-x="1"  data-direction-y="1" data-type="move">↖</div>
@@ -419,7 +416,13 @@
                                 <div class="grid-item arrow" data-mode="rectangle" data-direction-x="0"  data-direction-y="-1" data-type="move">↓</div>
                                 <div class="grid-item arrow" data-mode="rectangle" data-direction-x="-1" data-direction-y="-1" data-type="move">↘</div>
                             </div>
-                        </div>                        
+                        </div>
+
+                        <div class="grid-container-mirror mt-3">
+                            <div class="grid-item arrow w-50" data-mode="rectangle" data-axis="x" data-type="mirror">X ⇆</div>
+                            <div class="grid-item arrow w-50" data-mode="rectangle" data-axis="y" data-type="mirror">Y ⇵</div>
+                        </div>
+
                     </div>
                 </div>
             </div>
