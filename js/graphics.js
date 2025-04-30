@@ -12,7 +12,7 @@ export class Graphics {
       textured: true,
       fill: false,
       grid: false,
-      realtime: false,
+      realtime: true,
     }
 
     for(const [key, value] of Object.entries(this.options3D)) {
@@ -336,22 +336,6 @@ export class Graphics {
       );
   }
 
-  calculateMeshCenter(mesh) {
-    let total = { x: 0, y: 0, z: 0 }
-    let count = 0
-  
-    mesh.tris.forEach(tri => {
-      tri.p.forEach(p => {
-        total.x += p.x
-        total.y += p.y
-        total.z += p.z
-        count++
-      })
-    })
-  
-    return new Vec3D(total.x / count, total.y / count, total.z / count)
-  }
-
   vector_IntersectPlane(plane_p, plane_n, lineStart, lineEnd, t) {
     plane_n = this.vector_Normalise(plane_n)
     let plane_d = -this.vector_DotProduct(plane_n, plane_p)
@@ -377,8 +361,9 @@ export class Graphics {
 
     let inside_points = [new Vec3D(), new Vec3D(), new Vec3D()]; let nInsidePointCount = 0
     let outside_points = [new Vec3D(), new Vec3D(), new Vec3D()]; let nOutsidePointCount = 0
-    let inside_tex = [new Vec3D(), new Vec3D(), new Vec3D()]; let nInsideTexCount = 0
-    let outside_tex = [new Vec3D(), new Vec3D(), new Vec3D()]; let nOutsideTexCount = 0
+
+    let inside_tex  = [ new Vec2D(), new Vec2D(), new Vec2D() ]; let nInsideTexCount = 0
+    let outside_tex = [ new Vec2D(), new Vec2D(), new Vec2D() ]; let nOutsideTexCount = 0
 
     let d0 = dist(in_tri.p[0])
     let d1 = dist(in_tri.p[1])
@@ -427,40 +412,45 @@ export class Graphics {
       return 1;
     }
 
+
     if (nInsidePointCount === 2 && nOutsidePointCount === 1) {
-      out_tri1.p[0] = inside_points[0]
-      out_tri1.p[1] = inside_points[1]
-      out_tri1.t[0] = inside_tex[0]
-      out_tri1.t[1] = inside_tex[1]
-      out_tri1.t[2].rgba = in_tri.rgba
-      interPlaneValue = this.vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[0])
-      tVal = interPlaneValue[0]
-      out_tri1.p[2] = interPlaneValue[1]
-      out_tri1.t[2].u = tVal * (outside_tex[0].u - inside_tex[0].u) + inside_tex[0].u
-      out_tri1.t[2].v = tVal * (outside_tex[0].v - inside_tex[0].v) + inside_tex[0].v
-      out_tri1.t[2].w = tVal * (outside_tex[0].w - inside_tex[0].w) + inside_tex[0].w
-      out_tri1.texture = in_tri.texture
-      out_tri1.light = in_tri.light
-      out_tri1.rgba = in_tri.rgba
-      // out_tri1.rgba = [50, 50, 170, 1]
-
-      out_tri2.p[0] = inside_points[1]
-			out_tri2.t[0] = inside_tex[1]
-			out_tri2.p[1] = out_tri1.p[2]
-			out_tri2.t[1] = out_tri1.t[2]
-      interPlaneValue = this.vector_IntersectPlane(plane_p, plane_n, inside_points[1], outside_points[0])
-      tVal = interPlaneValue[0]
-      out_tri2.p[2] = interPlaneValue[1]
-      out_tri2.t[2].u = tVal * (outside_tex[0].u - inside_tex[1].u) + inside_tex[1].u
-      out_tri2.t[2].v = tVal * (outside_tex[0].v - inside_tex[1].v) + inside_tex[1].v
-      out_tri2.t[2].w = tVal * (outside_tex[0].w - inside_tex[1].w) + inside_tex[1].w
-      out_tri2.texture = in_tri.texture
-      out_tri2.light = in_tri.light
-      out_tri2.rgba = in_tri.rgba
-      // out_tri2.rgba = [170, 50, 150, 1]
-
-      this.clipped[0] = out_tri1
-      this.clipped[1] = out_tri2
+      // --- OUT_TRI1 ---
+      out_tri1.p[0]   = inside_points[0];
+      out_tri1.p[1]   = inside_points[1];
+      out_tri1.t[0]   = inside_tex[0];
+      out_tri1.t[1]   = inside_tex[1];
+      out_tri1.rgba   = in_tri.rgba;         // a háromszög színe
+    
+      let interPlaneValue = this.vector_IntersectPlane(plane_p, plane_n,
+                                                       inside_points[0], outside_points[0]);
+      let tVal            = interPlaneValue[0];
+      out_tri1.p[2]       = interPlaneValue[1];
+      out_tri1.t[2].u     = tVal * (outside_tex[0].u - inside_tex[0].u) + inside_tex[0].u;
+      out_tri1.t[2].v     = tVal * (outside_tex[0].v - inside_tex[0].v) + inside_tex[0].v;
+      out_tri1.t[2].w     = tVal * (outside_tex[0].w - inside_tex[0].w) + inside_tex[0].w;
+    
+      out_tri1.texture = in_tri.texture;
+      out_tri1.light   = in_tri.light;
+    
+      // --- OUT_TRI2 (ugyanígy) ---
+      out_tri2.p[0]   = inside_points[1];
+      out_tri2.t[0]   = inside_tex[1];
+      out_tri2.p[1]   = out_tri1.p[2];
+      out_tri2.t[1]   = out_tri1.t[2];
+      interPlaneValue = this.vector_IntersectPlane(plane_p, plane_n,
+                                                   inside_points[1], outside_points[0]);
+      tVal            = interPlaneValue[0];
+      out_tri2.p[2]   = interPlaneValue[1];
+      out_tri2.t[2].u = tVal * (outside_tex[0].u - inside_tex[1].u) + inside_tex[1].u;
+      out_tri2.t[2].v = tVal * (outside_tex[0].v - inside_tex[1].v) + inside_tex[1].v;
+      out_tri2.t[2].w = tVal * (outside_tex[0].w - inside_tex[1].w) + inside_tex[1].w;
+    
+      out_tri2.texture = in_tri.texture;
+      out_tri2.light   = in_tri.light;
+      out_tri2.rgba    = in_tri.rgba;
+    
+      this.clipped[0] = out_tri1;
+      this.clipped[1] = out_tri2;
       return 2;
     }
   }
@@ -526,11 +516,19 @@ export class Graphics {
 
   async renderScreen() {
     // Draw Objects
-    await this.map.data.forEach(mesh => {
-      // console.log(mesh)
-      let structure = this.findMeshById(this.map.structure, mesh.id)
-      if (structure?.visible == '1') this.drawObject(mesh)
-    });
+    if (true) {
+      await this.map.data.forEach(mesh => {
+        // console.log(mesh)
+        let structure = this.findMeshById(this.map.structure, mesh.id)
+        if (structure?.visible == '1') this.drawObject(mesh)
+      });
+    }
+
+    // for (let mesh of this.map.data) {
+    //   if (!document.pointerLockElement) return; // újabb biztonsági ellenőrzés!
+    //   let structure = this.findMeshById(this.map.structure, mesh.id);
+    //   if (structure.visible == '1') this.drawObject(mesh);
+    // }
   }
 
   ///////////////
@@ -590,8 +588,9 @@ export class Graphics {
 
         triViewed.rgba = tri.rgba
 
-        let nClippedTriangles = 0;        
-        nClippedTriangles = this.triangle_ClipAgainstPlane({ x: 0, y: 0, z: 0.1 }, { x: 0, y: 0, z: 1 }, triViewed)        
+        let minDistance = 0.01
+        let nClippedTriangles = 0
+        nClippedTriangles = this.triangle_ClipAgainstPlane({ x: 0, y: 0, z: minDistance }, { x: 0, y: 0, z: 1 }, triViewed)        
 
         for (let n=0; n<nClippedTriangles; n++) {
           // Project triangles from 3D --> 2D

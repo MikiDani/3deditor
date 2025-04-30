@@ -101,15 +101,11 @@ class Editor {
 
     this.graph = new Graphics(this.text, this.keys, this.options, this.map, this.findMeshById)
 
-    // console.log(this.map.data[0])
-    this.origo = this.graph.calculateMeshCenter(this.map.data[0])
-    // console.log('ORIGO'); console.log(this.origo)
-
     this.views = {
       // name, vX, vY, ratio, frequent, showDots, showGrid
-      'XYview-canvas': new ViewWindow('XYview-canvas', 'x', 'y', 100, 10, true, true),
-      'XZview-canvas': new ViewWindow('XZview-canvas', 'x', 'z', 100, 10, true, true),
-      'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', 100, 10, true, true),
+      'XYview-canvas': new ViewWindow('XYview-canvas', 'x', 'y', 350, 20, true, true),
+      'XZview-canvas': new ViewWindow('XZview-canvas', 'x', 'z', 350, 20, true, true),
+      'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', 350, 20, true, true),
     } // console.log(this.views)
 
     /////////////////////
@@ -398,7 +394,7 @@ class Editor {
 
     // FIRST LOAD
     if (true) {
-      let filename = 'text-test-1'
+      let filename = 'maniac'
       // let filename = 'room-1'
       const response = await this.fetchData({ ajax: true, load: true, filename: filename })
       if (response?.data && response?.structure) {
@@ -1037,7 +1033,7 @@ class Editor {
           let importData = response.data;
           let importStructure = response.structure;
           
-          let lastIdNumber = Mesh.getInstanceCount();
+          let lastIdNumber = Mesh.getInstanceCount() + 1;
           let idMapping = {}; // régiId => újId
 
           importData.forEach(item => {
@@ -2678,23 +2674,26 @@ class Editor {
 
     // ROTATE
     if (transformData.type == 'rotate') {
-      
-      let angleValue = transformData.directionsign * this.graph.angleToRandian(transformData.anglesize)
-
-      let meshData = this.map.data.find(mapMesh => mapMesh.id == mesh.id)
-      
-      let mPos = this.graph.calculateAveragePosition(meshData)
-      // console.log(mPos)
-
-      let matTranslateToOrigin = this.graph.matrix_MakeTranslation(-mPos.x + this.origo.x, -mPos.y + this.origo.y, -mPos.z + this.origo.z)
-
-      // Forgatás
-      let matRotate = null
-      if (this.selectedView == 'XYview-canvas') matRotate = this.graph.matrix_MakeRotationX(angleValue)
-      if (this.selectedView == 'XZview-canvas') matRotate = this.graph.matrix_MakeRotationY(angleValue)
-      if (this.selectedView == 'ZYview-canvas') matRotate = this.graph.matrix_MakeRotationZ(angleValue)
-
-      transform = this.graph.matrix_MultiplyMatrix(matTranslateToOrigin, matRotate);
+      console.log(mode)
+      if (mode == 'mesh') {
+        
+        let angleValue = transformData.directionsign * this.graph.angleToRandian(transformData.anglesize)
+  
+        let meshData = this.map.data.find(mapMesh => mapMesh.id == mesh.id)
+        
+        let mPos = this.graph.calculateAveragePosition(meshData)
+        // console.log(mPos)
+  
+        let matTranslateToOrigin = this.graph.matrix_MakeTranslation(-mPos.x + this.origo.x, -mPos.y + this.origo.y, -mPos.z + this.origo.z)
+  
+        // Forgatás
+        let matRotate = null
+        if (this.selectedView == 'XYview-canvas') matRotate = this.graph.matrix_MakeRotationX(angleValue)
+        if (this.selectedView == 'XZview-canvas') matRotate = this.graph.matrix_MakeRotationY(angleValue)
+        if (this.selectedView == 'ZYview-canvas') matRotate = this.graph.matrix_MakeRotationZ(angleValue)
+  
+        transform = this.graph.matrix_MultiplyMatrix(matTranslateToOrigin, matRotate);
+      } else { alert('NEM MESH!!!');}
     }
     // SIZE
     if (transformData.type == 'size') {
@@ -3028,11 +3027,14 @@ class Editor {
         let np0X = view.posX + this.mouse.addRec.cords[0][view.vX] * view.ratio
         let np0Y = view.posY + this.mouse.addRec.cords[0][view.vY] * view.ratio
 
-        // point
-        view.ctx.fillStyle = 'orange'
-        view.ctx.beginPath()
-        view.ctx.arc(np0X, np0Y, 3, 0, 2 * Math.PI)
-        view.ctx.fill()
+        // 
+        if (false) {
+          
+          view.ctx.fillStyle = 'orange'
+          view.ctx.beginPath()
+          view.ctx.arc(np0X, np0Y, 3, 0, 2 * Math.PI)
+          view.ctx.fill()
+        }
       }
 
       // POS ORIGO

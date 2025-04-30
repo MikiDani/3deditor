@@ -9,7 +9,7 @@
 </head>
 <body id="root">
     <script>
-        localStorage.setItem('logged_in', 'true')
+        // localStorage.setItem('logged_in', 'true')
         // console.log(localStorage.getItem('logged_in'))
 
         if (localStorage.getItem('logged_in') !== 'true') {
@@ -68,12 +68,13 @@
                 <div class="toolbar-icon point" data-mode="point" title="Moving the points of a triangle"></div>
                 <div class="toolbar-icon origo" data-mode="origo" title="Moving the origo point"></div>
                 <div class="toolbar-icon"></div>
-                <div class="toolbar-icon"></div>
-                <div class="p-0 m-0 d-flex flex-column justify-content-center align-items-center">
+                <div class="toolbar-icon d-flex justify-content-end align-items-end">
+                    <button type="button" name="addid" class="me-2">+ID</button>
+                </div>
+                <div class="p-0 m-0 d-flex flex-column justify-content-start align-items-center">
                     <span style="font-size: 13px;">Text. ratio:</span>
                     <input type="number" id="text-ratio" value="1" class="text-end">
                 </div>
-                <button type="button" name="addid">ADD +ID</button>
             </div>
         </div>
     </div>
@@ -138,7 +139,7 @@
                         </div>
                         <div class="left-side">
                             <div class="h-100-flex">
-                                <span>Size: </span><input type="number" name="move-size" class="w-30" data-mode="mesh" min="-1000" max="1000" step="0.1" value="0.1">
+                                <span>Size: </span><input type="number" name="move-size" class="w-40" data-mode="mesh" min="-1000" max="1000" step="0.1" value="0.1">
                                 <div class="grid-item arrow w-20 ms-2" data-mode="mesh" data-type="size">⤢</div>
                             </div>
                         </div>

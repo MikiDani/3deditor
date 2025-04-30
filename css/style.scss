@@ -198,7 +198,7 @@ body {
 }
 
 .me-2 {
-    margin-right: 5px;
+    margin-right: 5px !important;
 }
 
 .me-3 {
@@ -317,20 +317,22 @@ button[class='3d-buttons'] {
         }
 
         .menu-icons-center-container {
+            width: 100%;
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
         }
 
         .toolbar-icon {
             width: 34px;
             height: 34px;
-            margin: 3px;
+            margin: 0px;
             border-radius: 4px;
             background-size: cover;
             // background-color: red;
             &:hover {
                 cursor: pointer;
+                background-color: #d4d4d4;
             }
         }
         .move {
@@ -662,6 +664,14 @@ button[class='3d-buttons'] {
 
 .justify-content-between {
     justify-content: space-between;
+}
+
+.justify-content-end {
+    justify-content: end;
+}
+
+.justify-content-start {
+    justify-content: start;
 }
 
 .align-items-center {

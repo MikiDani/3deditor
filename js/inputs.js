@@ -36,7 +36,7 @@ export class Inputs {
     document.addEventListener('keydown', this.keydownHandler)
     document.addEventListener('keyup', this.keyupHandler)
 
-    this.lookMouseApi()
+    // this.lookMouseApi()  // !!! 
   }
 
   keydownHandler = (event) => {
@@ -57,7 +57,9 @@ export class Inputs {
 
     document.addEventListener('mousemove', (event) => {
       if (document.pointerLockElement == document.body) {
-        // console.log("Elmozdulás X:", event.movementX, "Elmozdulás Y:", event.movementY);
+
+        console.log("Elmozdulás X:", event.movementX, "Elmozdulás Y:", event.movementY)
+
         if (this.graph.fXaw + event.movementY*0.01 > -1.5 && this.graph.fXaw + event.movementY*0.01 < 1.5) this.graph.fXaw += event.movementY*0.01;
         this.graph.fYaw += event.movementX*0.01
       }
@@ -66,9 +68,9 @@ export class Inputs {
     // END POINTER CLICK (ESC)
     document.addEventListener('pointerlockchange', function() {
       if (document.pointerLockElement == document.body) {
-        console.log("Pointer lock aktív");
+        // console.log("Pointer lock aktív");
       } else {
-        console.log("Pointer lock megszűnt");
+        // console.log("Pointer lock megszűnt");
       }
     });
   }
