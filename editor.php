@@ -230,10 +230,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
     $filename = basename($_POST['filename']);
     $filename = clear_filename($filename);
 
+    /*
     if ($filename == 'maniac' || $filename == 'clear' || $filename == 'chees' || $filename == 'salad' || $filename == 'ketchup' || $filename == 'fridge') {
         echo json_encode(['error' => 'This is DEMO .tuc file! You cannot save or overwrite it!']);
         exit;
     }
+    */
 
     $map_data = json_decode($_POST['mapdata'], true);
 
