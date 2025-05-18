@@ -49,31 +49,31 @@ export class Inputs {
   }
 
   // MOUSE MOVE
-  lookMouseApi() {
-    document.body.requestPointerLock = document.body.requestPointerLock || document.body.mozRequestPointerLock || document.body.webkitRequestPointerLock;
-    document.getElementById("screen-canvas").addEventListener('click', function() {      
-      document.body.requestPointerLock();
-    });
+  // lookMouseApi() {
+  //   document.body.requestPointerLock = document.body.requestPointerLock || document.body.mozRequestPointerLock || document.body.webkitRequestPointerLock;
+  //   document.getElementById("screen-canvas").addEventListener('click', function() {      
+  //     document.body.requestPointerLock();
+  //   });
 
-    document.addEventListener('mousemove', (event) => {
-      if (document.pointerLockElement == document.body) {
+  //   document.addEventListener('mousemove', (event) => {
+  //     if (document.pointerLockElement == document.body) {
 
-        console.log("Elmozdulás X:", event.movementX, "Elmozdulás Y:", event.movementY)
+  //       console.log("Elmozdulás X:", event.movementX, "Elmozdulás Y:", event.movementY)
 
-        if (this.graph.fXaw + event.movementY*0.01 > -1.5 && this.graph.fXaw + event.movementY*0.01 < 1.5) this.graph.fXaw += event.movementY*0.01;
-        this.graph.fYaw += event.movementX*0.01
-      }
-    });
+  //       if (this.graph.fXaw + event.movementY*0.01 > -1.5 && this.graph.fXaw + event.movementY*0.01 < 1.5) this.graph.fXaw += event.movementY*0.01;
+  //       this.graph.fYaw += event.movementX*0.01
+  //     }
+  //   });
 
-    // END POINTER CLICK (ESC)
-    document.addEventListener('pointerlockchange', function() {
-      if (document.pointerLockElement == document.body) {
-        // console.log("Pointer lock aktív");
-      } else {
-        // console.log("Pointer lock megszűnt");
-      }
-    });
-  }
+  //   // END POINTER CLICK (ESC)
+  //   document.addEventListener('pointerlockchange', function() {
+  //     if (document.pointerLockElement == document.body) {
+  //       // console.log("Pointer lock aktív");
+  //     } else {
+  //       // console.log("Pointer lock megszűnt");
+  //     }
+  //   });
+  // }
 
   stopGame() {
     // console.log(this.state.gameLoopId)

@@ -1,18 +1,22 @@
 import { Vec3D, Triangle, Mesh, Matrix4x4, Vec2D } from './data.js';
 
 export class Graphics {
-  constructor(text, keys, options, map, findMeshById) {
+  constructor(text, keys, options, map, findMeshById, playerPos) {
+
     this.findMeshById = findMeshById
     this.text = text // console.log(this.text)
     this.keys = keys
     this.options = options
     this.map = map
+    this.playerPos = playerPos
+
+    this.counter2 = 0
 
     this.options3D = {
       textured: true,
       fill: false,
       grid: false,
-      realtime: true,
+      realtime: false,
     }
 
     for(const [key, value] of Object.entries(this.options3D)) {
@@ -64,11 +68,11 @@ export class Graphics {
     this.clipped = [new Triangle(), new Triangle()];
   }
 
-  resetCordinates() {    
+  resetCordinates() {
     this.vLookDir = new Vec3D(0, 0, 1)
-    this.vCamera = new Vec3D(0.5, 0.5, 4)
-    this.fYaw = 0
-    this.fXaw = 0
+    this.vCamera = new Vec3D(this.playerPos.x, this.playerPos.y, this.playerPos.z)
+    this.fYaw = this.playerPos.fYaw
+    this.fXaw = this.playerPos.fXaw
   }
 
   angleToRandian(angle) {
@@ -349,112 +353,116 @@ export class Graphics {
     return value;
   }
 
-  triangle_ClipAgainstPlane(plane_p, plane_n, in_tri) {    
-    let out_tri1 = new Triangle()
-    let out_tri2 = new Triangle()
-
-    plane_n = this.vector_Normalise(plane_n)
-
-    let dist = (p) => {
-      return (plane_n.x * p.x + plane_n.y * p.y + plane_n.z * p.z - this.vector_DotProduct(plane_n, plane_p));
+  triangle_ClipAgainstPlane(plane_p, plane_n, in_tri) {
+    let out_tri1 = new Triangle();
+    let out_tri2 = new Triangle();
+  
+    plane_n = this.vector_Normalise(plane_n);
+  
+    const dist = (p) => {
+      return plane_n.x * p.x + plane_n.y * p.y + plane_n.z * p.z - this.vector_DotProduct(plane_n, plane_p);
     };
-
-    let inside_points = [new Vec3D(), new Vec3D(), new Vec3D()]; let nInsidePointCount = 0
-    let outside_points = [new Vec3D(), new Vec3D(), new Vec3D()]; let nOutsidePointCount = 0
-
-    let inside_tex  = [ new Vec2D(), new Vec2D(), new Vec2D() ]; let nInsideTexCount = 0
-    let outside_tex = [ new Vec2D(), new Vec2D(), new Vec2D() ]; let nOutsideTexCount = 0
-
-    let d0 = dist(in_tri.p[0])
-    let d1 = dist(in_tri.p[1])
-    let d2 = dist(in_tri.p[2])
-
-    if (d0 >= 0) { inside_points[nInsidePointCount++] = in_tri.p[0]; inside_tex[nInsideTexCount++] = in_tri.t[0]; }
-    else { outside_points[nOutsidePointCount++] = in_tri.p[0]; outside_tex[nOutsideTexCount++] = in_tri.t[0]; }
-    if (d1 >= 0) { inside_points[nInsidePointCount++] = in_tri.p[1]; inside_tex[nInsideTexCount++] = in_tri.t[1]; }
-    else { outside_points[nOutsidePointCount++] = in_tri.p[1]; outside_tex[nOutsideTexCount++] = in_tri.t[1]; }
-    if (d2 >= 0) { inside_points[nInsidePointCount++] = in_tri.p[2]; inside_tex[nInsideTexCount++] = in_tri.t[2]; }
-    else { outside_points[nOutsidePointCount++] = in_tri.p[2]; outside_tex[nOutsideTexCount++] = in_tri.t[2]; }
-
-    if (nInsidePointCount === 0) {
+  
+    let inside_points = [], outside_points = [];
+    let inside_tex = [], outside_tex = [];
+  
+    let d0 = dist(in_tri.p[0]);
+    let d1 = dist(in_tri.p[1]);
+    let d2 = dist(in_tri.p[2]);
+  
+    if (d0 >= 0) { inside_points.push(in_tri.p[0]); inside_tex.push(in_tri.t[0]); }
+    else { outside_points.push(in_tri.p[0]); outside_tex.push(in_tri.t[0]); }
+  
+    if (d1 >= 0) { inside_points.push(in_tri.p[1]); inside_tex.push(in_tri.t[1]); }
+    else { outside_points.push(in_tri.p[1]); outside_tex.push(in_tri.t[1]); }
+  
+    if (d2 >= 0) { inside_points.push(in_tri.p[2]); inside_tex.push(in_tri.t[2]); }
+    else { outside_points.push(in_tri.p[2]); outside_tex.push(in_tri.t[2]); }
+  
+    if (inside_points.length == 0) {
       return 0;
     }
-
-    if (nInsidePointCount === 3) {
-      this.clipped[0] = in_tri        
+  
+    if (inside_points.length == 3) {
+      this.clipped[0] = in_tri;
       return 1;
     }
-
-    var interPlaneValue
-    var tVal
-
-    if (nInsidePointCount === 1 && nOutsidePointCount === 2) {
-      out_tri1.p[0] = inside_points[0]
-      out_tri1.t[0] = inside_tex[0]
-      interPlaneValue = this.vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[0])
-      tVal = interPlaneValue[0]
-      out_tri1.p[1] = interPlaneValue[1]
-      out_tri1.t[1].u = tVal * (outside_tex[0].u - inside_tex[0].u) + inside_tex[0].u
-      out_tri1.t[1].v = tVal * (outside_tex[0].v - inside_tex[0].v) + inside_tex[0].v
-      out_tri1.t[1].w = tVal * (outside_tex[0].w - inside_tex[0].w) + inside_tex[0].w
-      
-      interPlaneValue = this.vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[1])
-      tVal = interPlaneValue[0]
-      out_tri1.p[2] = interPlaneValue[1]
-      out_tri1.t[2].u = tVal * (outside_tex[1].u - inside_tex[0].u) + inside_tex[0].u
-      out_tri1.t[2].v = tVal * (outside_tex[1].v - inside_tex[0].v) + inside_tex[0].v
-      out_tri1.t[2].w = tVal * (outside_tex[1].w - inside_tex[0].w) + inside_tex[0].w
-      out_tri1.texture = in_tri.texture
-      out_tri1.light = in_tri.light
-      out_tri1.rgba = in_tri.rgba
-      // out_tri1.rgba = [50, 170, 80, 1]
-      this.clipped[0] = out_tri1
-      return 1;
-    }
-
-
-    if (nInsidePointCount === 2 && nOutsidePointCount === 1) {
-      // --- OUT_TRI1 ---
-      out_tri1.p[0]   = inside_points[0];
-      out_tri1.p[1]   = inside_points[1];
-      out_tri1.t[0]   = inside_tex[0];
-      out_tri1.t[1]   = inside_tex[1];
-      out_tri1.rgba   = in_tri.rgba;         // a háromszög színe
-    
-      let interPlaneValue = this.vector_IntersectPlane(plane_p, plane_n,
-                                                       inside_points[0], outside_points[0]);
-      let tVal            = interPlaneValue[0];
-      out_tri1.p[2]       = interPlaneValue[1];
-      out_tri1.t[2].u     = tVal * (outside_tex[0].u - inside_tex[0].u) + inside_tex[0].u;
-      out_tri1.t[2].v     = tVal * (outside_tex[0].v - inside_tex[0].v) + inside_tex[0].v;
-      out_tri1.t[2].w     = tVal * (outside_tex[0].w - inside_tex[0].w) + inside_tex[0].w;
-    
+  
+    if (inside_points.length == 1 && outside_points.length == 2) {
+      out_tri1.p[0] = inside_points[0];
+      out_tri1.t[0] = new Vec2D(inside_tex[0].u, inside_tex[0].v, inside_tex[0].w);
+  
+      let inter1 = this.vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[0]);
+      let t1 = inter1[0];
+      out_tri1.p[1] = inter1[1];
+      out_tri1.t[1] = new Vec2D(
+        t1 * (outside_tex[0].u - inside_tex[0].u) + inside_tex[0].u,
+        t1 * (outside_tex[0].v - inside_tex[0].v) + inside_tex[0].v,
+        t1 * (outside_tex[0].w - inside_tex[0].w) + inside_tex[0].w
+      );
+  
+      let inter2 = this.vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[1]);
+      let t2 = inter2[0];
+      out_tri1.p[2] = inter2[1];
+      out_tri1.t[2] = new Vec2D(
+        t2 * (outside_tex[1].u - inside_tex[0].u) + inside_tex[0].u,
+        t2 * (outside_tex[1].v - inside_tex[0].v) + inside_tex[0].v,
+        t2 * (outside_tex[1].w - inside_tex[0].w) + inside_tex[0].w
+      );
+  
       out_tri1.texture = in_tri.texture;
-      out_tri1.light   = in_tri.light;
-    
-      // --- OUT_TRI2 (ugyanígy) ---
-      out_tri2.p[0]   = inside_points[1];
-      out_tri2.t[0]   = inside_tex[1];
-      out_tri2.p[1]   = out_tri1.p[2];
-      out_tri2.t[1]   = out_tri1.t[2];
-      interPlaneValue = this.vector_IntersectPlane(plane_p, plane_n,
-                                                   inside_points[1], outside_points[0]);
-      tVal            = interPlaneValue[0];
-      out_tri2.p[2]   = interPlaneValue[1];
-      out_tri2.t[2].u = tVal * (outside_tex[0].u - inside_tex[1].u) + inside_tex[1].u;
-      out_tri2.t[2].v = tVal * (outside_tex[0].v - inside_tex[1].v) + inside_tex[1].v;
-      out_tri2.t[2].w = tVal * (outside_tex[0].w - inside_tex[1].w) + inside_tex[1].w;
-    
+      out_tri1.light = in_tri.light;
+      out_tri1.rgba = [255, 0, 0, 1];
+  
+      this.clipped[0] = out_tri1;
+      return 1;
+    }
+  
+    if (inside_points.length == 2 && outside_points.length == 1) {
+      out_tri1.p[0] = inside_points[0];
+      out_tri1.p[1] = inside_points[1];
+      out_tri1.t[0] = new Vec2D(inside_tex[0].u, inside_tex[0].v, inside_tex[0].w);
+      out_tri1.t[1] = new Vec2D(inside_tex[1].u, inside_tex[1].v, inside_tex[1].w);
+  
+      let inter1 = this.vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[0]);
+      let t1 = inter1[0];
+      out_tri1.p[2] = inter1[1];
+      out_tri1.t[2] = new Vec2D(
+        t1 * (outside_tex[0].u - inside_tex[0].u) + inside_tex[0].u,
+        t1 * (outside_tex[0].v - inside_tex[0].v) + inside_tex[0].v,
+        t1 * (outside_tex[0].w - inside_tex[0].w) + inside_tex[0].w
+      );
+  
+      out_tri2.p[0] = inside_points[1];
+      out_tri2.t[0] = new Vec2D(inside_tex[1].u, inside_tex[1].v, inside_tex[1].w);
+      out_tri2.p[1] = out_tri1.p[2];
+      out_tri2.t[1] = new Vec2D(out_tri1.t[2].u, out_tri1.t[2].v, out_tri1.t[2].w);
+  
+      let inter2 = this.vector_IntersectPlane(plane_p, plane_n, inside_points[1], outside_points[0]);
+      let t2 = inter2[0];
+      out_tri2.p[2] = inter2[1];
+      out_tri2.t[2] = new Vec2D(
+        t2 * (outside_tex[0].u - inside_tex[1].u) + inside_tex[1].u,
+        t2 * (outside_tex[0].v - inside_tex[1].v) + inside_tex[1].v,
+        t2 * (outside_tex[0].w - inside_tex[1].w) + inside_tex[1].w
+      );
+  
+      out_tri1.texture = in_tri.texture;
+      out_tri1.light = in_tri.light;
+      out_tri1.rgba = [0, 255, 0, 1];
+  
       out_tri2.texture = in_tri.texture;
-      out_tri2.light   = in_tri.light;
-      out_tri2.rgba    = in_tri.rgba;
-    
+      out_tri2.light = in_tri.light;
+      out_tri2.rgba = [0, 0, 255, 1];
+  
       this.clipped[0] = out_tri1;
       this.clipped[1] = out_tri2;
       return 2;
     }
   }
-
+  
+  
+  
   moveObject(id, deltaX, deltaY, deltaZ) {
     // Hozz létre egy transzlációs mátrixot
     const matTranslate = this.matrix_MakeTranslation(deltaX, deltaY, deltaZ);
@@ -508,27 +516,23 @@ export class Graphics {
     this.matView = this.matrix_QuickInverse(matCamera)
   }
 
-  moveObjectsInMatrix(deltaTime = 0) {
-    this.fTheta += deltaTime;
-    // this.moveObject(0, 0, -0, 0)      // 0 land | x,y,z
-    // this.moveObject(1, 0, -0, 0)      // 1 axis | x,y,z
-  }
-
   async renderScreen() {
     // Draw Objects
-    if (true) {
-      await this.map.data.forEach(mesh => {
-        // console.log(mesh)
-        let structure = this.findMeshById(this.map.structure, mesh.id)
-        if (structure?.visible == '1') this.drawObject(mesh)
-      });
-    }
-
-    // for (let mesh of this.map.data) {
-    //   if (!document.pointerLockElement) return; // újabb biztonsági ellenőrzés!
-    //   let structure = this.findMeshById(this.map.structure, mesh.id);
-    //   if (structure.visible == '1') this.drawObject(mesh);
+    // if (true) {
+    //   await this.map.data.forEach(mesh => {
+    //     // console.log(mesh)
+    //     let structure = this.findMeshById(this.map.structure, mesh.id)
+    //     if (structure?.visible == '1') this.drawObject(mesh)
+    //   });
     // }
+
+    for (let mesh of this.map.data) {
+      // if (!document.pointerLockElement) return; // újabb biztonsági ellenőrzés!
+      let structure = this.findMeshById(this.map.structure, mesh.id);
+      if (structure.visible == '1') this.drawObject(mesh);
+      
+    }
+    // console.log('lement:', this.counter2); this.counter2++;
   }
 
   ///////////////
@@ -577,9 +581,21 @@ export class Graphics {
         triViewed.p[0] = this.matrix_MultiplyVector(this.matView, triTransformed.p[0])
 				triViewed.p[1] = this.matrix_MultiplyVector(this.matView, triTransformed.p[1])
 				triViewed.p[2] = this.matrix_MultiplyVector(this.matView, triTransformed.p[2])
+        /*
         triViewed.t[0] = triTransformed.t[0]
         triViewed.t[1] = triTransformed.t[1]
         triViewed.t[2] = triTransformed.t[2]
+        */
+        for (let i = 0; i < 3; i++) {
+          const p = this.matrix_MultiplyVector(this.matView, triTransformed.p[i]);
+          triViewed.p[i] = p;
+          triViewed.t[i] = new Vec2D(
+            triTransformed.t[i].u / p.w,
+            triTransformed.t[i].v / p.w,
+            1.0 / p.w
+          );
+        }
+
         triViewed.texture = triTransformed.texture
         triViewed.light = (maplight > tri.light) ? maplight : tri.light;
         //triViewed.light = maplight + tri.light
@@ -621,11 +637,13 @@ export class Graphics {
     }
 
     // SORTING TRIANGLES
-    selectedTriangles.sort((t1, t2) => {
-      const z1 = (t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0;
-      const z2 = (t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0;
-      return z2 - z1;
-    });
+    if (false) {
+      selectedTriangles.sort((t1, t2) => {
+        const z1 = (t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0;
+        const z2 = (t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0;
+        return z2 - z1;
+      });
+    }
 
     // CROOP 4 SCREEN EDGES
     let drawTriangles = []
@@ -700,8 +718,8 @@ export class Graphics {
           if (this.depthBuffer[i * this.GAMEWIDTH + j] == 'undefined') this.depthBuffer[i * this.GAMEWIDTH + j] = 0
           if (tex_w > this.depthBuffer[i * this.GAMEWIDTH + j]) {
             this.drawPixel(j, i, tex_u, tex_v, tex_w, texture, light)
-            t += tstep;
           }
+          t += tstep;
         }
       }
     }
@@ -727,7 +745,11 @@ export class Graphics {
         for (let j = ax; j < bx; j++) {
           if (j >= this.GAMEWIDTH) continue;
           tex_u = (1.0 - t) * tex_su + t * tex_eu; tex_v = (1.0 - t) * tex_sv + t * tex_ev; tex_w = (1.0 - t) * tex_sw + t * tex_ew;
-          if (this.depthBuffer[i * this.GAMEWIDTH + j] == 'undefined') this.depthBuffer[i * this.GAMEWIDTH + j] = 0
+
+          const index = i * this.GAMEWIDTH + j
+          this.depthBuffer[index] = this.depthBuffer[index] ?? 0;
+          //if (typeof this.depthBuffer[i * this.GAMEWIDTH + j] === 'undefined') this.depthBuffer[i * this.GAMEWIDTH + j] = 0
+
           if (tex_w > this.depthBuffer[i * this.GAMEWIDTH + j]) {
             this.drawPixel(j, i, tex_u, tex_v, tex_w, texture, light)
             t += tstep;
@@ -738,6 +760,7 @@ export class Graphics {
   }
 
   drawPixel(x, y, tex_u, tex_v, tex_w, texture = 0, light = 1) {
+
     x = Math.floor(x)
     y = Math.floor(y)   
 
@@ -752,8 +775,23 @@ export class Graphics {
 
     // texture
     if (selectedTexture?.width) {
-      let sampleU = Math.floor((((tex_u / tex_w) * selectedTexture.width) % selectedTexture.width + selectedTexture.width) % selectedTexture.width)
-      let sampleV = Math.floor((((tex_v / tex_w) * selectedTexture.height) % selectedTexture.height + selectedTexture.height) % selectedTexture.height)
+      // let sampleU = Math.floor((((tex_u / tex_w) * selectedTexture.width) % selectedTexture.width + selectedTexture.width) % selectedTexture.width)
+      // let sampleV = Math.floor((((tex_v / tex_w) * selectedTexture.height) % selectedTexture.height + selectedTexture.height) % selectedTexture.height)
+
+      let u = (tex_u / tex_w) % 1
+      if (u < 0) u += 1
+      
+      let v = (tex_v / tex_w) % 1
+      if (v < 0) v += 1
+      
+      // apply half texel shift once
+      let sampleU = Math.floor(u * selectedTexture.width - 0.5)
+      let sampleV = Math.floor(v * selectedTexture.height - 0.5)
+      
+      // clamp (biztonság)
+      sampleU = Math.max(0, Math.min(sampleU, selectedTexture.width - 1))
+      sampleV = Math.max(0, Math.min(sampleV, selectedTexture.height - 1))
+      
   
       let packedColor = selectedTexture.pixels[sampleV * selectedTexture.width + sampleU];
       let a = (packedColor >> 24) & 0xFF;
@@ -773,7 +811,6 @@ export class Graphics {
         this.depthBuffer[memoryIndex] = tex_w
       }
     }
-
   }
 
   drawTriangleFill(p1, p2, p3, light, rgba) {
@@ -814,103 +851,13 @@ export class Graphics {
     this.screenCtx.stroke()
   }
 
-  /////////////////////////////
-  ///     OWN FUNCTIONS
-  /////////////////////////////
-
-  calcShadow(x1, y1, x2, y2) {
-    let radValue = Math.atan2(y2 - y1, x2 - x1);
-    let angleValue = Math.abs(this.radianToAngle(radValue)) % 180;
-  
-    // Arány kiszámítása 0 és 255 között
-    let shadowValue = Math.round((Math.min(angleValue, 90) / 90) * 255);
-
-    return shadowValue;
-  }
-
+  // OWN FUNCTIONS
   distance(x1, y1, x2, y2) {
     return Math.sqrt( (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) );
   }
 
   clearScreen(canvas, ctx) {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-  }
-
-  testTexture() {
-    let texture = this.textures[1]
-    //console.log(texture) 
-
-    let posX = 10
-    let posY = 215
-
-    for(let y=0; y<texture.height; y++) {
-      for(let x=0; x<texture.width; x++) {
-        let i = y * texture.width + x
-        this.drawPixel2(x + posX, y + posY, texture.pixels[i])
-      }
-    }
-  }
-
-  testFloor() {
-    let xo = this.GAMEWIDTH / 2 - 1;
-    let yo = this.GAMEHEIGHT / 2
-
-    let look = -this.player.l*2; if (look > this.GAMEHEIGHT) look = this.GAMEHEIGHT
-    let move = this.player.z/16; if (move == 0) move = 0.001;   
-
-    let yStart = -yo
-    let yEnd = -look
-
-    if (move<0) { yStart=-look; yEnd= yo + look}
-
-    for (let y=yStart; y<yEnd; y++) {
-      for (let x=-xo; x<xo; x++) {
-
-        let z = y + look; if (z == 0) z = 0.0001;
-
-        let fx = -x / z*move;               // world floor x
-        let fy = this.MATRIX / z*move;      // world floor y
-
-        let rx = fx * Math.sin(this.player.aR) - fy * Math.cos(this.player.aR) + (this.player.y / 30);
-        let ry = fx * Math.cos(this.player.aR) + fy * Math.sin(this.player.aR) - (this.player.x / 30);
-
-        // Pozitív koordináták biztosítása
-        if (rx < 0) { rx = -rx + 1; }
-        if (ry < 0) { ry = -ry + 1; }
-
-        if (rx < 0 || ry < 0 || rx >= 5 || ry >= 5) continue; // only small square
-
-        // Mintázat meghatározása
-        if (Math.floor(rx) % 2 == Math.floor(ry) % 2) {
-          this.drawPixel2(-x + xo, -y + yo, this.loadColor(0)); // X és Y koordináták megfordítása
-        } else {
-          this.drawPixel2(-x + xo, -y + yo, this.loadColor(2));
-        }
-      }
-    }
-  }
-
-  drawPixel2(x, y, color, shade = null) {
-    x = Math.floor(x)
-    y = Math.floor(y)
-
-    if (shade) {
-      let a = (color >> 24) & 0xFF;
-      let r = (color >> 16) & 0xFF;
-      let g = (color >> 8) & 0xFF;
-      let b = color & 0xFF;
-
-      let shade2 = shade / 3
-
-      r = Math.max(0, r - shade2);
-      g = Math.max(0, g - shade2);
-      b = Math.max(0, b - shade2);
-
-      color = (a << 24) | (r << 16) | (g << 8) | b;
-    }
-
-    let memoryIndex = (y * this.GAMEWIDTH) + x
-    this.buffer[memoryIndex] = color
   }
 
   infoTable() {

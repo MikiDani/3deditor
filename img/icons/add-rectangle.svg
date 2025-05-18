@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Generator: Adobe Illustrator 18.1.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+
+<svg
+   version="1.1"
+   id="svg88"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
+   sodipodi:docname="add-rectangle.svg"
+   x="0px"
+   y="0px"
+   viewBox="94 -4 800 800"
+   enable-background="new 94 -4 800 800"
+   xml:space="preserve"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"><defs
+   id="defs316" />
+<sodipodi:namedview
+   pagecolor="#ffffff"
+   id="namedview90"
+   inkscape:cy="554.36081"
+   inkscape:cx="290.56153"
+   inkscape:zoom="0.523125"
+   showgrid="false"
+   borderopacity="0.25"
+   bordercolor="#000000"
+   inkscape:window-height="1017"
+   inkscape:window-width="1920"
+   inkscape:pagecheckerboard="0"
+   inkscape:pageopacity="0.0"
+   inkscape:showpageshadow="2"
+   inkscape:window-maximized="1"
+   inkscape:window-y="-8"
+   inkscape:window-x="1912"
+   inkscape:current-layer="svg88"
+   inkscape:deskcolor="#d1d1d1">
+	</sodipodi:namedview>
+<title
+   id="title76">application-line</title>
+
+
+
+
+<rect
+   id="rect86"
+   x="94"
+   y="-4"
+   fill-opacity="0"
+   width="800"
+   height="800" />
+
+
+
+<metadata
+   id="metadata368"><rdf:RDF><cc:Work
+       rdf:about=""><dc:title>application-line</dc:title></cc:Work></rdf:RDF></metadata><text
+   xml:space="preserve"
+   style="font-size:273.333px;fill:#000000;stroke-width:1.70945"
+   x="166.28065"
+   y="246.74838"
+   id="text494"><tspan
+     sodipodi:role="line"
+     id="tspan492"
+     x="166.28065"
+     y="246.74838"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:273.333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif Bold';stroke-width:1.70945">ADD</tspan></text><rect
+   style="fill:#000000;stroke-width:3.01101;fill-opacity:0.69999999"
+   id="rect742"
+   width="657.43433"
+   height="435.84229"
+   x="165.28284"
+   y="296.11948" /><text
+   xml:space="preserve"
+   style="font-weight:bold;font-size:133.333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif Bold';fill:#ffffff"
+   x="214.19565"
+   y="444.60013"
+   id="text462"><tspan
+     sodipodi:role="line"
+     id="tspan460"
+     x="214.19565"
+     y="444.60013"
+     style="font-size:133.333px">1</tspan></text><text
+   xml:space="preserve"
+   style="font-weight:bold;font-size:133.333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif Bold';fill:#ffffff"
+   x="673.06158"
+   y="687.96179"
+   id="text462-2"
+   inkscape:transform-center-y="-5.7347667"><tspan
+     sodipodi:role="line"
+     id="tspan460-2"
+     x="673.06158"
+     y="687.96179"
+     style="font-size:133.333px">2</tspan></text></svg>

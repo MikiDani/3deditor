@@ -272,7 +272,7 @@ button[class="3d-buttons"] {
   height: 15%;
   margin: 0;
   padding: 6px;
-  background-color: #b7d8b7;
+  background-color: #d7d7d7;
   box-sizing: border-box;
   -webkit-user-select: none;
      -moz-user-select: none;
@@ -336,6 +336,18 @@ button[class="3d-buttons"] {
 
 .origo {
   background-image: url("../img/icons/origo.svg");
+}
+
+.add-triangle-1 {
+  background-image: url("../img/icons/add-triangle-1.svg");
+}
+
+.add-triangle-2 {
+  background-image: url("../img/icons/add-triangle-2.svg");
+}
+
+.add-rectangle {
+  background-image: url("../img/icons/add-rectangle.svg");
 }
 
 .toolbar-select {
@@ -438,7 +450,7 @@ button[class="3d-buttons"] {
   padding: 0;
   background-color: #d2d2d2;
   box-sizing: border-box;
-  background-color: #b7d8b7;
+  background-color: #d7d7d7;
   -webkit-user-select: none;
      -moz-user-select: none;
           user-select: none;
@@ -553,7 +565,7 @@ button[class="3d-buttons"] {
   min-height: 85%;
   margin: 0;
   padding: 0;
-  background-color: rgb(157, 231, 255);
+  background-color: #000000;
   box-sizing: border-box;
 }
 
@@ -601,7 +613,7 @@ button[class="3d-buttons"] {
 }
 
 .green2 {
-  background-color: #67b467;
+  background-color: #67b467 !important;
 }
 
 .blue {
@@ -910,7 +922,7 @@ button[class="3d-buttons"] {
   border: 2px double gray;
   padding: 10px;
   margin: 10px;
-  background-color: #b7d8b7;
+  background-color: #d7d7d7;
   -webkit-user-select: none;
      -moz-user-select: none;
           user-select: none;
@@ -927,7 +939,7 @@ button[class="3d-buttons"] {
   margin-bottom: 10px;
   text-transform: uppercase;
   border: 2px double gray;
-  background-color: #b7d8b7;
+  background-color: #d7d7d7;
   height: 10%;
   z-index: 20;
 }
@@ -1551,8 +1563,26 @@ li:hover {
   height: auto;
 }
 
-.texture-minipic {
+.texture-minipic,
+.texture-minipic-selected {
   width: 100%;
+}
+
+#texture-minipic-reset {
+  position: absolute;
+  right: -10px;
+  top: -10px;
+  width: 16px;
+  height: 16px;
+  background-color: rgb(196, 0, 0);
+  z-index: 1 !important;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: white;
+  cursor: pointer;
 }
 
 .anim-style {
@@ -1624,8 +1654,12 @@ li:hover {
   background-color: white;
 }
 
+.text-super-mini {
+  font-size: 8px !important;
+}
+
 .text-mini {
-  font-size: 11px;
+  font-size: 11px !important;
 }
 
 .selected-texture-23 {
@@ -1641,4 +1675,14 @@ li:hover {
   display: block;
   margin: 5px !important;
   box-sizing: border-box !important;
+}
+
+.short-input {
+  width: 34px !important;
+  height: 15px;
+  font-size: 8px !important;
+}
+
+.font-12 {
+  font-size: 12px !important;
 }/*# sourceMappingURL=style.css.map */
