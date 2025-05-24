@@ -824,6 +824,27 @@ class Editor {
     return getdirs;
   }
 
+  refreshActionList() {
+    let selectedMesh = this.map.data.find(mesh => mesh.id == this.mouse.selectedMeshId)
+    $("#actions .list").html('')
+    let elements = ''
+    if (selectedMesh?.actions && selectedMesh.actions.length > 0) {
+      selectedMesh.actions.forEach((action, index) => {
+        elements += `
+        <div class="pos-relative">
+          <div class="inline-block mb-3">
+            <span class="action-id-box me-3 text-bold">${action}</span>
+          </div>
+          <span class="delete-action ms-3" data-actionindex-id="${index}" data-mesh-id="${this.mouse.selectedMeshId}">⊗</span>
+        </div>`;
+      });
+    } else {
+      elements = '<div class="inline-block text-center w-100 mb-3"><span>None</span></div>'
+    }
+
+    $("#actions .list").html(elements)
+  }
+
   initInputs() {
     var clone = this
 
@@ -852,11 +873,28 @@ class Editor {
     });
 
     // ADD NEW ACTION
-    $(document).on('click', "button[name='add-action']", function() {      
+    $(document).on('click', "button[name='add-action']", function() {
       let selectedActionId = $("select[name='actions-selector']").val()
       console.log('add action click!', selectedActionId)
 
-      clone.fullRefreshCanvasGraphics()
+      let selectedMesh = clone.map.data.find(mesh => mesh.id == clone.mouse.selectedMeshId)
+
+      if (!selectedMesh?.actions) selectedMesh.actions = [];
+
+      selectedMesh.actions.push(selectedActionId)
+
+      clone.refreshActionList()
+    });
+
+    // REMOVE ISSET ACTION
+    $(document).on('click', ".delete-action", function() {
+      let mashId = parseInt($(this).attr('data-mesh-id'))
+      let actionIndexId = parseInt($(this).attr('data-actionindex-id'))
+
+      let selectedMesh = clone.map.data.find(mesh => mesh.id == mashId)
+      if (selectedMesh) selectedMesh.actions.splice(actionIndexId, 1);
+
+      clone.refreshActionList()
     });
 
     // RESET PICTURE
@@ -2427,8 +2465,7 @@ class Editor {
       let selectedMeshData = clone.map.data.find(mesh => mesh.id == meshId)
 
       if (selectedMeshStructure && selectedMeshData) {
-
-
+        // function
         let duplicatedFunction = function(dupicatedStructure, parent_id, mapData) {
           let newMesh = new Mesh('', parent_id);
           newMesh.name = 'duplicated-' + newMesh.id;
@@ -2479,8 +2516,6 @@ class Editor {
           return dupicatedStructure;
         }
 
-
-        
         // start
         let dupicatedStructure = clone.deepCopy(selectedMeshStructure)
         dupicatedStructure = duplicatedFunction(dupicatedStructure, selectedMeshData.parent_id, clone.map.data)
@@ -2743,7 +2778,9 @@ class Editor {
       if (document.pointerLockElement == document.body) {
         // screen-canvas refresh
         this.moveViewInputs()
-        this.refreshScreen()
+        if (document.waitTime) return;
+        document.waitTime = setTimeout(() => { document.waitTime = null }, 40)
+        this.refreshScreen();
       }
       // ALLOWED BUTTONS
       if (event.code == 'Enter') {
@@ -2969,6 +3006,8 @@ class Editor {
 
       // if (!$("#selected-locket-container").is(":visible")) $("#selected-mesh-container").show();
 
+      this.refreshActionList()
+      
       $("#selected-locket-container").hide()
       $("#selected-mesh-container").show()
   
@@ -3009,14 +3048,19 @@ class Editor {
       this.fullRefreshCanvasGraphics()
     });
 
-    document.addEventListener('mousemove', (event) => {
-      if (document.pointerLockElement == document.body) {
-        // console.log("Elmozdulás X:", event.movementX, "Elmozdulás Y:", event.movementY);
+    document.counter = 0
 
-        if (!this.graph.options3D.realtime) this.refreshScreen();
+    document.addEventListener('mousemove', async (event) => {
+      if (document.pointerLockElement == document.body) {        
+        // console.log("Elmozdulás X:", event.movementX, "Elmozdulás Y:", event.movementY);
 
         if (this.graph.fXaw + event.movementY*0.01 > -1.5 && this.graph.fXaw + event.movementY*0.01 < 1.5) this.graph.fXaw += event.movementY*0.01;
         this.graph.fYaw += event.movementX*0.01
+
+        if (document.waitTime) return;
+
+        document.waitTime = setTimeout(() => { document.waitTime = null }, 40)
+        if (!this.graph.options3D.realtime) await this.refreshScreen();
       }
     });
 

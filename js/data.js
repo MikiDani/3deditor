@@ -164,6 +164,7 @@ export class Mesh {
         this.type = type
         this.tris = []
         this.lineColor = 'yellow'
+        this.actions = []
 
         // console.log('staticMash count: ', Mesh.instanceCount)   
     }
