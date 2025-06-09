@@ -67,7 +67,7 @@ export class Textures {
             }
         }
 
-        console.log(this.pic)
+        // console.log(this.pic)
 
         // OPTIONS ANIM TEXTURES
         for(const[name, value] of Object.entries(this.pic)) {
@@ -184,4 +184,27 @@ export class Matrix4x4 {
     }
 }
 
+export class Light {
+    static instanceCount = 1;
+    constructor(name = 'noname', x, y, z, type = 'point', color = '0xffddaa', intensity = 0.5, distance = 5) {
+        // type = THREE.AmbientLight, THREE.PointLight, THREE.DirectionalLight
+        Light.instanceCount++
+        this.id = Light.instanceCount
+        this.name = name + '-' + Light.instanceCount
+        this.p = new Vec3D(x, y, z)
+        this.type = type
+        this.color = color
+        this.intensity = intensity
+        this.distance = distance
+        this.editcolor = 'red'
+    }
+
+    static setInstanceCount(value) {
+        Light.instanceCount = value;
+    }
+
+    static getInstanceCount() {
+        return Light.instanceCount;
+    }
+}
 

@@ -16,6 +16,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
         $structure = [];
         $files = get_files($directory);
         foreach ($files as $row) {
+            if ($row['name'] == '_objects') continue;
+
             $path = $directory . DIRECTORY_SEPARATOR . $row['name'];
             if ($row['extension'] == '') {
                 $structure[$row['name']] = recursive_builder($path);
@@ -47,6 +49,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
     exit;
 }
 
+// GET OBJECTS
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['getobjects'])) {
+
+    $directory = $directory . DIRECTORY_SEPARATOR . '_objects';
+
+    $files = [];
+    $files = get_files($directory);
+    usort($files, function ($a, $b) {
+        return strnatcmp($a['name'], $b['name']);
+    });
+
+    echo json_encode(['files' => $files]);
+    exit;
+}
+
 // GET DIRS
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['getdirs'])) {
 
@@ -58,7 +75,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
     $dirs = [];
 
     foreach($allfiles as $key => $name) {
-        if ($name !== '.' && $name !== '..' && is_dir($directory . DIRECTORY_SEPARATOR . $name)) {
+        if ($name !== '.' && $name !== '..'  && $name !== '_objects' && is_dir($directory . DIRECTORY_SEPARATOR . $name)) {
             $dirs[] = $name;
         }
     }

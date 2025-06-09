@@ -1,0 +1,96 @@
+{
+  "movefx": [
+    {
+      "id": 0,
+      "name": "Open-A type X axis",
+      "axis": "x",
+      "angle_start": 0,
+      "angle_end": 90,
+      "step": 0.1
+    },
+    {
+      "id": 1,
+      "name": "Open-A type Y axis",
+      "axis": "y",
+      "angle_start": 0,
+      "angle_end": 90,
+      "step": 0.1
+    },
+    {
+      "id": 2,
+      "name": "Open-A type Z axis",
+      "axis": "z",
+      "angle_start": 0,
+      "angle_end": 90,
+      "step": 0.1
+    },
+    {
+      "id": 3,
+      "name": "Open-B type X axis",
+      "axis": "x",
+      "angle_start": 0,
+      "angle_end": 90,
+      "step": 0.1
+    }
+  ],
+  "lightfx": [
+    {
+      "id": 0,
+      "name": "Yellow - Purple",
+      "time": 500,
+      "loop": false,
+      "color1": "ffa500",
+      "color2": "6a5acd"
+    },
+    {
+      "id": 1,
+      "name": "Gray - White",
+      "time": 200,
+      "loop": true,
+      "color1": "a0a0a0",
+      "color2": "ffffff"
+    },
+    {
+      "id": 2,
+      "name": "Green - Red",
+      "time": 1200,
+      "loop": true,
+      "color1": "3cb371",
+      "color2": "ff0000"
+    }
+  ],
+  "objectsdata": [
+  	{
+      "id": 1,
+      "name": "chees",
+      "type": "key",
+      "value": "silver"
+    },
+    {
+      "id": 2,
+      "name": "salad",
+      "type": "healt",
+      "value": 10
+    },
+    {
+      "id": 3,
+      "name": "ketchup",
+      "type": "healt",
+      "value": 5
+    }
+  ],
+    "sounds": [
+    {
+      "id": 1,
+      "name": "tada"
+    },
+    {
+      "id": 2,
+      "name": "ding"
+    },
+    {
+      "id": 3,
+      "name": "dong"
+    }
+  ]
+}

@@ -637,7 +637,7 @@ export class Graphics {
     }
 
     // SORTING TRIANGLES
-    if (false) {
+    if (true) {
       selectedTriangles.sort((t1, t2) => {
         const z1 = (t1.p[0].z + t1.p[1].z + t1.p[2].z) / 3.0;
         const z2 = (t2.p[0].z + t2.p[1].z + t2.p[2].z) / 3.0;

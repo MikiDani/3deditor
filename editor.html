@@ -77,10 +77,10 @@
                 <div class="menu-text-border" onclick="logout()" title="Step back.">EXIT</div>
             </div>
             <div class="menu-icons-center-container">
+                <div class="toolbar-icon move" data-mode="move" title="Moving view screens. (hand)"></div>
+
                 <div id="add-new-tri" data-mode="exception" class="toolbar-icon add-triangle-1" title="Add a new triangle. There are two ways. Right click resets the state."></div>
                 <div id="add-new-rec" data-mode="exception" class="toolbar-icon add-rectangle" title="Add a new rectangle."></div>
-
-                <div class="toolbar-icon move" data-mode="move" title="Moving view screens. (hand)"></div>
                 <div class="toolbar-icon point" data-mode="point" title="Moving the points of a triangle."></div>
                 <div class="toolbar-icon origo" data-mode="origo" title="Moving the origo point."></div>
                 <div class="toolbar-icon"></div>
@@ -116,7 +116,77 @@
                 </div>
                 <button id="clipboard-button" type="button" class="hover-pointer">Insert</button>
             </div>
-    
+
+            <!-- LIGHTS -->
+            <div id="light-list-head" class="title-box flex-between">
+                <div class="p-0 m-0 d-flex"></div>
+                <span>Lights</span>
+                <div class="p-0 m-0">
+                    <span id="light-add-new" class="plus hover-pointer" title="Add new light"></span>
+                </div>
+            </div>
+            <div id="light-list" class="box-1 responsive-menu pt-1" style="display:block;">
+                <!-- javascript -->
+            </div>
+            <div id="light-list-size-button" data-type-name="light"></div>
+
+            <div id="selected-light-container" class="p-0 m-0" style="display:none;">
+                <div class="title-box-flex text-start">
+                    <span class="text-small">light. name:</span>
+                    <input type="text" name="selected-light-name" data-name="name" class="input-name">
+                </div>
+                <div id="object-add-light" class="box-1">
+                    <div class="right-screen-options">
+                        <div class="left-side">
+                            <div class="side-row">
+                                <span class="w-50 text-start">Edit Color</span>
+                                <select name="light-edit-color" data-name="editcolor" class="w-50">
+                                    <option value="red" selected>red</option>
+                                    <option value="green">green</option>
+                                    <option value="blue">blue</option>
+                                    <option value="lightblue">light blue</option>
+                                    <option value="orange">orange</option>
+                                    <option value="purple">purple</option>
+                                    <option value="lime">lime</option>
+                                    <option value="gray">gray</option>
+                                </select>
+                            </div>
+                            <div class="side-row">
+                                <span class="w-70">pX: </span><input class="w-30" type="number" name="light-p-X" data-name="x" data-middle="p" min="-10000" max="10000" step="0.1" value="0">
+                            </div>
+                            <div class="side-row">
+                                <span class="w-70">pY: </span><input class="w-30" type="number" name="light-p-Y" data-name="y" data-middle="p" min="-10000" max="10000" step="0.1" value="0">
+                            </div>
+                            <div class="side-row">
+                                <span class="w-70">pZ: </span><input class="w-30" type="number" name="light-p-Z" data-name="z" data-middle="p" min="-10000" max="10000" step="0.1" value="0">
+                            </div>
+                        </div>
+                        <div class="right-side">
+                            <div class="side-row">
+                                <span class="w-50 text-start ps-2">Type</span>
+                                <select name="light-type" data-name="type" class="w-50">
+                                    <option value="point">Point</option>
+                                    <option value="direction">Direction</option>
+                                </select>
+                            </div>
+                            <div class="side-row">
+                                <span class="w-50 text-start ps-2">color:#</span>
+                                <input class="w-50" type="text" name="light-color" data-name="color" pattern="^[0-9a-fA-F]{6}$" title="Enter exactly 6 hexadecimal characters (0-9, a-f)!"  value="777777">
+                            </div>
+                            <div class="side-row">
+                                <span class="w-50 text-start ps-2">Intensity: </span>
+                                <input class="w-50" type="number" name="light-intensity" data-name="intensity" step="0.1" min="0" max="10" value="1" title="Enter a number between 0 and 10">
+                            </div>
+                            <div class="side-row w-100 text-center">
+                                <span class="w-50 text-start ps-2">Distance: </span>
+                                <input class="w-50" type="number" name="light-distance" data-name="distance" step="0.1" min="0" max="10" value="2" title="Enter a number between 0 and 10">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OBJECTS -->
             <div id="object-list-head" class="title-box flex-between">
                 <div class="p-0 m-0 d-flex">
                     <span id="object-open-close-all" class="triangle-down hover-pointer" data-status="0" title="Open/Close All"></span>
@@ -127,10 +197,10 @@
                 </div>
             </div>
     
-            <div id="object-list" class="box-1 responsive-menu" style="display:none;">
+            <div id="object-list" class="box-1 responsive-menu pt-1" style="display:none;">
                 <!-- javascript -->
             </div>
-            <div id="object-list-size-button"></div>
+            <div id="object-list-size-button" data-type-name="object"></div>
     
             <div id="selected-mesh-container" class="p-0 m-0" style="display:none;">
                 <div class="title-box-flex text-start">
@@ -148,7 +218,7 @@
 
                     <div class="title-box-flex text-start">
                         <span class="text-small">Actions:</span>
-                        <select type="text" name="actions-selector">
+                        <select name="actions-selector">
                             <option value="none">none</option>
                             <option value="1">1</option>
                             <option value="2">2</option>
@@ -202,6 +272,7 @@
                                     <option value="red">red</option>
                                     <option value="green">green</option>
                                     <option value="blue">blue</option>
+                                    <option value="lightblue">light blue</option>
                                     <option value="orange">orange</option>
                                     <option value="purple">purple</option>
                                     <option value="lime">lime</option>
@@ -241,7 +312,7 @@
                         </div>
                     </div>
                     <div class="right-side">
-                        <div class="side-row pos-relative">
+                        <div class="side-row-minipic pos-relative">
                             <div id="texture-minipic-reset">⊗</div>
                             <img src="#" alt="#" data-texture-name="#" class="texture-minipic-selected pic-pix"/>
                         </div>
@@ -322,6 +393,9 @@
                             <div class="side-row">
                                 <span class="w-30">t3V: </span><input class="w-70" type="number" name="tri-t3-V" data-type="t" data-axis="v" data-num="2" step="0.1" value="0">
                             </div>
+                            <div class="side-row" title="On the same axes (U, V), values that are equal to the modified one will also be updated to the new specified value.">
+                                <span class="ps-3">U-V locket: </span><input class="me-5" type="checkbox" name="U-V-locket" value="">
+                            </div>
                         </div>
                         <div class="left-side mt-4 mb-3">
                             <div class="side-row">
@@ -330,7 +404,7 @@
                         </div>
                         <div class="right-side mt-4 mb-3">
                             <div class="side-row">
-                                <span>Normal: </span>
+                                <span class="ps-2">Normal: </span>
                                 <select name="tri-normal" data-type="short">
                                     <option value="false">Off</option>
                                     <option value="true">On</option>
@@ -354,65 +428,16 @@
                     <div class="right-screen-options">
                         <div class="left-side">
                             <div class="side-row">
-                                <span class="w-30">t1U: </span><input class="w-70" type="number" name="lock-t1-U" data-type="t" data-axis="u" data-num="0" step="0.1" value="0" disabled>
-                            </div>
-                            <div class="side-row">
-                                <span class="w-30">t1V: </span><input class="w-70" type="number" name="lock-t1-V" data-type="t" data-axis="v" data-num="0" step="0.1" value="0" disabled>
-                            </div>
-                            <div class="side-row w-100 text-center">
-                                <span class="rec-all-move w-100" title="All points rotate">All move ↑</span>
+                                <span>Normal: </span>
+                                <select name="lock-normal" data-type="short" class="me-3">
+                                    <option value="false">Off</option>
+                                    <option value="true">On</option>
+                                </select>
                             </div>
                         </div>
                         <div class="right-side">
                             <div class="side-row">
                                 <span>light: </span><input type="number" name="lock-light" data-axis="light" min="0" max="1" step="0.1" value="1">
-                            </div>
-                        </div>
-                        <div class="left-side mt-3">
-                            <div class="side-row">
-                                <span class="w-30">t2U: </span><input class="w-70" type="number" name="lock-t2-U" data-type="t" data-axis="u" data-num="1" step="0.1" value="0" disabled>
-                            </div>
-                            <div class="side-row">
-                                <span class="w-30">t2V: </span><input class="w-70" type="number" name="lock-t2-V" data-type="t" data-axis="v" data-num="1" step="0.1" value="0" disabled>
-                            </div>
-                            <div class="side-row w-100 d-flex justify-content-center align-items-center">
-                                <span class="rec-move-up" title="2. point move up">↑</span>
-                                <span class="rec-move-down" title="2. point move down">↓</span>
-                            </div>
-                        </div>
-                        <div class="right-side mt-3">
-                            <div class="side-row">
-                                <!--
-                                <span class="w-30">text: </span>
-                                <select name="lock-texture" data-type="short">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                    <option value="6">6</option>
-                                    <option value="7">7</option>
-                                </select> 
-                                -->
-                                YXC
-                            </div>
-                        </div>
-                        <div class="left-side mt-3">
-                            <div class="side-row">
-                                <span class="w-30">t3U: </span><input class="w-70" type="number" name="lock-t3-U" data-type="t" data-axis="u" data-num="2" step="0.1" value="0" disabled>
-                            </div>
-                            <div class="side-row">
-                                <span class="w-30">t3V: </span><input class="w-70" type="number" name="lock-t3-V" data-type="t" data-axis="v" data-num="2" step="0.1" value="0" disabled>
-                            </div>
-                        </div>
-                        <div class="right-side mt-3">
-                            <div class="side-row">
-                                <span>Normal: </span>
-                                <select name="lock-normal" data-type="short">
-                                    <option value="false">Off</option>
-                                    <option value="true">On</option>
-                                </select>
                             </div>
                         </div>
                         <div class="side-row">
@@ -434,12 +459,9 @@
                                 <span>Size: </span><input type="number" name="move-size" data-mode="rectangle" min="-1000" max="1000" step="0.1" value="0.1">
                             </div>
                             <div class="side-row mt-2">
-                                <span>Angle°</span><input type="number" name="angle-size" data-mode="rectangle" min="0" max="360" step="1" value="45">
                             </div>
                             <div class="grid-container-rotate d-flex align-items-center justify-content-between mt-4">
                                 <div class="grid-item arrow w-30" data-mode="rectangle" data-type="size">⤢</div>
-                                <div class="grid-item arrow w-30" data-mode="rectangle" data-direction-sign="1"  data-type="rotate">↺</div>
-                                <div class="grid-item arrow w-30" data-mode="rectangle" data-direction-sign="-1" data-type="rotate">↻</div>
                             </div>
                         </div>
                         <div class="right-side mt-3">
@@ -448,19 +470,17 @@
                                 <div class="grid-item arrow" data-mode="rectangle" data-direction-x="0"  data-direction-y="1" data-type="move">↑</div>
                                 <div class="grid-item arrow" data-mode="rectangle" data-direction-x="-1" data-direction-y="1" data-type="move">↗</div>
                                 <div class="grid-item arrow" data-mode="rectangle" data-direction-x="1"  data-direction-y="0" data-type="move">←</div>
-                                <div class="grid-item arrow" data-mode="rectangle" data-direction-x="0"  data-direction-y="0" data-type="?">●</div>
+                                <div class="grid-item arrow" data-mode="rectangle" data-direction-x="0"  data-direction-y="0" data-type="?" style="font-size:22px;">☺</div>
                                 <div class="grid-item arrow" data-mode="rectangle" data-direction-x="-1" data-direction-y="0" data-type="move">→</div>
                                 <div class="grid-item arrow" data-mode="rectangle" data-direction-x="1"  data-direction-y="-1" data-type="move">↙</div>
                                 <div class="grid-item arrow" data-mode="rectangle" data-direction-x="0"  data-direction-y="-1" data-type="move">↓</div>
                                 <div class="grid-item arrow" data-mode="rectangle" data-direction-x="-1" data-direction-y="-1" data-type="move">↘</div>
                             </div>
                         </div>
-
                         <div class="grid-container-mirror mt-3">
                             <div class="grid-item arrow w-50" data-mode="rectangle" data-axis="x" data-type="mirror">X ⇆</div>
                             <div class="grid-item arrow w-50" data-mode="rectangle" data-axis="y" data-type="mirror">Y ⇵</div>
                         </div>
-
                     </div>
                 </div>
             </div>

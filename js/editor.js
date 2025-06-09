@@ -1,5 +1,5 @@
 import { Graphics } from './graphics.js'
-import { Textures, Vec3D, Vec2D, Mesh, Triangle } from './data.js'
+import { Textures, Vec3D, Vec2D, Mesh, Triangle, Light } from './data.js'
 
 class ViewWindow {
   constructor(name, vX, vY, ratio, frequent, showDots, showGrid) {
@@ -25,6 +25,68 @@ class ViewWindow {
   }
 }
 
+class AnimAction {
+  static instanceCount = 0
+  static eventIdCounter = 0
+  constructor() {
+    AnimAction.instanceCount++
+    this.id = AnimAction.instanceCount
+    this.name = `Animation Action-${AnimAction.instanceCount}`
+    this.conditions = {
+      autoplay: false,        // boolean
+      click: true,            // null, 'click', 'dclick'
+      distance_far: null,     // float
+      distance_near: null,    // float
+      issetobjects: []        // array
+    }
+    this.events = []
+  }
+
+  addNewEvent() {
+    AnimAction.eventIdCounter++;
+    this.newEvent = {
+      id: AnimAction.eventIdCounter,
+      name: 'New-event-' + AnimAction.eventIdCounter,
+      timer: 0,                           // integer
+      autoswitch: false,                  // bolean
+      interval: [true, 3],                // array
+      addobjects: ['apple', 'banana'],    // array
+      playsounds: ['ding', 'dong'],       // array
+      moveactions: [[0, 0],[1, 1]],       // mash id  / movefx id
+      lightfx: [[1, 0],[1, 1]],           // light id / lightfx id
+    }
+    this.events.push(this.newEvent)
+  }
+
+  //--
+
+  static findActionById(clone, id) {
+    const data = clone.map.actions.find(data => data.id == id);
+    return data ? Object.assign(new AnimAction(), data) : null;
+  }
+
+  static findEventById(action, eventId) {
+    const data = action.events.find(data => data.id == eventId);
+    return data ? data : null;
+  }
+
+  static getInstanceCount() {
+    return AnimAction.instanceCount;
+  }
+  
+  static setInstanceCount(value) {
+    AnimAction.instanceCount = value;
+  }
+
+  static getEventIdCounter() {
+    return AnimAction.eventIdCounter;
+  }
+  
+  static setEventIdCounter(value) {
+    AnimAction.eventIdCounter = value;
+  }
+}
+
 class Editor {
   constructor () {
     this.text = new Textures()
@@ -37,20 +99,15 @@ class Editor {
       grid: false,
       moveScale: 0.05,
       rotateScale: 0.1,
+      uvLocketSwitch: false,
     }
 
     this.map = {
       data: {},
       structure: {},
-      actions: [{
-        id: 1,
-        name: 'open1'
-      },
-      {
-        id: 2,
-        name: 'open2'
-      },
-    ],
+      actions: [],
+      objects: [],
+      lights: [],
       player: {
         x:0,
         y:0,
@@ -59,6 +116,8 @@ class Editor {
         fXaw:0,
       }
     }
+
+    this.gamedata = {}
 
     this.origo = new Vec3D(0,0,0)
 
@@ -80,6 +139,7 @@ class Editor {
     this.resetMouseAddRec()
     
     this.newTriSide = true
+    this.texturesOpenCLoseButton = false
 
     this.init()
   }
@@ -91,6 +151,8 @@ class Editor {
       endX: 0,
       endY: 0,
       mode: 'move',           // move, point, triangle
+      selectedLightId: null,
+      selectedLightData: {},
       selectedMeshId: null,
       selectedMeshData: null,
       isMouseDown: false,
@@ -104,18 +166,30 @@ class Editor {
   }
 
   async init() {
+    let consolePrint = false  // !!!
+
+    const response = await fetch('config.json')
+    this.gamedata = await response.json()
+    if (consolePrint) {
+      console.log('LOADED GAMEDATA:')
+      console.log(this.gamedata);
+    }
+
     await this.loadTextures()
+    if (consolePrint) {
+      console.log('LOADED TEXTURES:')
+      console.log(this.text.pic);
+    }
 
-    console.log('LOADED TEXTURES:')
-    console.log(this.text.pic)
-
-    await this.loadModels()
-
-    console.log('LOADING DATAS:')
-    console.log(this.map)
-    console.log(this.map.data)
-    console.log(this.map.structure)
-    console.log(this.map.player)
+    await this.loadMapData()
+    if (consolePrint) {
+      console.log('LOADING MAP DATAS:')
+      console.log(this.map.data)
+      console.log(this.map.structure)
+      console.log(this.map.player)
+      console.log(this.map.actions)
+      console.log(this.map.lights)
+    }
 
     this.graph = new Graphics(this.text, this.keys, this.options, this.map, this.findMeshById, this.map.player)
 
@@ -127,9 +201,6 @@ class Editor {
       'XZview-canvas': new ViewWindow('XZview-canvas', 'x', 'z', 350, 20, true, true),
       'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', 350, 20, true, true),
     }
-
-    /////////////////////
-    // ADD HTML ELEMENTS
 
     // VIEW-SCREEN OPTIONS
     Object.entries(this.views).forEach(([name, value]) => {
@@ -149,7 +220,7 @@ class Editor {
               <span>Ratio:</span><input type="number" name="ratio" data-name="${name}" min="0" max="1500" step="50" value="${this.views[name].ratio}">
           </div>
           <div class="side-row">
-              <span>Freq.:</span><input type="number" name="frequent" data-name="${name}" min="1" max="100" step="1" value="${this.views[name].frequent}">
+              <span>Freq.:</span><input type="number" name="frequent" data-name="${name}" min="0" max="100" step="20" value="${this.views[name].frequent}">
           </div>
         </div>
         <div class="right-side">
@@ -167,8 +238,10 @@ class Editor {
       $(`#axis-container`).append(element)
     });
 
+    this.refreshLightsList()
+
     this.refreshObjectList()
-    
+        
     this.initInputs()
     this.saveMapMemory('init')
     this.fullRefreshCanvasGraphics()
@@ -177,14 +250,11 @@ class Editor {
   }
 
   async buildTexturesList(obj) {
-    var clone = this
-
     let textData = []
-
     let html = `
-    <div class="text-center py-2">TEXTURES</div>
+    <div class="text-center py-2"><span class="textres-open-close-button">▶</span>TEXTURES</div>
     <div class="tree">`;
-  
+
     function recurse(current, name, clone) {
       if (typeof current === 'object' && current !== null) {
         let keys = Object.keys(current);
@@ -222,17 +292,22 @@ class Editor {
       }
       return '';
     }
-  
+
     for (const key in obj) {
       html += recurse(obj[key], key, this);
     }
-  
     html += '</div>';
-
     $('#textures-list').html('').append(html)
-
     return textData;
-  }  
+  }
+
+  wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  isValidHex(hex) {
+    return /^(#|0x)?[0-9A-Fa-f]{6}$/.test(hex);
+  }
 
   async loadTextures() {
     const response = await this.fetchData({ ajax: true, gettexturestructure: true })
@@ -248,7 +323,7 @@ class Editor {
       // load Textures
       const response = await this.fetchData({ ajax: true, getfiles: true, dirsstructure: getdirs })
       if (response?.files) this.fileListElementsMake(mode, response.files, false, true)
-      
+
     } else {
       // load diresctorys
       const response = await this.fetchData({ ajax: true, getdirs: getdirs })
@@ -256,34 +331,47 @@ class Editor {
     }
   }
 
-  async loadModels() {
-    this.map.data = []
-    this.map.structure = []
-    this.map.player = {}
-
+  async loadMapData() {
     // FIRST LOAD
     if (true) {
       let filename = 'maniac'
 
       const response = await this.fetchData({ ajax: true, load: true, filename: filename })
       if (response?.data && response?.structure) {
-        console.log('response:'); console.log(response);
+        // console.log(response);
   
+        // MAPDATA
         this.map.data = this.deepCopy(response.data)
-        this.map.structure = this.deepCopy(response.structure)
-        this.map.player = this.deepCopy(response.player)
-        this.map.actions = this.deepCopy(response.actions)
-
-        console.log(this.map.data)
-        console.log(this.map.structure)
-        console.log(this.map.player)
-        console.log(this.map.actions)
-
-        this.refreshActionSelect()
-
         const maxId = Math.max(...this.map.data.map(obj => obj.id));
         Mesh.setInstanceCount(maxId)
+        // MAP STRUCTURE
+        this.map.structure = this.deepCopy(response.structure)
+        // MAP PLAYER
+        this.map.player = this.deepCopy(response.player)
+        // MAP ACTIONS
+        this.map.actions = this.deepCopy(response.actions)
+        AnimAction.setInstanceCount(this.map.actions.length)
+        let countEventsRow = 0;
+        for (let key in this.map.actions) {
+          if (this.map.actions[key].events && Array.isArray(this.map.actions[key].events)) countEventsRow += this.map.actions[key].events.length;
+        }
+        AnimAction.setEventIdCounter(countEventsRow)
+        this.refreshActionSelect()
+        // MAP LIGHTS
+        this.map.lights = this.deepCopy(response.lights)
+        Light.setInstanceCount(this.map.lights.length)
       }
+    }
+
+    // LOAD OBJECT MODEL IDS AND NAMES
+    const response = await this.fetchData({ ajax: true, getobjects: true})
+    if (response.files) {
+      let fileList = response.files.filter(file => file.extension == 'tuc')
+      fileList.filter(file => file.extension == 'tuc').forEach(file => {
+        let exp = file.name.split('_')
+        this.map.objects.push({id: exp[0], name: exp[1], filename: file.name })
+      });
+      // console.log(this.map.objects)
     }
   }
 
@@ -301,6 +389,310 @@ class Editor {
       clearInterval(this.refreshScreenInterval)
       this.refreshScreenInterval = null
     }
+  }
+
+  optionElementMaker(data, value, first = null) {
+    let elements = first ? `<option value=''>${first}</option>` : '';
+    if (data) {
+      elements += data.map(row => {
+        let selected = (row.id == value) ? 'selected' : null;
+        return `<option value="${row.id}" ${selected}>#${row.id}. | ${row.name}</option>`;
+      });
+    }
+    return elements;
+  }
+
+  arrayElementMaker(elementName, animActionId, data, eventId = false) {
+    let classModEventId = eventId ? '-event' : '';
+    let elements = ''
+    if (data && data.length > 0) {
+      data.forEach(id => {
+        let obj = this.map.objects.find(obj => obj.id == id)
+        if (obj) {
+          elements += `
+          <div class="pos-relative">
+              <div class="list-element inline-block mb-3" data-action-id="${animActionId}" data-object-id="${obj.id}">
+                <span class="action-selected-box me-3 text-bold">#${obj.id}. | ${obj.name}</span>
+              </div>
+              <span class="delete${classModEventId}-arrayrow ms-3" data-element-name="${elementName}" data-action-id="${animActionId}" data-event-id="${eventId}" data-object-id="${obj.id}">⊗</span>
+          </div>`;
+        }
+      });
+    }
+    return elements;
+  }
+
+  arrayElementEventMaker(elementName, animActionId, eventId, objects) {
+    let arrayData = null
+    switch (elementName) {
+      case 'addobjects': arrayData = this.map.objects; break;
+      case 'playsounds': arrayData = this.gamedata.sounds;  break;
+    }
+    if (!arrayData) return;
+
+    let elements = ''
+    if (objects && objects.length > 0) {
+      objects.forEach(id => {
+        let obj = arrayData.find(obj => obj.id == id)
+        if (obj) {
+          elements += `
+          <div class="pos-relative">
+              <div class="list-element inline-block mb-3" data-action-id="${animActionId}" data-event-id="${eventId}" data-object-id="${obj.id}">
+                <span class="action-selected-box me-3 text-bold">#${obj.id}. | ${obj.name}</span>
+              </div>
+              <span class="delete-event-arrayrow ms-3" data-element-name="${elementName}" data-action-id="${animActionId}" data-event-id="${eventId}" data-object-id="${obj.id}">⊗</span>
+          </div>`;
+        }
+      });
+    }
+    return elements;
+  }
+
+  arrayActionElementEventMaker(elementName, animActionId, eventId, moveactions) {
+    let elements = ''
+
+    // console.log(this.gamedata.movefx); console.log(this.map.data);
+
+    if (moveactions && moveactions.length > 0) {
+      moveactions.forEach(arrayData => {
+        if (!Array.isArray(arrayData)) return;       
+
+        let meshData = this.map.data.find(mesh => mesh.id == arrayData[0])
+        let moveFx = this.gamedata.movefx.find(fx => fx.id == arrayData[1])
+
+        // console.log(meshData); console.log(moveFx);
+
+        if (meshData && moveFx) {
+          elements += `
+          <div class="pos-relative">
+            <div class="list-element inline-block mb-3" data-action-id="${animActionId}" data-event-id="${eventId}" data-mesh-id="${meshData.id}" data-movefx-id="${moveFx.id}">
+              <div class="action-selected-box me-3 text-bold">
+                <span>#${meshData.id}. ${meshData.name}</span>
+
+                <span class="mx-2" title="A Group amin végrehajtódik az esemény.">➞</span>
+
+                <span>#${moveFx.id}. ${moveFx.name}</span>
+              </div>
+            </div>
+            <span class="delete-movefx ms-3" data-element-name="${elementName}" data-action-id="${animActionId}" data-event-id="${eventId}" data-mesh-id="${meshData.id}" data-movefx-id="${moveFx.id}">⊗</span>
+          </div>`;
+        }
+      });
+    }
+    return elements;
+  }
+
+  arrayActionElementEventMaker2(elementName, animActionId, eventId, moveactions) {
+    let elements = ''
+    if (moveactions && moveactions.length > 0) {
+      moveactions.forEach(arrayData => {
+        if (!Array.isArray(arrayData)) return;       
+        let light = this.map.lights.find(data => data.id == arrayData[0])
+        let lightfx = this.gamedata.lightfx.find(fx => fx.id == arrayData[1])
+        if (light && lightfx) {
+          elements += `
+          <div class="pos-relative">
+            <div class="list-element inline-block mb-3" data-action-id="${animActionId}" data-event-id="${eventId}" data-light-id="${light.id}" data-lightfx-id="${lightfx.id}">
+              <div class="action-selected-box me-3 text-bold">
+                <span>#${light.id}. ${light.name}</span>
+                <span class="mx-2" title="The Group where the event will be performed.">➞</span>
+                <span>#${lightfx.id}. ${lightfx.name}</span>
+              </div>
+            </div>
+            <span class="delete-lightfx ms-3" data-element-name="${elementName}" data-action-id="${animActionId}" data-event-id="${eventId}" data-light-id="${light.id}" data-lightfx-id="${lightfx.id}">⊗</span>
+          </div>`;
+        }
+      });
+    }
+    return elements;
+  }
+
+  gameActionsElementMaker(animAction) {
+    let elements =`
+      <div class="animaction-container box-2-title" data-action-id="${animAction.id}">
+        <div class="box-2-eye action-eye eye-switch" data-action-id="${animAction.id}">👁</div>
+        <div class="box-2-move-up animaction-move" data-direction="-1" data-action-id="${animAction.id}">▲</div>
+        <div class="box-2-move-down animaction-move" data-direction="1" data-action-id="${animAction.id}">▼</div>
+        <div class="box-2-delete animaction-delete" data-action-id="${animAction.id}">✖</div>        
+        <div class="pb-3 pt-4 pb-4 box-2-bg">
+          <span class="fw-bold ms-3">${animAction.id}.</span> <span>Action Name:</span><input type="text" name="animaction-name" data-action-id="${animAction.id}" value="${animAction.name}" placeholder="Action Name ${animAction.id}" class="mx-3">
+        </div>
+        <div class="eye-container" data-action-id="${animAction.id}">
+          <div class="top-label box-2-bg">Conditions</div>
+          <div class="box-2 pt-3">
+            <div class="d-flex justify-content-start align-items-center">
+              <div class="d-flex justify-content-center align-items-center width-100px mb-3 mt-4">
+                <span title="If it is enabled, the event will always play unconditionally.">Auto Play:</span><input type="checkbox" name="autoplay" ${animAction.conditions.autoplay ? 'checked' : ''} data-action-id="${animAction.id}" class="mx-2">
+              </div>
+              <span title="The event is activated by clicking - or double-clicking - or not.">Click:</span>
+              <select data-type="long" name="click" data-action-id="${animAction.id}" class="mx-3">
+                ${this.optionElementMaker([{id:null, name:'none'},{id:'click', name:'click'},{id:'dclick', name:'double click'}], animAction.conditions.click)}
+              </select>
+              <span title="The character must be at least this close for the event to activate.">Distance Near:</span>
+              <input type="number" step="0.01" name="distance-near" value="${animAction.conditions.distance_near ? animAction.conditions.distance_near : ''}" data-action-id="${animAction.id}" class="mx-3">
+              <span title="The character must be at least this far away for the event to be activated.">Distance Far:</span>
+              <input type="number" step="0.01" name="distance-far" value="${animAction.conditions.distance_far ? animAction.conditions.distance_far : ''}" data-action-id="${animAction.id}" class="mx-3">
+            </div>
+            <div class="d-flex justify-content-start align-items-center">
+              <div class='max-width-1'>
+                <span class="width-130px" title="These items must be present for the event to activate.">Isset Objects:</span>
+                <select data-type="long" name="issetobjects" data-action-id="${animAction.id}" class="mx-3">
+                  ${this.optionElementMaker(this.map.objects, null, 'select object…')}
+                </select>
+                <button name="add-array" data-element-name="issetobjects" data-action-id="${animAction.id}" class="text-small" title="Add the selected new object.">ADD</button>
+              </div>
+              <div data-action-id="${animAction.id}" class="action-selected-box-container text-start list d-flex flex-wrap text-small">
+                ${this.arrayElementMaker('issetobjects', animAction.id, animAction.conditions.issetobjects)}
+              </div>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center box-3 mt-0 pt-3">
+            <div class="top-label">Events</div>
+            <div class="add-event button-form-1" title="Add a new event." data-action-id="${animAction.id}">✚</div>
+          </div>
+          ${this.arrayEventsMaker(animAction)}
+        </div>
+      </div>`;
+    return elements;
+  }
+
+  arrayEventsMaker(animAction) {
+    let elements = '';
+    animAction.events.forEach(event => {
+      elements += this.arrayEventMaker(animAction, event)
+    });
+    return elements;
+  }
+
+  arrayEventMaker(animAction, event) {
+
+    // event.addobjects = [1, 3]
+    // event.playsounds = [1, 2]
+    // event.moveactions = [[3, 1], [10, 2], [25, 2]]
+    // event.lightfx = [[1, 0],[1, 1]]
+
+    let elements = '';
+    elements += `
+    <div class="event-container box-3 pos-relative pt-0 border-brown-bottom pt-3" data-action-id="${animAction.id}" data-event-id="${event.id}">
+
+      <div class="box-2-eye eye-switch" data-action-id="${animAction.id}" data-event-id="${event.id}">👁</div>
+      <div class="box-2-move-up event-move" data-direction="-1" data-action-id="${animAction.id}" data-event-id="${event.id}">△</div>
+      <div class="box-2-move-down event-move" data-direction="1" data-action-id="${animAction.id}" data-event-id="${event.id}">▽</div>
+      <div class="box-2-delete event-delete" data-action-id="${animAction.id}" data-event-id="${event.id}">✖</div>
+
+      <div class="mb-3">
+        <span class="fw-bold">${event.id}.</span> <span>Event Name:</span><input type="text" name="event-name" value="${event.name}" data-action-id="${animAction.id}" data-event-id="${event.id}" placeholder="Event Name ${event.id}" class="mx-3">
+      </div>
+      <div class="eye-container" data-action-id="${animAction.id}" data-event-id="${event.id}">
+        <div class="d-flex justify-content-start align-items-center">
+          <div class="d-flex justify-content-start align-items-center mt-1">
+            <span title="Delay time for the event to start.">Timer:(ms)</span>
+            <input type="number" step="0.01" name="timer" value="${event.timer}" data-action-id="${animAction.id}" data-event-id="${event.id}" class="mx-3">
+          </div>
+          <div class="d-flex justify-content-center align-items-center width-150px">
+            <span title="Toggles 'autoplay' in the conditions to the other state.">Auto Switch:</span><input type="checkbox" name="autoswitch" ${event.autoswitch ? 'checked' : ''} data-action-id="${animAction.id}" data-event-id="${event.id}" class="mx-2">
+          </div>
+          <div class="d-flex justify-content-center align-items-center width-100px">
+            <span title="Set event repetition.">Interval:</span><input type="checkbox" name="interval" ${event.interval[0] ? 'checked' : ''} data-action-id="${animAction.id}" data-event-id="${event.id}" class="mx-2">
+          </div>
+          <div class="d-flex justify-content-start align-items-center mt-0">
+            <span title="How many times to repeat the event.">Interval Counter</span>
+            <input type="number" step="1" name="interval-counter" value="${event.interval[1]}" data-action-id="${animAction.id}" data-event-id="${event.id}" class="mx-3">
+          </div>
+        </div>
+        <div class="d-flex justify-content-start align-items-center mt-3">
+          <div class="d-flex justify-content-start align-items-center w-100">
+            <div class='max-width-1'>
+              <span class="width-100px" title="These are the items the character will receive when the event is activated.">Add objects</span>
+              <select data-type="long" name="addobjects" data-action-id="${animAction.id}" data-event-id="${event.id}" class="mx-3">
+                ${this.optionElementMaker(this.map.objects, null, 'select object…')}
+              </select>
+              <button name="add-event-object" data-element-name="addobjects" data-action-id="${animAction.id}" data-event-id="${event.id}" class="text-small" title="Add the selected new object.">ADD</button>
+            </div>
+            <div class="action-event-selected-box-container text-start list d-flex flex-wrap text-small" data-action-id="${animAction.id}" data-event-id="${event.id}" data-element-name="addobjects">
+              ${this.arrayElementEventMaker('addobjects', animAction.id, event.id, event.addobjects)}
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-start align-items-center mt-3">
+          <div class="d-flex justify-content-start align-items-center w-100">
+            <div class='max-width-1'>
+              <span class="width-100px" title="These are the items the character will receive when the event is activated.">Add sound:</span>
+              <select data-type="long" name="playsounds" data-action-id="${animAction.id}" data-event-id="${event.id}" class="mx-3">
+                ${this.optionElementMaker(this.gamedata.sounds, null, 'select sound…')}
+              </select>
+              <button name="add-event-object" data-element-name="playsounds" data-action-id="${animAction.id}" data-event-id="${event.id}" class="text-small" title="Add the selected new object.">ADD</button>
+            </div>
+            <div class="action-event-selected-box-container text-start list d-flex flex-wrap text-small" data-action-id="${animAction.id}" data-event-id="${event.id}" data-element-name="playsounds">
+              ${this.arrayElementEventMaker('playsounds', animAction.id, event.id, event.playsounds)}
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-start align-items-center mt-3">
+          <div class="d-flex justify-content-start align-items-center max-width-3">
+            <div class='max-width-4'>
+              <div class='d-inline-block pe-1 text-center'>
+                <span class="d-inline-block width-100px" title="Select Mesh.">Mesh:</span>
+                <select data-type="long" name="moveactions-mash" data-action-id="${animAction.id}" data-event-id="${event.id}" class="mx-3">
+                  ${this.optionElementMaker(this.map.data, null, 'select Mesh…')}
+                </select>
+              </div>
+              <div class='d-inline-block ps-1 mt-2 text-center'>
+                <span class="d-inline-block width-100px" title="Select Fx.">MoveFx:</span>
+                <select data-type="long" name="moveactions-movefx" data-action-id="${animAction.id}" data-event-id="${event.id}" class="mx-3">
+                  ${this.optionElementMaker(this.gamedata.movefx, null, 'select MoveFx…')}
+                </select>
+              </div>
+            </div>
+            <div class="w-40">
+              <button name="add-movefx" data-element-name="moveactions" data-action-id="${animAction.id}" data-event-id="${event.id}" class="text-small" title="Add selected motion event.">ADD</button>
+            </div>
+            <div class="action-event-selected-box-container text-start list d-flex flex-wrap text-small" data-action-id="${animAction.id}" data-event-id="${event.id}" data-element-name="moveactions">
+              ${this.arrayActionElementEventMaker('moveactions', animAction.id, event.id, event.moveactions)}
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-start align-items-center mt-3">
+          <div class="d-flex justify-content-start align-items-center max-width-3">
+            <div class='max-width-4'>
+              <div class='d-inline-block pe-1 text-center'>
+                <span class="d-inline-block width-100px" title="Select Light.">Light:</span>
+                <select data-type="long" name="light-id" data-action-id="${animAction.id}" data-event-id="${event.id}" class="mx-3">
+                  ${this.optionElementMaker(this.map.lights, null, 'select Light…')}
+                </select>
+              </div>
+              <div class='d-inline-block ps-1 mt-2 text-center'>
+                <span class="d-inline-block width-100px" title="Select Fx.">LightFx:</span>
+                <select data-type="long" name="light-fx" data-action-id="${animAction.id}" data-event-id="${event.id}" class="mx-3">
+                  ${this.optionElementMaker(this.gamedata.lightfx, null, 'select LightFx…')}
+                </select>
+              </div>
+            </div>
+            <div class="w-40">
+              <button name="add-lightfx" data-element-name="lightfx" data-action-id="${animAction.id}" data-event-id="${event.id}" class="text-small" title="Add selected light fx.">ADD</button>
+            </div>
+            <div class="action-event-selected-box-container text-start list d-flex flex-wrap text-small" data-action-id="${animAction.id}" data-event-id="${event.id}" data-element-name="lightfx">
+              ${this.arrayActionElementEventMaker2('lightfx', animAction.id, event.id, event.lightfx)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+    return elements;
+  }
+
+  gameActionsListMaker() {
+    let elements = `
+    <div id="modal-add-action">✚</div>
+    <div id="gameaction-container">`
+
+    this.map.actions.forEach(animAction => {
+      elements += this.gameActionsElementMaker(animAction)
+    });
+
+    elements += `</div>`
+
+    $("#modal-message").html(elements).show()
   }
 
   // OBJECT OPERATIONS
@@ -511,6 +903,22 @@ class Editor {
     }
   }
 
+  refreshLightsList() {
+    $('#light-list').html('');
+    if (this.map.lights.length > 0) {
+      let element = `<ul>`;
+      this.map.lights.forEach(light => {
+        element += `
+        <li data-light-id="${light.id}" class="light-element">
+          <span class="light-name">${light.name}</span>
+          <span data-light-id="${light.id}" class="menu-icon menu-icon-pos-1 delete-light" title="Delete light"></span>
+        </li>`
+      })
+      element += `</ul>`;
+      $('#light-list').html(element)
+    }
+  }
+
   refreshObjectList() {
     $('#object-list').html('');
     if (this.map.structure.length > 0) {
@@ -522,23 +930,35 @@ class Editor {
       })
       element += `</ul>`;
       $('#object-list').html(element)
-
       if (this.mouse.selectedMeshId) this.selectedMeshClassChange(this.mouse.selectedMeshId);      
     }
     this.triangleContainerShowOptions()
+    this.refreshLightListOff()
   }
 
   refreshActionSelect() {
     $("select[name='actions-selector']").html('')
-
     let elements = ``;
-
     this.map.actions.forEach(action => {
-      console.log(action)
       elements += `<option value="${action.id}">${action.name}</option>`
     });
-
     $("select[name='actions-selector']").append(elements)
+  }
+
+  refreshLightListOff() {    
+    if (!this.mouse.selectedLightId) {
+      $("input[name='selected-light-name']").val('');
+      $("input[name='light-p-X']").val(''); $("input[name='light-p-Y']").val(''); $("input[name='light-p-Z']").val('');
+      $("input[name='light-color']").val(''); $("input[name='light-intensity']").val(''); $("input[name='light-distance']").val('');
+      $("select[name='light-type']").val('');
+      $("select[name='light-edit-color']")[0].selectedIndex = 0;
+
+      $('#light-list ul li').each(function () {
+        $(this).removeClass('list-light-selected')
+      });
+
+      $('#selected-light-container').hide()
+    }
   }
 
   triangleContainerShowOptions() {
@@ -570,7 +990,8 @@ class Editor {
           <span class="menu-icon menu-icon-pos-5 back" title="Move back-parent"></span>
           <span class="menu-icon menu-icon-pos-6 back-blend-in" title="Blend in to parent"></span>
           <span class="menu-icon menu-icon-pos-7 clipboard" title="Cut group to clipboard"></span>
-          <span class="menu-icon menu-icon-pos-8 delete-group" title="Delete group"></span>
+          <span class="menu-icon menu-icon-pos-8 clipboard-copy" title="Copy group to clipboard"></span>
+          <span class="menu-icon menu-icon-pos-9 delete-group" title="Delete group"></span>
         </li>`;
     
         if (Array.isArray(meshData.tris) && meshData.tris.length > 0) {
@@ -790,10 +1211,11 @@ class Editor {
         }
       } else if (fileOrDir.extension == 'tuc') {
         // LOAD OR SAVE
-        elements += `<div class="list-element cursor-pointer" data-filename="${fileOrDir.name}" data-mode="${mode}">
-        <div class="cursor-pointer">
-          <span>${fileOrDir.name}</span><span>.${fileOrDir.extension}</span>
-        </div>
+        elements += `
+        <div class="list-element cursor-pointer" data-filename="${fileOrDir.name}" data-mode="${mode}">
+          <div class="cursor-pointer">
+            <span>${fileOrDir.name}</span><span>.${fileOrDir.extension}</span>
+          </div>
         </div>`
       }
       index++
@@ -833,7 +1255,7 @@ class Editor {
         elements += `
         <div class="pos-relative">
           <div class="inline-block mb-3">
-            <span class="action-id-box me-3 text-bold">${action}</span>
+            <span class="action-id-box me-3 text-bold">${this.map.actions[index].name}</span>
           </div>
           <span class="delete-action ms-3" data-actionindex-id="${index}" data-mesh-id="${this.mouse.selectedMeshId}">⊗</span>
         </div>`;
@@ -864,25 +1286,38 @@ class Editor {
 
         console.log('this.map.player')
         console.log(this.map.player)
+
+        console.log('this.gamedata')
+        console.log(this.gamedata)
       }
 
       if (event.key == 'o') {
         console.log('this.textureDir')
         console.log(this.textureDir)
       }
+
+      if (event.key == 'p') {
+        console.log('this.map.actions')
+        console.log(this.map.actions)
+      }
+
+      if (event.key == 'l') {
+        console.log('this.mouse')
+        console.log(this.mouse)
+
+        console.log('this.map.lights')
+        console.log(this.map.lights)
+      }
     });
+
+    // MESH ADD ACTION
 
     // ADD NEW ACTION
     $(document).on('click', "button[name='add-action']", function() {
       let selectedActionId = $("select[name='actions-selector']").val()
-      console.log('add action click!', selectedActionId)
-
       let selectedMesh = clone.map.data.find(mesh => mesh.id == clone.mouse.selectedMeshId)
-
       if (!selectedMesh?.actions) selectedMesh.actions = [];
-
       selectedMesh.actions.push(selectedActionId)
-
       clone.refreshActionList()
     });
 
@@ -897,9 +1332,400 @@ class Editor {
       clone.refreshActionList()
     });
 
+    ///////////////////
+    // MENU ADD ACTION
+
+    // ADD ANIMACTION
+    $(document).on('click', "#modal-add-action", function() {
+      clone.map.actions.push(new AnimAction())
+
+      let element = clone.gameActionsElementMaker(clone.map.actions[clone.map.actions.length-1])
+      $("#gameaction-container").append(element)
+    });
+
+    // DELETE ANIMACTION
+    $(document).on('click', ".animaction-delete", function() {
+      let animActionId = $(this).attr('data-action-id')
+      
+      let trueDelete = (confirm(`Are you seure delete the id:${animActionId} Animacion Action?`)) ? true : false;
+      if (trueDelete) {
+        let index = clone.map.actions.findIndex(data => data.id == animActionId)
+        if (index !== -1) {
+          clone.map.actions.splice(index, 1);
+          $(`.animaction-container[data-action-id='${animActionId}']`).remove()
+        }
+      }
+    });
+
+    // MOVE ANIMACTION
+    $(document).on('click', ".animaction-move", async function() {
+      let animActionId = parseInt($(this).attr('data-action-id'))
+      let animacionDirection = parseInt($(this).attr('data-direction'))
+      let buttonElement = $(`.animaction-move[data-action-id='${animActionId}'][data-direction='${animacionDirection}']`)
+
+      let index = clone.map.actions.findIndex(data => data.id == animActionId)
+      if (index !== -1) {
+        let firstIndex = index
+        let secondIndex = firstIndex + animacionDirection
+        if (clone.map.actions[firstIndex] && clone.map.actions[secondIndex]) {
+          [clone.map.actions[firstIndex], clone.map.actions[secondIndex]] = [clone.map.actions[secondIndex], clone.map.actions[firstIndex]]
+          buttonElement.addClass('bg-green')
+          await clone.wait(100)
+          buttonElement.removeClass('bg-green')
+          clone.gameActionsListMaker()
+        } else {
+          buttonElement.addClass('bg-red')
+          setTimeout(()=>{buttonElement.removeClass('bg-red')}, 100)
+        }
+      }
+    });
+
+    // MOVE EVENT
+    $(document).on('click', ".event-move", async function() {
+      let animActionId = parseInt($(this).attr('data-action-id'))
+      let animEventId = parseInt($(this).attr('data-event-id'))
+      let animacionDirection = parseInt($(this).attr('data-direction'))
+      let buttonElement = $(`.event-move[data-action-id='${animActionId}'][data-event-id='${animEventId}'][data-direction='${animacionDirection}']`)
+
+      let index = clone.map.actions.findIndex(data => data.id == animActionId)
+      if (index !== -1) {
+        
+        let firstEventIndex = clone.map.actions[index].events.findIndex(event => event.id == animEventId)
+        let secondEventIndex = firstEventIndex + animacionDirection
+
+        if (clone.map.actions[index].events[firstEventIndex] && clone.map.actions[index].events[secondEventIndex]) {
+          [clone.map.actions[index].events[firstEventIndex], clone.map.actions[index].events[secondEventIndex]] = [clone.map.actions[index].events[secondEventIndex], clone.map.actions[index].events[firstEventIndex]]
+
+          buttonElement.addClass('bg-green')
+          await clone.wait(100)
+          buttonElement.removeClass('bg-green')
+          clone.gameActionsListMaker()
+        } else {          
+          buttonElement.addClass('bg-red')
+          setTimeout(()=>{buttonElement.removeClass('bg-red')},100)
+        }
+      }
+    });
+
+    // EVENT EYE SWITCH
+    $(document).on('click', ".eye-switch", async function() {
+      let animActionId = parseInt($(this).attr('data-action-id'))
+      let animEventId = parseInt($(this).attr('data-event-id'))
+
+      if (animActionId && animEventId) {
+        // event
+        let buttonElement = $(`.eye-switch[data-action-id='${animActionId}'][data-event-id='${animEventId}']`)
+  
+        buttonElement.addClass('bg-orange')
+        await clone.wait(60)
+        buttonElement.removeClass('bg-orange')
+  
+        let container = $(`.eye-container[data-action-id='${animActionId}'][data-event-id='${animEventId}']`);
+        container.toggle(0, function () {
+          if ($(this).is(':visible')) buttonElement.text('👁'); else buttonElement.text('═');
+        });
+      } else if (animActionId) {
+        // action
+        let buttonElement = $(`.action-eye.eye-switch[data-action-id='${animActionId}']`)       
+
+        buttonElement.addClass('bg-orange')
+        await clone.wait(60)
+        buttonElement.removeClass('bg-orange')
+
+        let container = $(`.eye-container[data-action-id='${animActionId}']`);
+        container.toggle(0, function () {
+          if ($(this).is(':visible')) buttonElement.text('👁'); else buttonElement.text('═');
+        });
+      }
+    });
+
+    // DELETE ANIMACTION
+    $(document).on('click', ".event-delete", function() {
+      let animActionId = $(this).attr('data-action-id')
+      let animEventId = parseInt($(this).attr('data-event-id'))
+
+      let trueDelete = (confirm(`Are you seure delete the id:${animActionId} Event?`)) ? true : false;
+      if (trueDelete) {
+        let index = clone.map.actions.findIndex(data => data.id == animActionId)
+        if (index !== -1) {
+          let eventIndex = clone.map.actions[index].events.findIndex(event => event.id == animEventId)
+          clone.map.actions[index].events.splice(eventIndex, 1)
+          $(`.event-container[data-action-id='${animActionId}'][data-event-id='${animEventId}']`).remove()
+        }
+      }
+    });
+
+    // INPUTS
+    // ANIMACTION-NAME
+    $(document).on('input', "input[name='animaction-name']", (event) => {
+      let selectedActionId = $(event.target).attr('data-action-id')
+      const animActionRow = this.map.actions.find(action => action.id == selectedActionId)
+      if (animActionRow) animActionRow.name = $(event.target).val()      
+    });
+
+    // DISTANCE-FAR
+    $(document).on('input', "input[name='distance-far']", (event) => {
+      let selectedActionId = $(event.target).attr('data-action-id')
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) animActionRow.conditions.distance_far = parseFloat($(event.target).val())
+    });
+
+    // DISTANCE-NEAR
+    $(document).on('input', "input[name='distance-near']", (event) => {
+      let selectedActionId = $(event.target).attr('data-action-id')
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) animActionRow.conditions.distance_near = parseFloat($(event.target).val())
+    });
+
+    // CHECKBOXS
+    // AUTOPLAY
+    $(document).on('input', "input[name='autoplay']", (event) => {
+      let selectedActionId = $(event.target).attr('data-action-id')
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) animActionRow.conditions.autoplay = $(event.target).prop('checked')
+    });
+
+    // SELECTS
+    // CLICK
+    $(document).on('change', "select[name='click']", (event) => {
+      let selectedActionId = $(event.target).attr('data-action-id')
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) animActionRow.conditions.click = $(event.target).val()        
+    });
+
+    // BUTTONS
+    // ADD IN ARRAY
+    $(document).on('mousedown', "button[name='add-array']", (event) => {
+      let selectedElementName = $(event.target).attr('data-element-name')
+      let selectedActionId = parseInt($(event.target).attr('data-action-id'))
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) {
+        let objectId = parseInt($(`select[name='${selectedElementName}'][data-action-id='${selectedActionId}']`).val())
+        let objectDatas = animActionRow.conditions[selectedElementName]        
+        if (isNaN(objectId) || objectDatas.includes(objectId)) {
+          event.preventDefault(); event.stopPropagation();
+        } else {          
+          objectDatas.push(objectId)
+          $(`.action-selected-box-container[data-action-id='${selectedActionId}']`).html(this.arrayElementMaker(selectedElementName, selectedActionId, animActionRow.conditions[selectedElementName]))
+        }
+      }
+    });
+
+    // DELETE IN ARRAY
+    $(document).on('mousedown', '.delete-arrayrow', (event) => {
+      let selectedElementName = $(event.target).attr('data-element-name')
+      let selectedActionId = parseInt($(event.target).attr('data-action-id'))
+      let selectedObjectId = parseInt($(event.target).attr('data-object-id'))
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) {
+        let index = animActionRow.conditions[selectedElementName].indexOf(selectedObjectId);
+        if (index !=-1) {
+          animActionRow.conditions[selectedElementName].splice(index, 1)
+          $(`.action-selected-box-container[data-action-id='${selectedActionId}']`).html(this.arrayElementMaker(selectedElementName, selectedActionId, animActionRow.conditions[selectedElementName]))
+        }
+      }
+    });
+
+    //////////
+    // EVENT 
+
+    // ADD EVENT
+    $(document).on('click', ".add-event", function() {
+      let selectedActionId = parseInt($(event.target).attr('data-action-id'))
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) {
+        animActionRow.addNewEvent()
+        let element = clone.gameActionsElementMaker(animActionRow)
+        $(`#gameaction-container .animaction-container[data-action-id='${animActionRow.id}']`).html(element)
+      }
+    });
+
+    // EVENT-NAME
+    $(document).on('input', "input[name='event-name']", (event) => {
+      let selectedActionId = $(event.target).attr('data-action-id')
+      let selectedEventId = $(event.target).attr('data-event-id')
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) {
+        const eventRow = AnimAction.findEventById(animActionRow, selectedEventId)
+        eventRow.name = $(event.target).val()
+        $(`input[name='event-name'][data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}']`).val($(event.target).val())
+      }
+    });
+
+    // TIMER
+    $(document).on('input', "input[name='timer']", (event) => {
+      let selectedActionId = $(event.target).attr('data-action-id')
+      let selectedEventId = $(event.target).attr('data-event-id')
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) {  
+        const eventRow = AnimAction.findEventById(animActionRow, selectedEventId)
+        eventRow.timer = $(event.target).val()
+        $(`input[name='timer'][data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}']`).val(parseInt($(event.target).val()))
+      }
+    });
+
+    // AUTOSWITCH
+    $(document).on('input', "input[name='autoswitch']", (event) => {
+      let selectedActionId = $(event.target).attr('data-action-id')
+      let selectedEventId = $(event.target).attr('data-event-id')
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) {
+        const eventRow = AnimAction.findEventById(animActionRow, selectedEventId)
+        eventRow.autoswitch = $(event.target).prop('checked')
+      }
+    });
+
+    // INTERVAL
+    $(document).on('input', "input[name='interval']", (event) => {
+      let selectedActionId = $(event.target).attr('data-action-id')
+      let selectedEventId = $(event.target).attr('data-event-id')
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) {
+        const eventRow = AnimAction.findEventById(animActionRow, selectedEventId)
+        eventRow.interval[0] = $(event.target).prop('checked')
+      }
+    });
+
+    // INTERVAL COUNTER
+    $(document).on('input', "input[name='interval-counter']", (event) => {
+      let selectedActionId = $(event.target).attr('data-action-id')
+      let selectedEventId = $(event.target).attr('data-event-id')
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) {  
+        const eventRow = AnimAction.findEventById(animActionRow, selectedEventId)
+        eventRow.interval[1] = parseInt($(event.target).val())
+        $(`input[name='interval-counter'][data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}']`).val(parseInt($(event.target).val()))
+      }
+    });
+
+    // ADD IN ARRAY
+    $(document).on('mousedown', "button[name='add-event-object']", (event) => {
+      let selectedElementName = $(event.target).attr('data-element-name')
+      let selectedActionId = parseInt($(event.target).attr('data-action-id'))
+      let selectedEventId = $(event.target).attr('data-event-id')
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) {
+        const eventRow = AnimAction.findEventById(animActionRow, selectedEventId)
+        if (eventRow) {
+          let objectId = parseInt($(`select[name='${selectedElementName}'][data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}']`).val())
+          let objectDatas = eventRow[selectedElementName]
+          if (isNaN(objectId) || eventRow[selectedElementName].includes(objectId)) {
+            event.preventDefault(); event.stopPropagation();
+          } else {
+            objectDatas.push(objectId)
+            $(`.action-event-selected-box-container[data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}'][data-element-name='${selectedElementName}']`).html(this.arrayElementEventMaker(selectedElementName, selectedActionId, selectedEventId, eventRow[selectedElementName]))
+          }
+        }
+      }
+    });
+
+    // DELETE IN EVENT ARRAY
+    $(document).on('mousedown', '.delete-event-arrayrow', (event) => {
+      let selectedElementName = $(event.target).attr('data-element-name')
+      let selectedActionId = parseInt($(event.target).attr('data-action-id'))
+      let selectedEventId = parseInt($(event.target).attr('data-event-id'))
+      let selectedObjectId = parseInt($(event.target).attr('data-object-id'))
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) {
+        const eventRow = AnimAction.findEventById(animActionRow, selectedEventId)
+        let index = eventRow[selectedElementName].indexOf(selectedObjectId);
+        if (index !=-1) {
+          eventRow[selectedElementName].splice(index, 1)
+          $(`.action-event-selected-box-container[data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}'][data-element-name='${selectedElementName}']`).html(this.arrayElementEventMaker(selectedElementName, selectedActionId, selectedEventId, eventRow[selectedElementName]))
+        }
+      }
+    });
+
+    // ADD MOVE FX
+    $(document).on('mousedown', "button[name='add-movefx']", (event) => {
+      let selectedElementName = $(event.target).attr('data-element-name')
+      let selectedActionId = parseInt($(event.target).attr('data-action-id'))
+      let selectedEventId = $(event.target).attr('data-event-id')
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) {
+        const eventRow = AnimAction.findEventById(animActionRow, selectedEventId)
+        if (eventRow) {
+          let meshValue = $(`select[name='moveactions-mash'][data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}']`).val()
+          let movefxValue = $(`select[name='moveactions-movefx'][data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}']`).val()
+          if (meshValue && movefxValue) {
+            meshValue = parseInt(meshValue)
+            movefxValue = parseInt(movefxValue)
+            let index = eventRow[selectedElementName].findIndex( ([x, y]) => x == meshValue && y == movefxValue )
+            if (index == -1) {
+              eventRow.moveactions.push([meshValue, movefxValue])
+              $(`.action-event-selected-box-container[data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}'][data-element-name='${selectedElementName}']`).html(this.arrayActionElementEventMaker(selectedElementName, selectedActionId, selectedEventId, eventRow[selectedElementName]))
+            }
+          }
+        }
+      }
+    });
+
+    // DELETE MOVE FX
+    $(document).on('mousedown', '.delete-movefx', (event) => {
+      let selectedElementName = $(event.target).attr('data-element-name')
+      let selectedActionId = parseInt($(event.target).attr('data-action-id'))
+      let selectedEventId = parseInt($(event.target).attr('data-event-id'))
+      let meshId = parseInt($(event.target).attr('data-mesh-id'))
+      let moveFxId = parseInt($(event.target).attr('data-movefx-id'))
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) {
+        const eventRow = AnimAction.findEventById(animActionRow, selectedEventId)        
+        let index = eventRow[selectedElementName].findIndex( ([x, y]) => x == meshId && y == moveFxId )
+        if (index != -1) {
+          eventRow[selectedElementName].splice(index, 1)
+          $(`.action-event-selected-box-container[data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}'][data-element-name='${selectedElementName}']`).html(this.arrayActionElementEventMaker(selectedElementName, selectedActionId, selectedEventId, eventRow[selectedElementName]))
+        }
+      }
+    });
+
+    // ADD MOVE FX LIGHT
+    $(document).on('mousedown', "button[name='add-lightfx']", (event) => {
+      let selectedElementName = $(event.target).attr('data-element-name')
+      let selectedActionId = parseInt($(event.target).attr('data-action-id'))
+      let selectedEventId = $(event.target).attr('data-event-id')
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) {
+        const eventRow = AnimAction.findEventById(animActionRow, selectedEventId)
+        if (eventRow) {
+          let lightValue = $(`select[name='light-id'][data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}']`).val()
+          let lightfxValue = $(`select[name='light-fx'][data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}']`).val()
+          if (lightValue && lightfxValue) {
+            lightValue = parseInt(lightValue)
+            lightfxValue = parseInt(lightfxValue)
+            let index = eventRow[selectedElementName].findIndex( ([x, y]) => x == lightValue && y == lightfxValue )
+            if (index == -1) {
+              eventRow.lightfx.push([lightValue, lightfxValue])
+              $(`.action-event-selected-box-container[data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}'][data-element-name='${selectedElementName}']`).html(this.arrayActionElementEventMaker2(selectedElementName, selectedActionId, selectedEventId, eventRow[selectedElementName]))
+            }
+          }
+        }
+      }
+    });
+
+    // DELETE MOVE FX LIGHT
+    $(document).on('mousedown', '.delete-lightfx', (event) => {
+      let selectedElementName = $(event.target).attr('data-element-name')
+      let selectedActionId = parseInt($(event.target).attr('data-action-id'))
+      let selectedEventId = parseInt($(event.target).attr('data-event-id'))
+      let lightId = parseInt($(event.target).attr('data-light-id'))
+      let lightfxId = parseInt($(event.target).attr('data-lightfx-id'))
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) {
+        const eventRow = AnimAction.findEventById(animActionRow, selectedEventId)        
+        let index = eventRow[selectedElementName].findIndex( ([x, y]) => x == lightId && y == lightfxId )
+        if (index != -1) {
+          eventRow[selectedElementName].splice(index, 1)
+          $(`.action-event-selected-box-container[data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}'][data-element-name='${selectedElementName}']`).html(this.arrayActionElementEventMaker2(selectedElementName, selectedActionId, selectedEventId, eventRow[selectedElementName]))
+        }
+      }
+    });
+
+    //---
+
     // RESET PICTURE
     $(document).on('click', '#texture-minipic-reset', function() {
       clone.mouse.selectedTri.texture.name = 'notexture'
+      if (clone.mouse.selectedLock && clone.mouse.selectedLock.texture?.name) clone.mouse.selectedLock.texture.name = 'notexture';
       $(this).next().attr('src', '.\\data\\notexture.png')
       clone.refreshScreen()
     });
@@ -976,6 +1802,12 @@ class Editor {
     // MODAL CONTENT CREATE
     $(".modal-button").on('click', async function() {
       let mode = $(this).attr('data-mode')
+
+      if (mode == 'import' && !clone.mouse.selectedMeshId) {
+        alert('You must select the object you will import into!')
+        return;
+      }
+
       if (mode) $("#modal-title").html(mode);
       $("#modal-container").attr('data-mode', mode)
 
@@ -1017,7 +1849,8 @@ class Editor {
       if(mode == 'gameactions') {
         $("#modal-back").hide()
         $("#modal-content").hide()
-        $("#modal-message").html('GAME ACTIONS').show()
+
+        clone.gameActionsListMaker()
 
         $("#modal-bg").show()
         $("#modal-container").show()
@@ -1120,6 +1953,19 @@ class Editor {
       }
     });
 
+    $(document).on('mousedown', '.textres-open-close-button', function() {
+      clone.texturesOpenCLoseButton = !clone.texturesOpenCLoseButton;    
+      if (clone.texturesOpenCLoseButton) {
+        $(this).addClass('rotate-icon-90')
+        // Kinyitás
+        $('#textures-list .texture-parent-name').addClass('open');
+      } else {
+        $(this).removeClass('rotate-icon-90')
+        // Becsukás
+        $('#textures-list .texture-parent-name').removeClass('open');
+      }
+    });
+
     // AJAX ACTION BUTTON
     $(document).on('click', "#modal-container .modal-action-button", async function() {
       let mode = $("#modal-container").attr('data-mode')
@@ -1127,8 +1973,8 @@ class Editor {
 
       console.log('--------'); console.log(mode); console.log(filename); console.log('--------');
 
+      // LOAD
       if (mode == 'load' && filename) {
-        // LOAD
         const response = await clone.fetchData({ ajax: true, load: true, filename: filename }); // console.log(response)
         if (response?.data && response?.structure) {
           clone.mouseVariableReset()
@@ -1191,11 +2037,11 @@ class Editor {
 
       // AJAX IMPORT
       if (mode == 'import' && filename) {
+
         const response = await clone.fetchData({ ajax: true, load: true, filename: filename }); // console.log(response)
         if (response?.data && response?.structure) {
-
           clone.saveMapMemory('save')
-
+          
           let importData = response.data;
           let importStructure = response.structure;
           
@@ -1205,6 +2051,7 @@ class Editor {
           importData.forEach(item => {
             idMapping[item.id] = lastIdNumber++;
           });
+          Mesh.setInstanceCount(lastIdNumber)
 
           importData = importData.map(item => {
             return {
@@ -1221,26 +2068,33 @@ class Editor {
               child: item.child.map(childId => idMapping[childId] ?? childId)
             };
           });
-
-          Mesh.setInstanceCount(lastIdNumber)
           
-          clone.map.data = [...clone.map.data, ...importData];
-          clone.map.structure = [...clone.map.structure, ...importStructure];
+          let selectedMapData = clone.map.data.find(obj => obj.id == clone.mouse.selectedMeshId)
+          let selectedStructureData = clone.findMeshById(clone.map.structure, clone.mouse.selectedMeshId)
 
-          clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
+          if (selectedMapData && selectedStructureData) {
+            importData.forEach(mesh => {
+              if (mesh.parent_id === null) {
+                mesh.parent_id = selectedMapData.id
+              }
+            })
 
-          $("#modal-message").html('<div class="text-center text-success">successfully imported!</div>')
+            clone.map.data.push(...importData)
+            selectedStructureData.child.push(...importStructure)
 
-          setTimeout(() => {
-            $("#modal-close").click()
-            $('#modal-input').val('')
-            $("#modal-message").html('')
-          }, 500);
+            clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
+  
+            $("#modal-message").html('<div class="text-center text-success">successfully imported!</div>')
+  
+            setTimeout(() => {
+              $("#modal-close").click()
+              $('#modal-input').val('')
+              $("#modal-message").html('')
+            }, 500);
+          }
 
         } else if (response?.error) {
           $("#modal-message").html(`<span class="text-center text-warning">${response?.error}</span>`)
-        } else {
-          $("#modal-message").html(`<span class="text-center text-danger">${response?.error}</span>`)
         }
       }
 
@@ -1947,14 +2801,30 @@ class Editor {
     ]
 
     triangeInputs.forEach(name => {
-      $(`input[name='${name}']`).on('input', function () {
+      $(`input[name='${name}']`).on('keydown', function () {
+        $(this).data('data-before', parseFloat($(this).val()));
+      }).on('input', function () {
         let type = $(this).attr('data-type')
         let axis = $(this).attr('data-axis')
         let num = $(this).attr('data-num')
-        //console.log(type, num, axis)
 
+        // console.log(type, num, axis)
+        // console.log('OLD data', $(this).data('data-before')); console.log('NEW data', $(this).val());
+        
         if (typeof clone.mouse.selectedTri.id !== 'undefined') {
-          clone.mouse.selectedTri[type][num][axis] = $(this).val()
+          clone.saveMapMemory('save')
+          if (clone.options.uvLocketSwitch) {
+            // UV-SWITCH
+            for(let n=0;n<3; n++) {
+              if (clone.mouse.selectedTri[type][n][axis] == parseInt($(this).data('data-before'))) {
+                clone.mouse.selectedTri[type][n][axis] = parseInt($(this).val());
+                $(`input[name='tri-${type}${n+1}-${axis.toUpperCase()}']`).val(parseInt($(this).val()))
+              }
+            }
+          } else {
+            // NORMAL MODE
+            clone.mouse.selectedTri[type][num][axis] = $(this).val()
+          }
           clone.fullRefreshCanvasGraphics()
         }
       });
@@ -1985,7 +2855,10 @@ class Editor {
 
     $(`input[name='tri-animspeed']`).on('input', function () {      
       if (typeof clone.mouse.selectedTri.id !== 'undefined') {
-        clone.mouse.selectedTri.texture.animspeed = $(this).val()
+        clone.mouse.selectedTri.texture.animspeed = parseInt($(this).val())
+        if(clone.mouse.selectedLock) {          
+          clone.mouse.selectedLock.texture.animspeed = parseInt($(this).val())
+        }
         clone.fullRefreshCanvasGraphics()
       }
     });
@@ -2052,6 +2925,19 @@ class Editor {
       this.mouse.selectedLock.p[0] = this.mouse.selectedLock.p[1]
       this.mouse.selectedLock.p[1] = this.mouse.selectedLock.p[2]
       this.mouse.selectedLock.p[2] = save2
+      clone.refreshRectangleDatas()
+    });
+
+    $(`input[name='U-V-locket']`).on('click', () => {
+      this.options.uvLocketSwitch =  !this.options.uvLocketSwitch
+      // console.log('uvLocketSwitch:', this.options.uvLocketSwitch)
+      if (this.options.uvLocketSwitch) {
+        $("input[name='tri-t1-U'").addClass('bg-blue-p'); $("input[name='tri-t2-U'").addClass('bg-blue-p'); $("input[name='tri-t3-U'").addClass('bg-blue-p');
+        $("input[name='tri-t1-V'").addClass('bg-green-p'); $("input[name='tri-t2-V'").addClass('bg-green-p'); $("input[name='tri-t3-V'").addClass('bg-green-p');
+      } else {
+        $("input[name='tri-t1-U'").removeClass('bg-blue-p'); $("input[name='tri-t2-U'").removeClass('bg-blue-p'); $("input[name='tri-t3-U'").removeClass('bg-blue-p');
+        $("input[name='tri-t1-V'").removeClass('bg-green-p'); $("input[name='tri-t2-V'").removeClass('bg-green-p'); $("input[name='tri-t3-V'").removeClass('bg-green-p');
+      }
       clone.refreshRectangleDatas()
     });
 
@@ -2122,6 +3008,9 @@ class Editor {
 
     $(`select[name='lock-normal']`).on('input', function () {
       if (typeof clone.mouse.selectedTri.id !== 'undefined' && typeof clone.mouse.selectedLock.id !== 'undefined') {
+
+        console.log(clone.mouse)
+
         clone.mouse.selectedTri.normal = $(this).val()
         clone.mouse.selectedLock.normal = $(this).val()
         clone.fullRefreshCanvasGraphics()
@@ -2252,7 +3141,7 @@ class Editor {
     // OPEN / CLOSE ALL OBJECT LIST
     $(document).on('click', '#object-open-close-all', function() {
       let status = $(this).attr('data-status')
-      status = Number(status)     
+      status = Number(status)
 
       $("#object-list").removeAttr("style")
 
@@ -2282,10 +3171,12 @@ class Editor {
 
     // RESIZE OBJECT LIST
     if (true) {
-      $(document).on('mousedown', '#object-list-size-button', function (e) {
+      $(document).on('mousedown', "[id$='-list-size-button']", function (e) {
+        clone.typeName = $(this).attr('data-type-name')
+                
         clone.isResizing = true;
         clone.startY = e.clientY;
-        clone.startHeight = $('#object-list').height();
+        clone.startHeight = $(`#${clone.typeName}-list`).height();
         e.preventDefault();
       });
       $(document).on('mousemove', function (e) {
@@ -2296,13 +3187,84 @@ class Editor {
               if (newHeight < 51) newHeight = 50
               if (newHeight > 600) newHeight = 600
               
-              $('#object-list').height(newHeight);
+              $(`#${clone.typeName}-list`).height(newHeight);
           }
       });
       $(document).on('mouseup', function () {
           clone.isResizing = false;
       });
     }
+
+    // ADD NEW LIGHT
+    $(document).on('click', '#light-add-new', function() {
+      clone.map.lights.push(new Light('Light-', 0, 0.5, 1, 'point', '0xffddaa', 0.5, 5))
+      clone.refreshLightsList()
+    });
+
+    // SELECT LIGHT
+    $(document).on('click', '.light-element', function() {
+      let selectedLightId = parseInt($(this).attr('data-light-id'))
+
+      let selectedLightData = clone.map.lights.find(light => light.id == selectedLightId)
+      if (selectedLightId && selectedLightData) {
+        clone.mouse.selectedLightId = selectedLightId
+        clone.mouse.selectedLightData = selectedLightData
+        // reset selected datas
+        clone.mouse.selectedMeshId = 0
+        clone.mouse.selectedTri = {}
+        // modifed selected class
+        $('#light-list ul li').each(function () {$(this).removeClass('list-light-selected')});
+        $(this).addClass('list-light-selected')
+
+        $("input[name='selected-light-name']").val(selectedLightData.name)
+        $("input[name='light-p-X']").val(selectedLightData.p.x); $("input[name='light-p-Y']").val(selectedLightData.p.y); $("input[name='light-p-Z']").val(selectedLightData.p.z);
+        $("input[name='light-color']").val(selectedLightData.color); $("input[name='light-intensity']").val(selectedLightData.intensity); $("input[name='light-distance']").val(selectedLightData.distance);
+        $("select[name='light-type']").val(selectedLightData.type); $("select[name='light-edit-color']").val(selectedLightData.editcolor);
+
+        // HEXA COLOR
+        let bgColor = clone.isValidHex(selectedLightData.color) ? selectedLightData.color : 'ffffff';
+        $("input[name='light-color']").css("background-color", `#${bgColor}`)
+
+        $('#selected-light-container').show()
+        clone.refreshObjectList()
+        clone.fullRefreshCanvasGraphics()
+      }
+    });
+
+    // LIGHT VARIABLES CHANGE
+    // INPUT
+    $(document).on("input", "input[name='selected-light-name'], input[name='light-p-X'], input[name='light-p-Y'], input[name='light-p-Z'], input[name='light-color'], input[name='light-intensity'], input[name='light-distance']", function() {
+      let variableName = $(this).attr('data-name')
+      let variableMiddle = $(this).attr('data-middle')
+      let type = $(this).attr('type');
+      let value = type == 'number' ? parseFloat($(this).val()) : $(this).val();
+      variableMiddle ? clone.mouse.selectedLightData[variableMiddle][variableName] = value : clone.mouse.selectedLightData[variableName] = value;
+
+      if (variableName == 'name') $(`.light-element[data-light-id='${clone.mouse.selectedLightData.id}']`).text(value.toUpperCase());
+      if (variableName == 'color') {
+        let bgColor = clone.isValidHex(value) ? value : 'ffffff';
+        $(this).css("background-color", `#${bgColor}`)
+      }
+    });
+    // SELECT
+    $(document).on("change", "select[name='light-type'], select[name='light-edit-color']", function() {
+      let variableName = $(this).attr('data-name')
+      let value = $(this).val()
+      clone.mouse.selectedLightData[variableName] = value
+    });
+
+    // DELETE LIGHT
+    $(document).on('click', '.delete-light', function() {
+      let lightId = $(this).attr('data-light-id')
+      
+      let index = clone.map.lights.findIndex(light => light.id == lightId)
+      if (index != -1) {
+        console.log(index)
+        console.log(clone.map.lights[index])
+        clone.map.lights.splice(index, 1)
+        clone.refreshLightsList()
+      }
+    });
 
     // OPEN / CLOSE TRIANGLES
     $(document).on('click', ".triangle", function(event) {
@@ -2364,6 +3326,10 @@ class Editor {
         findedTri = clone.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == triId)
   
         if (findedTri) {
+          clone.mouse.selectedLightId = null
+          clone.mouse.selectedLightData = {}
+          clone.refreshLightListOff()
+
           clone.mouse.selectedTri = findedTri
           // remove selected class graph
           if (clone.mouse.selectedTri && clone.mouse.selectedTri.id) {
@@ -2712,14 +3678,12 @@ class Editor {
     // CLICK TEXTURE
     $(document).on('click', ".texture-minipic", function(event) {
       let textureName = $(this).attr('data-texture-name')
-
       if (clone.mouse.selectedTri && !(Object.keys(clone.mouse.selectedTri).length == 0)) {
         if (clone.mouse.selectedTri.texture?.name) clone.mouse.selectedTri.texture.name = textureName;
-
+        if (clone.mouse.selectedLock.texture?.name) clone.mouse.selectedLock.texture.name = textureName;
         $('#menu-right').animate({
           scrollTop: $('#object-list-head').offset().top - $('#menu-right').offset().top + $('#menu-right').scrollTop()
         }, 300, 'swing');
-
         clone.refreshTriangleDatas()
         clone.fullRefreshCanvasGraphics()
       }
@@ -2731,9 +3695,7 @@ class Editor {
       clone.saveMapMemory('save')
       
       let meshId = $(this).closest('li').attr('data-id')
-
       clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = null;
-
       let getMeshStructure = clone.findMeshById(clone.map.structure, meshId)
 
       // find mesh all tree ids
@@ -2761,7 +3723,50 @@ class Editor {
       clone.fullRefreshCanvasGraphics()
     });
 
-    $(document).on('click', '.tree .toggle', function() {
+    // CLIPBOARD COPY MESH
+    $(document).on('click', ".menu-icon.clipboard-copy", function(event) {
+      event.stopPropagation()
+      clone.saveMapMemory('save')
+
+      let meshId = $(this).closest('li').attr('data-id')
+      clone.mouse.selectedTri = null
+      clone.mouse.selectedMeshId = null
+      let getMeshStructure = clone.findMeshById(clone.map.structure, meshId)
+
+      if (getMeshStructure) {
+        let originalToNewIdMap = {}
+
+        const newId = Mesh.getInstanceCount() + 1
+        Mesh.setInstanceCount(newId)
+        originalToNewIdMap[getMeshStructure.id] = newId
+
+        // DATA
+        let meshData = clone.map.data.find(m => m.id == getMeshStructure.id)
+        let meshCopy = clone.deepCopy(meshData)
+        meshCopy.id = newId
+        meshCopy.parent_id = null
+        clone.clipboardMemory.meshs.push(meshCopy)
+
+        // STRUCTURE
+        let newStructureNode = {
+          ...clone.deepCopy(getMeshStructure),
+          id: newId,
+          child: []
+        }
+
+        if (Array.isArray(getMeshStructure.child)) {
+          for (let child of getMeshStructure.child) {
+            let newChild = cloneStructure(child, newId)
+            newStructureNode.child.push(newChild)
+          }
+        }
+
+        clone.refreshObjectList()
+        clone.fullRefreshCanvasGraphics()
+      }
+    })
+
+    $(document).on('click', '.tree .toggle', function() {      
       $(this).parent().toggleClass('open');
     });
 
@@ -2842,36 +3847,28 @@ class Editor {
 
     // TÜKRÖZÉS
     if (transformData.type == 'mirror') {
-
-      console.log(transformData)
-      console.log(transformData.axis)
-
+      // console.log(transformData); console.log(transformData.axis);
       transform = this.graph.matrix_MakeMirror(transformData.axis)
     }
 
     // ROTATE
     if (transformData.type == 'rotate') {
-      console.log(mode)
       if (mode == 'mesh') {
-        
         let angleValue = transformData.directionsign * this.graph.angleToRandian(transformData.anglesize)
-  
         let meshData = this.map.data.find(mapMesh => mapMesh.id == mesh.id)
-        
-        let mPos = this.graph.calculateAveragePosition(meshData)
-        // console.log(mPos)
-  
+        let mPos = this.graph.calculateAveragePosition(meshData) // console.log(mPos)
         let matTranslateToOrigin = this.graph.matrix_MakeTranslation(-mPos.x + this.origo.x, -mPos.y + this.origo.y, -mPos.z + this.origo.z)
-  
+
         // Forgatás
         let matRotate = null
         if (this.selectedView == 'XYview-canvas') matRotate = this.graph.matrix_MakeRotationX(angleValue)
         if (this.selectedView == 'XZview-canvas') matRotate = this.graph.matrix_MakeRotationY(angleValue)
         if (this.selectedView == 'ZYview-canvas') matRotate = this.graph.matrix_MakeRotationZ(angleValue)
-  
+
         transform = this.graph.matrix_MultiplyMatrix(matTranslateToOrigin, matRotate);
       } else { alert('NEM MESH!!!');}
     }
+
     // SIZE
     if (transformData.type == 'size') {
       transform = this.graph.matrix_MakeScale(transformData.movesize)
@@ -2891,7 +3888,7 @@ class Editor {
             tri.p[2] = this.maxDecimals(this.graph.matrix_MultiplyVector(transform, tri.p[2]))
           });
         }
-  
+
         if (Array.isArray(mesh.child) && mesh.child.length > 0) {
           mesh.child.forEach(child => {
             this.recursiveTransform(mode, child, transformData)
@@ -2933,7 +3930,7 @@ class Editor {
     let textData = this.graph?.text?.pic?.[this.mouse?.selectedTri?.texture?.name]?.[0] ?? null;
     textInfo.animframe = this.graph.text?.[this.mouse.selectedTri?.texture?.name]?.length || 1;
 
-    // console.log(textInfo); console.log(textData);
+    console.log(textInfo); console.log(textData);
 
     if (textData && textInfo) {
       $("#selected-texture-container .texture-minipic-selected").attr('src', textData.link).attr('alt', textData.name).attr('data-texture-name', textData.name)
@@ -2957,11 +3954,6 @@ class Editor {
     $("input[name='rec-t2-V']").val(this.mouse.selectedTri.t[1].v)
     $("input[name='rec-t3-U']").val(this.mouse.selectedTri.t[2].u)
     $("input[name='rec-t3-V']").val(this.mouse.selectedTri.t[2].v)
-
-    // ???
-    // $("select[name='tri-light']").val(this.mouse.selectedTri.light)
-    // $("select[name='tri-texture']").val(this.mouse.selectedTri.texture)
-    // $("select[name='tri-normal']").val(this.mouse.selectedTri.normal)
   }
 
   // REFRESH LOCKET TRIANGLES
@@ -2972,13 +3964,6 @@ class Editor {
     $(`input[id='selected-tri-name-1']`).val(tri1Data.name)
     $(`input[id='selected-tri-name-2']`).val(tri2Data.name)
 
-    if (false) {
-      tri2.texture = tri1.texture
-      tri2.t[0] = { u: 0, v: 1, w: 1 };  // (0,0) → megegyezik tri1-gyel
-      tri2.t[1] = { u: 1, v: 0, w: 1 };  // (1,1) → megegyezik tri1-gyel
-      tri2.t[2] = { u: 1, v: 1, w: 1 };  // (1,0) → új érték
-    }
-
     $("input[name='lock-t1-U']").val(tri1.t[0].u); $("input[name='lock-t1-V']").val(tri1.t[0].v);
     $("input[name='lock-t2-U']").val(tri1.t[1].u); $("input[name='lock-t2-V']").val(tri1.t[1].v);
     $("input[name='lock-t3-U']").val(tri1.t[2].u); $("input[name='lock-t3-V']").val(tri1.t[2].v);
@@ -2988,6 +3973,10 @@ class Editor {
   selectedMeshClassChange(mashId) {
     let selectedMesh = this.map.data.find(mesh => mesh.id == mashId)
     if (selectedMesh) {
+      this.mouse.selectedLightId = null
+      this.mouse.selectedLightData = {}
+      this.refreshLightListOff()
+
       this.mouse.selectedMeshId = selectedMesh.id
       // line color setting
       $(`select[name='line-color'] option[value='${selectedMesh.lineColor}']`).prop('selected', true)
@@ -3000,17 +3989,15 @@ class Editor {
       $("#selected-tri-container").hide()
       // new Mesh selecting
       $(document).find(`li[data-id='${selectedMesh.id}'].mesh-name`).addClass('list-mesh-selected')
-  
+
       $("#selected-mesh-name").val(selectedMesh.name)
       $("#selected-mesh-name").attr('data-id', selectedMesh.id)
 
-      // if (!$("#selected-locket-container").is(":visible")) $("#selected-mesh-container").show();
-
       this.refreshActionList()
-      
+
       $("#selected-locket-container").hide()
       $("#selected-mesh-container").show()
-  
+
       this.fullRefreshCanvasGraphics()
     }
   }
@@ -3478,6 +4465,13 @@ class Editor {
       let orY = view.posY + this.origo[view.vY] * view.ratio
       view.ctx.fillStyle = 'red';
       view.ctx.beginPath(); view.ctx.arc(orX, orY, 4, 0, 2 * Math.PI); view.ctx.fill();
+
+      // DRAW LIGHTS IN CANVAS
+      if (this.map.data.lights) {
+
+        //---
+
+      }
 
       view.ctx.restore() // Eredeti koordinátarendszer visszaállítása
 
