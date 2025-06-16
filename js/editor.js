@@ -100,6 +100,7 @@ class Editor {
       moveScale: 0.05,
       rotateScale: 0.1,
       uvLocketSwitch: false,
+      showAllLights: true,
     }
 
     this.map = {
@@ -191,7 +192,7 @@ class Editor {
       console.log(this.map.lights)
     }
 
-    this.graph = new Graphics(this.text, this.keys, this.options, this.map, this.findMeshById, this.map.player)
+    this.graph = new Graphics(this.text, this.keys, this.options, this.map, this.findMeshById, this.findMeshParent, this.map.player)
 
     this.refreshPlayerPos('refresh')
 
@@ -304,6 +305,16 @@ class Editor {
   wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
+  
+  getMaxId(obj) {
+    let maxId = 0;
+    for (const key in obj) {
+      if (parseInt(obj[key].id) > maxId) {
+        maxId = obj[key].id;
+      }
+    }
+    return maxId;
+  }
 
   isValidHex(hex) {
     return /^(#|0x)?[0-9A-Fa-f]{6}$/.test(hex);
@@ -359,7 +370,7 @@ class Editor {
         this.refreshActionSelect()
         // MAP LIGHTS
         this.map.lights = this.deepCopy(response.lights)
-        Light.setInstanceCount(this.map.lights.length)
+        Light.setInstanceCount(this.getMaxId(this.map.lights))
       }
     }
 
@@ -713,6 +724,34 @@ class Editor {
     return data;
   }
 
+  cloneStructure(originalNode, newParentId = null) {
+    const newId = Mesh.getInstanceCount() + 1
+    Mesh.setInstanceCount(newId)
+  
+    // Mesh adat másolása és új ID beállítása
+    const meshData = this.map.data.find(m => m.id == originalNode.id)
+    const meshCopy = this.deepCopy(meshData)
+    meshCopy.id = newId
+    meshCopy.parent_id = newParentId
+    this.clipboardMemory.meshs.push(meshCopy)
+  
+    // Strukturális másolat
+    const structureCopy = {
+      ...this.deepCopy(originalNode),
+      id: newId,
+      child: []
+    }
+  
+    if (Array.isArray(originalNode.child)) {
+      for (let child of originalNode.child) {
+        const newChild = this.cloneStructure(child, newId)
+        structureCopy.child.push(newChild)
+      }
+    }
+  
+    return structureCopy
+  }
+
   findMeshById(data, meshId) {
     if (!Array.isArray(data)) return null;
 
@@ -908,10 +947,12 @@ class Editor {
     if (this.map.lights.length > 0) {
       let element = `<ul>`;
       this.map.lights.forEach(light => {
+        let eyeIcon = light.visible ? 'eye-light-up' : 'eye-light-down';
         element += `
         <li data-light-id="${light.id}" class="light-element">
           <span class="light-name">${light.name}</span>
           <span data-light-id="${light.id}" class="menu-icon menu-icon-pos-1 delete-light" title="Delete light"></span>
+          <span data-light-id="${light.id}" class="menu-icon menu-icon-pos-2 eye-light ${eyeIcon}" title="Show / Hide light in editor"></span>
         </li>`
       })
       element += `</ul>`;
@@ -921,16 +962,18 @@ class Editor {
 
   refreshObjectList() {
     $('#object-list').html('');
-    if (this.map.structure.length > 0) {
-      this.refreshClipboard()
-      // LIST OBJECTS
-      let element = `<ul>`;
-      this.map.structure.forEach(item => {
-        element += this.recursiveMenu(item)
-      })
-      element += `</ul>`;
-      $('#object-list').html(element)
-      if (this.mouse.selectedMeshId) this.selectedMeshClassChange(this.mouse.selectedMeshId);      
+    if (this.map.data && this.map.structure) {
+      if (this.map.structure.length > 0) {
+        this.refreshClipboard()
+        // LIST OBJECTS
+        let element = `<ul>`;
+        this.map.structure.forEach(item => {
+          element += this.recursiveMenu(item)
+        })
+        element += `</ul>`;
+        $('#object-list').html(element)
+        if (this.mouse.selectedMeshId) this.selectedMeshClassChange(this.mouse.selectedMeshId);      
+      }
     }
     this.triangleContainerShowOptions()
     this.refreshLightListOff()
@@ -969,48 +1012,55 @@ class Editor {
   }
 
   recursiveMenu(item) {
-    if (this.map.data && this.map.structure) {      
-      const meshData = this.map.data.find(element => element.id == item.id)
-      if (meshData) {
-        let itemData = this.findMeshById(this.map.structure, meshData.id)
-
-        let classTriangle = itemData.status ? 'triangle-up' : 'triangle-down';
-        let classEye = itemData.visible ? 'eye-up' : 'eye-down';
-
-        let element = `<ul>`;
-        element += `
-        <li data-id="${item.id}" class="mesh-name">
-          <span>${meshData.name}</span>
-          <span class="menu-icon triangle ${classTriangle} p-0 m-0" title="Open/Close group triangles"></span>
-          <span class="menu-icon eye ${classEye}" title="Visible or hide group"></span>
-          <span class="menu-icon menu-icon-pos-1 plus" title="Add group"></span>
-          <span class="menu-icon menu-icon-pos-2 duplicate" title="Duplicaded group"></span>
-          <span class="menu-icon menu-icon-pos-3 up" data-type="prev" title="Move up-brother"></span>
-          <span class="menu-icon menu-icon-pos-4 down" data-type="next" title="Move down-brother"></span>
-          <span class="menu-icon menu-icon-pos-5 back" title="Move back-parent"></span>
-          <span class="menu-icon menu-icon-pos-6 back-blend-in" title="Blend in to parent"></span>
-          <span class="menu-icon menu-icon-pos-7 clipboard" title="Cut group to clipboard"></span>
-          <span class="menu-icon menu-icon-pos-8 clipboard-copy" title="Copy group to clipboard"></span>
-          <span class="menu-icon menu-icon-pos-9 delete-group" title="Delete group"></span>
-        </li>`;
-    
-        if (Array.isArray(meshData.tris) && meshData.tris.length > 0) {
-          let show = Number(item.status) ? 'block' : 'none'; 
-          element += `<ul data-parent-id="${item.id}" style="display:${show};">`;
-          meshData.tris.forEach(tri => {
-            element += `<li data-id="${tri.id}" class="tri-list">${tri.name}</li>`;
-          });
-          element += `</ul>`;
-        }
-    
-        if (Array.isArray(item.child) && item.child.length > 0) {
-          item.child.forEach(child => {
-            element += this.recursiveMenu(child)
-          });
-        }
-        element += `</ul>`;
-        return element;
+    const meshData = this.map.data.find(element => element.id == item.id)
+    if (meshData) {
+      let itemData = this.findMeshById(this.map.structure, meshData.id)
+      let showMesh
+      if (meshData.parent_id != null) {
+        let parentData = this.findMeshById(this.map.structure, meshData.parent_id)
+        showMesh = Number(parentData.status) ? 'block' : 'none';
+      } else {
+        // FIRST ELEMENT
+        showMesh = 'block';
       }
+
+      let classTriangle = itemData.status ? 'triangle-up' : 'triangle-down';
+      let classEye = itemData.visible ? 'eye-up' : 'eye-down';
+
+      let element = `<ul style="display:${showMesh};">`;
+      element += `
+      <li data-id="${item.id}" class="mesh-name">
+        <span>${meshData.name}</span>
+        <span class="menu-icon triangle ${classTriangle} p-0 m-0" title="Open/Close group triangles"></span>
+        <span class="menu-icon eye ${classEye}" title="Visible or hide group"></span>
+        <span class="menu-icon menu-icon-pos-1 plus" title="Add group"></span>
+        <span class="menu-icon menu-icon-pos-2 duplicate" title="Duplicaded group"></span>
+        <span class="menu-icon menu-icon-pos-3 up" data-type="prev" title="Move up-brother"></span>
+        <span class="menu-icon menu-icon-pos-4 down" data-type="next" title="Move down-brother"></span>
+        <span class="menu-icon menu-icon-pos-5 back" title="Move back-parent"></span>
+        <span class="menu-icon menu-icon-pos-6 back-blend-in" title="Blend in to parent"></span>
+        <span class="menu-icon menu-icon-pos-7 clipboard" title="Cut group to clipboard"></span>
+        <span class="menu-icon menu-icon-pos-8 clipboard-copy" title="Copy group to clipboard"></span>
+        <span class="menu-icon menu-icon-pos-9 delete-group" title="Delete group"></span>
+      </li>`;
+
+      if (Array.isArray(meshData.tris) && meshData.tris.length > 0) {
+        let show = Number(item.status) ? 'block' : 'none'; 
+        element += `<ul data-parent-id="${item.id}" style="display:${show};">`;
+        meshData.tris.forEach(tri => {
+          element += `<li data-id="${tri.id}" class="tri-list">${tri.name}</li>`;
+        });
+        element += `</ul>`;
+      }
+
+      if (Array.isArray(item.child) && item.child.length > 0) {
+        item.child.forEach(child => {
+          element += this.recursiveMenu(child)
+        });
+      }
+
+      element += `</ul>`;
+      return element;
     }
   }
 
@@ -1050,6 +1100,8 @@ class Editor {
       this.graph.playerPos.z = parseFloat($("#menu-top input[name='player-z']").val())
       this.graph.playerPos.fYaw = parseFloat($("#menu-top input[name='player-fYaw']").val())
       this.graph.playerPos.fXaw = parseFloat($("#menu-top input[name='player-fXaw']").val())
+
+      $('#goto-player-position').click()
 
       console.log(this.graph.playerPos.x, this.graph.playerPos.y, this.graph.playerPos.z, this.graph.playerPos.fYaw, this.graph.playerPos.fXaw)
     }
@@ -1252,14 +1304,16 @@ class Editor {
     let elements = ''
     if (selectedMesh?.actions && selectedMesh.actions.length > 0) {
       selectedMesh.actions.forEach((action, index) => {
-        elements += `
-        <div class="pos-relative">
-          <div class="inline-block mb-3">
-            <span class="action-id-box me-3 text-bold">${this.map.actions[index].name}</span>
-          </div>
-          <span class="delete-action ms-3" data-actionindex-id="${index}" data-mesh-id="${this.mouse.selectedMeshId}">⊗</span>
-        </div>`;
-      });
+          if (this.map?.actions[index]) {
+            elements += `
+            <div class="pos-relative">
+              <div class="inline-block mb-3">
+                <span class="action-id-box me-3 text-bold">${this.map.actions[index].name}</span>
+              </div>
+              <span class="delete-action ms-3" data-actionindex-id="${index}" data-mesh-id="${this.mouse.selectedMeshId}">⊗</span>
+            </div>`;
+          }
+        });
     } else {
       elements = '<div class="inline-block text-center w-100 mb-3"><span>None</span></div>'
     }
@@ -1277,6 +1331,18 @@ class Editor {
     });
 
     $(document).on('keydown', (event) => {
+      if (event.key == '1') $(".toolbar-icon[data-mode='move']").trigger('click');
+      if (event.key == '2') $(".toolbar-icon[data-mode='origo']").trigger('click');
+      if (event.key == '3')
+        if (clone.mouse?.selectedTri && Object.keys(clone.mouse.selectedTri).length > 0) $(".toolbar-icon[data-mode='point']").trigger('click');
+        else { $(".toolbar-icon[data-mode='point']").addClass('bg-red-p'); setTimeout(() => { $(".toolbar-icon[data-mode='point']").removeClass('bg-red-p')}, 100) }
+      if (event.key == '4')
+        if (clone.mouse?.selectedMeshId) $("#add-new-tri").trigger('click');
+        else { $("#add-new-tri").addClass('bg-red-p'); setTimeout(() => { $("#add-new-tri").removeClass('bg-red-p')}, 100) }
+      if (event.key == '5')
+        if (clone.mouse?.selectedMeshId) $("#add-new-rec").trigger('click');
+        else { $("#add-new-rec").addClass('bg-red-p'); setTimeout(() => { $("#add-new-rec").removeClass('bg-red-p')}, 100) }
+
       if (event.key == 'i') {
         console.log('this.map.data:')
         console.log(this.map.data)
@@ -1286,6 +1352,12 @@ class Editor {
 
         console.log('this.map.player')
         console.log(this.map.player)
+
+        console.log('this.map.lights')
+        console.log(this.map.lights)
+
+        console.log('this.map.actions')
+        console.log(this.map.actions)
 
         console.log('this.gamedata')
         console.log(this.gamedata)
@@ -1351,8 +1423,17 @@ class Editor {
       if (trueDelete) {
         let index = clone.map.actions.findIndex(data => data.id == animActionId)
         if (index !== -1) {
+          // DELETE ALL USED ACTION ID IN MAP.DATA
+          clone.map.data.forEach(mesh => {
+            if (Array.isArray(mesh?.actions) && mesh.actions.includes(animActionId)) {
+              mesh.actions = mesh.actions.filter(id => id != animActionId);
+            }
+          });
+          // DELETE ACTION
           clone.map.actions.splice(index, 1);
           $(`.animaction-container[data-action-id='${animActionId}']`).remove()
+          clone.refreshActionSelect()
+          clone.refreshActionList()
         }
       }
     });
@@ -1731,7 +1812,7 @@ class Editor {
     });
 
     // PLAYER POSITION MODIFY
-    $("input[name='player-x'], input[name='player-y'], input[name='player-z'], input[name='player-fYaw'], input[name='player-fXaw']").on('change', function() {
+    $("input[name='player-x'], input[name='player-y'], input[name='player-z'], input[name='player-fYaw'], input[name='player-fXaw']").on('input', function() {
         clone.refreshPlayerPos('modify')
     });
 
@@ -2299,23 +2380,14 @@ class Editor {
         clone.mouse.mode = 'move'
         return;
       } 
-
       clone.mouse.mode = mode
-
       if (mode=='point' && (clone.mouse.selectedTri == null || Object.keys(clone.mouse.selectedTri).length == 0)) {
         clone.mouse.mode = 'move'
         alert('Not selected triangle!')
       }
-
-      // !!!!! ???
-      // if (clone.mouse.selectedTri != null && clone.mouse.selectedLock != null) {
-      //   clone.mouse.mode = 'move'
-      //   alert('In triangle point mode, only one triangle can be selected! (do not use selected lock!)')
-      // }
-
       clone.refreshToolbar()
     });
-    
+
     // RESET TRIANGLE SIDE
     $("#add-new-tri.toolbar-icon").on('contextmenu', function(event) {
       event.preventDefault()
@@ -2327,10 +2399,9 @@ class Editor {
     $("#selected-mesh-name").on('input', function() {
       let selectedMesh = clone.map.data.find(mesh => mesh.id == clone.mouse.selectedMeshId)
       if (selectedMesh) {
-        selectedMesh.name = $(this).val()
-
+        let value = $(this).val().toUpperCase()
+        selectedMesh.name = value; $(this).val(value);
         $("#object-list").find(`[data-id='${selectedMesh.id}']`).text(selectedMesh.name)
-
         clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
       }
     })
@@ -2352,12 +2423,6 @@ class Editor {
     /////////////////////////////////////
     // CANVAS ViewWindow event listeners
     Object.entries(this.views).forEach(([name, value]) => {
-      // MOUSE POSITION HELPER
-      // $(`#${name}`).on('mousemove', function (event) {
-      //   const rect = this.getBoundingClientRect()
-      //   let pos = clone.getMousePosition(clone, event, rect, name)
-      //   $('#info-box').html(`X: ${pos.ix} y: ${pos.iy}<br>vX: ${pos.vx.toFixed(3)} vY:${pos.vy.toFixed(3)}`)
-      // });
 
       // ratio
       $(`input[name='ratio'][data-name='${name}']`).on('input', () => {
@@ -2421,9 +2486,22 @@ class Editor {
 
         ///////////////////
         // MOVE ORIGO POINT
-        if (clone.mouse.mode == 'origo') {
-          console.log('ORIGÓ CLICK!!!')
+        if (clone.mouse.selectedLightId && clone.mouse.mode == 'origo') {
+          // LIGHT MOVE
+          event.stopPropagation()
+          clone.saveMapMemory('save')
 
+          let view = clone.views[name]
+          const rect = this.getBoundingClientRect()
+          let pos = clone.getMousePosition(clone, event, rect, name)
+
+          clone.mouse.selectedLightData.p[view.vX] = pos.vx
+          clone.mouse.selectedLightData.p[view.vY] = pos.vy
+
+          clone.fullRefreshCanvasGraphics();
+
+        } else if (clone.mouse.mode == 'origo') {
+          // ORIGO MOVE
           event.stopPropagation()
           clone.saveMapMemory('save')
 
@@ -2431,7 +2509,7 @@ class Editor {
 
           const rect = this.getBoundingClientRect()
           let pos = clone.getMousePosition(clone, event, rect, name)
-          
+
           clone.origo[view.vX] = pos.vx
           clone.origo[view.vY] = pos.vy
 
@@ -2465,14 +2543,14 @@ class Editor {
                 let t1, t2, t3 = null
                 if (clone.newTriSide) {
                   // 1
-                  t1 = new Vec2D(0, 0)   // bal felül
-                  t2 = new Vec2D(1, 0)   // jobb felül
-                  t3 = new Vec2D(0, 1)   // bal alul
+                  t1 = new Vec2D(0, 0)   // left up
+                  t2 = new Vec2D(1, 0)   // right up
+                  t3 = new Vec2D(0, 1)   // left down
                 } else {
                   // 2
-                  t1 = new Vec2D(1, 0)   // jobb felül
-                  t2 = new Vec2D(1, 1)   // jobb alul
-                  t3 = new Vec2D(0, 1)   // bal alul
+                  t1 = new Vec2D(1, 0)   // right up
+                  t2 = new Vec2D(1, 1)   // right down
+                  t3 = new Vec2D(0, 1)   // left down
                 }
 
                 clone.newTriSide = !clone.newTriSide
@@ -3058,7 +3136,7 @@ class Editor {
           if ($(this).hasClass('triangle-down')) {
             thisMeshStructure.status = 0
             $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).hide()
-          } else if ($(this).hasClass('triangle-down')) {
+          } else if ($(this).hasClass('triangle-up')) {
             thisMeshStructure.status = 1
             $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).show()
           }
@@ -3069,15 +3147,18 @@ class Editor {
 
     // PUSH CONTROLL
     if (true) {
-      $(document).keydown(function (e) {
-          if (e.ctrlKey) {
-            clone.ctrlPressed = true
-          }
+      $(document).keydown(e => {
+        if (e.ctrlKey) clone.ctrlPressed = true;
+        if (e.shiftKey) clone.shiftPressed = true;
+
+        if (e.shiftKey && e.code == 'Digit2') { clone.selectedView = 'XYview-canvas'; clone.fullRefreshCanvasGraphics() }
+        if (e.shiftKey && e.code == 'Digit3') { clone.selectedView = 'XZview-canvas'; clone.fullRefreshCanvasGraphics() }
+        if (e.shiftKey && e.code == 'Digit4') { clone.selectedView = 'ZYview-canvas'; clone.fullRefreshCanvasGraphics() }
       });
-      $(document).keyup(function (e) {
-          if (e.key == "Control") {
-            clone.ctrlPressed = false
-          }
+      
+      $(document).keyup(e => {
+        if (e.key == "Control") clone.ctrlPressed = false;
+        if (e.key == "Shift") clone.shiftPressed = false;
       });
 
       $(document).click(".tri-list", function(e) {
@@ -3201,6 +3282,22 @@ class Editor {
       clone.refreshLightsList()
     });
 
+    // SHOW/HIDE ALL LIGHT
+    $(document).on('click', '#light-show-hide', function() {      
+      clone.options.showAllLights = !clone.options.showAllLights
+
+      $(this).removeClass('eye-light-up eye-light-down')
+      if (clone.options.showAllLights) {
+        $(this).addClass('eye-light-up')
+        $("#light-list").removeClass('bg-gray-6')
+      } else {
+        $(this).addClass('eye-light-down')
+        $("#light-list").addClass('bg-gray-6')
+      }
+
+      clone.fullRefreshCanvasGraphics()
+    });
+
     // SELECT LIGHT
     $(document).on('click', '.light-element', function() {
       let selectedLightId = parseInt($(this).attr('data-light-id'))
@@ -3240,7 +3337,7 @@ class Editor {
       let value = type == 'number' ? parseFloat($(this).val()) : $(this).val();
       variableMiddle ? clone.mouse.selectedLightData[variableMiddle][variableName] = value : clone.mouse.selectedLightData[variableName] = value;
 
-      if (variableName == 'name') $(`.light-element[data-light-id='${clone.mouse.selectedLightData.id}']`).text(value.toUpperCase());
+      if (variableName == 'name') $(`.light-element[data-light-id='${clone.mouse.selectedLightData.id}']`).find(".light-name").text(value.toUpperCase());
       if (variableName == 'color') {
         let bgColor = clone.isValidHex(value) ? value : 'ffffff';
         $(this).css("background-color", `#${bgColor}`)
@@ -3256,13 +3353,27 @@ class Editor {
     // DELETE LIGHT
     $(document).on('click', '.delete-light', function() {
       let lightId = $(this).attr('data-light-id')
-      
-      let index = clone.map.lights.findIndex(light => light.id == lightId)
-      if (index != -1) {
-        console.log(index)
-        console.log(clone.map.lights[index])
-        clone.map.lights.splice(index, 1)
-        clone.refreshLightsList()
+      let result = confirm(`Are you sure you want to delete the light with id ${lightId}?`)
+      if (result) {
+        let index = clone.map.lights.findIndex(light => light.id == lightId)
+        if (index != -1) {
+          // console.log(clone.map.lights[index])
+          clone.map.lights.splice(index, 1)
+          clone.refreshLightsList()
+        }
+      }
+    });
+
+    // SHOW/HIDE EYE LIGHT
+    $(document).on('click', '.eye-light', function() {
+      let lightId = $(this).attr('data-light-id')
+      let light = clone.map.lights.find(light => light.id == lightId)
+      if (light) {
+        light.visible = !light.visible
+        $(this).removeClass('eye-light-up eye-light-down')
+        light.visible ? $(this).addClass('eye-light-up') : $(this).addClass('eye-light-down');
+
+        clone.fullRefreshCanvasGraphics()
       }
     });
 
@@ -3282,6 +3393,10 @@ class Editor {
             thisMeshStructure.status = 1
           }
         }
+
+        console.log('click !!!')
+        clone.refreshObjectList()
+        
     });
 
     // VISIBLE
@@ -3298,7 +3413,7 @@ class Editor {
             thisMeshStructure.visible = 1
           }
           clone.fullRefreshCanvasGraphics()
-        } 
+        }
     });
 
     // MESH SELECTING
@@ -3401,7 +3516,7 @@ class Editor {
 
     });
 
-    // Clipboard 
+    // CLIPBOARD 
     $(document).on('click', ".clipboard", function(event) {
       event.stopPropagation()
       clone.saveMapMemory('save')
@@ -3420,7 +3535,7 @@ class Editor {
       clone.fullRefreshCanvasGraphics()
     });
 
-    // Duplicate
+    // DUPLICATE
     $(document).on('click', ".duplicate", function(event) {
       event.stopPropagation()
       clone.saveMapMemory('save')
@@ -3464,7 +3579,7 @@ class Editor {
             ...dupicatedStructure,
             id: newMesh.id,
             parent_id: parent_id,
-            child: dupicatedStructure.child.map(childId => childId) // másoljuk le, később módosítjuk rekurzívan
+            child: dupicatedStructure.child.map(childId => childId)
           };
       
           Mesh.setInstanceCount(lastIdNumber + 1);
@@ -3506,19 +3621,19 @@ class Editor {
       clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = meshId;
 
       let parentMeshData = clone.map.data.find(element => element.id == meshId)
-
       if (parentMeshData) {
         let addNewMesh = new Mesh('new', parentMeshData.id)
         addNewMesh.name = `${parentMeshData.name}-${addNewMesh.id}`
         clone.map.data.push(addNewMesh)
 
         let parentMeshStructure = clone.findMeshById(clone.map.structure, meshId)
-
-        if (parentMeshStructure) parentMeshStructure.child.push({id: addNewMesh.id, child: []})
+        if (parentMeshStructure) {
+          // DEFINITELY OPEN PARENT
+          parentMeshStructure.status = 1          
+          parentMeshStructure.child.push({id: addNewMesh.id, status: 1, visible: 1, child: []})
+        }
         clone.mouse.selectedMeshId = addNewMesh.id
-
-      } else console.error("Mesh not found");
-
+      }
       clone.refreshObjectList()
       clone.fullRefreshCanvasGraphics()
     });
@@ -3647,19 +3762,13 @@ class Editor {
       if (result) {
         event.stopPropagation()
         clone.saveMapMemory('save')
-        
-        let meshId = $(this).closest('li').attr('data-id')
-  
+
+        let meshId = $(this).closest('li').attr('data-id')  
         clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = null;
-  
         let getMeshStructure = clone.findMeshById(clone.map.structure, meshId)
 
-        console.log(getMeshStructure)
-
-        // find mesh all tree ids
+        // FIND MESH ALL MESH IDS
         let deletedIds = clone.getAllMeshTreeIds(getMeshStructure)
-        console.log('deletedIds:')
-        console.log(deletedIds)
         if (deletedIds) {
           deletedIds.forEach(meshId => {
             // delete structure
@@ -3669,7 +3778,6 @@ class Editor {
             if (index != -1) clone.map.data.splice(index, 1);
           });
         }
-
         clone.refreshObjectList()
         clone.fullRefreshCanvasGraphics()
       }
@@ -3756,7 +3864,7 @@ class Editor {
 
         if (Array.isArray(getMeshStructure.child)) {
           for (let child of getMeshStructure.child) {
-            let newChild = cloneStructure(child, newId)
+            let newChild = clone.cloneStructure(child, newId)
             newStructureNode.child.push(newChild)
           }
         }
@@ -3855,18 +3963,36 @@ class Editor {
     if (transformData.type == 'rotate') {
       if (mode == 'mesh') {
         let angleValue = transformData.directionsign * this.graph.angleToRandian(transformData.anglesize)
-        let meshData = this.map.data.find(mapMesh => mapMesh.id == mesh.id)
-        let mPos = this.graph.calculateAveragePosition(meshData) // console.log(mPos)
+
+        // FIND ALL MESH GROUP
+        let meshStructureNode = this.findMeshById(this.map.structure, mesh.id)
+        let groupIds = this.getAllMeshTreeIds(meshStructureNode)
+        let groupMeshList = this.map.data.filter(item => groupIds.includes(item.id))
+
+        // CENTER POINT
+        let mPos = this.graph.calculateGroupAveragePosition(groupMeshList)
+
         let matTranslateToOrigin = this.graph.matrix_MakeTranslation(-mPos.x + this.origo.x, -mPos.y + this.origo.y, -mPos.z + this.origo.z)
 
-        // Forgatás
-        let matRotate = null
+        let matRotate = null;
         if (this.selectedView == 'XYview-canvas') matRotate = this.graph.matrix_MakeRotationX(angleValue)
         if (this.selectedView == 'XZview-canvas') matRotate = this.graph.matrix_MakeRotationY(angleValue)
         if (this.selectedView == 'ZYview-canvas') matRotate = this.graph.matrix_MakeRotationZ(angleValue)
 
-        transform = this.graph.matrix_MultiplyMatrix(matTranslateToOrigin, matRotate);
-      } else { alert('NEM MESH!!!');}
+        let transform = this.graph.matrix_MultiplyMatrix(matTranslateToOrigin, matRotate)
+
+        // ROTATE ALL MESH
+        for (let meshItem of groupMeshList) {
+          for (let tri of meshItem.tris) {
+            for (let i = 0; i < 3; i++) {
+              tri.p[i] = this.graph.matrix_MultiplyVector(transform, tri.p[i]);
+            }
+          }
+        }
+
+      } else {
+        alert('No Mesh selected!');
+      }
     }
 
     // SIZE
@@ -3930,7 +4056,7 @@ class Editor {
     let textData = this.graph?.text?.pic?.[this.mouse?.selectedTri?.texture?.name]?.[0] ?? null;
     textInfo.animframe = this.graph.text?.[this.mouse.selectedTri?.texture?.name]?.length || 1;
 
-    console.log(textInfo); console.log(textData);
+    // console.log(textInfo); console.log(textData);
 
     if (textData && textInfo) {
       $("#selected-texture-container .texture-minipic-selected").attr('src', textData.link).attr('alt', textData.name).attr('data-texture-name', textData.name)
@@ -4041,7 +4167,7 @@ class Editor {
       if (document.pointerLockElement == document.body) {        
         // console.log("Elmozdulás X:", event.movementX, "Elmozdulás Y:", event.movementY);
 
-        if (this.graph.fXaw + event.movementY*0.01 > -1.5 && this.graph.fXaw + event.movementY*0.01 < 1.5) this.graph.fXaw += event.movementY*0.01;
+        if (this.graph.fXaw - event.movementY*0.01 > -1.5 && this.graph.fXaw - event.movementY*0.01 < 1.5) this.graph.fXaw -= event.movementY*0.01;
         this.graph.fYaw += event.movementX*0.01
 
         if (document.waitTime) return;
@@ -4180,6 +4306,7 @@ class Editor {
   }
 
   checkKeyboardInputs() {
+    // AXIS VIEWS
     if (this.selectedView != 'screen-canvas' && this.selectedView != null && typeof this.selectedView != 'undefined') {
 
       // console.log(this.selectedView)
@@ -4365,23 +4492,26 @@ class Editor {
       }
 
       // DRAW ALL OBJECTS
-      this.map.data.forEach(mesh => {
+      for (let i = 0; i < this.map.data.length; i++) {
+        let mesh = this.map.data[i];
+        let strucSelected = this.findMeshById(this.map.structure, mesh.id);      
+        if (!strucSelected) continue;
+        if (typeof strucSelected.visible == 'undefined') strucSelected.visible = 1;
         
-        let strucSelected = this.findMeshById(this.map.structure, mesh.id)
-        if (strucSelected) {
-          strucSelected.visible = strucSelected?.visible ?? true;
-  
-          // CHECK VISIBLE
-          if (strucSelected?.visible) {
-            var lineColor = mesh.lineColor
-            var lineWidth = 1
-  
-            mesh.tris.forEach(tri => {
-              this.drawViewTriangeAction(view, lineColor, lineWidth, tri.p[0][view.vX], tri.p[0][view.vY], tri.p[1][view.vX], tri.p[1][view.vY], tri.p[2][view.vX], tri.p[2][view.vY])
-            });
-          }
+        // JUMP MESH WHEN NOT VISIBLE
+        if (!strucSelected.visible) {
+          const hiddenIds = this.getAllMeshTreeIds(strucSelected);
+
+          while (i + 1 < this.map.data.length && hiddenIds.includes(this.map.data[i + 1].id)) { i++; }
+          continue;
         }
-      });
+
+        let lineColor = mesh.lineColor; let lineWidth = 1;
+
+        mesh.tris.forEach(tri => {
+          this.drawViewTriangeAction(view, lineColor, lineWidth, tri.p[0][view.vX], tri.p[0][view.vY], tri.p[1][view.vX], tri.p[1][view.vY], tri.p[2][view.vX], tri.p[2][view.vY])
+        });
+      }
 
       // SELECTED TRIANGLE DRAW
       if (this.mouse.selectedTri && this.mouse.selectedTri.id) {
@@ -4399,7 +4529,7 @@ class Editor {
       if (this.mouse.selectedMeshId && !this.mouse.selectedTri) {
         let selectedMesh = this.findMeshById(this.map.structure, this.mouse.selectedMeshId)
 
-        if (selectedMesh) {          
+        if (selectedMesh) {
           var lineWidth = 3
           // IF VISIBLE
           if (selectedMesh.visible) {
@@ -4467,11 +4597,34 @@ class Editor {
       view.ctx.beginPath(); view.ctx.arc(orX, orY, 4, 0, 2 * Math.PI); view.ctx.fill();
 
       // DRAW LIGHTS IN CANVAS
-      if (this.map.data.lights) {
-
-        //---
-
+      if (this.map.lights) {
+        if (this.options.showAllLights) {
+          this.map.lights.forEach(light => {
+            if (light.visible) {
+              let orX = view.posX + light.p[view.vX] * view.ratio
+              let orY = view.posY + light.p[view.vY] * view.ratio
+              view.ctx.fillStyle = `#${light.color}`
+              let distance = (light.distance * view.ratio) / 10
+              let intensity = light.intensity / 10
+  
+              // FILL
+              let rgba = light.editcolor.replace("rgb", "rgba").replace(")", `, ${intensity})`);
+              view.ctx.fillStyle = rgba
+              view.ctx.beginPath(); view.ctx.arc(orX, orY, distance, 0, 2 * Math.PI); view.ctx.fill();
+  
+              // OUTLINE
+              if(light.id == this.mouse?.selectedLightData.id) {
+                view.ctx.lineWidth = 3; view.ctx.strokeStyle = 'white';
+              } else {
+                view.ctx.lineWidth = 1; view.ctx.strokeStyle = light.editcolor;
+              }
+              view.ctx.stroke()
+            }
+          });
+        }
       }
+
+      //---
 
       view.ctx.restore() // Eredeti koordinátarendszer visszaállítása
 

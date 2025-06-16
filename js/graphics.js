@@ -1,9 +1,10 @@
 import { Vec3D, Triangle, Mesh, Matrix4x4, Vec2D } from './data.js';
 
 export class Graphics {
-  constructor(text, keys, options, map, findMeshById, playerPos) {
+  constructor(text, keys, options, map, findMeshById, findMeshParent, playerPos) {
 
     this.findMeshById = findMeshById
+    this.findMeshParent = findMeshParent
     this.text = text // console.log(this.text)
     this.keys = keys
     this.options = options
@@ -58,7 +59,9 @@ export class Graphics {
     this.depthBuffer = new Array(this.GAMEWIDTH * this.GAMEHEIGHT).fill(0)
 
     this.mesh = new Mesh()
-    this.matProj = this.matrix_MakeProjection(75, this.GAMEHEIGHT / this.GAMEWIDTH, 1, 1000) //  FOV, ratio, near, far
+
+    // this.matProj = this.matrix_MakeProjection(75, this.GAMEHEIGHT / this.GAMEWIDTH, 1, 1000) //  FOV, ratio, near, far
+    this.matProj = this.matrix_MakeProjection(60, this.GAMEHEIGHT / this.GAMEWIDTH, 0.1, 10)
 
     this.resetCordinates()
 
@@ -69,7 +72,7 @@ export class Graphics {
   }
 
   resetCordinates() {
-    this.vLookDir = new Vec3D(0, 0, 1)
+    this.vLookDir = new Vec3D(0, 0, -1)
     this.vCamera = new Vec3D(this.playerPos.x, this.playerPos.y, this.playerPos.z)
     this.fYaw = this.playerPos.fYaw
     this.fXaw = this.playerPos.fXaw
@@ -211,6 +214,27 @@ export class Graphics {
     } else {
       return { x: 0, y: 0, z: 0 }  // Ha nem volt pont
     }
+  }
+
+  calculateGroupAveragePosition(meshList) {
+    let sum = { x: 0, y: 0, z: 0 };
+    let count = 0;
+  
+    for (let meshData of meshList) {
+      if (!Array.isArray(meshData.tris)) continue;
+      for (let tri of meshData.tris) {
+        for (let p of tri.p) {
+          sum.x += p.x;
+          sum.y += p.y;
+          sum.z += p.z;
+          count++;
+        }
+      }
+    }
+
+    return count > 0
+      ? { x: sum.x / count, y: sum.y / count, z: sum.z / count }
+      : { x: 0, y: 0, z: 0 };
   }
 
   matrix_PointAt(pos, target, up) {
@@ -495,7 +519,7 @@ export class Graphics {
 
     //--MOVE CAMERA--
     const vUp = new Vec3D(0, 1, 0)
-    const vForward = new Vec3D(0, 0, 1)
+    const vForward = new Vec3D(0, 0, -1)
 
     // Apply X-axis (pitch) rotation
     let matCameraRotX = this.matrix_MakeRotationX(this.fXaw)                  // Up/down rotation
@@ -516,23 +540,23 @@ export class Graphics {
     this.matView = this.matrix_QuickInverse(matCamera)
   }
 
-  async renderScreen() {
-    // Draw Objects
-    // if (true) {
-    //   await this.map.data.forEach(mesh => {
-    //     // console.log(mesh)
-    //     let structure = this.findMeshById(this.map.structure, mesh.id)
-    //     if (structure?.visible == '1') this.drawObject(mesh)
-    //   });
-    // }
+  isVisibleInTree(structure, id) {
+    const current = this.findMeshById(structure, id);
+    if (!current) return false;
+    if (!current.visible) return false;
+  
+    const parent = this.findMeshParent(structure, id);
+    if (!parent) return true;
+  
+    return this.isVisibleInTree(structure, parent.id);
+  }
 
+  async renderScreen() {
     for (let mesh of this.map.data) {
-      // if (!document.pointerLockElement) return; // újabb biztonsági ellenőrzés!
-      let structure = this.findMeshById(this.map.structure, mesh.id);
-      if (structure.visible == '1') this.drawObject(mesh);
-      
+      if (this.isVisibleInTree(this.map.structure, mesh.id)) {
+        this.drawObject(mesh);
+      }
     }
-    // console.log('lement:', this.counter2); this.counter2++;
   }
 
   ///////////////
@@ -608,6 +632,8 @@ export class Graphics {
         let nClippedTriangles = 0
         nClippedTriangles = this.triangle_ClipAgainstPlane({ x: 0, y: 0, z: minDistance }, { x: 0, y: 0, z: 1 }, triViewed)        
 
+        this.viewScale = 1.0 //
+
         for (let n=0; n<nClippedTriangles; n++) {
           // Project triangles from 3D --> 2D
           let triProjected = new Triangle(this.matrix_MultiplyVector(this.matProj, this.clipped[n].p[0]), this.matrix_MultiplyVector(this.matProj, this.clipped[n].p[1]), this.matrix_MultiplyVector(this.matProj, this.clipped[n].p[2]), this.clipped[n].t[0], this.clipped[n].t[1], this.clipped[n].t[2], triTransformed.texture, this.clipped[n].light, this.clipped[n].rgba)
@@ -628,7 +654,13 @@ export class Graphics {
           triProjected.p.forEach(p => { p.x *= -1; p.y *= -1; });
           const vOffsetView = new Vec3D(1, 1, 0)
           triProjected.p = triProjected.p.map(p => this.vector_Add(p, vOffsetView));
-          triProjected.p.forEach(p => { p.x *= 0.5 * this.GAMEWIDTH; p.y *= 0.5 * this.GAMEHEIGHT; });
+
+
+          //triProjected.p.forEach(p => { p.x *= 0.5 * this.GAMEWIDTH; p.y *= 0.5 * this.GAMEHEIGHT; });
+          triProjected.p.forEach(p => { 
+            p.x *= 0.5 * this.GAMEWIDTH * this.viewScale; 
+            p.y *= 0.5 * this.GAMEHEIGHT * this.viewScale; 
+          });
 
           let addTriangle = new Triangle(triProjected.p[0], triProjected.p[1], triProjected.p[2],  triProjected.t[0],  triProjected.t[1],  triProjected.t[2], triProjected.texture, triViewed.light, triProjected.rgba)
           selectedTriangles.push(addTriangle)

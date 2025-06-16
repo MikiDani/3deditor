@@ -14,6 +14,10 @@ $basic: #d7d7d7;
     color: red !important;
 }
 
+.bg-gray-6 {
+   background-color: $gray6 !important;
+}
+
 .green {
     color: green !important;
 }
@@ -424,7 +428,7 @@ button[class='3d-buttons'] {
             // background-color: red;
             &:hover {
                 cursor: pointer;
-                background-color: #d4d4d4;
+                background-color: #add6ad;
             }
         }
         .move {
@@ -447,8 +451,18 @@ button[class='3d-buttons'] {
         }
 
         .toolbar-select {
-            background-color: white;
             border: 1px solid black;
+            background-color: #add6ad;
+            :hover {
+                background-color: #add6ad;
+            }
+        }
+
+        .toolbar-line {
+            width: 3px;
+            height: 34px;
+            margin: 0px;
+            border-left: 1px dashed black;
         }
 
         .menu-text-border {
@@ -1093,7 +1107,7 @@ $cell-size: 30px;
 }
 
 .menu-back-isset {
-    background-color: lime !important;
+    background-color: #add6ad !important;
     cursor: pointer;
 }
 
@@ -1617,6 +1631,44 @@ li {
 
     &:hover {
         color: red !important;
+    }
+}
+
+.eye-light-up {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin: 2px;
+    color: black;
+    font-size: 12px;
+    line-height: 10px;
+    text-align: center;
+
+    &::before {
+        content: '◉';
+    }
+
+    &:hover {
+        color: yellow !important;
+    }
+}
+
+.eye-light-down {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin: 2px;
+    color: black;
+    font-size: 12px;
+    line-height: 10px;
+    text-align: center;
+
+    &::before {
+        content: '=';
+    }
+
+    &:hover {
+        color: yellow !important;
     }
 }
 

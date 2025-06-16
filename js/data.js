@@ -113,13 +113,13 @@ export class Textures {
         }
     }
 
-    removeAllAnimTextureTimer() {        
+    removeAllAnimTextureTimer() {
         for (let name in this.animTimer) {
-            clearInterval(this.animTimer[name].interval);
-            console.log(`AnimTimer '${name}' törölve.`);
+            clearInterval(this.animTimer[name].interval)
+            // console.log(`AnimTimer '${name}' törölve.`)
         }
-        this.animTimer = {};
-        //console.log('Minden animTimer törölve.'); console.log(this.animTimer);
+        this.animTimer = {}
+        // console.log('Minden animTimer törölve.'); console.log(this.animTimer)
         // for (let i = 1; i < 1000; i++) { clearInterval(i); }  // FORCE
     }
 }
@@ -197,6 +197,7 @@ export class Light {
         this.intensity = intensity
         this.distance = distance
         this.editcolor = 'red'
+        this.visible = true
     }
 
     static setInstanceCount(value) {
