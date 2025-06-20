@@ -196,7 +196,7 @@ export class Light {
         this.color = color
         this.intensity = intensity
         this.distance = distance
-        this.editcolor = 'red'
+        this.editcolor = 'rgb(255, 165, 0)'
         this.visible = true
     }
 

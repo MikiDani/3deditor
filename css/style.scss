@@ -1710,7 +1710,8 @@ li {
     }
 }
 
-.duplicate {
+.duplicate,
+.duplicate-light {
     display: inline-block;
     width: 10px;
     height: 10px;
@@ -1729,7 +1730,8 @@ li {
     }
 }
 
-.up {
+.up,
+.light-up {
     display: inline-block;
     width: 10px;
     height: 10px;
@@ -1748,7 +1750,8 @@ li {
     }
 }
 
-.down {
+.down,
+.light-down {
     display: inline-block;
     width: 10px;
     height: 10px;

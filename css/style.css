@@ -1653,7 +1653,8 @@ li:hover {
   color: yellow !important;
 }
 
-.duplicate {
+.duplicate,
+.duplicate-light {
   display: inline-block;
   width: 10px;
   height: 10px;
@@ -1663,14 +1664,17 @@ li:hover {
   line-height: 10px;
   text-align: center;
 }
-.duplicate::before {
+.duplicate::before,
+.duplicate-light::before {
   content: "⧉";
 }
-.duplicate:hover {
+.duplicate:hover,
+.duplicate-light:hover {
   color: yellow !important;
 }
 
-.up {
+.up,
+.light-up {
   display: inline-block;
   width: 10px;
   height: 10px;
@@ -1680,14 +1684,17 @@ li:hover {
   line-height: 10px;
   text-align: center;
 }
-.up::before {
+.up::before,
+.light-up::before {
   content: "⭡";
 }
-.up:hover {
+.up:hover,
+.light-up:hover {
   color: yellow !important;
 }
 
-.down {
+.down,
+.light-down {
   display: inline-block;
   width: 10px;
   height: 10px;
@@ -1697,10 +1704,12 @@ li:hover {
   line-height: 10px;
   text-align: center;
 }
-.down::before {
+.down::before,
+.light-down::before {
   content: "⭣";
 }
-.down:hover {
+.down:hover,
+.light-down:hover {
   color: yellow !important;
 }
 

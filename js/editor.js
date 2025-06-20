@@ -1,4 +1,4 @@
-import { Graphics } from './graphics.js'
+import { Graphics } from './editor-graphics.js'
 import { Textures, Vec3D, Vec2D, Mesh, Triangle, Light } from './data.js'
 
 class ViewWindow {
@@ -89,11 +89,13 @@ class AnimAction {
 
 class Editor {
   constructor () {
+    this.map = {}
+    this.gamedata = {}
+
     this.text = new Textures()
 
-    this.refTime = 5
-
     this.options = {
+      refreshTime: 5,
       fill: false,
       textured: true,
       grid: false,
@@ -103,7 +105,32 @@ class Editor {
       showAllLights: true,
     }
 
-    this.map = {
+    this.mapMemory = []
+    this.textureDir = []
+
+    this.clipboardMemory = {
+      tris: [],
+      meshs: [],
+    }
+
+    this.keys = {}
+    this.selectedView = null
+    this.textureRatio = 1
+    this.origo = new Vec3D(0,0,0)
+
+    this.mapVariableReset()
+    this.mouseVariableReset()
+    this.resetMouseAddTri()
+    this.resetMouseAddRec()
+
+    this.newTriSide = true
+    this.texturesOpenCLoseButton = false
+
+    this.init()
+  }
+
+  mapVariableReset() {
+   return this.map = {
       data: {},
       structure: {},
       actions: [],
@@ -117,32 +144,6 @@ class Editor {
         fXaw:0,
       }
     }
-
-    this.gamedata = {}
-
-    this.origo = new Vec3D(0,0,0)
-
-    this.mapMemory = []
-    this.textureDir = []
-
-    this.clipboardMemory = {
-      tris: [],
-      meshs: [],
-    }
-
-    this.keys = {}
-    this.selectedView = null
-    this.textureRatio = 1
-
-    this.mouseVariableReset()
-
-    this.resetMouseAddTri()
-    this.resetMouseAddRec()
-    
-    this.newTriSide = true
-    this.texturesOpenCLoseButton = false
-
-    this.init()
   }
 
   mouseVariableReset() {
@@ -182,6 +183,7 @@ class Editor {
       console.log(this.text.pic);
     }
 
+    this.mapVariableReset()
     await this.loadMapData()
     if (consolePrint) {
       console.log('LOADING MAP DATAS:')
@@ -394,7 +396,7 @@ class Editor {
       }
       this.refreshScreenInterval = setInterval(async () => {
         await this.refreshScreen()
-      }, this.refTime)
+      }, this.options.refreshTime)
     } else {
       // OFF REALTIME
       clearInterval(this.refreshScreenInterval)
@@ -952,7 +954,10 @@ class Editor {
         <li data-light-id="${light.id}" class="light-element">
           <span class="light-name">${light.name}</span>
           <span data-light-id="${light.id}" class="menu-icon menu-icon-pos-1 delete-light" title="Delete light"></span>
-          <span data-light-id="${light.id}" class="menu-icon menu-icon-pos-2 eye-light ${eyeIcon}" title="Show / Hide light in editor"></span>
+          <span data-light-id="${light.id}" class="menu-icon menu-icon-pos-2 duplicate-light title="Duplicated light"></span>
+          <span data-light-id="${light.id}" class="menu-icon menu-icon-pos-3 light-move light-up" data-type="-1" title="Move up-brother"></span>
+          <span data-light-id="${light.id}" class="menu-icon menu-icon-pos-4 light-move light-down" data-type="1" title="Move down-brother"></span>
+          <span data-light-id="${light.id}" class="menu-icon menu-icon-pos-5 eye-light ${eyeIcon}" title="Show / Hide light in editor"></span>
         </li>`
       })
       element += `</ul>`;
@@ -2058,23 +2063,27 @@ class Editor {
       if (mode == 'load' && filename) {
         const response = await clone.fetchData({ ajax: true, load: true, filename: filename }); // console.log(response)
         if (response?.data && response?.structure) {
-          clone.mouseVariableReset()
 
+          clone.graph.map = clone.mapVariableReset()
+          clone.mouseVariableReset()
           clone.graph.resetCordinates()
           clone.mapMemory = []
           $('.menu-back').removeClass('menu-back-isset').addClass('menu-back-empty')
+
           clone.map.data = response.data
           clone.map.structure = response.structure
 
           const maxId = Math.max(... clone.map.data.map(obj => obj.id));
           Mesh.setInstanceCount(maxId)
 
-          clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
+          clone.refreshLightsList()
+          clone.refreshObjectList()
+          clone.fullRefreshCanvasGraphics()
 
           $("#modal-message").html('<div class="text-center text-success">successfully loaded!</div>')
 
           setTimeout(() => {
-            $("#modal-close").click()
+            $("#modal-close").trigger('click')
             $('#modal-input').val('')
             $("#modal-message").html('')
           }, 500);
@@ -2589,7 +2598,7 @@ class Editor {
             || (clone.mouse.addRec.cords[0][clone.views[name].vY] == clone.mouse.addRec.cords[1][clone.views[name].vY])) {
               // Adding error
               clone.resetMouseAddRec()
-              alert('Adding error!')
+              alert('Error!')
             } else {
               // Add rectangle
               clone.saveMapMemory('save')
@@ -3155,7 +3164,7 @@ class Editor {
         if (e.shiftKey && e.code == 'Digit3') { clone.selectedView = 'XZview-canvas'; clone.fullRefreshCanvasGraphics() }
         if (e.shiftKey && e.code == 'Digit4') { clone.selectedView = 'ZYview-canvas'; clone.fullRefreshCanvasGraphics() }
       });
-      
+
       $(document).keyup(e => {
         if (e.key == "Control") clone.ctrlPressed = false;
         if (e.key == "Shift") clone.shiftPressed = false;
@@ -3278,8 +3287,13 @@ class Editor {
 
     // ADD NEW LIGHT
     $(document).on('click', '#light-add-new', function() {
-      clone.map.lights.push(new Light('Light-', 0, 0.5, 1, 'point', '0xffddaa', 0.5, 5))
+      let newLight = new Light('Light-', 0, 0.5, 1, 'point', '0xffddaa', 0.5, 5)
+      clone.map.lights.push(newLight)
+      setTimeout(() => {
+        $(`.light-element[data-light-id='${newLight.id}']`).trigger('click')
+      }, 20)
       clone.refreshLightsList()
+      clone.fullRefreshCanvasGraphics()
     });
 
     // SHOW/HIDE ALL LIGHT
@@ -3342,6 +3356,7 @@ class Editor {
         let bgColor = clone.isValidHex(value) ? value : 'ffffff';
         $(this).css("background-color", `#${bgColor}`)
       }
+      clone.fullRefreshCanvasGraphics()
     });
     // SELECT
     $(document).on("change", "select[name='light-type'], select[name='light-edit-color']", function() {
@@ -3372,8 +3387,47 @@ class Editor {
         light.visible = !light.visible
         $(this).removeClass('eye-light-up eye-light-down')
         light.visible ? $(this).addClass('eye-light-up') : $(this).addClass('eye-light-down');
-
         clone.fullRefreshCanvasGraphics()
+      }
+    });
+
+    // MOVE LIGHTS PREV / NEXT
+    $(document).on('click', ".menu-icon.light-up, .menu-icon.light-down", function() {
+      let direction = $(this).attr('data-type')
+      let lightId = $(this).attr('data-light-id')
+
+      if (clone.map.lights.find(light => light.id == lightId)) {
+        let firstIndex = clone.map.lights.findIndex(light => light.id == lightId)
+        let secondIndex = firstIndex + parseInt(direction)
+        if (clone.map.lights[secondIndex]) {
+          [clone.map.lights[firstIndex], clone.map.lights[secondIndex]] = [clone.map.lights[secondIndex], clone.map.lights[firstIndex]]
+          clone.mouse.selectedLightId = clone.map.lights[secondIndex].id
+          clone.mouse.selectedLightData = clone.map.lights[secondIndex]
+          clone.refreshLightsList()
+          setTimeout(() => {
+            $(`.light-element[data-light-id='${clone.mouse.selectedLightId}']`).trigger('click')
+          }, 20)
+        }
+      }      
+    });
+
+    // DUPLICATE LIGHT
+    $(document).on('click', ".menu-icon.duplicate-light", function() {
+      let lightId = $(this).attr('data-light-id')
+      let light = clone.map.lights.find(light => light.id == lightId)
+      if (light) {
+        let newLight = JSON.parse(JSON.stringify(light)) // deepcopy
+
+        newLight.id = Light.getInstanceCount() + 1
+        newLight.name = newLight.name + '-clone'
+        Light.setInstanceCount(newLight.id)
+
+        clone.map.lights.push(newLight)
+
+        setTimeout(() => {
+          $(`.light-element[data-light-id='${newLight.id}']`).trigger('click')
+        }, 20)
+        clone.refreshLightsList()
       }
     });
 
@@ -3393,10 +3447,7 @@ class Editor {
             thisMeshStructure.status = 1
           }
         }
-
-        console.log('click !!!')
         clone.refreshObjectList()
-        
     });
 
     // VISIBLE
@@ -3643,7 +3694,7 @@ class Editor {
       event.stopPropagation()
       clone.saveMapMemory('save')
 
-      let type = $(this).attr('data-type')            
+      let type = $(this).attr('data-type')
       let meshId = $(this).closest('li').attr('data-id')
 
       clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = meshId;
