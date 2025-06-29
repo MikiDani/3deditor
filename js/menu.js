@@ -1,17 +1,25 @@
+import $ from 'jquery'
+
 export default class Menu {
-    constructor() {
+    constructor(game) {
+      this.game = game
       this.init()
     }
 
-    init() {
-        console.log('Init UPDATE')
+    async init() {
+        // console.log('Init MENU...')
     }
 
     update(deltaTime) {
-      console.log('Menu UPDATE')
+      if (!this.game.$menu.is(':visible')) {
+        this.game.showHideOptions('menu')
+      }
+
+      this.render(deltaTime)
     }
 
-    render() {
-      console.log('Menu RENDER')
+    render(deltaTime) {
+      $(".delta-time-menu").html(deltaTime.toFixed(0))
+      // console.log(this.game.currentState)
     }
 }

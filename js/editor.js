@@ -343,6 +343,28 @@ class Editor {
       if (response?.dirs) this.fileListElementsMake(mode, response.dirs, false, true)
     }
   }
+  async loadNewBasicData(response) {
+    // MAPDATA
+    this.map.data = this.deepCopy(response.data)
+    const maxId = Math.max(...this.map.data.map(obj => obj.id));
+    Mesh.setInstanceCount(maxId)
+    // MAP STRUCTURE
+    this.map.structure = this.deepCopy(response.structure)
+    // MAP PLAYER
+    this.map.player = this.deepCopy(response.player)
+    // MAP ACTIONS
+    this.map.actions = this.deepCopy(response.actions)
+    AnimAction.setInstanceCount(this.map.actions.length)
+    let countEventsRow = 0;
+    for (let key in this.map.actions) {
+      if (this.map.actions[key].events && Array.isArray(this.map.actions[key].events)) countEventsRow += this.map.actions[key].events.length;
+    }
+    AnimAction.setEventIdCounter(countEventsRow)
+    this.refreshActionSelect()
+    // MAP LIGHTS
+    this.map.lights = this.deepCopy(response.lights)
+    Light.setInstanceCount(this.getMaxId(this.map.lights))
+  }
 
   async loadMapData() {
     // FIRST LOAD
@@ -352,27 +374,7 @@ class Editor {
       const response = await this.fetchData({ ajax: true, load: true, filename: filename })
       if (response?.data && response?.structure) {
         // console.log(response);
-  
-        // MAPDATA
-        this.map.data = this.deepCopy(response.data)
-        const maxId = Math.max(...this.map.data.map(obj => obj.id));
-        Mesh.setInstanceCount(maxId)
-        // MAP STRUCTURE
-        this.map.structure = this.deepCopy(response.structure)
-        // MAP PLAYER
-        this.map.player = this.deepCopy(response.player)
-        // MAP ACTIONS
-        this.map.actions = this.deepCopy(response.actions)
-        AnimAction.setInstanceCount(this.map.actions.length)
-        let countEventsRow = 0;
-        for (let key in this.map.actions) {
-          if (this.map.actions[key].events && Array.isArray(this.map.actions[key].events)) countEventsRow += this.map.actions[key].events.length;
-        }
-        AnimAction.setEventIdCounter(countEventsRow)
-        this.refreshActionSelect()
-        // MAP LIGHTS
-        this.map.lights = this.deepCopy(response.lights)
-        Light.setInstanceCount(this.getMaxId(this.map.lights))
+        this.loadNewBasicData(response)
       }
     }
 
@@ -2063,31 +2065,26 @@ class Editor {
       if (mode == 'load' && filename) {
         const response = await clone.fetchData({ ajax: true, load: true, filename: filename }); // console.log(response)
         if (response?.data && response?.structure) {
-
+          // console.log(response)
+          // clear data
           clone.graph.map = clone.mapVariableReset()
           clone.mouseVariableReset()
           clone.graph.resetCordinates()
           clone.mapMemory = []
           $('.menu-back').removeClass('menu-back-isset').addClass('menu-back-empty')
-
-          clone.map.data = response.data
-          clone.map.structure = response.structure
-
-          const maxId = Math.max(... clone.map.data.map(obj => obj.id));
-          Mesh.setInstanceCount(maxId)
-
+          // load data
+          clone.loadNewBasicData(response)
+          // refresh DOM
           clone.refreshLightsList()
           clone.refreshObjectList()
           clone.fullRefreshCanvasGraphics()
 
           $("#modal-message").html('<div class="text-center text-success">successfully loaded!</div>')
-
           setTimeout(() => {
             $("#modal-close").trigger('click')
             $('#modal-input').val('')
             $("#modal-message").html('')
           }, 500);
-
         } else if (response?.error) {
           $("#modal-message").html(`<span class="text-center text-warning">${response?.error}</span>`)
         } else {

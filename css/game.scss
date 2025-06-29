@@ -1,3 +1,46 @@
-#screen {
-    color: white;
+html {
+    margin:0 !important;
+    padding:0 !important;
+    background-color: black;
+}
+
+#game-canvas {
+    background-color: black;
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+.delta-time-menu,
+.delta-time-game {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    z-index: 1;
+}
+
+#loading-container,
+#menu-container,
+#game-container,
+#inventory-container,
+.full-size {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+.cursor-pointer {
+    &:hover{
+        cursor: pointer;
+    }
+}
+
+#mouseButton {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 200;
+    height: 35px;
+    font-size: 12px;
+    z-index: 100;
 }

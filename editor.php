@@ -23,6 +23,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
             if ($row['name'] == '_objects') continue;
 
             $path = $directory . DIRECTORY_SEPARATOR . $row['name'];
+
+            if ($row['name'] == 'notexture') continue;
+
             if ($row['extension'] == '') {
                 $structure[$row['name']] = recursive_builder($path);
             } else if ($row['extension'] == 'png') {

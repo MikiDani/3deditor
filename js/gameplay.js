@@ -1,19 +1,20 @@
-export default class Loader {
-    constructor() {
-      this.init()
+import $ from 'jquery'
+
+export default class Gameplay {
+  constructor(game) {
+    this.game = game
+    this.counter = 0
+  }
+
+  async update(deltaTime) {
+    this.counter++
+
+    if (this.counter>5) {
+      $(".delta-time-game").html(deltaTime.toFixed(1))
+      this.counter = 0
     }
 
-    init() {
-        console.log('Loader INIT')
-        console.log('Default Datas... ?')
-        
-    }
-
-    update(deltaTime) {
-      console.log('UPDATE')
-    }
-
-    render() {
-      console.log('RENDER')
-    }
+    await this.game.input.updateCamera();
+    await this.game.renderer.render(this.game.scene, this.game.camera)
+  }
 }
