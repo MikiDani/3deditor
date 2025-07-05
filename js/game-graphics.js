@@ -6,10 +6,9 @@ export default class Graphics {
     this.init()
   }
 
-  async init() {
-    const canvas = document.getElementById('game-canvas')
-    this.game.canvas = canvas
-    this.game.renderer = new THREE.WebGLRenderer({ canvas })
+  init() {
+    this.game.canvas = document.getElementById('game-canvas')
+    this.game.renderer = new THREE.WebGLRenderer({ canvas: this.game.canvas })
     this.game.scene = new THREE.Scene()
 
     const scX = window.innerWidth / 2

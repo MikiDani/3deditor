@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import $ from 'jquery'
+import * as bootstrap from 'bootstrap'
 
 export default class Input {
   constructor(game) {
@@ -12,7 +13,7 @@ export default class Input {
   async ideiglenesMenuInputs() {
     const response = await this.game.loader.fetchData({ ajax: true, getfiles: true })  
     if (response?.files) {
-      console.log(response.files)
+      // console.log(response.files)
       let elements = '';
       for (const file of response.files) {
         elements += `<div class="filename text-start cursor-pointer">• <span>${file.name}</span></div>`
@@ -29,23 +30,30 @@ export default class Input {
       }, 10);
     });
 
-    $('#gravity-button').on('click', function() {
-      gravity = $(this).prop('checked') ? gravityValue : 0;
+    $('#gravity-button').on('click', (event) => {
+      let $this = $(event.target)
+      this.game.gravity = $this.prop('checked') ? gravityValue : 0;
     });
 
-    $('#lights-button').on('click', function() {
-      lightsOn = $(this).prop('checked')
+    $('#lights-button').on('click', (event) => {
+      let $this = $(event.target)
+      this.game.lightsOn = $this.prop('checked')
     });
 
-    $('#ghost-button').on('click', function() {
-      ghostMode = $(this).prop('checked')
+    $('#ghost-button').on('click', (event) => {
+      let $this = $(event.target)
+      this.game.ghostMode = $this.prop('checked')
     });
 
-    $('#filelist-container .filename').on('click', function() {
-      $('#file-input').val($(this).find('span').text())
+    $('#filelist-container .filename').on('click', (event) => {
+      let $this = $(event.target)
+      $('#file-input').val($this.find('span').text())
     });
 
     $('#closeBtn').on('click', () => {
+      const modal = bootstrap.Modal.getInstance(document.getElementById('myModal'))
+      if (modal) modal.hide()
+
       this.game.play = true
       this.game.currentState = 'game'
       this.game.showHideOptions('game')
@@ -53,24 +61,19 @@ export default class Input {
   }
 
   async gameControls() {
-    console.log('Game controll init ...') 
-
     this.setupCameraControls()
     this.mousePointerClickLoader()
 
     $(document).on('keydown', (e) => {
-      if(e.key =='Escape') {
-        
-        console.log('ELSŐ: ', this.game.currentState)
-        
+      if(e.key =='Escape') {        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('myModal'))
+        if (modal) modal.hide()
 
         if (this.game.currentState =='game') {
-          console.log('ESC -> GO MENU')
           this.game.play = false
           this.game.currentState = 'menu'
           this.game.showHideOptions('menu')
         } else if (this.game.currentState =='menu' || this.game.currentState =='inventory') {
-          console.log('ESC -> GO GAME')
           this.game.play = true
           this.game.currentState = 'game'
           this.game.showHideOptions('game')
@@ -89,7 +92,7 @@ export default class Input {
       }
 
       if (e.key == 'm') {
-        console.log('this.game.canvas.requestPointerLock')
+        console.log('PointerLock...')
         this.game.canvas.requestPointerLock()
       }
 
@@ -99,7 +102,6 @@ export default class Input {
         this.game.currentState = 'inventory'
         this.game.showHideOptions('inventory')
       }
-
     });
 
     this.game.inputsLoading = true
@@ -136,28 +138,28 @@ export default class Input {
   }
 
   attemptMove(offset) {    
-    const testPosFull = this.game.player.position.clone().add(offset);
+    const testPosFull = this.game.player.position.clone().add(offset)
 
     if (this.game.ghostMode) {
-      this.game.player.position.add(offset);
+      this.game.player.position.add(offset)
       return true;
-    }
+    } 
 
     if (!this.willCollide(testPosFull)) {
-      this.game.player.position.add(offset);
+      this.game.player.position.add(offset)
       return true;
     }
 
-    const testOffsetX = new THREE.Vector3(offset.x, 0, 0);
-    const testPosX = this.game.player.position.clone().add(testOffsetX);
-    const xOK = !this.willCollide(testPosX);
+    const testOffsetX = new THREE.Vector3(offset.x, 0, 0)
+    const testPosX = this.game.player.position.clone().add(testOffsetX)
+    const xOK = !this.willCollide(testPosX)
 
-    const testOffsetZ = new THREE.Vector3(0, 0, offset.z);
-    const testPosZ = this.game.player.position.clone().add(testOffsetZ);
-    const zOK = !this.willCollide(testPosZ);
+    const testOffsetZ = new THREE.Vector3(0, 0, offset.z)
+    const testPosZ = this.game.player.position.clone().add(testOffsetZ)
+    const zOK = !this.willCollide(testPosZ)
 
-    if (xOK) this.game.player.position.add(testOffsetX);
-    if (zOK) this.game.player.position.add(testOffsetZ);
+    if (xOK) this.game.player.position.add(testOffsetX)
+    if (zOK) this.game.player.position.add(testOffsetZ)
 
     return xOK || zOK;
   }
@@ -187,19 +189,19 @@ export default class Input {
   }
 
   updateCamera() {
-    const shift = this.game.keysPressed.has('shift');
+    const shift = this.game.keysPressed.has('shift')
     let moved = false;
 
-    const direction = new THREE.Vector3(-Math.sin(this.game.player.rotation.y), 0, -Math.cos(this.game.player.rotation.y)).normalize();
+    const direction = new THREE.Vector3(-Math.sin(this.game.player.rotation.y), 0, -Math.cos(this.game.player.rotation.y)).normalize()
 
     if (this.game.keysPressed.has('w')) {
       if (shift) {
         if (!moved) {          
-          moved = this.attemptMove(new THREE.Vector3(0, this.game.moveSpeed, 0));
+          moved = this.attemptMove(new THREE.Vector3(0, this.game.moveSpeed, 0))
         }
       } else {
         if (!moved) {
-          moved = this.attemptMove(direction.clone().multiplyScalar(this.game.moveSpeed));
+          moved = this.attemptMove(direction.clone().multiplyScalar(this.game.moveSpeed))
         }
       }
     }
@@ -229,7 +231,7 @@ export default class Input {
     if (this.game.keysPressed.has('d')) {
       if (shift) {
         const right = new THREE.Vector3().crossVectors(direction, this.game.camera.up).normalize().multiplyScalar(this.game.moveSpeed)
-        moved ||= this.attemptMove(right);
+        moved ||= this.attemptMove(right)
       } else {
         this.game.player.rotation.y -= this.game.rotateSpeed
         moved = true
@@ -250,34 +252,37 @@ export default class Input {
 
     // ----- UGRÁS -----
     if (this.game.keysPressed.has(' ') && this.game.isGrounded && !this.game.jumpState.isJumping) {
-      this.game.jumpState.isJumping = true;
-      this.game.jumpState.startY = this.game.player.position.y;
-      this.game.jumpState.targetY = this.game.player.position.y + this.game.jumpState.size;
-      this.game.jumpState.startTime = performance.now();
-      this.game.isGrounded = false;
+      this.game.jumpState.isJumping = true
+      this.game.jumpState.startY = this.game.player.position.y
+      this.game.jumpState.targetY = this.game.player.position.y + this.game.jumpState.size
+      this.game.jumpState.startTime = performance.now()
+      this.game.isGrounded = false
     }
 
     if (this.game.jumpState.isJumping) {
       const elapsed = performance.now() - this.game.jumpState.startTime;
-      const t = Math.min(elapsed / this.game.jumpState.duration, 1);
-      const newY = THREE.MathUtils.lerp(this.game.jumpState.startY, this.game.jumpState.targetY, t);
+      const t = Math.min(elapsed / this.game.jumpState.duration, 1)
+      const newY = THREE.MathUtils.lerp(this.game.jumpState.startY, this.game.jumpState.targetY, t)
 
-      const jumpOffset = new THREE.Vector3(0, newY - this.game.player.position.y, 0);
-      const testPos = this.game.player.position.clone().add(jumpOffset);
+      const jumpOffset = new THREE.Vector3(0, newY - this.game.player.position.y, 0)
+      const testPos = this.game.player.position.clone().add(jumpOffset)
 
       if (!this.willCollide(testPos)) {
-        this.game.player.position.y = newY;
+        this.game.player.position.y = newY
       } else {
-        this.game.jumpState.isJumping = false;
+        this.game.jumpState.isJumping = false
       }
 
-      if (t >= 1) this.game.jumpState.isJumping = false;
+      if (t >= 1) this.game.jumpState.isJumping = false
     }
 
     // ----- GRAVITÁCIÓ -----
     if (!this.game.jumpState.isJumping) {
-      const gravityOffset = new THREE.Vector3(0, this.game.currentGravity, 0);
-      // const gravityOffset = new THREE.Vector3(0, 0, 0);  // !!
+
+      const gravityOffset = (this.game.gravity)
+        ? new THREE.Vector3(0, this.game.currentGravity, 0)
+        : new THREE.Vector3(0, 0, 0);
+
       const testPos = this.game.player.position.clone().add(gravityOffset);
 
       if (!this.willCollide(testPos)) {
@@ -289,5 +294,50 @@ export default class Input {
     }
 
     return moved;
+  }
+
+  actionsClicksChecks() {
+    let clickTimer;
+  
+    // MOUSEDOWN
+    $(document).on('mousedown', (event) => {
+      clickTimer = setTimeout(() => {
+        this.handleClickEvent(event, 'mousedown');
+      }, 150);
+    });
+  
+    // DBLCLICK
+    $(document).on('dblclick', (event) => {
+      clearTimeout(clickTimer);
+      this.handleClickEvent(event, 'dblclick');
+    });
+  }
+
+  // CLICK LOGICK
+  handleClickEvent(event, clickType) {
+    const mouse = new THREE.Vector2()
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1
+    mouse.y = - (event.clientY / window.innerHeight) * 2 + 1
+
+    const raycaster = new THREE.Raycaster()
+    raycaster.setFromCamera(mouse, this.game.camera)
+
+    this.game.map.actionelements.forEach(action => {
+      if (action[1].conditions.click == clickType) {
+
+        const intersects = raycaster.intersectObjects(action[0].children, true)
+        // IF HAVE CLICK SHOT MESH
+        if (intersects.length > 0) {
+          const intersect = intersects[0]
+          const cameraPos = new THREE.Vector3()
+          this.game.camera.getWorldPosition(cameraPos)
+          const hitPoint = intersect.point
+          const distance = cameraPos.distanceTo(hitPoint)
+
+          console.clear()
+          this.game.gameplay.checkActions(action, distance)
+        }
+      }
+    });
   }
 }

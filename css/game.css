@@ -6,12 +6,17 @@ html {
 
 #game-canvas {
   background-color: black;
-  position: relative;
   width: 100vw;
   height: 100vh;
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
 }
 
 .delta-time-menu,
+.delta-time-inventory,
 .delta-time-game {
   position: absolute;
   left: 10px;

@@ -541,7 +541,7 @@ class Editor {
               </div>
               <span title="The event is activated by clicking - or double-clicking - or not.">Click:</span>
               <select data-type="long" name="click" data-action-id="${animAction.id}" class="mx-3">
-                ${this.optionElementMaker([{id:null, name:'none'},{id:'click', name:'click'},{id:'dclick', name:'double click'}], animAction.conditions.click)}
+                ${this.optionElementMaker([{id:'null', name:'none'},{id:'mousedown', name:'mousedown'},{id:'dblclick', name:'dblclick'}], animAction.conditions.click)}
               </select>
               <span title="The character must be at least this close for the event to activate.">Distance Near:</span>
               <input type="number" step="0.01" name="distance-near" value="${animAction.conditions.distance_near ? animAction.conditions.distance_near : ''}" data-action-id="${animAction.id}" class="mx-3">
@@ -984,6 +984,8 @@ class Editor {
     }
     this.triangleContainerShowOptions()
     this.refreshLightListOff()
+
+    this.refreshActionSelect()
   }
 
   refreshActionSelect() {
@@ -1315,7 +1317,7 @@ class Editor {
             elements += `
             <div class="pos-relative">
               <div class="inline-block mb-3">
-                <span class="action-id-box me-3 text-bold">${this.map.actions[index].name}</span>
+                <span class="action-id-box me-3 text-bold">${this.map.actions[action-1].name}</span>
               </div>
               <span class="delete-action ms-3" data-actionindex-id="${index}" data-mesh-id="${this.mouse.selectedMeshId}">⊗</span>
             </div>`;
@@ -1392,11 +1394,15 @@ class Editor {
     // MESH ADD ACTION
 
     // ADD NEW ACTION
-    $(document).on('click', "button[name='add-action']", function() {
+    $(document).on('click', "#actions button[name='add-action']", function() {
       let selectedActionId = $("select[name='actions-selector']").val()
       let selectedMesh = clone.map.data.find(mesh => mesh.id == clone.mouse.selectedMeshId)
       if (!selectedMesh?.actions) selectedMesh.actions = [];
-      selectedMesh.actions.push(selectedActionId)
+
+      if (!selectedMesh.actions.includes(selectedActionId)) selectedMesh.actions.push(selectedActionId);
+
+      // console.log(selectedMesh.actions)
+      
       clone.refreshActionList()
     });
 

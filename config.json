@@ -63,8 +63,8 @@
   	{
       "id": 1,
       "name": "chees",
-      "type": "key",
-      "value": "silver"
+      "type": "healt",
+      "value": 25
     },
     {
       "id": 2,
@@ -77,6 +77,12 @@
       "name": "ketchup",
       "type": "healt",
       "value": 5
+    },
+    {
+      "id": 4,
+      "name": "silverkey",
+      "type": "key",
+      "value": "2"
     }
   ],
     "sounds": [

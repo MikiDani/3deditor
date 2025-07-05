@@ -6,45 +6,33 @@ export default class Loader {
   constructor(game) {
     this.game = game
 
-    this.$loading = game.$loading
-    this.$menu = game.$menu
-    this.$game = game.$game
-    this.$inventory = game.$inventory
-    // console.log(this.$loading, this.$menu, this.$game, this.$inventory)
-
-    this.loadedTextures = game.loadedTextures
-    this.config = game.config
     this.texturesLinks = []
   }
 
-  async generalLoader(viewOn) {
-    await this.loadGameConfig()
-    if (viewOn) console.log(this.loadedTextures)
+  async generalLoader(logOn) {
+    try {
+      await this.loadTextures()
+      if (logOn) console.log(this.game.loadedTextures)
+    } catch (e) { this.game.loadingError = true; return; }
 
-    await this.loadTextures()
-    if (viewOn) console.log(this.loadedTextures)
-    
+    try {
+      const response = await fetch('config.json')
+      this.game.config = await response.json()
+    } catch (e) { this.game.loadingError = true; return; }
+
     // FINISH LOADING
     this.game.generalLoading = true
-    this.$loading.hide()
-  }
-
-  async loadGameConfig() {
-    const response = await fetch('config.json')
-    this.config = await response.json()
-
-    console.log(this.config)    
+    this.game.$loading.hide()
   }
 
   async loadTextures() {
-    await this.loadTexturesLinks()
-    // console.log(this.texturesLinks)
+    await this.loadTexturesLinks() // console.log(this.texturesLinks)
 
     for (const [name, path] of Object.entries(this.texturesLinks)) {
       // console.log(name, path)
       let texturePaths = Object.values(this.texturesLinks[name])
       const loadData = await this.createSpritesheetTexture(name, texturePaths, 500)
-      this.loadedTextures[name]= loadData
+      this.game.loadedTextures[name]= loadData
     }
   }
 
@@ -115,40 +103,36 @@ export default class Loader {
     return texture;
   }
 
-  async mapLoader() {
-    console.log('loading Map data....')
-    //await new Promise((resolve) => setTimeout(()=>resolve(), 2000))
-
+  async mapLoader(logOn) {
     const filename = $("#file-input").val()
     const response = await this.fetchData({ ajax: true, load: true, filename: filename })
-    console.log(response)
-
     if (response?.data && response?.structure) {
       this.game.map.data = this.game.deepCopy(response.data, true)
       this.game.map.structure = this.game.deepCopy(response.structure, true)
       this.game.map.lights = this.game.deepCopy(response.lights)
-      this.game.map.actions = this.game.deepCopy(response.lights)
+      this.game.map.actions = this.game.deepCopy(response.actions)
       this.game.map.player = this.game.deepCopy(response.player)
-      
+
       this.game.player.position.x = this.game.map.player.x
       this.game.player.position.y = this.game.map.player.y
       this.game.player.position.z = -this.game.map.player.z / 7
       this.game.player.rotation.y -= this.game.map.player.fYaw
       this.game.pitchObject.rotation.x -= -this.game.map.player.fXaw
 
-      console.log('----')
-      console.log(this.game.map.data)
-      console.log(this.game.map.structure)
-      console.log(this.game.map.player)
-      console.log(this.game.map.lights)
-      console.log(this.game.map.actions)
-      console.log('----')
+      if (logOn) {
+        console.log('----')
+        console.log(this.game.map.data)
+        console.log(this.game.map.structure)
+        console.log(this.game.map.player)
+        console.log(this.game.map.lights)
+        console.log(this.game.map.actions)
+        console.log('----')
+      }
 
       // ADD DATA IN THREEJS
       for (let mesh of this.game.map.data) {
-      
+
         const meshGroup = new THREE.Group(); // új csoport minden mesh-hez
-  
         for (let tri of mesh.tris) {
           const geometry = new THREE.BufferGeometry()
           const vertices = new Float32Array([
@@ -156,22 +140,20 @@ export default class Loader {
             tri.p[1].x, tri.p[1].y, tri.p[1].z,
             tri.p[2].x, tri.p[2].y, tri.p[2].z
           ]);
-  
+
           geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
-  
+
           const uvs = new Float32Array([
             tri.t[0].u, 1 - tri.t[0].v,
             tri.t[1].u, 1 - tri.t[1].v,
             tri.t[2].u, 1 - tri.t[2].v,
           ]);
-  
-          geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
-  
-          geometry.computeVertexNormals();
-  
-          // MeshBasicMaterial vagy MeshLambertMaterial
-          // const material = new THREE.MeshBasicMaterial({
-          const material = new THREE.MeshLambertMaterial({
+
+          geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))  
+          geometry.computeVertexNormals()
+
+          const materialType = (this.game.lightsOn) ? 'MeshLambertMaterial' : 'MeshBasicMaterial';
+          const material = new THREE[materialType]({
             map: this.game.loadedTextures[tri.texture.name],  // TEXTURA ÚJ MEGOLDÁS
             side: THREE.DoubleSide,
             transparent: true,
@@ -188,14 +170,35 @@ export default class Loader {
           box.max.add(triangleMesh.position)
           this.game.boundingBoxes.push(box)
 
-          // 🔶 SÁRGA BOXHELPER MEGJELENÍTÉSE
+          // YELLOW BOX-HELPER
           if (this.game.boxHelp) {
             const helper = new THREE.Box3Helper(box, new THREE.Color(0xffff00));
             this.game.scene.add(helper);
           }
         }
+
+        // LOAD ACTIONS
+        if (mesh?.actions && mesh.actions.length > 0) {
+          console.log('Van AKCIÓJA: ', mesh.name)
+
+          mesh.actions.forEach(action => {            
+            let actionData = this.game.map.actions.find(obj => obj.id == action)
+            if (actionData) {
+              actionData.meshname = mesh.name
+              this.game.map.actionelements.push([meshGroup, actionData])
+            }
+          });
+        }
+
         this.game.scene.add(meshGroup) 
       }
+
+      this.game.map.actionelements.forEach(mesh => {
+        console.log(mesh)
+      });
+
+      //ADD CLICK CHECKS
+      this.game.input.actionsClicksChecks()
 
       // LIGHTS LOADING
       if (this.game.lightsOn) {
@@ -213,14 +216,19 @@ export default class Loader {
               if (pointLight) {
                 pointLight.position.set(light.p.x, light.p.y, light.p.z)
                 this.game.scene.add(pointLight)
+
+                this.game.loadedlights[light.id] = [light.name, pointLight]
               }
             }
           }
+          const ambient = new THREE.AmbientLight(0xffffff, 0.05)
+          this.game.scene.add(ambient)
         }
+
       } else {
         console.log('AMBIENT ALAP FÉNY')
-        const ambient = new THREE.AmbientLight(0xffffff, 1); // szín, erősség
-        this.game.scene.add(ambient);
+        const ambient = new THREE.AmbientLight(0xffffff, 1)
+        this.game.scene.add(ambient)
       }
 
       // SKY BACKGROUND
@@ -229,7 +237,7 @@ export default class Loader {
       const texture = loader.load(
         [ 'sky-01.png', 'sky-01.png', 'sky-01.png', 'sky-01.png', 'sky-01.png', 'sky-01.png' ],
         () => {
-          console.log('Skybox betöltve')
+          // console.log('Skybox betöltve')
           texture.magFilter = THREE.NearestFilter
           texture.minFilter = THREE.NearestFilter
           texture.generateMipmaps = false
