@@ -24,9 +24,9 @@ export default class Game {
     this.lightsOn
     this.ghostMode
 
-    // ---
     this.loadedTextures = {}
-    this.loadedlights = []
+    this.loadedLights = []
+    this.loadedMeshs = []
 
     this.config = {}
     this.$loading = {}
@@ -38,6 +38,8 @@ export default class Game {
     this.moveSpeed = 0.07,
     this.currentGravity = -0.05,
     this.gravityValue = 0.05,
+
+    this.playerObjects = []
 
     // ---
     this.boundingBoxes = []
@@ -201,6 +203,8 @@ export default class Game {
       try {
         this.mapLoading = true
         await this.loader.mapLoader(false)
+        console.log(this.loadedMeshs)
+        
       } catch(e) {
         this.loadingErrorAction(); return;
       }
@@ -225,6 +229,34 @@ export default class Game {
   loadingErrorAction() {    
     $("#loading-text").html('Load error!')
     this.showHideOptions('loading')
+  }
+
+  checkPlayerObject(objects = []) {    
+    for (const objId of objects) {
+      if (!this.playerObjects.includes(objId)) return false;
+    }
+    return true;
+  }
+
+  removeObjectOfMap(threeObject) {
+    // DELETE SCENE
+    this.scene.remove(threeObject)
+  
+    // DELETE ACTIONELEMENTS
+    this.map.actionelements = this.map.actionelements.filter(
+      ([group, _]) => group !== threeObject
+    )
+  
+    // DELETE BOUNDINGBOXES
+    threeObject.children.forEach(child => {
+      if (child.geometry?.boundingBox) {
+        const box = child.geometry.boundingBox.clone()
+        box.min.add(child.position); box.max.add(child.position);
+        this.boundingBoxes = this.boundingBoxes.filter(existingBox =>
+          !existingBox.equals(box)
+        )
+      }
+    })
   }
 }
 

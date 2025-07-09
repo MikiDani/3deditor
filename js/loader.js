@@ -172,8 +172,10 @@ export default class Loader {
 
           // YELLOW BOX-HELPER
           if (this.game.boxHelp) {
+            /*
             const helper = new THREE.Box3Helper(box, new THREE.Color(0xffff00));
             this.game.scene.add(helper);
+            */
           }
         }
 
@@ -190,15 +192,17 @@ export default class Loader {
           });
         }
 
-        this.game.scene.add(meshGroup) 
+
+        // !!!! ? 
+        
+        // PROBA KÜLÖN MENTENI: // !!!
+        this.game.loadedMeshs[mesh.id] = meshGroup
+
+        this.game.scene.add(meshGroup)
       }
 
-      this.game.map.actionelements.forEach(mesh => {
-        console.log(mesh)
-      });
-
       //ADD CLICK CHECKS
-      this.game.input.actionsClicksChecks()
+      this.game.input.actionsClicksCheck()
 
       // LIGHTS LOADING
       if (this.game.lightsOn) {
@@ -217,7 +221,7 @@ export default class Loader {
                 pointLight.position.set(light.p.x, light.p.y, light.p.z)
                 this.game.scene.add(pointLight)
 
-                this.game.loadedlights[light.id] = [light.name, pointLight]
+                this.game.loadedLights[light.id] = [light.name, pointLight]
               }
             }
           }

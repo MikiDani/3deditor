@@ -296,7 +296,7 @@ export default class Input {
     return moved;
   }
 
-  actionsClicksChecks() {
+  actionsClicksCheck() {
     let clickTimer;
   
     // MOUSEDOWN

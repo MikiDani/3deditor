@@ -44,16 +44,30 @@ class AnimAction {
 
   addNewEvent() {
     AnimAction.eventIdCounter++;
+
+    // EXAMPLE
+    // this.newEvent = {
+    //   id: AnimAction.eventIdCounter,
+    //   name: 'New-event-' + AnimAction.eventIdCounter,
+    //   timer: 0,                           // integer
+    //   autoswitch: false,                  // bolean
+    //   interval: [true, 3],                // array
+    //   addobjects: ['apple', 'banana'],    // array
+    //   playsounds: ['ding', 'dong'],       // array
+    //   moveactions: [[0, 0],[1, 1]],       // mash id  / movefx id
+    //   lightfx: [[1, 0],[1, 1]],           // light id / lightfx id
+    // }
+
     this.newEvent = {
       id: AnimAction.eventIdCounter,
       name: 'New-event-' + AnimAction.eventIdCounter,
-      timer: 0,                           // integer
-      autoswitch: false,                  // bolean
-      interval: [true, 3],                // array
-      addobjects: ['apple', 'banana'],    // array
-      playsounds: ['ding', 'dong'],       // array
-      moveactions: [[0, 0],[1, 1]],       // mash id  / movefx id
-      lightfx: [[1, 0],[1, 1]],           // light id / lightfx id
+      timer: 0,                             // integer
+      autoswitch: null,                     // bolean
+      interval: [false, 0],                 // array
+      addobjects: [],                       // array
+      playsounds: [],                       // array
+      moveactions: [],                      // mash id  / movefx id
+      lightfx: [],                          // light id / lightfx id
     }
     this.events.push(this.newEvent)
   }
@@ -541,7 +555,7 @@ class Editor {
               </div>
               <span title="The event is activated by clicking - or double-clicking - or not.">Click:</span>
               <select data-type="long" name="click" data-action-id="${animAction.id}" class="mx-3">
-                ${this.optionElementMaker([{id:'null', name:'none'},{id:'mousedown', name:'mousedown'},{id:'dblclick', name:'dblclick'}], animAction.conditions.click)}
+                ${this.optionElementMaker([{id:'auto', name:'auto'},{id:'mousedown', name:'mousedown'},{id:'dblclick', name:'dblclick'}], animAction.conditions.click)}
               </select>
               <span title="The character must be at least this close for the event to activate.">Distance Near:</span>
               <input type="number" step="0.01" name="distance-near" value="${animAction.conditions.distance_near ? animAction.conditions.distance_near : ''}" data-action-id="${animAction.id}" class="mx-3">
@@ -1370,6 +1384,12 @@ class Editor {
 
         console.log('this.gamedata')
         console.log(this.gamedata)
+      }
+
+      if (event.key == 'u') {
+        console.log('this.refreshActionSelect')
+        this.refreshActionSelect()
+        console.log(this.map.actions)
       }
 
       if (event.key == 'o') {
@@ -2320,6 +2340,9 @@ class Editor {
 
       // RELOAD TEXTURES
       if (mode == 'textures') await clone.loadTextures();
+
+      // RELOAD SELECT VALUES OF ACTION NAMES
+      clone.refreshActionSelect()
 
       $('#modal-input').val(''); $('#modal-file').val('');
       $("#modal-inputdiv").css('visibility', 'visible')
