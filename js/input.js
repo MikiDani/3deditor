@@ -45,9 +45,9 @@ export default class Input {
       this.game.ghostMode = $this.prop('checked')
     });
 
-    $('#filelist-container .filename').on('click', (event) => {
-      let $this = $(event.target)
-      $('#file-input').val($this.find('span').text())
+    $('#filelist-container .filename span').on('click', (event) => {
+      let $this = $(event.target)      
+      $('#file-input').val($this.text())
     });
 
     $('#closeBtn').on('click', () => {
@@ -91,7 +91,7 @@ export default class Input {
         console.log(this.game.map.player.fXaw)
       }
 
-      if (e.key == 'm') {
+      if (e.key == 'f') {
         console.log('PointerLock...')
         this.game.canvas.requestPointerLock()
       }
@@ -121,12 +121,17 @@ export default class Input {
       duration: 200
     };
 
-    window.addEventListener('keydown', (e) => this.game.keysPressed.add(e.key.toLowerCase()))
-    window.addEventListener('keyup', (e) => this.game.keysPressed.delete(e.key.toLowerCase()))
+    window.addEventListener('keydown', (e) => {
+      if (typeof e.key == 'string') this.game.keysPressed.add(e.key.toLowerCase())
+    })
+    
+    window.addEventListener('keyup', (e) => {
+      if (typeof e.key == 'string') this.game.keysPressed.delete(e.key.toLowerCase())
+    })
   }
 
-  willCollide(testPos) {
-    const cameraBox = new THREE.Box3().setFromCenterAndSize(testPos, new THREE.Vector3(0.4, 1, 0.4));
+  willCollide(testPos) {    
+    const cameraBox = new THREE.Box3().setFromCenterAndSize(testPos, this.game.playerBoundingBox);
 
     // Statikus objektumok
     let collides = this.game.boundingBoxes.some(box => box.intersectsBox(cameraBox));
@@ -334,7 +339,8 @@ export default class Input {
           const hitPoint = intersect.point
           const distance = cameraPos.distanceTo(hitPoint)
 
-          console.clear()
+          // console.clear()
+
           this.game.gameplay.checkActions(action, distance)
         }
       }

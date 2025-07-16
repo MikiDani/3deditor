@@ -147,76 +147,118 @@ export default class Gameplay {
             valueadd: null,
             addedStep: 0.01,
             addedValue: null,
+            offsetTypeX: 'min',
+            offsetTypeY: 'min',
+            offsetTypeZ: 'max',
           }
         }
-
-        mesh.openConfig.addedValue = mesh.openConfig.state ? -mesh.openConfig.addedStep : mesh.openConfig.addedStep;
-        mesh.openConfig.valueAdd = mesh.openConfig.state ? -1 : 1;
-
-        // console.log(mesh.openConfig.addedValue)
-
-        if (!mesh?.timeInterval) {
-          // FIRST OFFSET OPTIONS
-          if (!mesh.containerOffset) {
-            const box = new THREE.Box3().setFromObject(mesh)
-            const offset = new THREE.Vector3(box.min.x, box.min.y, box.max.z)
-            mesh.containerOffset = offset.clone()
-            mesh.position.sub(offset)
-            mesh.container = new THREE.Group()
-            mesh.container.position.copy(mesh.containerOffset)
-            mesh.container.add(mesh)
-          }
-
-          // CHECK CRESH
-          const clone = mesh.container.clone(true)
-          clone.rotation.y += mesh.openConfig.addedValue
-          const futureBox = new THREE.Box3().setFromObject(clone)
-          const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), new THREE.Vector3(0.4, 1, 0.4))
-          if (futureBox.intersectsBox(playerBox)) return;
-
-          this.game.scene.add(mesh.container)
-
-          mesh.timeInterval = setInterval(() => {
-            // TEST NEXT MOVE
-            const tempRotation = mesh.container.rotation.y + mesh.openConfig.addedValue
-            const clone = mesh.container.clone(true)
-            clone.rotation.y = tempRotation
-            const testBox = new THREE.Box3().setFromObject(clone)
-            const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), new THREE.Vector3(0.4, 1, 0.4))
-            if (testBox.intersectsBox(playerBox)) return;
-
-            // MOVE AND REFRESH
-            mesh.container.rotation.y = tempRotation
-            mesh.openConfig.value += mesh.openConfig.valueAdd
-          
-            // REFRESH BOUNDING BOX FRISSÍTÉS
-            const updatedBox = new THREE.Box3().setFromObject(mesh.container)
-            const index = this.game.boundingBoxes.findIndex(box => box === mesh._boundingBox)
-            if (index !== -1) this.game.boundingBoxes[index] = updatedBox;
-            else this.game.boundingBoxes.push(updatedBox);
-            mesh._boundingBox = updatedBox
-
-            // console.log(mesh.openConfig.value)
-
-            if (mesh.openConfig.value == mesh.openConfig.max - 1 || mesh.openConfig.value < mesh.openConfig.min + 1) {
-              console.log('STOP!');
-              mesh.openConfig.state = !mesh.openConfig.state
-              clearInterval(mesh.timeInterval);
-              mesh.timeInterval = null;
-            }
-          }, 10);
-      
-        } else {
-          // IF NEW CLICK
-          mesh.openConfig.state = !mesh.openConfig.state
-          mesh.openConfig.addedValue = mesh.openConfig.state ? -mesh.openConfig.addedStep : mesh.openConfig.addedStep;
-          mesh.openConfig.valueAdd = mesh.openConfig.state ? -1 : 1;
-        }
+        this.openFx(mesh)
         break
 
       case 1:
-        //
+        if (!mesh.openConfig) {
+          mesh.openConfig = {
+            state: false,
+            min: 0,
+            max: 190,
+            value: 0,
+            valueadd: null,
+            addedStep: 0.01,
+            addedValue: null,
+            offsetTypeX: 'min',
+            offsetTypeY: 'min',
+            offsetTypeZ: 'min',
+          }
+        }
+        this.openFx(mesh)
       break
+
+      case 2:
+        if (!mesh.openConfig) {
+          mesh.openConfig = {
+            state: false,
+            min: 0,
+            max: 190,
+            value: 0,
+            valueadd: null,
+            addedStep: -0.01,
+            addedValue: null,
+            offsetTypeX: 'max',
+            offsetTypeY: 'min',
+            offsetTypeZ: 'min',
+          }
+        }
+        this.openFx(mesh)
+      break
+    }
+  }
+
+  openFx(mesh) {
+    mesh.openConfig.addedValue = mesh.openConfig.state ? -mesh.openConfig.addedStep : mesh.openConfig.addedStep;
+    mesh.openConfig.valueAdd = mesh.openConfig.state ? -1 : 1;
+
+    // console.log(mesh.openConfig.addedValue)
+
+    if (!mesh?.timeInterval) {
+      // FIRST OFFSET OPTIONS
+      if (!mesh.containerOffset) {
+
+        console.log(mesh.openConfig.offsetTypeX, mesh.openConfig.offsetTypeY, mesh.openConfig.offsetTypeZ)
+
+        const box = new THREE.Box3().setFromObject(mesh)
+        //const offset = new THREE.Vector3(box.min.x, box.min.y, box.max.z)
+        const offset = new THREE.Vector3(box[mesh.openConfig.offsetTypeX].x, box[mesh.openConfig.offsetTypeY].y, box[mesh.openConfig.offsetTypeZ].z)
+        mesh.containerOffset = offset.clone()
+        mesh.position.sub(offset)
+        mesh.container = new THREE.Group()
+        mesh.container.position.copy(mesh.containerOffset)
+        mesh.container.add(mesh)
+      }
+
+      // CHECK CRESH      
+      const clone = mesh.container.clone(true)
+      clone.rotation.y += mesh.openConfig.addedValue
+      const futureBox = new THREE.Box3().setFromObject(clone)
+      const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
+      if (futureBox.intersectsBox(playerBox)) return;
+
+      this.game.scene.add(mesh.container)
+
+      mesh.timeInterval = setInterval(() => {
+        // TEST NEXT MOVE
+        const tempRotation = mesh.container.rotation.y + mesh.openConfig.addedValue
+        const clone = mesh.container.clone(true)
+        clone.rotation.y = tempRotation
+        const testBox = new THREE.Box3().setFromObject(clone)
+        const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
+        if (testBox.intersectsBox(playerBox)) return;
+
+        // MOVE AND REFRESH
+        mesh.container.rotation.y = tempRotation
+        mesh.openConfig.value += mesh.openConfig.valueAdd
+      
+        // REFRESH BOUNDING BOX FRISSÍTÉS
+        const updatedBox = new THREE.Box3().setFromObject(mesh.container)
+        const index = this.game.boundingBoxes.findIndex(box => box === mesh._boundingBox)
+        if (index !== -1) this.game.boundingBoxes[index] = updatedBox;
+        else this.game.boundingBoxes.push(updatedBox);
+        mesh._boundingBox = updatedBox
+
+        // console.log(mesh.openConfig.value)
+
+        if (mesh.openConfig.value == mesh.openConfig.max - 1 || mesh.openConfig.value < mesh.openConfig.min + 1) {
+          console.log('STOP!');
+          mesh.openConfig.state = !mesh.openConfig.state
+          clearInterval(mesh.timeInterval);
+          mesh.timeInterval = null;
+        }
+      }, 10);
+  
+    } else {
+      // IF NEW CLICK
+      mesh.openConfig.state = !mesh.openConfig.state
+      mesh.openConfig.addedValue = mesh.openConfig.state ? -mesh.openConfig.addedStep : mesh.openConfig.addedStep;
+      mesh.openConfig.valueAdd = mesh.openConfig.state ? -1 : 1;
     }
   }
 }

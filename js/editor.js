@@ -368,13 +368,15 @@ class Editor {
     this.map.player = this.deepCopy(response.player)
     // MAP ACTIONS
     this.map.actions = this.deepCopy(response.actions)
-    AnimAction.setInstanceCount(this.map.actions.length)
-    let countEventsRow = 0;
-    for (let key in this.map.actions) {
-      if (this.map.actions[key].events && Array.isArray(this.map.actions[key].events)) countEventsRow += this.map.actions[key].events.length;
-    }
-    AnimAction.setEventIdCounter(countEventsRow)
-    this.refreshActionSelect()
+    if (this.map.actions && Array.isArray(this.map.actions)) {
+      AnimAction.setInstanceCount(this.map.actions.length)
+      let countEventsRow = 0;
+      for (let key in this.map.actions) {
+        if (this.map.actions[key].events && Array.isArray(this.map.actions[key].events)) countEventsRow += this.map.actions[key].events.length;
+      }
+      AnimAction.setEventIdCounter(countEventsRow)
+      this.refreshActionSelect()
+    } else this.map.actions = [];
     // MAP LIGHTS
     this.map.lights = this.deepCopy(response.lights)
     Light.setInstanceCount(this.getMaxId(this.map.lights))
@@ -543,7 +545,7 @@ class Editor {
         <div class="box-2-move-up animaction-move" data-direction="-1" data-action-id="${animAction.id}">▲</div>
         <div class="box-2-move-down animaction-move" data-direction="1" data-action-id="${animAction.id}">▼</div>
         <div class="box-2-delete animaction-delete" data-action-id="${animAction.id}">✖</div>        
-        <div class="pb-3 pt-4 pb-4 box-2-bg">
+        <div class="container-head pb-3 pt-4 pb-4 box-2-bg">
           <span class="fw-bold ms-3">${animAction.id}.</span> <span>Action Name:</span><input type="text" name="animaction-name" data-action-id="${animAction.id}" value="${animAction.name}" placeholder="Action Name ${animAction.id}" class="mx-3">
         </div>
         <div class="eye-container" data-action-id="${animAction.id}">
@@ -594,12 +596,6 @@ class Editor {
   }
 
   arrayEventMaker(animAction, event) {
-
-    // event.addobjects = [1, 3]
-    // event.playsounds = [1, 2]
-    // event.moveactions = [[3, 1], [10, 2], [25, 2]]
-    // event.lightfx = [[1, 0],[1, 1]]
-
     let elements = '';
     elements += `
     <div class="event-container box-3 pos-relative pt-0 border-brown-bottom pt-3" data-action-id="${animAction.id}" data-event-id="${event.id}">
@@ -712,7 +708,8 @@ class Editor {
 
   gameActionsListMaker() {
     let elements = `
-    <div id="modal-add-action">✚</div>
+    <div id="modal-add-action" title="Add new action.">✚</div>
+    <div id="modal-close-all-action" title="Close all action details.">⇳</div>
     <div id="gameaction-container">`
 
     this.map.actions.forEach(animAction => {
@@ -962,7 +959,7 @@ class Editor {
 
   refreshLightsList() {
     $('#light-list').html('');
-    if (this.map.lights.length > 0) {
+    if (this.map.lights && Array.isArray(this.map.lights) && this.map.lights.length > 0) {
       let element = `<ul>`;
       this.map.lights.forEach(light => {
         let eyeIcon = light.visible ? 'eye-light-up' : 'eye-light-down';
@@ -1003,12 +1000,14 @@ class Editor {
   }
 
   refreshActionSelect() {
-    $("select[name='actions-selector']").html('')
-    let elements = ``;
-    this.map.actions.forEach(action => {
-      elements += `<option value="${action.id}">${action.name}</option>`
-    });
-    $("select[name='actions-selector']").append(elements)
+    if (this.map.actions && Array.isArray(this.map.actions)) {
+      $("select[name='actions-selector']").html('')
+      let elements = ``;
+      this.map.actions.forEach(action => {
+        elements += `<option value="${action.id}">${action.name}</option>`
+      });
+      $("select[name='actions-selector']").append(elements)
+    }
   }
 
   refreshLightListOff() {    
@@ -1325,22 +1324,24 @@ class Editor {
     let selectedMesh = this.map.data.find(mesh => mesh.id == this.mouse.selectedMeshId)
     $("#actions .list").html('')
     let elements = ''
+  
     if (selectedMesh?.actions && selectedMesh.actions.length > 0) {
-      selectedMesh.actions.forEach((action, index) => {
-          if (this.map?.actions[index]) {
-            elements += `
-            <div class="pos-relative">
-              <div class="inline-block mb-3">
-                <span class="action-id-box me-3 text-bold">${this.map.actions[action-1].name}</span>
-              </div>
-              <span class="delete-action ms-3" data-actionindex-id="${index}" data-mesh-id="${this.mouse.selectedMeshId}">⊗</span>
-            </div>`;
-          }
-        });
+      selectedMesh.actions.forEach((actionId, index) => {
+        let actionObj = this.map.actions.find(act => act.id == actionId)
+        if (actionObj) {
+          elements += `
+          <div class="pos-relative">
+            <div class="inline-block mb-3">
+              <span class="action-id-box me-3 text-bold">${actionObj.name}</span>
+            </div>
+            <span class="delete-action ms-3" data-actionindex-id="${index}" data-mesh-id="${this.mouse.selectedMeshId}">⊗</span>
+          </div>`
+        }
+      });
     } else {
       elements = '<div class="inline-block text-center w-100 mb-3"><span>None</span></div>'
     }
-
+  
     $("#actions .list").html(elements)
   }
 
@@ -1415,30 +1416,57 @@ class Editor {
 
     // ADD NEW ACTION
     $(document).on('click', "#actions button[name='add-action']", function() {
-      let selectedActionId = $("select[name='actions-selector']").val()
-      let selectedMesh = clone.map.data.find(mesh => mesh.id == clone.mouse.selectedMeshId)
-      if (!selectedMesh?.actions) selectedMesh.actions = [];
-
-      if (!selectedMesh.actions.includes(selectedActionId)) selectedMesh.actions.push(selectedActionId);
-
-      // console.log(selectedMesh.actions)
-      
+      const selectedActionId = parseInt($("select[name='actions-selector']").val())
+      const selectedMesh = clone.map.data.find(mesh => mesh.id == clone.mouse.selectedMeshId)
+    
+      if (!selectedMesh) return
+      if (!selectedMesh.actions) selectedMesh.actions = []
+    
+      // ADDED ONLY IF NOT ISSET
+      if (!selectedMesh.actions.includes(selectedActionId)) {
+        selectedMesh.actions.push(selectedActionId)
+      }
+    
       clone.refreshActionList()
-    });
+    })
 
     // REMOVE ISSET ACTION
     $(document).on('click', ".delete-action", function() {
-      let mashId = parseInt($(this).attr('data-mesh-id'))
+      let meshId = parseInt($(this).attr('data-mesh-id'))
       let actionIndexId = parseInt($(this).attr('data-actionindex-id'))
-
-      let selectedMesh = clone.map.data.find(mesh => mesh.id == mashId)
-      if (selectedMesh) selectedMesh.actions.splice(actionIndexId, 1);
-
+    
+      let selectedMesh = clone.map.data.find(mesh => mesh.id == meshId)
+      if (selectedMesh && Array.isArray(selectedMesh.actions)) {
+        selectedMesh.actions.splice(actionIndexId, 1)
+      }
+    
       clone.refreshActionList()
     });
 
-    ///////////////////
     // MENU ADD ACTION
+
+    // CLOSE ALL ACTION ELEMENT
+    $(document).on('click', "#modal-close-all-action", function() {
+      const eyeButtons = $(".eye-switch")
+
+      for (const button of eyeButtons) {
+        const $button = $(button)
+        const animActionId = parseInt($button.attr('data-action-id'))
+        const animEventId = parseInt($button.attr('data-event-id'))
+
+        let $container
+        if (animActionId && animEventId) {
+          $container = $(`.eye-container[data-action-id='${animActionId}'][data-event-id='${animEventId}']`)
+        } else if (animActionId) {
+          $container = $(`.eye-container[data-action-id='${animActionId}']`)
+        }
+
+        if ($container?.is(":visible")) {
+          $container.hide()
+          $button.text('═')
+        }
+      }
+    });
 
     // ADD ANIMACTION
     $(document).on('click', "#modal-add-action", function() {
@@ -1574,7 +1602,10 @@ class Editor {
     $(document).on('input', "input[name='animaction-name']", (event) => {
       let selectedActionId = $(event.target).attr('data-action-id')
       const animActionRow = this.map.actions.find(action => action.id == selectedActionId)
-      if (animActionRow) animActionRow.name = $(event.target).val()      
+      if (animActionRow) {
+        animActionRow.name = $(event.target).val().toUpperCase()
+        $(event.target).val(animActionRow.name)
+      } 
     });
 
     // DISTANCE-FAR
@@ -1661,7 +1692,8 @@ class Editor {
       const animActionRow = AnimAction.findActionById(clone, selectedActionId)
       if (animActionRow) {
         const eventRow = AnimAction.findEventById(animActionRow, selectedEventId)
-        eventRow.name = $(event.target).val()
+        eventRow.name = $(event.target).val().toUpperCase()
+        $(event.target).val(eventRow.name)
         $(`input[name='event-name'][data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}']`).val($(event.target).val())
       }
     });
@@ -2831,6 +2863,18 @@ class Editor {
       } else alert('Not selected Mesh!');
     });
 
+    $(document).on('click', '#clipboard-reset', function () {
+      clone.clipboardMemory.meshs = []
+      clone.clipboardMemory.tris = []
+
+      $("#clipboard-content").html('')
+      $("#clipboard-container").hide()
+
+      clone.refreshClipboard()
+      clone.refreshObjectList()
+      clone.fullRefreshCanvasGraphics()
+    });
+
     // Mouse wheel Zoom
     $(document).on('mousewheel', (event) => {
       if (this.selectedView) {
@@ -2844,6 +2888,10 @@ class Editor {
             let mod = (event.originalEvent.wheelDelta > 0) ? 50 : -50;
             let element = $(`input[name='ratio'][data-name='${this.selectedView}']`)
             let modifyNum = parseInt(element.val()) + mod
+
+            if (modifyNum > 1500) modifyNum = 1500;
+            if (modifyNum < 20) modifyNum = 20;
+
             element.val(modifyNum)
             element.trigger('input')
           }
@@ -3205,7 +3253,7 @@ class Editor {
               alert(`If a sibling of the triangle is selected, it will not choose another! It have: ${clone.mouse.selectedTri.locket}`)
             } else {
 
-              $(document).find(`li[data-id='${clone.mouse.selectedTri.id}']`).addClass('list-triangle-selected').append('<span class="menu-icon menu-icon-pos-2 clipboard"></span><span class="menu-icon menu-icon-pos-1 delete"></span>')
+              $(document).find(`li[data-id='${clone.mouse.selectedTri.id}']`).addClass('list-triangle-selected').append('<span class="menu-icon menu-icon-pos-4 clipboard-copy"></span><span class="menu-icon menu-icon-pos-2 clipboard"></span><span class="menu-icon menu-icon-pos-1 delete"></span>')
 
               let brotherTriId = $(e.target).attr('data-id')
               let parentMeshData = clone.map.data.find(mesh => mesh.id == clone.mouse.selectedMeshId)
@@ -3286,34 +3334,34 @@ class Editor {
     });
 
     // RESIZE OBJECT LIST
-    if (true) {
-      $(document).on('mousedown', "[id$='-list-size-button']", function (e) {
-        clone.typeName = $(this).attr('data-type-name')
-                
-        clone.isResizing = true;
-        clone.startY = e.clientY;
-        clone.startHeight = $(`#${clone.typeName}-list`).height();
-        e.preventDefault();
-      });
-      $(document).on('mousemove', function (e) {
-          if (clone.isResizing) {
-              let diffY = e.clientY - clone.startY
-              let newHeight = clone.startHeight + diffY
+    $(document).on('mousedown', "[id$='-list-size-button']", function (e) {
+      clone.typeName = $(this).attr('data-type-name')
               
-              if (newHeight < 51) newHeight = 50
-              if (newHeight > 600) newHeight = 600
-              
-              $(`#${clone.typeName}-list`).height(newHeight);
-          }
-      });
-      $(document).on('mouseup', function () {
-          clone.isResizing = false;
-      });
-    }
+      clone.isResizing = true;
+      clone.startY = e.clientY;
+      clone.startHeight = $(`#${clone.typeName}-list`).height();
+      e.preventDefault();
+    });
+
+    $(document).on('mousemove', function (e) {
+      if (clone.isResizing) {
+        let diffY = e.clientY - clone.startY
+        let newHeight = clone.startHeight + diffY
+        
+        if (newHeight < 51) newHeight = 50
+        if (newHeight > 600) newHeight = 600
+        
+        $(`#${clone.typeName}-list`).height(newHeight);
+      }
+    });
+    $(document).on('mouseup', function () {
+      clone.isResizing = false;
+    });
 
     // ADD NEW LIGHT
     $(document).on('click', '#light-add-new', function() {
       let newLight = new Light('Light-', 0, 0.5, 1, 'point', '0xffddaa', 0.5, 5)
+      if (typeof clone.map.lights == 'undefined') clone.map.lights = [];
       clone.map.lights.push(newLight)
       setTimeout(() => {
         $(`.light-element[data-light-id='${newLight.id}']`).trigger('click')
@@ -3496,6 +3544,11 @@ class Editor {
     // MESH SELECTING
     $(document).on('click', ".mesh-name", function(event) {
         event.stopPropagation()
+
+        // Töröld a korábban kijelölt háromszöghöz tartozó ikonokat és class-okat
+        $('#object-list').find('.list-triangle-selected').removeClass('list-triangle-selected').find('.menu-icon').remove()
+        $('#object-list').find('.list-triangle-locket').removeClass('list-triangle-locket').find('.menu-icon').remove()
+
         clone.mouse.selectedTri = null
         clone.mouse.selectedLock = null
         let id = $(this).attr('data-id')
@@ -3528,6 +3581,7 @@ class Editor {
             $(document).find(`li[data-id='${clone.mouse.selectedTri.id}']`).removeClass('list-triangle-selected').find('.delete').remove();
             $(document).find(`li[data-id='${clone.mouse.selectedTri.id}']`).removeClass('list-triangle-locket').find('.delete').remove();
             $(document).find(`li[data-id='${clone.mouse.selectedTri.id}']`).find('.clipboard').remove();
+            $(document).find(`li[data-id='${clone.mouse.selectedTri.id}']`).find('.clipboard-copy').remove();
           }
           // modify selected parent Mash graph
           $(document).find(`li[data-id='${clone.mouse.selectedMeshId}'].mesh-name`).removeClass('list-mesh-selected')
@@ -3554,7 +3608,7 @@ class Editor {
           }
 
           // add selected triangle graph
-          $(document).find(`li[data-id='${triId}']`).addClass('list-triangle-selected').append('<span class="menu-icon menu-icon-pos-2 clipboard"></span><span class="menu-icon menu-icon-pos-1 delete"></span>')
+          $(document).find(`li[data-id='${triId}']`).addClass('list-triangle-selected').append('<span class="menu-icon menu-icon-pos-4 clipboard-copy"></span><span class="menu-icon menu-icon-pos-2 clipboard"></span><span class="menu-icon menu-icon-pos-1 delete"></span>')
           
           clone.refreshTriangleDatas()
           clone.fullRefreshCanvasGraphics()
@@ -3594,7 +3648,7 @@ class Editor {
     });
 
     // CLIPBOARD 
-    $(document).on('click', ".clipboard", function(event) {
+    $(document).on('click', ".clipboard", function(event) {      
       event.stopPropagation()
       clone.saveMapMemory('save')
 
@@ -3605,6 +3659,28 @@ class Editor {
         clone.deleteLocketBrothers(triId) // delete locket brother
         clone.clipboardMemory.tris.push(selectedObject.tris.filter(triangle => triangle.id == triId)[0]) // copy clipboard
         selectedObject.tris = selectedObject.tris.filter(triangle => triangle.id != triId) // delete triangle
+      }
+      clone.mouse.selectedTri = null
+
+      clone.refreshObjectList()
+      clone.fullRefreshCanvasGraphics()
+    });
+
+    // CLIPBOARD-COPY TRI IN CLIPBOARD
+    $(document).on('click', ".clipboard-copy", function(event) {      
+      event.stopPropagation()
+      clone.saveMapMemory('save')
+
+      let triId = $(this).closest('.list-triangle-selected').attr('data-id')
+
+      let selectedObject = clone.map.data.find(obj => obj.tris.some(triangle => triangle.id == triId));
+      if (selectedObject) {
+        let selectedTri = selectedObject.tris.filter(triangle => triangle.id == triId)[0]
+        let cloneTri = clone.deepCopy(selectedTri)
+        cloneTri.id = this.id = Date.now().toString().slice(-5) + '-' + Math.floor(Math.random() * 99999)
+        cloneTri.name = cloneTri.id + '-clone'       
+
+        clone.clipboardMemory.tris.push(cloneTri) // copy clipboard
       }
       clone.mouse.selectedTri = null
 
@@ -3865,7 +3941,7 @@ class Editor {
       let textureName = $(this).attr('data-texture-name')
       if (clone.mouse.selectedTri && !(Object.keys(clone.mouse.selectedTri).length == 0)) {
         if (clone.mouse.selectedTri.texture?.name) clone.mouse.selectedTri.texture.name = textureName;
-        if (clone.mouse.selectedLock.texture?.name) clone.mouse.selectedLock.texture.name = textureName;
+        if (clone.mouse.selectedLock?.texture?.name) clone.mouse.selectedLock.texture.name = textureName;
         $('#menu-right').animate({
           scrollTop: $('#object-list-head').offset().top - $('#menu-right').offset().top + $('#menu-right').scrollTop()
         }, 300, 'swing');
@@ -3901,15 +3977,58 @@ class Editor {
           let index = clone.map.data.findIndex(element => element.id == meshId)
           if (index != -1) clone.map.data.splice(index, 1);
         });
-        console.log(clone.clipboardMemory.meshs)
+        // console.log(clone.clipboardMemory.meshs)
       }
-      
+
       clone.refreshObjectList()
       clone.fullRefreshCanvasGraphics()
     });
 
     // CLIPBOARD COPY MESH
     $(document).on('click', ".menu-icon.clipboard-copy", function(event) {
+      event.stopPropagation()
+      clone.saveMapMemory('save')
+
+      let meshId = $(this).closest('li').attr('data-id')
+      clone.mouse.selectedTri = null
+      clone.mouse.selectedMeshId = null
+      let getMeshStructure = clone.findMeshById(clone.map.structure, meshId)
+
+      if (getMeshStructure) {
+        let originalToNewIdMap = {}
+
+        const newId = Mesh.getInstanceCount() + 1
+        Mesh.setInstanceCount(newId)
+        originalToNewIdMap[getMeshStructure.id] = newId
+
+        // DATA
+        let meshData = clone.map.data.find(m => m.id == getMeshStructure.id)
+        let meshCopy = clone.deepCopy(meshData)
+        meshCopy.id = newId
+        meshCopy.parent_id = null
+        clone.clipboardMemory.meshs.push(meshCopy)
+
+        // STRUCTURE
+        let newStructureNode = {
+          ...clone.deepCopy(getMeshStructure),
+          id: newId,
+          child: []
+        }
+
+        if (Array.isArray(getMeshStructure.child)) {
+          for (let child of getMeshStructure.child) {
+            let newChild = clone.cloneStructure(child, newId)
+            newStructureNode.child.push(newChild)
+          }
+        }
+
+        clone.refreshObjectList()
+        clone.fullRefreshCanvasGraphics()
+      }
+    })
+
+    // CLIPBOARD COPY TRIANGLE
+    $(document).on('click', ".menu-icon.clipboard-triangle-copy", function(event) {
       event.stopPropagation()
       clone.saveMapMemory('save')
 
@@ -4276,11 +4395,11 @@ class Editor {
 
     $(`.mesh-name[data-id=${mesh.id}]`).addClass("child-style")
 
-    if (Array.isArray(meshData.tris) && meshData.tris.length > 0) {
-      meshData.tris.forEach(tri => {
-        this.drawViewTriangeAction(view, color, lineWidth, tri.p[0][view.vX], tri.p[0][view.vY], tri.p[1][view.vX], tri.p[1][view.vY], tri.p[2][view.vX], tri.p[2][view.vY])
-      });
-    }
+    if (!meshData || !Array.isArray(meshData.tris) || meshData.tris.length === 0) return;
+
+    meshData.tris.forEach(tri => {
+      this.drawViewTriangeAction(view, color, lineWidth, tri.p[0][view.vX], tri.p[0][view.vY], tri.p[1][view.vX], tri.p[1][view.vY], tri.p[2][view.vX], tri.p[2][view.vY])
+    });
 
     if (Array.isArray(mesh.child) && mesh.child.length > 0) {
       mesh.child.forEach(child => {

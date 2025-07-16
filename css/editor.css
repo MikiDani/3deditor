@@ -294,6 +294,10 @@ body {
   font-weight: bold;
 }
 
+select[name=actions-selector] {
+  min-width: 120px;
+}
+
 input[type=number] {
   width: 50px;
   border-radius: 7px 7px 7px 7px;
@@ -1128,6 +1132,17 @@ button[class="3d-buttons"] {
   position: absolute;
   right: 3px;
   bottom: 3px;
+}
+
+#clipboard-reset {
+  position: absolute;
+  right: 4px;
+  top: 0px;
+}
+#clipboard-reset:hover {
+  cursor: pointer;
+  transform: scale(1.1);
+  color: red !important;
 }
 
 .hover-pointer:hover {
@@ -2227,6 +2242,28 @@ li:hover {
   cursor: pointer;
   transform: scale(1.1);
   color: red !important;
+}
+
+#modal-close-all-action {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 29px;
+  height: 29px;
+  background-color: #acacac;
+  border: 1px solid gray;
+  left: 20px;
+  top: 14px;
+}
+#modal-close-all-action:hover {
+  cursor: pointer;
+  transform: scale(1.1);
+  color: red !important;
+  -webkit-transform: scale(1.1);
+  -moz-transform: scale(1.1);
+  -ms-transform: scale(1.1);
+  -o-transform: scale(1.1);
 }
 
 .button-form-1 {

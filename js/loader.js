@@ -132,73 +132,74 @@ export default class Loader {
       // ADD DATA IN THREEJS
       for (let mesh of this.game.map.data) {
 
-        const meshGroup = new THREE.Group(); // új csoport minden mesh-hez
-        for (let tri of mesh.tris) {
-          const geometry = new THREE.BufferGeometry()
-          const vertices = new Float32Array([
-            tri.p[0].x, tri.p[0].y, tri.p[0].z,
-            tri.p[1].x, tri.p[1].y, tri.p[1].z,
-            tri.p[2].x, tri.p[2].y, tri.p[2].z
-          ]);
+        let selectedMeshStructure = this.game.findMeshById(this.game.map.structure, mesh.id)
 
-          geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
+        console.log(mesh.name)
 
-          const uvs = new Float32Array([
-            tri.t[0].u, 1 - tri.t[0].v,
-            tri.t[1].u, 1 - tri.t[1].v,
-            tri.t[2].u, 1 - tri.t[2].v,
-          ]);
+        console.log(selectedMeshStructure.visible)
 
-          geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))  
-          geometry.computeVertexNormals()
-
-          const materialType = (this.game.lightsOn) ? 'MeshLambertMaterial' : 'MeshBasicMaterial';
-          const material = new THREE[materialType]({
-            map: this.game.loadedTextures[tri.texture.name],  // TEXTURA ÚJ MEGOLDÁS
-            side: THREE.DoubleSide,
-            transparent: true,
-            opacity: 1,
-            alphaTest: 0.01
-          });
+        if (selectedMeshStructure.visible == 1) {
+          const meshGroup = new THREE.Group();
+          for (let tri of mesh.tris) {
+            const geometry = new THREE.BufferGeometry()
+            const vertices = new Float32Array([
+              tri.p[0].x, tri.p[0].y, tri.p[0].z,
+              tri.p[1].x, tri.p[1].y, tri.p[1].z,
+              tri.p[2].x, tri.p[2].y, tri.p[2].z
+            ]);
   
-          const triangleMesh = new THREE.Mesh(geometry, material)
-          meshGroup.add(triangleMesh)
+            geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
   
-          geometry.computeBoundingBox()
-          const box = geometry.boundingBox.clone()
-          box.min.add(triangleMesh.position)
-          box.max.add(triangleMesh.position)
-          this.game.boundingBoxes.push(box)
-
-          // YELLOW BOX-HELPER
-          if (this.game.boxHelp) {
-            /*
-            const helper = new THREE.Box3Helper(box, new THREE.Color(0xffff00));
-            this.game.scene.add(helper);
-            */
-          }
-        }
-
-        // LOAD ACTIONS
-        if (mesh?.actions && mesh.actions.length > 0) {
-          console.log('Van AKCIÓJA: ', mesh.name)
-
-          mesh.actions.forEach(action => {            
-            let actionData = this.game.map.actions.find(obj => obj.id == action)
-            if (actionData) {
-              actionData.meshname = mesh.name
-              this.game.map.actionelements.push([meshGroup, actionData])
+            const uvs = new Float32Array([
+              tri.t[0].u, 1 - tri.t[0].v,
+              tri.t[1].u, 1 - tri.t[1].v,
+              tri.t[2].u, 1 - tri.t[2].v,
+            ]);
+  
+            geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))  
+            geometry.computeVertexNormals()
+  
+            const materialType = (this.game.lightsOn) ? 'MeshLambertMaterial' : 'MeshBasicMaterial';
+            const material = new THREE[materialType]({
+              map: this.game.loadedTextures[tri.texture.name],  // TEXTURA ÚJ MEGOLDÁS
+              side: THREE.DoubleSide,
+              transparent: true,
+              opacity: 1,
+              alphaTest: 0.01
+            });
+    
+            const triangleMesh = new THREE.Mesh(geometry, material)
+            meshGroup.add(triangleMesh)
+    
+            geometry.computeBoundingBox()
+            const box = geometry.boundingBox.clone()
+            box.min.add(triangleMesh.position)
+            box.max.add(triangleMesh.position)
+            this.game.boundingBoxes.push(box)
+  
+            // YELLOW BOX-HELPER
+            if (this.game.boxHelp) {
+              const helper = new THREE.Box3Helper(box, new THREE.Color(0xffff00));
+              this.game.scene.add(helper);
             }
-          });
+          }
+          // LOAD ACTIONS
+          if (mesh?.actions && mesh.actions.length > 0) {
+            console.log('Van AKCIÓJA: ', mesh.name)
+  
+            mesh.actions.forEach(action => {            
+              let actionData = this.game.map.actions.find(obj => obj.id == action)
+              if (actionData) {
+                actionData.meshname = mesh.name
+                this.game.map.actionelements.push([meshGroup, actionData])
+              }
+            });
+          }
+  
+          this.game.loadedMeshs[mesh.id] = meshGroup
+  
+          this.game.scene.add(meshGroup)
         }
-
-
-        // !!!! ? 
-        
-        // PROBA KÜLÖN MENTENI: // !!!
-        this.game.loadedMeshs[mesh.id] = meshGroup
-
-        this.game.scene.add(meshGroup)
       }
 
       //ADD CLICK CHECKS
@@ -225,7 +226,8 @@ export default class Loader {
               }
             }
           }
-          const ambient = new THREE.AmbientLight(0xffffff, 0.05)
+          // MINIMUM AMBIENT LIGHT
+          const ambient = new THREE.AmbientLight(0xffffff, 0.0)  // 0.05
           this.game.scene.add(ambient)
         }
 

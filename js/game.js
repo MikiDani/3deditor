@@ -43,13 +43,14 @@ export default class Game {
 
     // ---
     this.boundingBoxes = []
-
+    this.playerBoundingBox = new THREE.Vector3(0.3, 1, 0.3)
 
     this.renderInterval = 20
 
     // HELP 
     this.ghostMode = false
     this.lightsOn = true
+
     this.boxHelp = false
 
     this.init()
@@ -114,6 +115,26 @@ export default class Game {
       return copy;
     }
     return data;
+  }
+
+  findMeshById(data, meshId) {
+    if (!Array.isArray(data)) return null;
+
+    for (let mesh of data) {
+      if (!mesh || typeof mesh !== "object") continue;
+  
+      if (mesh.id == meshId) {
+        return mesh;
+      }
+      // find child
+      if (mesh.child && mesh.child.length > 0) {
+        let found = this.findMeshById(mesh.child, meshId);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return null;
   }
 
   showHideOptions(windowName) {
