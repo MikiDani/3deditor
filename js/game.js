@@ -35,7 +35,7 @@ export default class Game {
     this.$inventory = {}
     this.currentState = 'menu'
 
-    this.moveSpeed = 0.07,
+    this.moveSpeed = 0.03,
     this.currentGravity = -0.05,
     this.gravityValue = 0.05,
 
@@ -224,8 +224,7 @@ export default class Game {
       try {
         this.mapLoading = true
         await this.loader.mapLoader(false)
-        console.log(this.loadedMeshs)
-        
+        // console.log(this.loadedMeshs)
       } catch(e) {
         this.loadingErrorAction(); return;
       }
@@ -268,6 +267,19 @@ export default class Game {
       ([group, _]) => group !== threeObject
     )
   
+    // DELETE BOUNDINGBOXES
+    threeObject.children.forEach(child => {
+      if (child.geometry?.boundingBox) {
+        const box = child.geometry.boundingBox.clone()
+        box.min.add(child.position); box.max.add(child.position);
+        this.boundingBoxes = this.boundingBoxes.filter(existingBox =>
+          !existingBox.equals(box)
+        )
+      }
+    })
+  }
+
+  removeBoundingBoxOfMap(threeObject) {    
     // DELETE BOUNDINGBOXES
     threeObject.children.forEach(child => {
       if (child.geometry?.boundingBox) {

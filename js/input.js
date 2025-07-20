@@ -5,6 +5,7 @@ import * as bootstrap from 'bootstrap'
 export default class Input {
   constructor(game) {
     this.game = game
+
     this.gravity = 0
 
     this.ideiglenesMenuInputs() // ! Ideiglenes
@@ -92,8 +93,13 @@ export default class Input {
       }
 
       if (e.key == 'f') {
-        console.log('PointerLock...')
-        this.game.canvas.requestPointerLock()
+        if (document.pointerLockElement === this.game.canvas) {
+          console.log('PointerLock kikapcsolás...')
+          document.exitPointerLock()
+        } else {
+          console.log('PointerLock bekapcsolás...')
+          this.game.canvas.requestPointerLock()
+        }
       }
 
       if (e.key == 'n') {
@@ -118,7 +124,9 @@ export default class Input {
       startY: 0,
       targetY: 0,
       startTime: 0,
-      duration: 200
+      duration: 200,
+      isLocked: false,
+      cooldownTime: 1000
     };
 
     window.addEventListener('keydown', (e) => {
@@ -202,7 +210,8 @@ export default class Input {
     if (this.game.keysPressed.has('w')) {
       if (shift) {
         if (!moved) {          
-          moved = this.attemptMove(new THREE.Vector3(0, this.game.moveSpeed, 0))
+          moved = this.attemptMove(direction.clone().multiplyScalar(this.game.moveSpeed * 2))
+          // moved = this.attemptMove(new THREE.Vector3(0, this.game.moveSpeed, 0)) // UP ?
         }
       } else {
         if (!moved) {
@@ -214,7 +223,8 @@ export default class Input {
     if (this.game.keysPressed.has('s')) {
       if (shift) {
         if (!moved) {
-          moved = this.attemptMove(new THREE.Vector3(0, -this.game.moveSpeed, 0))
+          moved = this.attemptMove(direction.clone().multiplyScalar(-this.game.moveSpeed * 2))
+          // moved = this.attemptMove(new THREE.Vector3(0, -this.game.moveSpeed, 0)) // DOWN ?
         }
       } else {
         if (!moved) {
@@ -224,7 +234,7 @@ export default class Input {
     }
 
     if (this.game.keysPressed.has('a')) {
-      if (shift) {
+      if (shift || this.game.isPointerLocked) {
         const left = new THREE.Vector3().crossVectors(this.game.camera.up, direction).normalize().multiplyScalar(this.game.moveSpeed)
         moved ||= this.attemptMove(left);
       } else {
@@ -234,7 +244,7 @@ export default class Input {
     }
 
     if (this.game.keysPressed.has('d')) {
-      if (shift) {
+      if (shift || this.game.isPointerLocked) {
         const right = new THREE.Vector3().crossVectors(direction, this.game.camera.up).normalize().multiplyScalar(this.game.moveSpeed)
         moved ||= this.attemptMove(right)
       } else {
@@ -256,12 +266,18 @@ export default class Input {
     }
 
     // ----- UGRÁS -----
-    if (this.game.keysPressed.has(' ') && this.game.isGrounded && !this.game.jumpState.isJumping) {
+    if (this.game.keysPressed.has(' ') && this.game.isGrounded && !this.game.jumpState.isJumping && !this.game.jumpState.isLocked) {
       this.game.jumpState.isJumping = true
       this.game.jumpState.startY = this.game.player.position.y
       this.game.jumpState.targetY = this.game.player.position.y + this.game.jumpState.size
       this.game.jumpState.startTime = performance.now()
       this.game.isGrounded = false
+
+      // Ugrás tiltása cooldown idejére
+      this.game.jumpState.isLocked = true
+      setTimeout(() => {
+        this.game.jumpState.isLocked = false
+      }, this.game.jumpState.cooldownTime)
     }
 
     if (this.game.jumpState.isJumping) {
@@ -320,6 +336,8 @@ export default class Input {
 
   // CLICK LOGICK
   handleClickEvent(event, clickType) {
+    if (this.game.isPointerLocked) return;
+
     const mouse = new THREE.Vector2()
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1

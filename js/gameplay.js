@@ -15,6 +15,8 @@ export default class Gameplay {
       this.counter = 0
     }
 
+    if (this.game.player.position.y < -5) this.game.player.position.y = 5;  // !!
+
     await this.game.input.updateCamera()
 
     await this.startActions()
@@ -49,68 +51,80 @@ export default class Gameplay {
         const intersects = raycaster.intersectObjects(children, true)
     
         if (intersects.length > 0) {
-          // NO CLICK ACTIONS
-          this.checkActions(action, intersects[0].distance, true)  // !
+          // NO CLICK ACTIONS CHECK
+          this.checkActions(action, intersects[0].distance)
         }
       }
     });
   }
 
-  async checkActions(actions, distance, loop) {
-    // .... Majd itt kell lekezelni a teljes Actions-ot... alakul : )
-
+  async checkActions(actions, distance) {
     // CHECK DISTANCES
     if (!(distance > actions[1].conditions.distance_near && distance < actions[1].conditions.distance_far)) return;
-
+  
     // CHECK OBJECTS
     if (actions[1].conditions.issetobjects.length > 0 && !this.game.checkPlayerObject(actions[1].conditions.issetobjects)) return;
-
+  
     // START EVENTS
     for(const event of actions[1].events) {
-      if (event.timeout == null) {
-        console.log('Most csinálok settimeout-ot: '+ event.name)  // !!!
+      // ACTION
+      var oncePlayEvent = async () => {
+        console.log('Start settimeout: '+ event.name)
+
         event.timeout = setTimeout(() => {
           // EVENT CHECK ADD OBJECTS
           if (event.addobjects.length > 0) {
             for (const addObjectId of event.addobjects) {
-              // ADD OBJECT
+              // ADD OBJECT - Többször is előfordulhat egy tárgy, pl.: energiaital
               this.game.playerObjects.push(parseInt(addObjectId))
             }
             // REMOVE THREE OBJECT
             this.game.removeObjectOfMap(actions[0])
           }
-
+  
           // EVENT CHECKS
           // ---
           // LIGHT FX
           if (event.lightfx.length > 0) {
             for (const fx of event.lightfx) {
-              console.log(fx)
-              console.log(fx[0])
-              console.log(fx[1])
-              
               let light = this.game.loadedLights[parseInt(fx[0])][1]
               let fxData = this.game.config.lightfx.find(fxpc => fxpc.id == parseInt(fx[1]))
               if (light, fxData) this.lightFx(light, fxData);
             }
           }
-
+  
           // MOVE FX
           if (event.moveactions.length > 0) {
             for (const fx of event.moveactions) {
+              console.log(fx[0])
+              console.log(fx[1])
               let mesh = this.game.loadedMeshs[parseInt(fx[0])]        
               let fxData = this.game.config.movefx.find(fxpc => fxpc.id == parseInt(fx[1]))
               if (mesh && fxData) this.moveFx(mesh, fxData);
             }
           }
 
-          console.log('Letelt: ' + event.name + " Most törlöm: " + event.name) // !!!
           clearTimeout(event.timeout)
           event.timeout = null
 
         }, parseInt(event.timer))
+      }
+  
+      // START
+
+      // CHECK INTERVAL
+      if (event.interval[0]) {
+        event.setIntervalCounter = 1;
+        const playIntervalEvents = async () => {
+          while (event.setIntervalCounter <= event.interval[1]) {
+            await oncePlayEvent()
+            await new Promise(resolve => setTimeout(resolve, parseInt(event.timer)))
+            event.setIntervalCounter++
+          }
+        }
+        playIntervalEvents()
       } else {
-        console.log(event.name + " Létezik... " + event.timer) // !!!
+        await oncePlayEvent()
       }
     }
   }
@@ -194,19 +208,17 @@ export default class Gameplay {
   }
 
   openFx(mesh) {
-    mesh.openConfig.addedValue = mesh.openConfig.state ? -mesh.openConfig.addedStep : mesh.openConfig.addedStep;
-    mesh.openConfig.valueAdd = mesh.openConfig.state ? -1 : 1;
+    mesh.openConfig.addedValue = mesh.openConfig.state ? -mesh.openConfig.addedStep : mesh.openConfig.addedStep; // ÉRTÉKE
+    mesh.openConfig.valueAdd = mesh.openConfig.state ? -1 : 1; // COUNT-JA
 
-    // console.log(mesh.openConfig.addedValue)
+    console.log(mesh.openConfig.addedValue)
 
     if (!mesh?.timeInterval) {
       // FIRST OFFSET OPTIONS
       if (!mesh.containerOffset) {
-
         console.log(mesh.openConfig.offsetTypeX, mesh.openConfig.offsetTypeY, mesh.openConfig.offsetTypeZ)
-
+        this.game.removeBoundingBoxOfMap(mesh) // ORIGINAL BOUNDINGBOX DELETE
         const box = new THREE.Box3().setFromObject(mesh)
-        //const offset = new THREE.Vector3(box.min.x, box.min.y, box.max.z)
         const offset = new THREE.Vector3(box[mesh.openConfig.offsetTypeX].x, box[mesh.openConfig.offsetTypeY].y, box[mesh.openConfig.offsetTypeZ].z)
         mesh.containerOffset = offset.clone()
         mesh.position.sub(offset)
@@ -215,12 +227,17 @@ export default class Gameplay {
         mesh.container.add(mesh)
       }
 
-      // CHECK CRESH      
+      // CHECK CRESH
       const clone = mesh.container.clone(true)
       clone.rotation.y += mesh.openConfig.addedValue
       const futureBox = new THREE.Box3().setFromObject(clone)
       const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
-      if (futureBox.intersectsBox(playerBox)) return;
+
+      if (futureBox.intersectsBox(playerBox)) {
+        clearInterval(mesh.timeInterval)
+        mesh.timeInterval = null
+        return;
+      }
 
       this.game.scene.add(mesh.container)
 
@@ -231,11 +248,21 @@ export default class Gameplay {
         clone.rotation.y = tempRotation
         const testBox = new THREE.Box3().setFromObject(clone)
         const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
-        if (testBox.intersectsBox(playerBox)) return;
+        if (testBox.intersectsBox(playerBox)) {
+          clearInterval(mesh.timeInterval)
+          mesh.timeInterval = null
+          return;
+        }
 
         // MOVE AND REFRESH
         mesh.container.rotation.y = tempRotation
         mesh.openConfig.value += mesh.openConfig.valueAdd
+
+        // CLAMP VALUE
+        mesh.openConfig.value = Math.max(
+          mesh.openConfig.min,
+          Math.min(mesh.openConfig.max, mesh.openConfig.value)
+        )
       
         // REFRESH BOUNDING BOX FRISSÍTÉS
         const updatedBox = new THREE.Box3().setFromObject(mesh.container)
@@ -244,7 +271,8 @@ export default class Gameplay {
         else this.game.boundingBoxes.push(updatedBox);
         mesh._boundingBox = updatedBox
 
-        // console.log(mesh.openConfig.value)
+        console.log(mesh.openConfig.value)  // !!!
+        console.log(mesh.openConfig.value)  // !!!
 
         if (mesh.openConfig.value == mesh.openConfig.max - 1 || mesh.openConfig.value < mesh.openConfig.min + 1) {
           console.log('STOP!');
@@ -253,7 +281,6 @@ export default class Gameplay {
           mesh.timeInterval = null;
         }
       }, 10);
-  
     } else {
       // IF NEW CLICK
       mesh.openConfig.state = !mesh.openConfig.state

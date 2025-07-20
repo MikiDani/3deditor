@@ -33,7 +33,6 @@ class AnimAction {
     this.id = AnimAction.instanceCount
     this.name = `Animation Action-${AnimAction.instanceCount}`
     this.conditions = {
-      autoplay: false,        // boolean
       click: true,            // null, 'click', 'dclick'
       distance_far: null,     // float
       distance_near: null,    // float
@@ -546,15 +545,12 @@ class Editor {
         <div class="box-2-move-down animaction-move" data-direction="1" data-action-id="${animAction.id}">▼</div>
         <div class="box-2-delete animaction-delete" data-action-id="${animAction.id}">✖</div>        
         <div class="container-head pb-3 pt-4 pb-4 box-2-bg">
-          <span class="fw-bold ms-3">${animAction.id}.</span> <span>Action Name:</span><input type="text" name="animaction-name" data-action-id="${animAction.id}" value="${animAction.name}" placeholder="Action Name ${animAction.id}" class="mx-3">
+          <span class="mx-3">Action Name:</span><input type="text" name="animaction-name" data-action-id="${animAction.id}" value="${animAction.name}" placeholder="Action Name ${animAction.id}" class="mx-3"> ID:<span class="ms-3 fw-bold">${animAction.id}.</span>
         </div>
         <div class="eye-container" data-action-id="${animAction.id}">
           <div class="top-label box-2-bg">Conditions</div>
           <div class="box-2 pt-3">
             <div class="d-flex justify-content-start align-items-center">
-              <div class="d-flex justify-content-center align-items-center width-100px mb-3 mt-4">
-                <span title="If it is enabled, the event will always play unconditionally.">Auto Play:</span><input type="checkbox" name="autoplay" ${animAction.conditions.autoplay ? 'checked' : ''} data-action-id="${animAction.id}" class="mx-2">
-              </div>
               <span title="The event is activated by clicking - or double-clicking - or not.">Click:</span>
               <select data-type="long" name="click" data-action-id="${animAction.id}" class="mx-3">
                 ${this.optionElementMaker([{id:'auto', name:'auto'},{id:'mousedown', name:'mousedown'},{id:'dblclick', name:'dblclick'}], animAction.conditions.click)}
@@ -579,6 +575,7 @@ class Editor {
           </div>
           <div class="d-flex justify-content-between align-items-center box-3 mt-0 pt-3">
             <div class="top-label">Events</div>
+            <div class="close-all-event button-form-2" title="Modify the seqence of list." data-action-id="${animAction.id}">⇳</div>
             <div class="add-event button-form-1" title="Add a new event." data-action-id="${animAction.id}">✚</div>
           </div>
           ${this.arrayEventsMaker(animAction)}
@@ -606,16 +603,13 @@ class Editor {
       <div class="box-2-delete event-delete" data-action-id="${animAction.id}" data-event-id="${event.id}">✖</div>
 
       <div class="mb-3">
-        <span class="fw-bold">${event.id}.</span> <span>Event Name:</span><input type="text" name="event-name" value="${event.name}" data-action-id="${animAction.id}" data-event-id="${event.id}" placeholder="Event Name ${event.id}" class="mx-3">
+        <span class="mx-3">Event Name:</span><input type="text" name="event-name" value="${event.name}" data-action-id="${animAction.id}" data-event-id="${event.id}" placeholder="Event Name ${event.id}" class="mx-3"> ID:<span class="ms-3 fw-bold">${event.id}.</span>
       </div>
       <div class="eye-container" data-action-id="${animAction.id}" data-event-id="${event.id}">
         <div class="d-flex justify-content-start align-items-center">
           <div class="d-flex justify-content-start align-items-center mt-1">
             <span title="Delay time for the event to start.">Timer:(ms)</span>
             <input type="number" step="0.01" name="timer" value="${event.timer}" data-action-id="${animAction.id}" data-event-id="${event.id}" class="mx-3">
-          </div>
-          <div class="d-flex justify-content-center align-items-center width-150px">
-            <span title="Toggles 'autoplay' in the conditions to the other state.">Auto Switch:</span><input type="checkbox" name="autoswitch" ${event.autoswitch ? 'checked' : ''} data-action-id="${animAction.id}" data-event-id="${event.id}" class="mx-2">
           </div>
           <div class="d-flex justify-content-center align-items-center width-100px">
             <span title="Set event repetition.">Interval:</span><input type="checkbox" name="interval" ${event.interval[0] ? 'checked' : ''} data-action-id="${animAction.id}" data-event-id="${event.id}" class="mx-2">
@@ -881,8 +875,8 @@ class Editor {
       if (locketId) {
         let locketTriangle = selectedObject.tris.find(triangle => triangle.id == locketId)
 
-        delete selectedTriangle.locket
-        delete locketTriangle.locket
+        if (selectedTriangle.locket) delete selectedTriangle.locket;
+        if (locketTriangle.locket) delete locketTriangle.locket;
 
         if (this.mouse?.selectedLock) this.mouse.selectedLock = null;
       }
@@ -1468,6 +1462,20 @@ class Editor {
       }
     });
 
+    // CLOSE ALL EVENT ELEMENT close-all-event
+    $(document).on('click', ".close-all-event", function() {
+      let actionId = $(this).attr('data-action-id')
+      $(`.event-container[data-action-id='${actionId}']`).each(function() {
+        const eyeButton = $(this).find(".eye-switch")
+        if (eyeButton) {
+          if (eyeButton.html() == '👁') {
+            eyeButton.trigger('click')
+            eyeButton.html('═')
+          }
+        }
+      });
+    });
+
     // ADD ANIMACTION
     $(document).on('click', "#modal-add-action", function() {
       clone.map.actions.push(new AnimAction())
@@ -1515,6 +1523,7 @@ class Editor {
           await clone.wait(100)
           buttonElement.removeClass('bg-green')
           clone.gameActionsListMaker()
+          $("#modal-close-all-action").trigger('click')
         } else {
           buttonElement.addClass('bg-red')
           setTimeout(()=>{buttonElement.removeClass('bg-red')}, 100)
@@ -1542,6 +1551,8 @@ class Editor {
           await clone.wait(100)
           buttonElement.removeClass('bg-green')
           clone.gameActionsListMaker()
+
+          $(`.close-all-event[data-action-id='${animActionId}']`).trigger('click')
         } else {          
           buttonElement.addClass('bg-red')
           setTimeout(()=>{buttonElement.removeClass('bg-red')},100)
@@ -1623,12 +1634,6 @@ class Editor {
     });
 
     // CHECKBOXS
-    // AUTOPLAY
-    $(document).on('input', "input[name='autoplay']", (event) => {
-      let selectedActionId = $(event.target).attr('data-action-id')
-      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
-      if (animActionRow) animActionRow.conditions.autoplay = $(event.target).prop('checked')
-    });
 
     // SELECTS
     // CLICK
@@ -3224,7 +3229,6 @@ class Editor {
             $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).show()
           }
       });
-
       $("#object-list").show()
     }, 100);
 
@@ -3296,9 +3300,7 @@ class Editor {
       let addNewMesh = new Mesh('New Group', null)
       clone.map.data.push(addNewMesh)
       clone.map.structure.push({id: addNewMesh.id, visible: true, status: true, child: []})
-
       clone.mouse.selectedMeshId = addNewMesh.id
-      
       clone.refreshObjectList()
     });
 
@@ -3432,6 +3434,7 @@ class Editor {
       }
       clone.fullRefreshCanvasGraphics()
     });
+
     // SELECT
     $(document).on("change", "select[name='light-type'], select[name='light-edit-color']", function() {
       let variableName = $(this).attr('data-name')
@@ -3608,7 +3611,7 @@ class Editor {
           }
 
           // add selected triangle graph
-          $(document).find(`li[data-id='${triId}']`).addClass('list-triangle-selected').append('<span class="menu-icon menu-icon-pos-4 clipboard-copy"></span><span class="menu-icon menu-icon-pos-2 clipboard"></span><span class="menu-icon menu-icon-pos-1 delete"></span>')
+          $(document).find(`li[data-id='${triId}']`).addClass('list-triangle-selected').append('<span class="menu-icon menu-icon-pos-4 clipboard-copy-tri"></span><span class="menu-icon menu-icon-pos-2 clipboard"></span><span class="menu-icon menu-icon-pos-1 delete"></span>')
           
           clone.refreshTriangleDatas()
           clone.fullRefreshCanvasGraphics()
@@ -3644,7 +3647,6 @@ class Editor {
         clone.refreshObjectList()
         clone.fullRefreshCanvasGraphics()
       }
-
     });
 
     // CLIPBOARD 
@@ -3667,7 +3669,8 @@ class Editor {
     });
 
     // CLIPBOARD-COPY TRI IN CLIPBOARD
-    $(document).on('click', ".clipboard-copy", function(event) {      
+    $(document).on('click', ".clipboard-copy-tri", function(event) {
+      console.log('ITT')
       event.stopPropagation()
       clone.saveMapMemory('save')
 
@@ -3686,6 +3689,7 @@ class Editor {
 
       clone.refreshObjectList()
       clone.fullRefreshCanvasGraphics()
+
     });
 
     // DUPLICATE
@@ -4280,15 +4284,17 @@ class Editor {
 
   // REFRESH LOCKET TRIANGLES
   refreshLocketDatas(tri1, tri2) {
-    let tri1Data = this.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == tri1.id)
-    let tri2Data = this.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == tri2.id)
-
-    $(`input[id='selected-tri-name-1']`).val(tri1Data.name)
-    $(`input[id='selected-tri-name-2']`).val(tri2Data.name)
-
-    $("input[name='lock-t1-U']").val(tri1.t[0].u); $("input[name='lock-t1-V']").val(tri1.t[0].v);
-    $("input[name='lock-t2-U']").val(tri1.t[1].u); $("input[name='lock-t2-V']").val(tri1.t[1].v);
-    $("input[name='lock-t3-U']").val(tri1.t[2].u); $("input[name='lock-t3-V']").val(tri1.t[2].v);
+    if (tri1 && tri2) {
+      let tri1Data = this.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == tri1.id)
+      let tri2Data = this.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == tri2.id)
+  
+      $(`input[id='selected-tri-name-1']`).val(tri1Data.name)
+      $(`input[id='selected-tri-name-2']`).val(tri2Data.name)
+  
+      $("input[name='lock-t1-U']").val(tri1.t[0].u); $("input[name='lock-t1-V']").val(tri1.t[0].v);
+      $("input[name='lock-t2-U']").val(tri1.t[1].u); $("input[name='lock-t2-V']").val(tri1.t[1].v);
+      $("input[name='lock-t3-U']").val(tri1.t[2].u); $("input[name='lock-t3-V']").val(tri1.t[2].v);
+    }
   }
 
   // JQUERY MASH 

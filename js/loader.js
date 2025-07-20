@@ -133,10 +133,8 @@ export default class Loader {
       for (let mesh of this.game.map.data) {
 
         let selectedMeshStructure = this.game.findMeshById(this.game.map.structure, mesh.id)
-
-        console.log(mesh.name)
-
-        console.log(selectedMeshStructure.visible)
+        // console.log(mesh.name)
+        // console.log(selectedMeshStructure.visible)
 
         if (selectedMeshStructure.visible == 1) {
           const meshGroup = new THREE.Group();
@@ -147,18 +145,18 @@ export default class Loader {
               tri.p[1].x, tri.p[1].y, tri.p[1].z,
               tri.p[2].x, tri.p[2].y, tri.p[2].z
             ]);
-  
+
             geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
-  
+
             const uvs = new Float32Array([
               tri.t[0].u, 1 - tri.t[0].v,
               tri.t[1].u, 1 - tri.t[1].v,
               tri.t[2].u, 1 - tri.t[2].v,
             ]);
-  
+
             geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))  
             geometry.computeVertexNormals()
-  
+
             const materialType = (this.game.lightsOn) ? 'MeshLambertMaterial' : 'MeshBasicMaterial';
             const material = new THREE[materialType]({
               map: this.game.loadedTextures[tri.texture.name],  // TEXTURA ÚJ MEGOLDÁS
@@ -167,33 +165,34 @@ export default class Loader {
               opacity: 1,
               alphaTest: 0.01
             });
-    
+
             const triangleMesh = new THREE.Mesh(geometry, material)
             meshGroup.add(triangleMesh)
-    
+
             geometry.computeBoundingBox()
             const box = geometry.boundingBox.clone()
             box.min.add(triangleMesh.position)
             box.max.add(triangleMesh.position)
+
             this.game.boundingBoxes.push(box)
-  
+
             // YELLOW BOX-HELPER
             if (this.game.boxHelp) {
               const helper = new THREE.Box3Helper(box, new THREE.Color(0xffff00));
               this.game.scene.add(helper);
             }
           }
+
           // LOAD ACTIONS
           if (mesh?.actions && mesh.actions.length > 0) {
             console.log('Van AKCIÓJA: ', mesh.name)
-  
-            mesh.actions.forEach(action => {            
+            for (const action of mesh.actions) {
               let actionData = this.game.map.actions.find(obj => obj.id == action)
               if (actionData) {
                 actionData.meshname = mesh.name
                 this.game.map.actionelements.push([meshGroup, actionData])
               }
-            });
+            }
           }
   
           this.game.loadedMeshs[mesh.id] = meshGroup
@@ -209,7 +208,7 @@ export default class Loader {
       if (this.game.lightsOn) {
         if (this.game.map?.lights && this.game.map.lights.length > 0) {
           for (const light of this.game.map.lights) {
-            //console.log('light.visible: ', light.visible)            
+            //console.log('light.visible: ', light.visible)
             if (light.visible) {
               // console.log(light.color); console.log(light.editcolor); console.log(light.intensity); console.log(light.distance); console.log(light.type);
               let lightColor = new THREE.Color(parseInt(light.color, 16))

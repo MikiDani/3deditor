@@ -1779,7 +1779,7 @@ li:hover {
   color: yellow !important;
 }
 
-.clipboard-copy {
+.clipboard-copy-tri {
   display: inline-block;
   width: 10px;
   height: 10px;
@@ -1789,10 +1789,10 @@ li:hover {
   line-height: 10px;
   text-align: center;
 }
-.clipboard-copy::before {
+.clipboard-copy-tri::before {
   content: "🗐";
 }
-.clipboard-copy:hover {
+.clipboard-copy-tri:hover {
   color: yellow !important;
 }
 
@@ -2279,6 +2279,23 @@ li:hover {
   padding-bottom: 4px;
 }
 .button-form-1:hover {
+  cursor: pointer;
+  transform: scale(1.1);
+}
+
+.button-form-2 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 12px !important;
+  height: 12px !important;
+  background-color: #acacac;
+  border: 1px solid gray;
+  padding: 2px;
+  margin-left: 10px;
+  padding-bottom: 4px;
+}
+.button-form-2:hover {
   cursor: pointer;
   transform: scale(1.1);
 }
