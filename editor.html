@@ -63,6 +63,20 @@
             <!-- javascript -->
         </div>
         <div id="toolbar-container" class="p-0 m-0">
+            <div class="p-0 m-0 mb-2 w-100 title-box d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-small">Filename: </span>
+                    <span id="filename" class="text-medium"><!-- javascript --></span>
+                </div>
+                <div>
+                    <span class="text-small">Ext: </span>
+                    <select id="modal-ext" data-type="short" class="fw-bold">
+                        <option value="tuc" selected>tuc</option>
+                        <option value="mtuc" selected>mtuc - map</option>
+                        <option value="otuc">otuc - object</option>
+                    </select>
+                </div>
+            </div>
             <div class="menu-icons-between-container w-100">
                 <div class="menu-text-border modal-button" data-mode="new">NEW</div>
                 <div class="menu-text-border modal-button" data-mode="load">LOAD</div>
@@ -119,6 +133,21 @@
                 <div id="clipboard-reset">✖</div>
                 <button id="clipboard-button" type="button" class="hover-pointer">Insert</button>
             </div>
+
+            <!-- LAYERS -->
+            <div id="layer-list-head" class="title-box flex-between">
+                <div class="p-0 m-0 d-flex">
+                    <span id="layer-show-hide" class="eye-layer-up hover-pointer" title="Show/Hide All layers."></span>
+                </div>
+                <span>Layers</span>
+                <div class="p-0 m-0">
+                    <span id="layer-add-new" class="plus hover-pointer" title="Add new layer."></span>
+                </div>
+            </div>
+            <div id="layer-list" class="box-1 responsive-menu pt-1" style="display:block;">
+                <!-- javascript -->
+            </div>
+            <div id="layer-list-size-button" data-type-name="layer"></div>
 
             <!-- LIGHTS -->
             <div id="light-list-head" class="title-box flex-between">
@@ -204,12 +233,12 @@
                     <span id="object-add-new" class="plus hover-pointer" title="Add new object"></span>
                 </div>
             </div>
-    
+
             <div id="object-list" class="box-1 responsive-menu pt-1" style="display:none;">
                 <!-- javascript -->
             </div>
             <div id="object-list-size-button" data-type-name="object"></div>
-    
+
             <div id="selected-mesh-container" class="p-0 m-0" style="display:none;">
                 <div class="title-box-flex text-start">
                     <span class="text-small">Mesh. name:</span>

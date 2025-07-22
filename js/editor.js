@@ -142,12 +142,29 @@ class Editor {
     this.init()
   }
 
-  mapVariableReset() {
-   return this.map = {
+  mapVariableReset(type = 'map') {
+    var actions, objects, modellType
+
+    if (type == 'map') {
+      // MAP
+      modellType = 'map'
+      actions = []
+      objects = []
+    } else {
+      modellType = 'object'
+      // OBJECT
+      actions = [[0]]
+      objects = [[0]]
+      actions[0][0] = null
+      objects[0][0] = null
+    }
+
+    return this.map = {
+      type: modellType,
       data: {},
       structure: {},
-      actions: [],
-      objects: [],
+      actions: actions,
+      objects: objects,
       lights: [],
       player: {
         x:0,
@@ -181,7 +198,7 @@ class Editor {
   }
 
   async init() {
-    let consolePrint = false  // !!!
+    let consolePrint = true  // !!!
 
     const response = await fetch('config.json')
     this.gamedata = await response.json()
@@ -196,7 +213,7 @@ class Editor {
       console.log(this.text.pic);
     }
 
-    this.mapVariableReset()
+    this.mapVariableReset('map')
     await this.loadMapData()
     if (consolePrint) {
       console.log('LOADING MAP DATAS:')
@@ -385,11 +402,13 @@ class Editor {
     // FIRST LOAD
     if (true) {
       let filename = 'maniac'
+      let ext = 'mtuc'
 
-      const response = await this.fetchData({ ajax: true, load: true, filename: filename })
+      const response = await this.fetchData({ ajax: true, load: true, filename: filename, ext: ext })
       if (response?.data && response?.structure) {
         // console.log(response);
         this.loadNewBasicData(response)
+        $("#filename").html(filename)
       }
     }
 
@@ -1277,10 +1296,10 @@ class Editor {
             <span class="cursor-pointer">${fileOrDir}</span>
           </div>`
         }
-      } else if (fileOrDir.extension == 'tuc') {
+      } else if (fileOrDir.extension == 'tuc' || fileOrDir.extension == 'mtuc' || fileOrDir.extension == 'otuc') {
         // LOAD OR SAVE
         elements += `
-        <div class="list-element cursor-pointer" data-filename="${fileOrDir.name}" data-mode="${mode}">
+        <div class="list-element cursor-pointer" data-filename="${fileOrDir.name}" data-ext="${fileOrDir.extension}" data-mode="${mode}">
           <div class="cursor-pointer">
             <span>${fileOrDir.name}</span><span>.${fileOrDir.extension}</span>
           </div>
@@ -1362,6 +1381,9 @@ class Editor {
         else { $("#add-new-rec").addClass('bg-red-p'); setTimeout(() => { $("#add-new-rec").removeClass('bg-red-p')}, 100) }
 
       if (event.key == 'i') {
+        console.log('this.map:')
+        console.log(this.map)
+
         console.log('this.map.data:')
         console.log(this.map.data)
     
@@ -2011,14 +2033,13 @@ class Editor {
         $("#modal-input").hide()
         $("#modal-file").hide()
 
-        $("button.modal-delete-button").hide()
         return;
       }
 
       // LOAD
       if (mode == 'load') {
         clone.textureDir = []
-        const response = await clone.fetchData({ ajax: true, getfiles: true, })
+        const response = await clone.fetchData({ ajax: true, getfiles: true })
         if (response?.files) clone.fileListElementsMake(mode, response.files, false, false)
       }
 
@@ -2052,6 +2073,24 @@ class Editor {
       }      
     });
 
+    // + texture miatt 
+    $(document).on('mousedown', "#modal-input", function(e) {
+      e.stopPropagation(); // ne menjen tovább az esemény
+    }).on('focus', "#modal-input", function() {
+      // extra védelem, ha kell
+      console.log("Fókuszban van az input");
+    });
+
+    $(document).on('click', "#modal-content .list-element span", function() {
+      $("#modal-input").val($(this).text())
+
+      //$("#modal-container .modal-action-button").attr('data-filename', $(this).text())
+
+      $(".modal-action-button").prop('disabled', false)
+      $(".modal-delete-button").prop('disabled', false)
+    });
+    // ----
+
     $(document).on('click', "#modal-container", async function(event) {
       if (!$(event.target).closest("#modal-inputdiv").length) {
         event.stopPropagation()
@@ -2081,11 +2120,14 @@ class Editor {
         let isTextures = mode == 'textures' ? true : false;
         
         let filename = $(this).attr('data-filename')
-        if (filename) {
+        let ext = $(this).attr('data-ext')
+        $("#modal-ext").val(ext)
+
+        if (filename && ext) {
           $(this).addClass("list-selected-file")
           let buttonText = clone.modalActionButtonText(mode, isTextures)
           $(".modal-action-button").attr('data-original-filename', filename)
-          $("#modal-container .modal-action-button").html(buttonText).prop('disabled', false).attr('data-filename', filename)
+          $("#modal-container .modal-action-button").html(buttonText).prop('disabled', false).attr('data-filename', filename).attr('data-ext', ext)
           $("#modal-container .modal-delete-button").prop('disabled', false)
           $('#modal-input').val(filename)
         }
@@ -2119,18 +2161,27 @@ class Editor {
 
     // AJAX ACTION BUTTON
     $(document).on('click', "#modal-container .modal-action-button", async function() {
+
+      console.log('EZ AZ PEDIG ')
+      
       let mode = $("#modal-container").attr('data-mode')
       let filename = $(this).attr('data-filename')
 
       console.log('--------'); console.log(mode); console.log(filename); console.log('--------');
 
-      // LOAD
+      // AJAX LOAD
       if (mode == 'load' && filename) {
-        const response = await clone.fetchData({ ajax: true, load: true, filename: filename }); // console.log(response)
+        let ext = $(this).attr('data-ext')
+        console.log(ext)
+
+        const response = await clone.fetchData({ ajax: true, load: true, filename: filename, ext: ext }); // console.log(response)
         if (response?.data && response?.structure) {
-          // console.log(response)
+
+          if (typeof response.type == 'undefined') response.type = 'map'    // !!!
+          console.log(response.type)                                        // !!!
+
           // clear data
-          clone.graph.map = clone.mapVariableReset()
+          clone.graph.map = clone.mapVariableReset(response.type)
           clone.mouseVariableReset()
           clone.graph.resetCordinates()
           clone.mapMemory = []
@@ -2141,6 +2192,7 @@ class Editor {
           clone.refreshLightsList()
           clone.refreshObjectList()
           clone.fullRefreshCanvasGraphics()
+          $("#filename").html(filename)
 
           $("#modal-message").html('<div class="text-center text-success">successfully loaded!</div>')
           setTimeout(() => {
@@ -2158,18 +2210,19 @@ class Editor {
       // AJAX SAVE
       if (mode == 'save' && filename) {
         let save = true;
+        let ext = $('#modal-ext').val()
 
-        const responseIsset = await clone.fetchData({ ajax: true, issetfile: true, filename }); // console.log(responseIsset)
+        const responseIsset = await clone.fetchData({ ajax: true, issetfile: true, filename, ext: ext }); // console.log(responseIsset)
         if (responseIsset[0]) save = (confirm(`File is isset: ${filename} Are you seure ovverrite?`)) ? true : false;
 
         if (save) {
           let saveMapData = JSON.stringify(clone.map)
 
-          const responseSave = await clone.fetchData({ ajax: true, save: true, filename, mapdata: saveMapData }); // console.log('response:'); console.log(responseSave);
+          const responseSave = await clone.fetchData({ ajax: true, save: true, filename, ext: ext, mapdata: saveMapData }); // console.log('response:'); console.log(responseSave);
           if (responseSave?.success) {
             $("#modal-message").html(`<div class="text-center text-success">${responseSave?.success}</div>`)
             setTimeout(() => {
-              $("#modal-close").click()
+              $("#modal-close").trigger('click')
               $('#modal-input').val('')
               $("#modal-message").html('')
             }, 1000);
@@ -2182,7 +2235,6 @@ class Editor {
       // AJAX GAME ACTIONS
       if (mode == 'gameactions') {
         console.log('GAME ACTIONS save click.....')
-        
       }
 
       // AJAX IMPORT
@@ -2278,7 +2330,7 @@ class Editor {
           if (selectedDir) {
             // RENAME
             let addgetdirs = clone.makeDirStructure()
-            let olddirname =  $(".modal-action-button").attr("data-original-filename")
+            let olddirname = $(".modal-action-button").attr("data-original-filename")
 
             const renameFiles = clone.textureDir.length == 1 ? true : false;
 
@@ -2321,13 +2373,15 @@ class Editor {
       if (mode == 'load' || mode == 'save') {
         // DELETE FILE
         let filename = $("#modal-container .modal-action-button").attr('data-filename')
+        let ext = $("#modal-container .modal-action-button").attr('data-ext')
         let trueDelete = false;
 
-        const checkFile = await clone.fetchData({ ajax: true, issetfile: true, filename }); // console.log(checkFile)
-        if (checkFile[0]) trueDelete = (confirm(`File is isset: ${filename} Are you seure delete?`)) ? true : false;
+        const checkFile = await clone.fetchData({ ajax: true, issetfile: true, filename: filename, ext: ext }); 
+        if (checkFile[0]) trueDelete = (confirm(`File is isset: ${filename}.${ext} Are you seure delete?`)) ? true : false;
 
         if (trueDelete) {
-          const responseDelete = await this.fetchData({ ajax: true, delete: true, filename }); console.log('response:'); console.log(responseDelete);
+          const responseDelete = await this.fetchData({ ajax: true, delete: true, filename: filename, ext: ext });
+
           if (responseDelete?.success) {
             let mode = $("#modal-container .modal-action-button").attr('data-mode')
 
@@ -2344,7 +2398,7 @@ class Editor {
             setTimeout(() => { $("#modal-message").html(''); }, 4000);
           }
         }
-      } else if (mode == 'textures') {        
+      } else if (mode == 'textures') {
         // DELETE DIR
         let deletedirname = $("#modal-container .modal-action-button").attr('data-filename')
         let trueDelete = (confirm(`Are you seure delete the ${deletedirname} directory?`)) ? true : false;
@@ -2362,6 +2416,8 @@ class Editor {
 
     $(document).on('input', "#modal-input", function() {
       let value = $(this).val()
+      console.log(value)
+      
       let actionButton = $("#modal-container .modal-action-button")
 
       if (value.length > 0) {

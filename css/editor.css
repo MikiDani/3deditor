@@ -592,10 +592,6 @@ button[class="3d-buttons"] {
   color: #0c0c2b;
 }
 
-.text-small {
-  font-size: 0.7rem;
-}
-
 .title-box-flex {
   display: flex;
   justify-content: space-between;
@@ -898,6 +894,14 @@ button[class="3d-buttons"] {
 
 .max-w-50 {
   max-width: 50% !important;
+}
+
+.max-w-25 {
+  max-width: 25% !important;
+}
+
+.max-w-10 {
+  max-width: 10% !important;
 }
 
 .w-100 {
@@ -1240,6 +1244,10 @@ button[class="3d-buttons"] {
   -moz-transform: scale(1.1);
   -ms-transform: scale(1.1);
   -o-transform: scale(1.1);
+}
+
+#modal-input {
+  z-index: 100 !important;
 }
 
 .commander-container {
@@ -2019,6 +2027,18 @@ li:hover {
 
 .text-mini {
   font-size: 11px !important;
+}
+
+.text-small {
+  font-size: 0.7rem;
+}
+
+.text-medium {
+  font-size: 1rem;
+}
+
+.text-large {
+  font-size: 1.5rem;
 }
 
 .selected-texture-23 {

@@ -67,7 +67,7 @@ export default class Game {
     this.inventory = new Inventory(this)
     this.gameplay = new Gameplay(this)
     this.input = new Input(this)
-
+    
     // Ha új betöltés lenne, init akkor már nem tölti be amit nem kell
     if (!this.generalLoading) await this.loader.generalLoader(false);
     if (this.loadingError) { this.loadingErrorAction(); return; }
@@ -168,7 +168,7 @@ export default class Game {
                 </div>
                 <div class="modal-body text-center">
                   <div id="filelist-container" class="w-100 mb-3" style="display: grid; grid-template-columns:repeat(3, 1fr);gap:5px;"></div>
-                  <input id="file-input" type="text" name="filename" value="maniac">
+                  <input id="file-input" type="text" name="filename" value="maniac" data-ext="mtuc">
                   <div class="my-2">
                       <input type="checkbox" id="lights-button" checked>
                       <span class="text-black"> All Lights ON</span>

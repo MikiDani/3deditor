@@ -12,7 +12,7 @@ export default class Loader {
   async generalLoader(logOn) {
     try {
       await this.loadTextures()
-      if (logOn) console.log(this.game.loadedTextures)
+      if (logOn) console.log(this.game.loadedTextures)        
     } catch (e) { this.game.loadingError = true; return; }
 
     try {
@@ -26,14 +26,16 @@ export default class Loader {
   }
 
   async loadTextures() {
-    await this.loadTexturesLinks() // console.log(this.texturesLinks)
-
+    await this.loadTexturesLinks()
+    // console.log(this.texturesLinks)
     for (const [name, path] of Object.entries(this.texturesLinks)) {
       // console.log(name, path)
       let texturePaths = Object.values(this.texturesLinks[name])
-      const loadData = await this.createSpritesheetTexture(name, texturePaths, 500)
-      this.game.loadedTextures[name]= loadData
-    }
+      if (texturePaths.length > 0) {
+        const loadData = await this.createSpritesheetTexture(name, texturePaths, 500)
+        this.game.loadedTextures[name] = loadData
+      }
+    }    
   }
 
   async loadTexturesLinks() {
@@ -105,7 +107,9 @@ export default class Loader {
 
   async mapLoader(logOn) {
     const filename = $("#file-input").val()
-    const response = await this.fetchData({ ajax: true, load: true, filename: filename })
+    const ext = $("#file-input").attr('data-ext')
+
+    const response = await this.fetchData({ ajax: true, load: true, filename: filename, ext: ext })
     if (response?.data && response?.structure) {
       this.game.map.data = this.game.deepCopy(response.data, true)
       this.game.map.structure = this.game.deepCopy(response.structure, true)

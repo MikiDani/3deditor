@@ -14,11 +14,11 @@ export default class Input {
   async ideiglenesMenuInputs() {
     const response = await this.game.loader.fetchData({ ajax: true, getfiles: true })  
     if (response?.files) {
-      // console.log(response.files)
       let elements = '';
-      for (const file of response.files) {
-        elements += `<div class="filename text-start cursor-pointer">• <span>${file.name}</span></div>`
-      }
+      for (const file of response.files) {        
+        if (file.extension != 'tuc' && file.extension != 'mtuc' && file.extension != 'otuc') continue;
+        elements += `<div class="filename-listelement text-start cursor-pointer" data-filename="${file.name}" data-ext="${file.extension}">• ${file.name}.${file.extension}</div>`
+      }      
       $('#filelist-container').append(elements)
     }
 
@@ -46,9 +46,12 @@ export default class Input {
       this.game.ghostMode = $this.prop('checked')
     });
 
-    $('#filelist-container .filename span').on('click', (event) => {
-      let $this = $(event.target)      
-      $('#file-input').val($this.text())
+    $('.filename-listelement').on('click', (event) => {      
+      const $this = $(event.target)
+      const filename = $this.attr('data-filename')
+      const ext = $this.attr('data-ext')
+      console.log(filename, ext)
+      $('#file-input').val(filename).attr('data-ext', ext)
     });
 
     $('#closeBtn').on('click', () => {
@@ -209,9 +212,10 @@ export default class Input {
 
     if (this.game.keysPressed.has('w')) {
       if (shift) {
-        if (!moved) {          
-          moved = this.attemptMove(direction.clone().multiplyScalar(this.game.moveSpeed * 2))
-          // moved = this.attemptMove(new THREE.Vector3(0, this.game.moveSpeed, 0)) // UP ?
+        if (!moved) {
+          moved = this.game.ghostMode
+          ? this.attemptMove(new THREE.Vector3(0, this.game.moveSpeed, 0)) // UP
+          : this.attemptMove(direction.clone().multiplyScalar(this.game.moveSpeed * 2));
         }
       } else {
         if (!moved) {
@@ -223,8 +227,9 @@ export default class Input {
     if (this.game.keysPressed.has('s')) {
       if (shift) {
         if (!moved) {
-          moved = this.attemptMove(direction.clone().multiplyScalar(-this.game.moveSpeed * 2))
-          // moved = this.attemptMove(new THREE.Vector3(0, -this.game.moveSpeed, 0)) // DOWN ?
+          moved = this.game.ghostMode
+          ? this.attemptMove(new THREE.Vector3(0, -this.game.moveSpeed, 0)) // DOWN
+          : this.attemptMove(direction.clone().multiplyScalar(-this.game.moveSpeed * 2));
         }
       } else {
         if (!moved) {

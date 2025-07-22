@@ -551,10 +551,12 @@ export class Graphics {
     return this.isVisibleInTree(structure, parent.id);
   }
 
-  async renderScreen() {
-    for (let mesh of this.map.data) {
-      if (this.isVisibleInTree(this.map.structure, mesh.id)) {
-        this.drawObject(mesh);
+  async renderScreen() {   
+    if (this.map.data && Object.keys(this.map.data).length > 0) {
+      for (let mesh of this.map.data) {
+        if (this.isVisibleInTree(this.map.structure, mesh.id)) {
+          this.drawObject(mesh);
+        }
       }
     }
   }
@@ -803,6 +805,8 @@ export class Graphics {
     let picIndex = 0
     if (this.options3D.realtime && this.text.animTimer[texture.name]) picIndex = this.text.animTimer[texture.name].counter;
     // image select
+    // console.log(texture.name)
+    
     let selectedTexture = (texture.name) ? this.text.pic[texture.name][picIndex] : this.text.pic['notexture'][0];
 
     // texture
