@@ -183,7 +183,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
     $filename = basename($_POST['filename']);
     $filename = mb_strtolower($filename);
 
-    $filepath = $directory . $filename . $ext;
+    $filepath = $directory . $filename . '.' . $ext;
 
     $responseValue = file_exists($filepath);
 
@@ -249,10 +249,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
 }
 
 // SAVE
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['save']) && isset($_POST['filename'])) {
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['save']) && isset($_POST['filename']) && isset($_POST['ext'])) {
 
     $filename = basename($_POST['filename']);
     $filename = clear_filename($filename);
+
+    $ext = basename($_POST['ext']);
+    $ext = mb_strtolower($ext);
 
     /*
     if ($filename == 'maniac' || $filename == 'clear' || $filename == 'chees' || $filename == 'salad' || $filename == 'ketchup' || $filename == 'fridge') {
@@ -268,7 +271,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
         exit;
     }
 
-    if (file_put_contents($directory. DIRECTORY_SEPARATOR . $filename . $ext, gzencode(json_encode($map_data), 9))) {
+    if (file_put_contents($directory. DIRECTORY_SEPARATOR . $filename . '.' . $ext, gzencode(json_encode($map_data), 9))) {
         echo json_encode(['success' => 'Saving success!']);
     } else {
         echo json_encode(['error' => 'Save error!']);
@@ -277,13 +280,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
 }
 
 // LOAD
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['load']) && isset($_POST['filename'])) {
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['load']) && isset($_POST['filename']) && isset($_POST['ext'])) {
 
     $filename = basename($_POST['filename']);
     $filename = mb_strtolower($filename);
 
-    if (file_exists($directory . DIRECTORY_SEPARATOR . $filename. $ext)) {
-        $compressed_data = file_get_contents($directory . DIRECTORY_SEPARATOR . $filename . $ext);
+    $ext = basename($_POST['ext']);
+    $ext = mb_strtolower($ext);
+
+    if (file_exists($directory . DIRECTORY_SEPARATOR . $filename . '.' . $ext)) {
+        $compressed_data = file_get_contents($directory . DIRECTORY_SEPARATOR . $filename . '.' . $ext);
         $json_data = json_decode(gzdecode($compressed_data), true);
 
         echo json_encode($json_data ?? ['error' => 'Error JSON file reading!']);
@@ -294,14 +300,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
 }
 
 // DELETE
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['delete']) && isset($_POST['filename'])) {
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['delete']) && isset($_POST['filename']) && isset($_POST['ext'])) {
 
     $filename = basename($_POST['filename']);
     $filename = mb_strtolower($filename);
 
-    if (file_exists($directory . DIRECTORY_SEPARATOR . $filename. $ext)) {
-        if (file_exists($directory . DIRECTORY_SEPARATOR . $filename . $ext)) {
-            if (unlink($directory . DIRECTORY_SEPARATOR . $filename . $ext)) {
+    $ext = basename($_POST['ext']);
+    $ext = mb_strtolower($ext);
+
+    if (file_exists($directory . DIRECTORY_SEPARATOR . $filename . '.' . $ext)) {
+        if (file_exists($directory . DIRECTORY_SEPARATOR . $filename . '.' . $ext)) {
+            if (unlink($directory . DIRECTORY_SEPARATOR . $filename . '.' . $ext)) {
                 echo json_encode(['success' => 'File deleted successfully!']);
             } else {
                 echo json_encode(['error' => 'Failed to delete the file!']);

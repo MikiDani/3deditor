@@ -135,34 +135,38 @@
             </div>
 
             <!-- LAYERS -->
-            <div id="layer-list-head" class="title-box flex-between">
-                <div class="p-0 m-0 d-flex">
-                    <span id="layer-show-hide" class="eye-layer-up hover-pointer" title="Show/Hide All layers."></span>
+            <div id="layers" style="display:none;">
+                <div id="layer-list-head" class="title-box flex-between">
+                    <div class="p-0 m-0 d-flex">
+                        <span id="layer-show-hide" class="eye-layer-up hover-pointer" title="Show/Hide All layers."></span>
+                    </div>
+                    <span>Layers</span>
+                    <div class="p-0 m-0">
+                        <span id="layer-add-new" class="plus hover-pointer" title="Add new layer."></span>
+                    </div>
                 </div>
-                <span>Layers</span>
-                <div class="p-0 m-0">
-                    <span id="layer-add-new" class="plus hover-pointer" title="Add new layer."></span>
+                <div id="layer-list" class="box-1 responsive-menu pt-1" style="display:block;">
+                    <!-- javascript -->
                 </div>
+                <div id="layer-list-size-button" data-type-name="layer"></div>
             </div>
-            <div id="layer-list" class="box-1 responsive-menu pt-1" style="display:block;">
-                <!-- javascript -->
-            </div>
-            <div id="layer-list-size-button" data-type-name="layer"></div>
 
             <!-- LIGHTS -->
-            <div id="light-list-head" class="title-box flex-between">
-                <div class="p-0 m-0 d-flex">
-                    <span id="light-show-hide" class="eye-light-up hover-pointer" title="Show/Hide All Lights."></span>
+            <div id="lights" style="display:none;">
+                <div id="light-list-head" class="title-box flex-between">
+                    <div class="p-0 m-0 d-flex">
+                        <span id="light-show-hide" class="eye-light-up hover-pointer" title="Show/Hide All Lights."></span>
+                    </div>
+                    <span>Lights</span>
+                    <div class="p-0 m-0">
+                        <span id="light-add-new" class="plus hover-pointer" title="Add new light."></span>
+                    </div>
                 </div>
-                <span>Lights</span>
-                <div class="p-0 m-0">
-                    <span id="light-add-new" class="plus hover-pointer" title="Add new light."></span>
+                <div id="light-list" class="box-1 responsive-menu pt-1" style="display:block;">
+                    <!-- javascript -->
                 </div>
+                <div id="light-list-size-button" data-type-name="light"></div>
             </div>
-            <div id="light-list" class="box-1 responsive-menu pt-1" style="display:block;">
-                <!-- javascript -->
-            </div>
-            <div id="light-list-size-button" data-type-name="light"></div>
 
             <div id="selected-light-container" class="p-0 m-0" style="display:none;">
                 <div class="title-box-flex text-start">

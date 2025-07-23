@@ -484,16 +484,14 @@ export class Graphics {
       return 2;
     }
   }
-  
-  
-  
+
   moveObject(id, deltaX, deltaY, deltaZ) {
     // Hozz létre egy transzlációs mátrixot
     const matTranslate = this.matrix_MakeTranslation(deltaX, deltaY, deltaZ);
 
-    if (this.map.data[id]) {
+    if (this.map.data[this.map.aid][id]) {
       // Válaszd ki az elmozdítani kívánt objektumot (például az elsőt)
-      let useObject = this.map.data[id];
+      let useObject = this.map.data[this.map.aid][id];
     
       // Minden háromszög csúcspontján alkalmazzuk a transzlációs mátrixot
       useObject.tris.forEach(triangle => {
@@ -502,7 +500,7 @@ export class Graphics {
           triangle.p[2] = this.matrix_MultiplyVector(matTranslate, triangle.p[2]);
       });
   
-      this.map.data[id] = useObject
+      this.map.data[this.map.aid][id] = useObject
     }
   }
 
@@ -552,9 +550,9 @@ export class Graphics {
   }
 
   async renderScreen() {   
-    if (this.map.data && Object.keys(this.map.data).length > 0) {
-      for (let mesh of this.map.data) {
-        if (this.isVisibleInTree(this.map.structure, mesh.id)) {
+    if (this.map.data[this.map.aid] && Object.keys(this.map.data[this.map.aid]).length > 0) {
+      for (let mesh of this.map.data[this.map.aid]) {
+        if (this.isVisibleInTree(this.map.structure[this.map.aid], mesh.id)) {
           this.drawObject(mesh);
         }
       }

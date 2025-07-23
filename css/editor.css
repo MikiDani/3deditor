@@ -646,7 +646,8 @@ button[class="3d-buttons"] {
 }
 
 #object-list,
-#light-list {
+#light-list,
+#layer-list {
   position: relative;
   flex: 1;
   min-height: 50px;
@@ -655,14 +656,16 @@ button[class="3d-buttons"] {
 }
 
 #object-list-size-button,
-#light-list-size-button {
+#light-list-size-button,
+#layer-list-size-button {
   top: -20px;
   height: 5px;
   width: 100%;
   background-color: green !important;
 }
 #object-list-size-button:hover,
-#light-list-size-button:hover {
+#light-list-size-button:hover,
+#layer-list-size-button:hover {
   cursor: row-resize;
 }
 

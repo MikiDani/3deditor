@@ -142,40 +142,6 @@ class Editor {
     this.init()
   }
 
-  mapVariableReset(type = 'map') {
-    var actions, objects, modellType
-
-    if (type == 'map') {
-      // MAP
-      modellType = 'map'
-      actions = []
-      objects = []
-    } else {
-      modellType = 'object'
-      // OBJECT
-      actions = [[0]]
-      objects = [[0]]
-      actions[0][0] = null
-      objects[0][0] = null
-    }
-
-    return this.map = {
-      type: modellType,
-      data: {},
-      structure: {},
-      actions: actions,
-      objects: objects,
-      lights: [],
-      player: {
-        x:0,
-        y:0,
-        z:0,
-        fYaw:0,
-        fXaw:0,
-      }
-    }
-  }
-
   mouseVariableReset() {
     this.mouse = {
       startX: 0,
@@ -197,10 +163,79 @@ class Editor {
     }
   }
 
+  mapVariableReset(ext = 'mtuc') {
+    this.typeShowHide(ext)
+
+    if (ext == 'mtuc') { 
+      return this.map = {
+        type: 'map',
+        aid: 0,
+        data: [],
+        structure: [],
+        actions: [],
+        objects: [],
+        lights: [],
+        player: {
+          x:0,
+          y:0,
+          z:0,
+          fYaw:0,
+          fXaw:0,
+        }
+      }
+    } else if (ext == 'otuc') {
+      return this.map = {
+        type: 'object',
+        aid: 0,
+        data: [],
+        structure: [],
+        animation: [],
+        player: {
+          x:0,
+          y:0,
+          z:0,
+          fYaw:0,
+          fXaw:0,
+        }
+      }
+    }
+  }
+
+  typeShowHide(ext) {
+    if (ext == 'mtuc') {
+      $("#layers").hide(); $("#lights").show(); $('.menu-text-border.modal-button[data-mode="gameactions"]').show();
+    } else if (ext == 'otuc') {
+      $("#lights").hide(); $("#layers").show(); $('.menu-text-border.modal-button[data-mode="gameactions"]').hide();
+    }
+  }
+
+  fileExtensionChange(ext) {
+    if (ext == 'mtuc') {
+      this.map.type = 'map'
+      if (!this.map.actions) this.map.actions = [];
+      if (!this.map.objects) this.map.objects = [];
+      if (!this.map.lights) this.map.lights = [];
+      if (this.map.animation) delete this.map.animation;
+    } else if (ext == 'otuc') {
+      this.map.type = 'object'
+      if (this.map.actions) delete this.map.actions;
+      if (this.map.objects) delete this.map.objects;
+      if (this.map.lights) delete this.map.lights;
+      if (!this.map.animation) this.map.animation = [];
+    }
+
+    console.log(this.map)
+
+    this.refreshLightsList()
+    this.refreshObjectList()
+    this.fullRefreshCanvasGraphics()
+    this.typeShowHide(ext)
+  }
+
   async init() {
     let consolePrint = true  // !!!
 
-    const response = await fetch('config.json')
+    let response = await fetch('config.json')
     this.gamedata = await response.json()
     if (consolePrint) {
       console.log('LOADED GAMEDATA:')
@@ -213,15 +248,31 @@ class Editor {
       console.log(this.text.pic);
     }
 
-    this.mapVariableReset('map')
-    await this.loadMapData()
-    if (consolePrint) {
-      console.log('LOADING MAP DATAS:')
-      console.log(this.map.data)
-      console.log(this.map.structure)
-      console.log(this.map.player)
-      console.log(this.map.actions)
-      console.log(this.map.lights)
+    // FIRST LOAD
+    if (true) {
+      await this.loadMapData()
+      if (consolePrint) {
+        console.log('LOADING MAP DATAS:')
+        console.log(this.map.aid)
+        console.log(this.map.data[this.map.aid])
+        console.log(this.map.structure[this.map.aid])
+        console.log(this.map.player)
+        console.log(this.map.actions)
+        console.log(this.map.lights)
+      }
+    }
+
+    // LOAD OBJECT MODEL IDS AND NAMES
+    if (true) {
+      response = await this.fetchData({ ajax: true, getobjects: true})
+      if (response.files) {
+        let fileList = response.files.filter(file => file.extension == 'tuc')
+        fileList.filter(file => file.extension == 'tuc').forEach(file => {
+          let exp = file.name.split('_')
+          this.map.objects.push({id: exp[0], name: exp[1], filename: file.name })
+        });
+        console.log(this.map.objects)
+      }
     }
 
     this.graph = new Graphics(this.text, this.keys, this.options, this.map, this.findMeshById, this.findMeshParent, this.map.player)
@@ -296,7 +347,6 @@ class Editor {
         if (isLeafLevel && keys.length > 0) {
           let firstKey = keys[0];
           let firstValue = current[firstKey];
-
           let animStyleClass = keys.length > 1 ? 'anim-style' : '';
 
           return `
@@ -305,7 +355,7 @@ class Editor {
             <div class="fw-bold text-uppercase text-mini text-center">${firstKey}</div>
           </div>`;
         }
-  
+
         let nestedHtml = '';
         for (let key of keys) {
           nestedHtml += recurse(current[key], key, clone);
@@ -337,7 +387,7 @@ class Editor {
   wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
-  
+
   getMaxId(obj) {
     let maxId = 0;
     for (const key in obj) {
@@ -373,54 +423,55 @@ class Editor {
       if (response?.dirs) this.fileListElementsMake(mode, response.dirs, false, true)
     }
   }
-  async loadNewBasicData(response) {
+  async loadNewBasicData(response, ext) {
+    // COOMON DATA
+
     // MAPDATA
     this.map.data = this.deepCopy(response.data)
-    const maxId = Math.max(...this.map.data.map(obj => obj.id));
+    const maxId = Math.max(...this.map.data[this.map.aid].map(obj => obj.id));
     Mesh.setInstanceCount(maxId)
     // MAP STRUCTURE
     this.map.structure = this.deepCopy(response.structure)
     // MAP PLAYER
     this.map.player = this.deepCopy(response.player)
-    // MAP ACTIONS
-    this.map.actions = this.deepCopy(response.actions)
-    if (this.map.actions && Array.isArray(this.map.actions)) {
-      AnimAction.setInstanceCount(this.map.actions.length)
-      let countEventsRow = 0;
-      for (let key in this.map.actions) {
-        if (this.map.actions[key].events && Array.isArray(this.map.actions[key].events)) countEventsRow += this.map.actions[key].events.length;
-      }
-      AnimAction.setEventIdCounter(countEventsRow)
-      this.refreshActionSelect()
-    } else this.map.actions = [];
-    // MAP LIGHTS
-    this.map.lights = this.deepCopy(response.lights)
-    Light.setInstanceCount(this.getMaxId(this.map.lights))
+
+    // MAP TYPE
+    if (ext == 'mtuc') {
+      // MAP ACTIONS
+      this.map.actions = this.deepCopy(response.actions)
+      if (this.map.actions && Array.isArray(this.map.actions)) {
+        AnimAction.setInstanceCount(this.map.actions.length)
+        let countEventsRow = 0;
+        for (let key in this.map.actions) {
+          if (this.map.actions[key].events && Array.isArray(this.map.actions[key].events)) countEventsRow += this.map.actions[key].events.length;
+        }
+        AnimAction.setEventIdCounter(countEventsRow)
+        this.refreshActionSelect()
+      } else this.map.actions = [];
+      // MAP LIGHTS
+      this.map.lights = this.deepCopy(response.lights)
+      Light.setInstanceCount(this.getMaxId(this.map.lights))
+    }
+
+    // OBJECT TYPE
+    if (ext == 'otuc') {
+      // ANIMATION
+      this.map.animation = this.deepCopy(response.animation)
+    }
   }
 
   async loadMapData() {
-    // FIRST LOAD
-    if (true) {
-      let filename = 'maniac'
-      let ext = 'mtuc'
+    let filename = 'maniac'
+    let ext = 'mtuc'
+    $("#modal-ext").val(ext)
 
-      const response = await this.fetchData({ ajax: true, load: true, filename: filename, ext: ext })
-      if (response?.data && response?.structure) {
-        // console.log(response);
-        this.loadNewBasicData(response)
-        $("#filename").html(filename)
-      }
-    }
+    this.mapVariableReset(ext)
 
-    // LOAD OBJECT MODEL IDS AND NAMES
-    const response = await this.fetchData({ ajax: true, getobjects: true})
-    if (response.files) {
-      let fileList = response.files.filter(file => file.extension == 'tuc')
-      fileList.filter(file => file.extension == 'tuc').forEach(file => {
-        let exp = file.name.split('_')
-        this.map.objects.push({id: exp[0], name: exp[1], filename: file.name })
-      });
-      // console.log(this.map.objects)
+    const response = await this.fetchData({ ajax: true, load: true, filename: filename, ext: ext })
+    console.log(response);
+    if (response?.data && response?.structure) {      
+      this.loadNewBasicData(response, ext)
+      $("#filename").html(filename)
     }
   }
 
@@ -500,13 +551,13 @@ class Editor {
   arrayActionElementEventMaker(elementName, animActionId, eventId, moveactions) {
     let elements = ''
 
-    // console.log(this.gamedata.movefx); console.log(this.map.data);
+    // console.log(this.gamedata.movefx); console.log(this.map.data[this.map.aid]);
 
     if (moveactions && moveactions.length > 0) {
       moveactions.forEach(arrayData => {
         if (!Array.isArray(arrayData)) return;       
 
-        let meshData = this.map.data.find(mesh => mesh.id == arrayData[0])
+        let meshData = this.map.data[this.map.aid].find(mesh => mesh.id == arrayData[0])
         let moveFx = this.gamedata.movefx.find(fx => fx.id == arrayData[1])
 
         // console.log(meshData); console.log(moveFx);
@@ -672,7 +723,7 @@ class Editor {
               <div class='d-inline-block pe-1 text-center'>
                 <span class="d-inline-block width-100px" title="Select Mesh.">Mesh:</span>
                 <select data-type="long" name="moveactions-mash" data-action-id="${animAction.id}" data-event-id="${event.id}" class="mx-3">
-                  ${this.optionElementMaker(this.map.data, null, 'select Mesh…')}
+                  ${this.optionElementMaker(this.map.data[this.map.aid], null, 'select Mesh…')}
                 </select>
               </div>
               <div class='d-inline-block ps-1 mt-2 text-center'>
@@ -757,7 +808,7 @@ class Editor {
     Mesh.setInstanceCount(newId)
   
     // Mesh adat másolása és új ID beállítása
-    const meshData = this.map.data.find(m => m.id == originalNode.id)
+    const meshData = this.map.data[this.map.aid].find(m => m.id == originalNode.id)
     const meshCopy = this.deepCopy(meshData)
     meshCopy.id = newId
     meshCopy.parent_id = newParentId
@@ -843,7 +894,7 @@ class Editor {
 
   findMeshBrothers(data, meshId) {
     // If null level
-    let parentId = this.map.data.find(element => element.id == meshId).parent_id
+    let parentId = this.map.data[this.map.aid].find(element => element.id == meshId).parent_id
     if (!parentId) {      
       let returnData = []
       for (let mesh of data) {
@@ -887,7 +938,7 @@ class Editor {
   }
 
   deleteLocketBrothers(triId) {
-    let selectedObject = this.map.data.find(obj => obj.tris.some(triangle => triangle.id == triId));
+    let selectedObject = this.map.data[this.map.aid].find(obj => obj.tris.some(triangle => triangle.id == triId));
     let selectedTriangle = selectedObject ? selectedObject.tris.find(triangle => triangle.id == triId) : null;
     if (selectedTriangle) {
       let locketId = (selectedTriangle?.locket) ? selectedTriangle.locket : false;
@@ -993,12 +1044,12 @@ class Editor {
 
   refreshObjectList() {
     $('#object-list').html('');
-    if (this.map.data && this.map.structure) {
-      if (this.map.structure.length > 0) {
+    if (this.map.data[this.map.aid] && this.map.structure[this.map.aid]) {
+      if (this.map.structure[this.map.aid].length > 0) {
         this.refreshClipboard()
         // LIST OBJECTS
         let element = `<ul>`;
-        this.map.structure.forEach(item => {
+        this.map.structure[this.map.aid].forEach(item => {
           element += this.recursiveMenu(item)
         })
         element += `</ul>`;
@@ -1047,12 +1098,12 @@ class Editor {
   }
 
   recursiveMenu(item) {
-    const meshData = this.map.data.find(element => element.id == item.id)
+    const meshData = this.map.data[this.map.aid].find(element => element.id == item.id)
     if (meshData) {
-      let itemData = this.findMeshById(this.map.structure, meshData.id)
+      let itemData = this.findMeshById(this.map.structure[this.map.aid], meshData.id)
       let showMesh
       if (meshData.parent_id != null) {
-        let parentData = this.findMeshById(this.map.structure, meshData.parent_id)
+        let parentData = this.findMeshById(this.map.structure[this.map.aid], meshData.parent_id)
         showMesh = Number(parentData.status) ? 'block' : 'none';
       } else {
         // FIRST ELEMENT
@@ -1334,7 +1385,7 @@ class Editor {
   }
 
   refreshActionList() {
-    let selectedMesh = this.map.data.find(mesh => mesh.id == this.mouse.selectedMeshId)
+    let selectedMesh = this.map.data[this.map.aid].find(mesh => mesh.id == this.mouse.selectedMeshId)
     $("#actions .list").html('')
     let elements = ''
   
@@ -1384,11 +1435,11 @@ class Editor {
         console.log('this.map:')
         console.log(this.map)
 
-        console.log('this.map.data:')
-        console.log(this.map.data)
+        console.log('this.map.data[this.map.aid]:')
+        console.log(this.map.data[this.map.aid])
     
-        console.log('this.map.structure')
-        console.log(this.map.structure)
+        console.log('this.map.structure[this.map.aid]')
+        console.log(this.map.structure[this.map.aid])
 
         console.log('this.map.player')
         console.log(this.map.player)
@@ -1428,12 +1479,22 @@ class Editor {
       }
     });
 
+    // FILE EXTENSION CHANGE
+    $(document).on('change', '#modal-ext', function() {      
+      let result = confirm(`Are you sure you want to change the file type? This may result in data loss!`)
+      if (result) {
+        let ext = $(this).val()
+        clone.fileExtensionChange(ext)
+      }
+    });
+
+    //////////////////
     // MESH ADD ACTION
 
     // ADD NEW ACTION
     $(document).on('click', "#actions button[name='add-action']", function() {
       const selectedActionId = parseInt($("select[name='actions-selector']").val())
-      const selectedMesh = clone.map.data.find(mesh => mesh.id == clone.mouse.selectedMeshId)
+      const selectedMesh = clone.map.data[clone.map.aid].find(mesh => mesh.id == clone.mouse.selectedMeshId)
     
       if (!selectedMesh) return
       if (!selectedMesh.actions) selectedMesh.actions = []
@@ -1451,7 +1512,7 @@ class Editor {
       let meshId = parseInt($(this).attr('data-mesh-id'))
       let actionIndexId = parseInt($(this).attr('data-actionindex-id'))
     
-      let selectedMesh = clone.map.data.find(mesh => mesh.id == meshId)
+      let selectedMesh = clone.map.data[clone.map.aid].find(mesh => mesh.id == meshId)
       if (selectedMesh && Array.isArray(selectedMesh.actions)) {
         selectedMesh.actions.splice(actionIndexId, 1)
       }
@@ -1515,7 +1576,7 @@ class Editor {
         let index = clone.map.actions.findIndex(data => data.id == animActionId)
         if (index !== -1) {
           // DELETE ALL USED ACTION ID IN MAP.DATA
-          clone.map.data.forEach(mesh => {
+          clone.map.data[clone.map.aid].forEach(mesh => {
             if (Array.isArray(mesh?.actions) && mesh.actions.includes(animActionId)) {
               mesh.actions = mesh.actions.filter(id => id != animActionId);
             }
@@ -2160,14 +2221,11 @@ class Editor {
     });
 
     // AJAX ACTION BUTTON
-    $(document).on('click', "#modal-container .modal-action-button", async function() {
-
-      console.log('EZ AZ PEDIG ')
-      
+    $(document).on('click', "#modal-container .modal-action-button", async function() {      
       let mode = $("#modal-container").attr('data-mode')
       let filename = $(this).attr('data-filename')
 
-      console.log('--------'); console.log(mode); console.log(filename); console.log('--------');
+      console.log('--------'); console.log(mode); console.log(filename); console.log('--------');   // !!!
 
       // AJAX LOAD
       if (mode == 'load' && filename) {
@@ -2216,6 +2274,36 @@ class Editor {
         if (responseIsset[0]) save = (confirm(`File is isset: ${filename} Are you seure ovverrite?`)) ? true : false;
 
         if (save) {
+          ///////////  SAVE NEW STRUCTURE ! //////////////////////
+          /*
+          let mapMod = clone.deepCopy(clone.map)
+          let dataMod = clone.deepCopy(clone.map.data)
+          let structureMod = clone.deepCopy(clone.map.structure)
+
+          mapMod.type = 'new-test'
+          mapMod.structure = [structureMod]
+          mapMod.data = [dataMod]
+
+          console.log(mapMod)
+
+          // let mapModify = {
+          //   type: 'new',
+          //   data: [{},{}],
+          //   structure: [{},{}],
+          //   actions: [],
+          //   objects: [],
+          //   lights: [],
+          //   player: {
+          //     x:0,
+          //     y:0,
+          //     z:0,
+          //     fYaw:0,
+          //     fXaw:0,
+          //   }
+          // }
+          let saveMapData = JSON.stringify(mapMod)
+          */
+          
           let saveMapData = JSON.stringify(clone.map)
 
           const responseSave = await clone.fetchData({ ajax: true, save: true, filename, ext: ext, mapdata: saveMapData }); // console.log('response:'); console.log(responseSave);
@@ -2271,8 +2359,8 @@ class Editor {
             };
           });
           
-          let selectedMapData = clone.map.data.find(obj => obj.id == clone.mouse.selectedMeshId)
-          let selectedStructureData = clone.findMeshById(clone.map.structure, clone.mouse.selectedMeshId)
+          let selectedMapData = clone.map.data[clone.map.aid].find(obj => obj.id == clone.mouse.selectedMeshId)
+          let selectedStructureData = clone.findMeshById(clone.map.structure[clone.map.aid], clone.mouse.selectedMeshId)
 
           if (selectedMapData && selectedStructureData) {
             importData.forEach(mesh => {
@@ -2281,7 +2369,7 @@ class Editor {
               }
             })
 
-            clone.map.data.push(...importData)
+            clone.map.data[clone.map.aid].push(...importData)
             selectedStructureData.child.push(...importStructure)
 
             clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
@@ -2525,7 +2613,7 @@ class Editor {
 
     // TRIANGLE NAME MODIFY
     $("#selected-mesh-name").on('input', function() {
-      let selectedMesh = clone.map.data.find(mesh => mesh.id == clone.mouse.selectedMeshId)
+      let selectedMesh = clone.map.data[clone.map.aid].find(mesh => mesh.id == clone.mouse.selectedMeshId)
       if (selectedMesh) {
         let value = $(this).val().toUpperCase()
         selectedMesh.name = value; $(this).val(value);
@@ -2665,7 +2753,7 @@ class Editor {
               // Add triangle
               clone.saveMapMemory('save')
 
-              let selectedMash = clone.map.data.find(data => data.id == clone.mouse.selectedMeshId)
+              let selectedMash = clone.map.data[clone.map.aid].find(data => data.id == clone.mouse.selectedMeshId)
 
               if (selectedMash) {
                 let t1, t2, t3 = null
@@ -2722,7 +2810,7 @@ class Editor {
               // Add rectangle
               clone.saveMapMemory('save')
 
-              let selectedMash = clone.map.data.find(data => data.id == clone.mouse.selectedMeshId)
+              let selectedMash = clone.map.data[clone.map.aid].find(data => data.id == clone.mouse.selectedMeshId)
 
               if (selectedMash) {
                 let p1 = clone.mouse.addRec.cords[0]; let p2 = clone.mouse.addRec.cords[1]
@@ -2756,8 +2844,8 @@ class Editor {
                 selectedMash.tris.unshift(newTri2)
                 selectedMash.tris.unshift(newTri1)
 
-                clone.mouse.selectedTri = clone.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == newTri1.id)
-                clone.mouse.selectedLock = clone.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == newTri2.id)
+                clone.mouse.selectedTri = clone.map.data[clone.map.aid].flatMap(obj => obj.tris).find(triangle => triangle.id == newTri1.id)
+                clone.mouse.selectedLock = clone.map.data[clone.map.aid].flatMap(obj => obj.tris).find(triangle => triangle.id == newTri2.id)
 
                 clone.resetMouseAddRec()
                 clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
@@ -2896,8 +2984,8 @@ class Editor {
 
     $(document).on('click', '#clipboard-button', () => {
       if (this.mouse.selectedMeshId) {
-        let mapDataSelected = clone.map.data.find(element => element.id == this.mouse.selectedMeshId)
-        let mapStructureSelected = clone.findMeshById(clone.map.structure, this.mouse.selectedMeshId)       
+        let mapDataSelected = clone.map.data[clone.map.aid].find(element => element.id == this.mouse.selectedMeshId)
+        let mapStructureSelected = clone.findMeshById(clone.map.structure[clone.map.aid], this.mouse.selectedMeshId)       
 
         if (Array.isArray(this.clipboardMemory.tris) && this.clipboardMemory.tris.length > 0) {
           this.clipboardMemory.tris.forEach(tri => {
@@ -2913,7 +3001,7 @@ class Editor {
             mapStructureSelected.child.push(newMesh)
             // mapdata
             mesh.parent_id = mapDataSelected.id
-            this.map.data.push(mesh)
+            this.map.data[this.map.aid].push(mesh)
           });
           this.clipboardMemory.meshs = []
         }
@@ -2992,7 +3080,7 @@ class Editor {
           }
 
           if (mode == 'mesh') {
-            let selectedMesh = clone.findMeshById(clone.map.structure, clone.mouse.selectedMeshId)
+            let selectedMesh = clone.findMeshById(clone.map.structure[clone.map.aid], clone.mouse.selectedMeshId)
             if (selectedMesh) clone.recursiveTransform(mode, selectedMesh, transformData)
           }
 
@@ -3008,7 +3096,7 @@ class Editor {
 
     $("select[name='line-color']").on('input', function () {
       if(clone.mouse.selectedMeshId) {       
-        let mapDataSelected = clone.map.data.find(element => element.id == clone.mouse.selectedMeshId)
+        let mapDataSelected = clone.map.data[clone.map.aid].find(element => element.id == clone.mouse.selectedMeshId)
         mapDataSelected.lineColor = $(this).val()
         clone.fullRefreshCanvasGraphics()
       }
@@ -3230,9 +3318,6 @@ class Editor {
 
     $(`select[name='lock-normal']`).on('input', function () {
       if (typeof clone.mouse.selectedTri.id !== 'undefined' && typeof clone.mouse.selectedLock.id !== 'undefined') {
-
-        console.log(clone.mouse)
-
         clone.mouse.selectedTri.normal = $(this).val()
         clone.mouse.selectedLock.normal = $(this).val()
         clone.fullRefreshCanvasGraphics()
@@ -3251,7 +3336,7 @@ class Editor {
       event.stopImmediatePropagation()      
       if (typeof clone.mouse.selectedTri.id !== 'undefined' && typeof clone.mouse.selectedLock.id !== 'undefined') {
         clone.mouse.selectedTri.name = $(this).val()
-        let triangle = clone.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == clone.mouse.selectedTri.id)
+        let triangle = clone.map.data[clone.map.aid].flatMap(obj => obj.tris).find(triangle => triangle.id == clone.mouse.selectedTri.id)
         triangle.name = $(this).val()
         $(document).find("#object-list").find(`li[data-id='${clone.mouse.selectedTri.id}']`).html($(this).val())
       }
@@ -3264,7 +3349,7 @@ class Editor {
       if (typeof clone.mouse.selectedLock.id !== 'undefined') {
         clone.mouse.selectedLock.name = $(this).val()
         
-        let triangle = clone.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == clone.mouse.selectedLock.id)
+        let triangle = clone.map.data[clone.map.aid].flatMap(obj => obj.tris).find(triangle => triangle.id == clone.mouse.selectedLock.id)
         triangle.name = $(this).val()
         $(document).find("#object-list").find(`li[data-id='${clone.mouse.selectedLock.id}']`).html($(this).val())
       }
@@ -3276,7 +3361,7 @@ class Editor {
     setTimeout(function() {
       $("#object-list").find(".menu-icon").each(function() {
           let id = Number($(this).closest('li').attr('data-id'))
-          let thisMeshStructure = clone.findMeshById(clone.map.structure, id)
+          let thisMeshStructure = clone.findMeshById(clone.map.structure[clone.map.aid], id)
           if ($(this).hasClass('triangle-down')) {
             thisMeshStructure.status = 0
             $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).hide()
@@ -3316,7 +3401,7 @@ class Editor {
               $(document).find(`li[data-id='${clone.mouse.selectedTri.id}']`).addClass('list-triangle-selected').append('<span class="menu-icon menu-icon-pos-4 clipboard-copy"></span><span class="menu-icon menu-icon-pos-2 clipboard"></span><span class="menu-icon menu-icon-pos-1 delete"></span>')
 
               let brotherTriId = $(e.target).attr('data-id')
-              let parentMeshData = clone.map.data.find(mesh => mesh.id == clone.mouse.selectedMeshId)
+              let parentMeshData = clone.map.data[clone.map.aid].find(mesh => mesh.id == clone.mouse.selectedMeshId)
               let findBrother = parentMeshData.tris.find(list => list.id == brotherTriId && list.id != clone.mouse.selectedTri.id)
   
               if (findBrother) {
@@ -3354,8 +3439,8 @@ class Editor {
     // ADD NEW ROOT OBJECT
     $(document).on('click', '#object-add-new', function() {
       let addNewMesh = new Mesh('New Group', null)
-      clone.map.data.push(addNewMesh)
-      clone.map.structure.push({id: addNewMesh.id, visible: true, status: true, child: []})
+      clone.map.data[clone.map.aid].push(addNewMesh)
+      clone.map.structure[clone.map.aid].push({id: addNewMesh.id, visible: true, status: true, child: []})
       clone.mouse.selectedMeshId = addNewMesh.id
       clone.refreshObjectList()
     });
@@ -3370,10 +3455,10 @@ class Editor {
       $("#object-list").find(".menu-icon").each(function() {
           let id = Number($(this).closest('li').attr('data-id'))
           if (id) {
-            let thisMeshStructure = clone.findMeshById(clone.map.structure, id)
+            let thisMeshStructure = clone.findMeshById(clone.map.structure[clone.map.aid], id)
             $(this).removeClass('triangle-up').removeClass('triangle-down')
-            if (status) {                
-              thisMeshStructure.status = 0                
+            if (status) {
+              thisMeshStructure.status = 0
               $(this).closest(`ul`).find(`ul[data-parent-id='${id}']`).hide(40)
               $(this).addClass('triangle-down')
             } else {
@@ -3569,7 +3654,7 @@ class Editor {
       event.stopPropagation()
         let id = Number($(this).closest('li').attr('data-id'))        
         if (id) {
-          let thisMeshStructure = clone.findMeshById(clone.map.structure, id)
+          let thisMeshStructure = clone.findMeshById(clone.map.structure[clone.map.aid], id)
           if (thisMeshStructure.status) {
             thisMeshStructure.status = 0
             $(this).removeClass('triangle-up').addClass('triangle-down')
@@ -3588,7 +3673,7 @@ class Editor {
       event.stopPropagation()
         let id = Number($(this).closest('li').attr('data-id'))        
         if (id) {
-          let thisMeshStructure = clone.findMeshById(clone.map.structure, id)
+          let thisMeshStructure = clone.findMeshById(clone.map.structure[clone.map.aid], id)
           if (thisMeshStructure.visible) {
             thisMeshStructure.visible = 0
             $(this).removeClass('eye-up').addClass('eye-down')
@@ -3627,7 +3712,7 @@ class Editor {
   
         let findedTri = null
         // SEARCH TRI
-        findedTri = clone.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == triId)
+        findedTri = clone.map.data[clone.map.aid].flatMap(obj => obj.tris).find(triangle => triangle.id == triId)
   
         if (findedTri) {
           clone.mouse.selectedLightId = null
@@ -3655,7 +3740,7 @@ class Editor {
 
           // if isset Locket Brother
           if (clone.mouse.selectedTri?.locket) {
-            clone.mouse.selectedLock = clone.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == clone.mouse.selectedTri.locket)
+            clone.mouse.selectedLock = clone.map.data[clone.map.aid].flatMap(obj => obj.tris).find(triangle => triangle.id == clone.mouse.selectedTri.locket)
 
             $(document).find(`li[data-id='${clone.mouse.selectedTri.locket}']`).addClass('list-triangle-locket').append('<span class="menu-icon menu-icon-pos-1 delete-locket"></span>')
 
@@ -3686,13 +3771,13 @@ class Editor {
       let result = confirm(`Are you sure you want to delete the triangle with id ${triId}?`)
       if (result) {
         // FIND TRI MESH
-        let selectedObject = clone.map.data.find(obj => obj.tris.some(triangle => triangle.id == triId));
+        let selectedObject = clone.map.data[clone.map.aid].find(obj => obj.tris.some(triangle => triangle.id == triId));
         if (selectedObject) {
           // FIND TRI
-          let selectedTri = clone.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == triId)
+          let selectedTri = clone.map.data[clone.map.aid].flatMap(obj => obj.tris).find(triangle => triangle.id == triId)
           // CHECK LOCKET BROTHER
           if (selectedTri?.locket) {
-            let selectedTriLocket = clone.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == selectedTri.locket)
+            let selectedTriLocket = clone.map.data[clone.map.aid].flatMap(obj => obj.tris).find(triangle => triangle.id == selectedTri.locket)
             if (selectedTriLocket) delete selectedTriLocket.locket
           }
           // felülírjuk hogy ne legyen benne a megtalált háromszög
@@ -3712,7 +3797,7 @@ class Editor {
 
       let triId = $(this).closest('.list-triangle-selected').attr('data-id')
 
-      let selectedObject = clone.map.data.find(obj => obj.tris.some(triangle => triangle.id == triId));
+      let selectedObject = clone.map.data[clone.map.aid].find(obj => obj.tris.some(triangle => triangle.id == triId));
       if (selectedObject) {
         clone.deleteLocketBrothers(triId) // delete locket brother
         clone.clipboardMemory.tris.push(selectedObject.tris.filter(triangle => triangle.id == triId)[0]) // copy clipboard
@@ -3732,7 +3817,7 @@ class Editor {
 
       let triId = $(this).closest('.list-triangle-selected').attr('data-id')
 
-      let selectedObject = clone.map.data.find(obj => obj.tris.some(triangle => triangle.id == triId));
+      let selectedObject = clone.map.data[clone.map.aid].find(obj => obj.tris.some(triangle => triangle.id == triId));
       if (selectedObject) {
         let selectedTri = selectedObject.tris.filter(triangle => triangle.id == triId)[0]
         let cloneTri = clone.deepCopy(selectedTri)
@@ -3755,8 +3840,8 @@ class Editor {
 
       let meshId = $(this).closest('.mesh-name').attr('data-id')
 
-      let selectedMeshStructure = clone.findMeshById(clone.map.structure, meshId)
-      let selectedMeshData = clone.map.data.find(mesh => mesh.id == meshId)
+      let selectedMeshStructure = clone.findMeshById(clone.map.structure[clone.map.aid], meshId)
+      let selectedMeshData = clone.map.data[clone.map.aid].find(mesh => mesh.id == meshId)
 
       if (selectedMeshStructure && selectedMeshData) {
         // function
@@ -3812,11 +3897,11 @@ class Editor {
 
         // start
         let dupicatedStructure = clone.deepCopy(selectedMeshStructure)
-        dupicatedStructure = duplicatedFunction(dupicatedStructure, selectedMeshData.parent_id, clone.map.data)
+        dupicatedStructure = duplicatedFunction(dupicatedStructure, selectedMeshData.parent_id, clone.map.data[clone.map.aid])
 
-        let parent = clone.findMeshParent(clone.map.structure, meshId)
+        let parent = clone.findMeshParent(clone.map.structure[clone.map.aid], meshId)
         // push use have children or not have
-        parent ? parent.child.push(dupicatedStructure) : clone.map.structure.push(dupicatedStructure);
+        parent ? parent.child.push(dupicatedStructure) : clone.map.structure[clone.map.aid].push(dupicatedStructure);
       }
 
       clone.mouse.selectedTri = null
@@ -3833,13 +3918,13 @@ class Editor {
       let meshId = $(this).closest('li').attr('data-id')
       clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = meshId;
 
-      let parentMeshData = clone.map.data.find(element => element.id == meshId)
+      let parentMeshData = clone.map.data[clone.map.aid].find(element => element.id == meshId)
       if (parentMeshData) {
         let addNewMesh = new Mesh('new', parentMeshData.id)
         addNewMesh.name = `${parentMeshData.name}-${addNewMesh.id}`
-        clone.map.data.push(addNewMesh)
+        clone.map.data[clone.map.aid].push(addNewMesh)
 
-        let parentMeshStructure = clone.findMeshById(clone.map.structure, meshId)
+        let parentMeshStructure = clone.findMeshById(clone.map.structure[clone.map.aid], meshId)
         if (parentMeshStructure) {
           // DEFINITELY OPEN PARENT
           parentMeshStructure.status = 1          
@@ -3861,20 +3946,20 @@ class Editor {
 
       clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = meshId;
 
-      let structureAllBrothersIds = clone.findMeshBrothers(clone.map.structure, meshId)
+      let structureAllBrothersIds = clone.findMeshBrothers(clone.map.structure[clone.map.aid], meshId)
 
       let firstId = meshId
       let secondId = clone.getMapNextOrPrevId(firstId, structureAllBrothersIds, type)
 
       if (meshId && firstId && secondId) {  
         // MAP.DATA CHANGE
-        let mapDataFirst = clone.map.data.find(element => element.id == firstId); let mapDataFirstCopy = { ...mapDataFirst };
-        let mapDataSecond = clone.map.data.find(element => element.id == secondId); let mapDataSecondCopy = { ...mapDataSecond };
+        let mapDataFirst = clone.map.data[clone.map.aid].find(element => element.id == firstId); let mapDataFirstCopy = { ...mapDataFirst };
+        let mapDataSecond = clone.map.data[clone.map.aid].find(element => element.id == secondId); let mapDataSecondCopy = { ...mapDataSecond };
         [mapDataFirst, mapDataSecond] = [mapDataSecondCopy, mapDataFirstCopy]
 
         // MAP.STRUCTURE CHANGE
-        let parent = clone.findMeshParent(clone.map.structure, firstId); 
-        if (!parent) parent = { child: clone.map.structure }; // Ha a szülő maga a root structure
+        let parent = clone.findMeshParent(clone.map.structure[clone.map.aid], firstId); 
+        if (!parent) parent = { child: clone.map.structure[clone.map.aid] }; // Ha a szülő maga a root structure
 
         let indexFirst = parent.child.findIndex(el => el.id == firstId);
         let indexSecond = parent.child.findIndex(el => el.id == secondId);
@@ -3897,15 +3982,15 @@ class Editor {
       clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = meshId;
 
       // MOVED DATA
-      let mapDataSelected = clone.map.data.find(element => element.id == meshId)
-      let mapStructureSelected = clone.findMeshById(clone.map.structure, meshId)
+      let mapDataSelected = clone.map.data[clone.map.aid].find(element => element.id == meshId)
+      let mapStructureSelected = clone.findMeshById(clone.map.structure[clone.map.aid], meshId)
 
       if (mapDataSelected.parent_id != null) {
-        let mapStructureParent = clone.findMeshById(clone.map.structure, mapDataSelected.parent_id)
-        let mapDataParent = clone.map.data.find(element => element.id == mapStructureParent.id)
+        let mapStructureParent = clone.findMeshById(clone.map.structure[clone.map.aid], mapDataSelected.parent_id)
+        let mapDataParent = clone.map.data[clone.map.aid].find(element => element.id == mapStructureParent.id)
         if (mapDataParent.parent_id != null) {
           // PARENT + PARENT
-          let mapStructureParentParent = clone.findMeshById(clone.map.structure, mapDataParent.parent_id)
+          let mapStructureParentParent = clone.findMeshById(clone.map.structure[clone.map.aid], mapDataParent.parent_id)
 
           let mapStructureSelectedCopy = {...mapStructureSelected}
           mapDataSelected.parent_id = mapStructureParentParent.id
@@ -3918,11 +4003,11 @@ class Editor {
           clone.fullRefreshCanvasGraphics()
         } else {
           // PARENT + NULL
-          let mapStructureParentNull = clone.findMeshById(clone.map.structure, mapDataParent.id)
+          let mapStructureParentNull = clone.findMeshById(clone.map.structure[clone.map.aid], mapDataParent.id)
 
           let mapStructureSelectedCopy = {...mapStructureSelected}
           mapDataSelected.parent_id = null
-          clone.map.structure.push(mapStructureSelectedCopy)
+          clone.map.structure[clone.map.aid].push(mapStructureSelectedCopy)
 
           const index = mapStructureParentNull.child.findIndex(element => element.id == meshId)
           if (index !== -1) mapStructureParentNull.child.splice(index, 1);
@@ -3942,22 +4027,22 @@ class Editor {
       clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = meshId;
 
       // MOVED MESH DATA
-      let mapDataSelected = clone.map.data.find(element => element.id == meshId)
-      let mapStructureSelected = clone.findMeshById(clone.map.structure, meshId)
+      let mapDataSelected = clone.map.data[clone.map.aid].find(element => element.id == meshId)
+      let mapStructureSelected = clone.findMeshById(clone.map.structure[clone.map.aid], meshId)
 
       if (mapStructureSelected.child.length == 0) {
         if (mapDataSelected.parent_id != null) {
-          let mapStructureParent = clone.findMeshById(clone.map.structure, mapDataSelected.parent_id)
+          let mapStructureParent = clone.findMeshById(clone.map.structure[clone.map.aid], mapDataSelected.parent_id)
           
-          let mapDataParent = clone.map.data.find(element => element.id == mapStructureParent.id)
+          let mapDataParent = clone.map.data[clone.map.aid].find(element => element.id == mapStructureParent.id)
           // copy triangles
           for (const [key, value] of Object.entries(mapDataSelected.tris)) mapDataParent.tris.push(value);
           // delete structure
           const indexS = mapStructureParent.child.findIndex(element => element.id == meshId)
           if (indexS !== -1) mapStructureParent.child.splice(indexS, 1);
           // delete data
-          let index = clone.map.data.findIndex(element => element.id == meshId)
-          if (index !== -1) clone.map.data.splice(index, 1);
+          let index = clone.map.data[clone.map.aid].findIndex(element => element.id == meshId)
+          if (index !== -1) clone.map.data[clone.map.aid].splice(index, 1);
           // change selected mesh
           clone.mouse.selectedMeshId = mapDataSelected.parent_id;       
   
@@ -3978,17 +4063,17 @@ class Editor {
 
         let meshId = $(this).closest('li').attr('data-id')  
         clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = null;
-        let getMeshStructure = clone.findMeshById(clone.map.structure, meshId)
+        let getMeshStructure = clone.findMeshById(clone.map.structure[clone.map.aid], meshId)
 
         // FIND MESH ALL MESH IDS
         let deletedIds = clone.getAllMeshTreeIds(getMeshStructure)
         if (deletedIds) {
           deletedIds.forEach(meshId => {
             // delete structure
-            clone.deleteMeshParent(clone.map.structure, meshId)
+            clone.deleteMeshParent(clone.map.structure[clone.map.aid], meshId)
             // delete data
-            let index = clone.map.data.findIndex(element => element.id == meshId)
-            if (index != -1) clone.map.data.splice(index, 1);
+            let index = clone.map.data[clone.map.aid].findIndex(element => element.id == meshId)
+            if (index != -1) clone.map.data[clone.map.aid].splice(index, 1);
           });
         }
         clone.refreshObjectList()
@@ -4017,7 +4102,7 @@ class Editor {
       
       let meshId = $(this).closest('li').attr('data-id')
       clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = null;
-      let getMeshStructure = clone.findMeshById(clone.map.structure, meshId)
+      let getMeshStructure = clone.findMeshById(clone.map.structure[clone.map.aid], meshId)
 
       // find mesh all tree ids
       let clipIds = clone.getAllMeshTreeIds(getMeshStructure)
@@ -4028,14 +4113,14 @@ class Editor {
           console.log(meshId)
           console.log(typeof meshId)
           
-          let mapdataRow = clone.map.data.find(mesh => mesh.id == meshId)
+          let mapdataRow = clone.map.data[clone.map.aid].find(mesh => mesh.id == meshId)
           
           clone.clipboardMemory.meshs.push(mapdataRow)
           // delete structure
-          clone.deleteMeshParent(clone.map.structure, meshId)
+          clone.deleteMeshParent(clone.map.structure[clone.map.aid], meshId)
           // delete data
-          let index = clone.map.data.findIndex(element => element.id == meshId)
-          if (index != -1) clone.map.data.splice(index, 1);
+          let index = clone.map.data[clone.map.aid].findIndex(element => element.id == meshId)
+          if (index != -1) clone.map.data[clone.map.aid].splice(index, 1);
         });
         // console.log(clone.clipboardMemory.meshs)
       }
@@ -4052,7 +4137,7 @@ class Editor {
       let meshId = $(this).closest('li').attr('data-id')
       clone.mouse.selectedTri = null
       clone.mouse.selectedMeshId = null
-      let getMeshStructure = clone.findMeshById(clone.map.structure, meshId)
+      let getMeshStructure = clone.findMeshById(clone.map.structure[clone.map.aid], meshId)
 
       if (getMeshStructure) {
         let originalToNewIdMap = {}
@@ -4062,7 +4147,7 @@ class Editor {
         originalToNewIdMap[getMeshStructure.id] = newId
 
         // DATA
-        let meshData = clone.map.data.find(m => m.id == getMeshStructure.id)
+        let meshData = clone.map.data[clone.map.aid].find(m => m.id == getMeshStructure.id)
         let meshCopy = clone.deepCopy(meshData)
         meshCopy.id = newId
         meshCopy.parent_id = null
@@ -4095,7 +4180,7 @@ class Editor {
       let meshId = $(this).closest('li').attr('data-id')
       clone.mouse.selectedTri = null
       clone.mouse.selectedMeshId = null
-      let getMeshStructure = clone.findMeshById(clone.map.structure, meshId)
+      let getMeshStructure = clone.findMeshById(clone.map.structure[clone.map.aid], meshId)
 
       if (getMeshStructure) {
         let originalToNewIdMap = {}
@@ -4105,7 +4190,7 @@ class Editor {
         originalToNewIdMap[getMeshStructure.id] = newId
 
         // DATA
-        let meshData = clone.map.data.find(m => m.id == getMeshStructure.id)
+        let meshData = clone.map.data[clone.map.aid].find(m => m.id == getMeshStructure.id)
         let meshCopy = clone.deepCopy(meshData)
         meshCopy.id = newId
         meshCopy.parent_id = null
@@ -4221,9 +4306,9 @@ class Editor {
         let angleValue = transformData.directionsign * this.graph.angleToRandian(transformData.anglesize)
 
         // FIND ALL MESH GROUP
-        let meshStructureNode = this.findMeshById(this.map.structure, mesh.id)
+        let meshStructureNode = this.findMeshById(this.map.structure[this.map.aid], mesh.id)
         let groupIds = this.getAllMeshTreeIds(meshStructureNode)
-        let groupMeshList = this.map.data.filter(item => groupIds.includes(item.id))
+        let groupMeshList = this.map.data[this.map.aid].filter(item => groupIds.includes(item.id))
 
         // CENTER POINT
         let mPos = this.graph.calculateGroupAveragePosition(groupMeshList)
@@ -4262,7 +4347,7 @@ class Editor {
 
       // MESH
       if (mode == 'mesh') {
-        let meshData = this.map.data.find(mapMesh => mapMesh.id == mesh.id)
+        let meshData = this.map.data[this.map.aid].find(mapMesh => mapMesh.id == mesh.id)
         if (Array.isArray(meshData.tris) && meshData.tris.length > 0) {
           meshData.tris.forEach(tri => {
             tri.p[0] = this.maxDecimals(this.graph.matrix_MultiplyVector(transform, tri.p[0]))
@@ -4341,8 +4426,8 @@ class Editor {
   // REFRESH LOCKET TRIANGLES
   refreshLocketDatas(tri1, tri2) {
     if (tri1 && tri2) {
-      let tri1Data = this.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == tri1.id)
-      let tri2Data = this.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == tri2.id)
+      let tri1Data = this.map.data[this.map.aid].flatMap(obj => obj.tris).find(triangle => triangle.id == tri1.id)
+      let tri2Data = this.map.data[this.map.aid].flatMap(obj => obj.tris).find(triangle => triangle.id == tri2.id)
   
       $(`input[id='selected-tri-name-1']`).val(tri1Data.name)
       $(`input[id='selected-tri-name-2']`).val(tri2Data.name)
@@ -4355,7 +4440,7 @@ class Editor {
 
   // JQUERY MASH 
   selectedMeshClassChange(mashId) {
-    let selectedMesh = this.map.data.find(mesh => mesh.id == mashId)
+    let selectedMesh = this.map.data[this.map.aid].find(mesh => mesh.id == mashId)
     if (selectedMesh) {
       this.mouse.selectedLightId = null
       this.mouse.selectedLightData = {}
@@ -4453,7 +4538,7 @@ class Editor {
   }
 
   recursiveDrawMeshs(mesh, view, color, lineWidth) {
-    let meshData = this.map.data.find(mapMesh => mapMesh.id == mesh.id)
+    let meshData = this.map.data[this.map.aid].find(mapMesh => mapMesh.id == mesh.id)
 
     $(`.mesh-name[data-id=${mesh.id}]`).addClass("child-style")
 
@@ -4750,9 +4835,10 @@ class Editor {
       }
 
       // DRAW ALL OBJECTS
-      for (let i = 0; i < this.map.data.length; i++) {
-        let mesh = this.map.data[i];
-        let strucSelected = this.findMeshById(this.map.structure, mesh.id);      
+      for (let i = 0; i < this.map.data[this.map.aid].length; i++) {
+        let mesh = this.map.data[this.map.aid][i];       
+
+        let strucSelected = this.findMeshById(this.map.structure[this.map.aid], mesh.id);      
         if (!strucSelected) continue;
         if (typeof strucSelected.visible == 'undefined') strucSelected.visible = 1;
         
@@ -4760,12 +4846,14 @@ class Editor {
         if (!strucSelected.visible) {
           const hiddenIds = this.getAllMeshTreeIds(strucSelected);
 
-          while (i + 1 < this.map.data.length && hiddenIds.includes(this.map.data[i + 1].id)) { i++; }
+          while (i + 1 < this.map.data[this.map.aid].length && hiddenIds.includes(this.map.data[this.map.aid][i + 1].id)) { i++; }
           continue;
         }
 
         let lineColor = mesh.lineColor; let lineWidth = 1;
 
+        if (mesh.tris) {
+        }
         mesh.tris.forEach(tri => {
           this.drawViewTriangeAction(view, lineColor, lineWidth, tri.p[0][view.vX], tri.p[0][view.vY], tri.p[1][view.vX], tri.p[1][view.vY], tri.p[2][view.vX], tri.p[2][view.vY])
         });
@@ -4778,14 +4866,14 @@ class Editor {
         this.drawViewTriangeAction(view, 'white', lineWidth, selectTri.p[0][view.vX], selectTri.p[0][view.vY], selectTri.p[1][view.vX], selectTri.p[1][view.vY], selectTri.p[2][view.vX], selectTri.p[2][view.vY])
         // DRAW LOCKET IF HAVE
         if (selectTri?.locket) {
-          let locketTriangle = this.map.data.flatMap(obj => obj.tris).find(triangle => triangle.id == selectTri.locket)
+          let locketTriangle = this.map.data[this.map.aid].flatMap(obj => obj.tris).find(triangle => triangle.id == selectTri.locket)
           this.drawViewTriangeAction(view, 'white', lineWidth, locketTriangle.p[0][view.vX], locketTriangle.p[0][view.vY], locketTriangle.p[1][view.vX], locketTriangle.p[1][view.vY], locketTriangle.p[2][view.vX], locketTriangle.p[2][view.vY])
         }
       }
 
       // SELECTED MASH DRAW
       if (this.mouse.selectedMeshId && !this.mouse.selectedTri) {
-        let selectedMesh = this.findMeshById(this.map.structure, this.mouse.selectedMeshId)
+        let selectedMesh = this.findMeshById(this.map.structure[this.map.aid], this.mouse.selectedMeshId)
 
         if (selectedMesh) {
           var lineWidth = 3

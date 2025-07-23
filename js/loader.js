@@ -111,8 +111,8 @@ export default class Loader {
 
     const response = await this.fetchData({ ajax: true, load: true, filename: filename, ext: ext })
     if (response?.data && response?.structure) {
-      this.game.map.data = this.game.deepCopy(response.data, true)
-      this.game.map.structure = this.game.deepCopy(response.structure, true)
+      this.game.map.data = this.game.deepCopy(response.data[0], true)
+      this.game.map.structure = this.game.deepCopy(response.structure[0], true)
       this.game.map.lights = this.game.deepCopy(response.lights)
       this.game.map.actions = this.game.deepCopy(response.actions)
       this.game.map.player = this.game.deepCopy(response.player)
