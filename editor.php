@@ -178,10 +178,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
 }
 
 // ISSET FILE
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['issetfile']) && isset($_POST['filename'])) {
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['issetfile']) && isset($_POST['filename']) && isset($_POST['ext'])) {
 
     $filename = basename($_POST['filename']);
     $filename = mb_strtolower($filename);
+    
+    $ext = basename($_POST['ext']);
+    $ext = mb_strtolower($ext);
 
     $filepath = $directory . $filename . '.' . $ext;
 

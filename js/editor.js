@@ -203,9 +203,9 @@ class Editor {
 
   typeShowHide(ext) {
     if (ext == 'mtuc') {
-      $("#layers").hide(); $("#lights").show(); $('.menu-text-border.modal-button[data-mode="gameactions"]').show();
+      $("#animations").hide(); $("#lights").show(); $('.menu-text-border.modal-button[data-mode="gameactions"]').show();
     } else if (ext == 'otuc') {
-      $("#lights").hide(); $("#layers").show(); $('.menu-text-border.modal-button[data-mode="gameactions"]').hide();
+      $("#lights").hide(); $("#animations").show(); $('.menu-text-border.modal-button[data-mode="gameactions"]').hide();
     }
   }
 
@@ -215,17 +215,20 @@ class Editor {
       if (!this.map.actions) this.map.actions = [];
       if (!this.map.objects) this.map.objects = [];
       if (!this.map.lights) this.map.lights = [];
-      if (this.map.animation) delete this.map.animation;
+
+      if (this.map.animations) delete this.map.animations;
     } else if (ext == 'otuc') {
       this.map.type = 'object'
       if (this.map.actions) delete this.map.actions;
       if (this.map.objects) delete this.map.objects;
       if (this.map.lights) delete this.map.lights;
-      if (!this.map.animation) this.map.animation = [];
+
+      if (!this.map.animations) this.map.animations = [];
     }
 
     console.log(this.map)
 
+    this.refreshFrameSelect()
     this.refreshLightsList()
     this.refreshObjectList()
     this.fullRefreshCanvasGraphics()
@@ -233,7 +236,7 @@ class Editor {
   }
 
   async init() {
-    let consolePrint = true  // !!!
+    let consolePrint = false  // !!!
 
     let response = await fetch('config.json')
     this.gamedata = await response.json()
@@ -257,23 +260,13 @@ class Editor {
         console.log(this.map.data[this.map.aid])
         console.log(this.map.structure[this.map.aid])
         console.log(this.map.player)
-        console.log(this.map.actions)
-        console.log(this.map.lights)
+        if (this.map.actions) console.log(this.map.actions)
+        if (this.map.lights) console.log(this.map.lights)
+        if (this.map.animations) console.log(this.map.animations)
       }
     }
 
-    // LOAD OBJECT MODEL IDS AND NAMES
-    if (true) {
-      response = await this.fetchData({ ajax: true, getobjects: true})
-      if (response.files) {
-        let fileList = response.files.filter(file => file.extension == 'tuc')
-        fileList.filter(file => file.extension == 'tuc').forEach(file => {
-          let exp = file.name.split('_')
-          this.map.objects.push({id: exp[0], name: exp[1], filename: file.name })
-        });
-        console.log(this.map.objects)
-      }
-    }
+    this.refreshFrameSelect()
 
     this.graph = new Graphics(this.text, this.keys, this.options, this.map, this.findMeshById, this.findMeshParent, this.map.player)
 
@@ -451,25 +444,41 @@ class Editor {
       // MAP LIGHTS
       this.map.lights = this.deepCopy(response.lights)
       Light.setInstanceCount(this.getMaxId(this.map.lights))
+
+      // LOAD OBJECT MODEL IDS AND NAMES
+      let response2 = await this.fetchData({ ajax: true, getobjects: true})      
+      if (response2.files) {
+        let fileList = response2.files.filter(file => file.extension == 'otuc')
+        fileList.filter(file => file.extension == 'otuc').forEach(file => {
+          let exp = file.name.split('_')
+          this.map.objects.push({id: exp[0], name: exp[1], filename: file.name })
+        });
+        // console.log(this.map.objects)
+      }
     }
 
     // OBJECT TYPE
     if (ext == 'otuc') {
-      // ANIMATION
-      this.map.animation = this.deepCopy(response.animation)
+      // LAYERS
+      this.map.animations = this.deepCopy(response.animations)
     }
   }
 
   async loadMapData() {
-    let filename = 'maniac'
-    let ext = 'mtuc'
+    // DEFAULT MAP
+    // let filename = 'maniac'; let ext = 'mtuc';
+
+    // DEFAULT OBJECT
+    let filename = 'asztal'; let ext = 'otuc';
+
     $("#modal-ext").val(ext)
 
     this.mapVariableReset(ext)
 
     const response = await this.fetchData({ ajax: true, load: true, filename: filename, ext: ext })
     console.log(response);
-    if (response?.data && response?.structure) {      
+
+    if (response?.data && response?.structure) {
       this.loadNewBasicData(response, ext)
       $("#filename").html(filename)
     }
@@ -1059,7 +1068,6 @@ class Editor {
     }
     this.triangleContainerShowOptions()
     this.refreshLightListOff()
-
     this.refreshActionSelect()
   }
 
@@ -1071,6 +1079,18 @@ class Editor {
         elements += `<option value="${action.id}">${action.name}</option>`
       });
       $("select[name='actions-selector']").append(elements)
+    }
+  }
+
+  refreshFrameSelect() {
+    if (this.map.data && Array.isArray(this.map.data)) {
+      $("select[name='frames']").html('')
+      let elements = ``;
+      for(let n=0; n<this.map.data.length; n++) {
+        let selected = n == this.map.aid ? 'selected' : null;
+        elements += `<option value="${n}" ${selected}>[${n}]</option>`
+      }
+      $("select[name='frames']").append(elements)
     }
   }
 
@@ -1118,16 +1138,22 @@ class Editor {
       <li data-id="${item.id}" class="mesh-name">
         <span>${meshData.name}</span>
         <span class="menu-icon triangle ${classTriangle} p-0 m-0" title="Open/Close group triangles"></span>
-        <span class="menu-icon eye ${classEye}" title="Visible or hide group"></span>
-        <span class="menu-icon menu-icon-pos-1 plus" title="Add group"></span>
-        <span class="menu-icon menu-icon-pos-2 duplicate" title="Duplicaded group"></span>
-        <span class="menu-icon menu-icon-pos-3 up" data-type="prev" title="Move up-brother"></span>
-        <span class="menu-icon menu-icon-pos-4 down" data-type="next" title="Move down-brother"></span>
-        <span class="menu-icon menu-icon-pos-5 back" title="Move back-parent"></span>
-        <span class="menu-icon menu-icon-pos-6 back-blend-in" title="Blend in to parent"></span>
-        <span class="menu-icon menu-icon-pos-7 clipboard" title="Cut group to clipboard"></span>
-        <span class="menu-icon menu-icon-pos-8 clipboard-copy" title="Copy group to clipboard"></span>
-        <span class="menu-icon menu-icon-pos-9 delete-group" title="Delete group"></span>
+        <span class="menu-icon eye ${classEye}" title="Visible or hide group"></span>`
+        if (this.map.aid == 0) {
+          $("#object-add-new").show()
+          element += `<span class="menu-icon menu-icon-pos-1 plus" title="Add group"></span>
+          <span class="menu-icon menu-icon-pos-2 duplicate" title="Duplicaded group"></span>
+          <span class="menu-icon menu-icon-pos-3 up" data-type="prev" title="Move up-brother"></span>
+          <span class="menu-icon menu-icon-pos-4 down" data-type="next" title="Move down-brother"></span>
+          <span class="menu-icon menu-icon-pos-5 back" title="Move back-parent"></span>
+          <span class="menu-icon menu-icon-pos-6 back-blend-in" title="Blend in to parent"></span>
+          <span class="menu-icon menu-icon-pos-7 clipboard" title="Cut group to clipboard"></span>
+          <span class="menu-icon menu-icon-pos-8 clipboard-copy" title="Copy group to clipboard"></span>
+          <span class="menu-icon menu-icon-pos-9 delete-group" title="Delete group"></span>`;
+        } else {
+          $("#object-add-new").hide()
+        }
+        element +=`
       </li>`;
 
       if (Array.isArray(meshData.tris) && meshData.tris.length > 0) {
@@ -1189,7 +1215,7 @@ class Editor {
 
       $('#goto-player-position').click()
 
-      console.log(this.graph.playerPos.x, this.graph.playerPos.y, this.graph.playerPos.z, this.graph.playerPos.fYaw, this.graph.playerPos.fXaw)
+      // console.log(this.graph.playerPos.x, this.graph.playerPos.y, this.graph.playerPos.z, this.graph.playerPos.fYaw, this.graph.playerPos.fXaw)
     }
   }
 
@@ -1486,6 +1512,39 @@ class Editor {
         let ext = $(this).val()
         clone.fileExtensionChange(ext)
       }
+    });
+
+    // FRAME CHANGE
+    $(document).on('change', "select[name='frames']", function() {
+      console.log($(this).val())
+      clone.map.aid = parseInt($(this).val())
+
+      clone.mouseVariableReset()
+      clone.refreshFrameSelect()
+      clone.refreshObjectList()
+      clone.fullRefreshCanvasGraphics()
+    });
+
+    // ADD NEW FRAME
+    $(document).on('click', '#frame-add-new', function() {
+      clone.map.data.push([])
+
+      console.log(clone.map.data.length)
+
+      clone.refreshFrameSelect()
+    });
+
+    // CLONE FRAME
+    $(document).on('click', '#frame-clone', function() {
+      const deepData = clone.deepCopy(clone.map.data[clone.map.aid])
+      const deepStructure = clone.deepCopy(clone.map.structure[clone.map.aid])
+
+      clone.map.data.push(deepData)
+      clone.map.structure.push(deepStructure)
+
+      console.log(clone.map.data.length)
+
+      clone.refreshFrameSelect()
     });
 
     //////////////////
@@ -2230,25 +2289,23 @@ class Editor {
       // AJAX LOAD
       if (mode == 'load' && filename) {
         let ext = $(this).attr('data-ext')
-        console.log(ext)
+        console.log(ext)  // !!!
 
-        const response = await clone.fetchData({ ajax: true, load: true, filename: filename, ext: ext }); // console.log(response)
+        const response = await clone.fetchData({ ajax: true, load: true, filename: filename, ext: ext });
         if (response?.data && response?.structure) {
-
-          if (typeof response.type == 'undefined') response.type = 'map'    // !!!
-          console.log(response.type)                                        // !!!
-
           // clear data
-          clone.graph.map = clone.mapVariableReset(response.type)
+          clone.graph.map = clone.mapVariableReset(ext)
           clone.mouseVariableReset()
           clone.graph.resetCordinates()
           clone.mapMemory = []
           $('.menu-back').removeClass('menu-back-isset').addClass('menu-back-empty')
           // load data
-          clone.loadNewBasicData(response)
+          clone.loadNewBasicData(response, ext)
           // refresh DOM
+          clone.refreshFrameSelect()
           clone.refreshLightsList()
           clone.refreshObjectList()
+
           clone.fullRefreshCanvasGraphics()
           $("#filename").html(filename)
 
@@ -3752,8 +3809,12 @@ class Editor {
           }
 
           // add selected triangle graph
-          $(document).find(`li[data-id='${triId}']`).addClass('list-triangle-selected').append('<span class="menu-icon menu-icon-pos-4 clipboard-copy-tri"></span><span class="menu-icon menu-icon-pos-2 clipboard"></span><span class="menu-icon menu-icon-pos-1 delete"></span>')
-          
+          $(document).find(`li[data-id='${triId}']`).addClass('list-triangle-selected')
+
+          if(clone.map.aid == 0) {
+            $(document).find(`li[data-id='${triId}']`).append('<span class="menu-icon menu-icon-pos-4 clipboard-copy-tri"></span><span class="menu-icon menu-icon-pos-2 clipboard"></span><span class="menu-icon menu-icon-pos-1 delete"></span>');
+          }
+
           clone.refreshTriangleDatas()
           clone.fullRefreshCanvasGraphics()
           clone.triangleContainerShowOptions()

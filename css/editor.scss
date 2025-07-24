@@ -662,7 +662,7 @@ button[class='3d-buttons'] {
 
 #object-list,
 #light-list,
-#layer-list {
+#animations-list {
     position: relative;
     flex: 1;
     min-height: 50px;
@@ -672,7 +672,7 @@ button[class='3d-buttons'] {
 
 #object-list-size-button,
 #light-list-size-button,
-#layer-list-size-button
+#animations-list-size-button
 {
     top: -20px;
     height: 5px;
@@ -1845,6 +1845,25 @@ li {
 
     &::before {
         content: '🗎';
+    }
+
+    &:hover {
+        color: yellow !important;
+    }
+}
+
+.clipboard-copy {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin: 3px;
+    color: black;
+    font-size: 12px;
+    line-height: 10px;
+    text-align: center;
+
+    &::before {
+        content: '🗐';
     }
 
     &:hover {

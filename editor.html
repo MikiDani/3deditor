@@ -134,21 +134,38 @@
                 <button id="clipboard-button" type="button" class="hover-pointer">Insert</button>
             </div>
 
-            <!-- LAYERS -->
-            <div id="layers" style="display:none;">
-                <div id="layer-list-head" class="title-box flex-between">
+            <!-- ANIMATIONS -->
+            <div id="animations" style="display:none;">
+                <div id="frames-list-head" class="title-box flex-between">
+                    <span>Selected frame</span>
                     <div class="p-0 m-0 d-flex">
-                        <span id="layer-show-hide" class="eye-layer-up hover-pointer" title="Show/Hide All layers."></span>
+                        <select name="frames" data-type="short" id="selected-frame">
+                            <!-- javascript -->
+                        </select>
                     </div>
-                    <span>Layers</span>
                     <div class="p-0 m-0">
-                        <span id="layer-add-new" class="plus hover-pointer" title="Add new layer."></span>
+                        <button id="frame-clone" class="text-small" title="Clone selected frame.">Clone</button>
+                    </div>
+                    <div class="p-0 m-0">
+                        <button id="frame-add-new" class="text-small" title="Add new frame.">Add New</button>
                     </div>
                 </div>
-                <div id="layer-list" class="box-1 responsive-menu pt-1" style="display:block;">
+                <div id="frames-list" class="box-1 responsive-menu pt-1" style="display:block;">
                     <!-- javascript -->
                 </div>
-                <div id="layer-list-size-button" data-type-name="layer"></div>
+                <div id="animations-list-head" class="title-box flex-between">
+                    <div class="p-0 m-0 d-flex">
+                        <span id="animations-show-hide" class="eye-animations-up hover-pointer" title="Show/Hide All animations."></span>
+                    </div>
+                    <span>Animations</span>
+                    <div class="p-0 m-0">
+                        <span id="animations-add-new" class="plus hover-pointer" title="Add new animations."></span>
+                    </div>
+                </div>
+                <div id="animations-list" class="box-1 responsive-menu pt-1" style="display:block;">
+                    <!-- javascript -->
+                </div>
+                <div id="animations-list-size-button" data-type-name="animations"></div>
             </div>
 
             <!-- LIGHTS -->
