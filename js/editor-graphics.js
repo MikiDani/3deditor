@@ -549,10 +549,13 @@ export class Graphics {
     return this.isVisibleInTree(structure, parent.id);
   }
 
-  async renderScreen() {   
-    if (this.map.data[this.map.aid] && Object.keys(this.map.data[this.map.aid]).length > 0) {
-      for (let mesh of this.map.data[this.map.aid]) {
-        if (this.isVisibleInTree(this.map.structure[this.map.aid], mesh.id)) {
+  async renderScreen() {
+    
+    const selectedFrame = this.map.animationState ? this.map.animationState : this.map.data[this.map.aid];
+
+    if (selectedFrame && Object.keys(selectedFrame).length > 0) {
+      for (let mesh of selectedFrame) {
+        if (this.isVisibleInTree(this.map.structure, mesh.id)) {
           this.drawObject(mesh);
         }
       }

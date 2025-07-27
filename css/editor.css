@@ -646,8 +646,7 @@ button[class="3d-buttons"] {
 }
 
 #object-list,
-#light-list,
-#animations-list {
+#light-list {
   position: relative;
   flex: 1;
   min-height: 50px;
@@ -656,16 +655,14 @@ button[class="3d-buttons"] {
 }
 
 #object-list-size-button,
-#light-list-size-button,
-#animations-list-size-button {
+#light-list-size-button {
   top: -20px;
   height: 5px;
   width: 100%;
   background-color: green !important;
 }
 #object-list-size-button:hover,
-#light-list-size-button:hover,
-#animations-list-size-button:hover {
+#light-list-size-button:hover {
   cursor: row-resize;
 }
 
@@ -1446,6 +1443,7 @@ li:hover {
   text-transform: uppercase;
 }
 
+.menu-icon-pos-0,
 .menu-icon-pos-1,
 .menu-icon-pos-2,
 .menu-icon-pos-3,
@@ -1458,6 +1456,7 @@ li:hover {
 .menu-icon-pos-l1 {
   position: absolute;
 }
+.menu-icon-pos-0:hover,
 .menu-icon-pos-1:hover,
 .menu-icon-pos-2:hover,
 .menu-icon-pos-3:hover,
@@ -1469,6 +1468,10 @@ li:hover {
 .menu-icon-pos-9:hover,
 .menu-icon-pos-l1:hover {
   cursor: pointer;
+}
+
+.menu-icon-pos-0 {
+  right: 0px;
 }
 
 .menu-icon-pos-1 {
@@ -1590,7 +1593,9 @@ li:hover {
 
 .delete,
 .delete-group,
-.delete-light {
+.delete-light,
+.delete-animation,
+.delete-animation-frame {
   display: inline-block;
   width: 10px;
   height: 10px;
@@ -1602,12 +1607,16 @@ li:hover {
 }
 .delete::before,
 .delete-group::before,
-.delete-light::before {
+.delete-light::before,
+.delete-animation::before,
+.delete-animation-frame::before {
   content: "✖";
 }
 .delete:hover,
 .delete-group:hover,
-.delete-light:hover {
+.delete-light:hover,
+.delete-animation:hover,
+.delete-animation-frame:hover {
   color: red !important;
 }
 
@@ -1700,7 +1709,8 @@ li:hover {
 }
 
 .up,
-.light-up {
+.light-up,
+.up-animation-frame {
   display: inline-block;
   width: 10px;
   height: 10px;
@@ -1711,16 +1721,19 @@ li:hover {
   text-align: center;
 }
 .up::before,
-.light-up::before {
+.light-up::before,
+.up-animation-frame::before {
   content: "⭡";
 }
 .up:hover,
-.light-up:hover {
+.light-up:hover,
+.up-animation-frame:hover {
   color: yellow !important;
 }
 
 .down,
-.light-down {
+.light-down,
+.down-animation-frame {
   display: inline-block;
   width: 10px;
   height: 10px;
@@ -1731,11 +1744,13 @@ li:hover {
   text-align: center;
 }
 .down::before,
-.light-down::before {
+.light-down::before,
+.down-animation-frame::before {
   content: "⭣";
 }
 .down:hover,
-.light-down:hover {
+.light-down:hover,
+.down-animation-frame:hover {
   color: yellow !important;
 }
 
@@ -1850,7 +1865,8 @@ li:hover {
 }
 
 .list-mesh-selected,
-.list-light-selected {
+.list-light-selected,
+.list-animation-selected {
   color: white !important;
   background-color: darkolivegreen !important;
 }
@@ -1881,7 +1897,7 @@ li:hover {
   gap: 1px;
   width: 100%;
   height: 20px;
-  margin-top: 5px;
+  margin-bottom: 5px;
 }
 
 .size-number-box {
@@ -2369,4 +2385,37 @@ li:hover {
   display: inline-block;
   transform: rotate(90deg);
   transition: transform 0.2s ease;
+}
+
+.select-animation:hover {
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.action-button-box {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid gray;
+  padding: 2px;
+}
+.action-button-box:hover {
+  background-color: yellow !important;
+  cursor: pointer;
+}
+
+.bg-stop {
+  background-color: red !important;
+}
+.bg-stop:hover {
+  background-color: red !important;
+}
+
+.bg-actual-frame {
+  background-color: #fffac8 !important;
+}
+.bg-actual-frame:hover {
+  background-color: #fffac8 !important;
 }/*# sourceMappingURL=editor.css.map */

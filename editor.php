@@ -273,13 +273,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
         echo json_encode(['error' => 'Error in JSON data!']);
         exit;
     }
-
-    if (file_put_contents($directory. DIRECTORY_SEPARATOR . $filename . '.' . $ext, gzencode(json_encode($map_data), 9))) {
-        echo json_encode(['success' => 'Saving success!']);
+    
+    if(true) {
+        // TÖMÖRÍTETT
+        if (file_put_contents($directory. DIRECTORY_SEPARATOR . $filename . '.' . $ext, gzencode(json_encode($map_data), 9))) {
+            echo json_encode(['success' => 'Saving success!']);
+        } else {
+            echo json_encode(['error' => 'Save error!']);
+        }
+        exit;
     } else {
-        echo json_encode(['error' => 'Save error!']);
+        // NEM TÖMÖRÍTETT
+        if (file_put_contents($directory . DIRECTORY_SEPARATOR . $filename . '.' . $ext, json_encode($map_data, JSON_PRETTY_PRINT))) {
+            echo json_encode(['success' => 'Saving success!']);
+        } else {
+            echo json_encode(['error' => 'Save error!']);
+        }
+        exit;
     }
-    exit;
 }
 
 // LOAD

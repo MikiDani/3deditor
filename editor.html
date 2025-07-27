@@ -63,17 +63,16 @@
             <!-- javascript -->
         </div>
         <div id="toolbar-container" class="p-0 m-0">
-            <div class="p-0 m-0 mb-2 w-100 title-box d-flex justify-content-between align-items-center">
+            <div class="p-0 m-0 mb-2 pt-2 pb-2 w-100 title-box d-flex justify-content-between align-items-center">
                 <div>
-                    <span class="text-small">Filename: </span>
-                    <span id="filename" class="text-medium"><!-- javascript --></span>
+                    <!-- <span class="text-small">Filename: </span> -->
+                    <span id="filename" class="text-medium ms-1"><!-- javascript --></span>
                 </div>
                 <div>
-                    <span class="text-small">Ext: </span>
-                    <select id="modal-ext" data-type="short" class="fw-bold">
-                        <option value="tuc" selected>tuc</option>
-                        <option value="mtuc" selected>mtuc - map</option>
-                        <option value="otuc">otuc - object</option>
+                    <span class="text-small">extension: </span>
+                    <select id="modal-ext" data-type="short" class="fw-bold ms-2 me-2">
+                        <option value="mtuc" selected>.mtuc - map</option>
+                        <option value="otuc">.otuc - object</option>
                     </select>
                 </div>
             </div>
@@ -125,6 +124,7 @@
             <!--
             <div id="info-box"></div>
             -->
+
             <div id="clipboard-container" class="title-box" style="display:none;">
                 <span>Clipboard</span>
                 <div id="clipboard-content">
@@ -137,9 +137,9 @@
             <!-- ANIMATIONS -->
             <div id="animations" style="display:none;">
                 <div id="frames-list-head" class="title-box flex-between">
-                    <span>Selected frame</span>
-                    <div class="p-0 m-0 d-flex">
-                        <select name="frames" data-type="short" id="selected-frame">
+                    <div class="p-0 m-0 d-flex align-items-center">
+                        <span class="text-small">Selected frame</span>
+                        <select name="frames" data-type="short">
                             <!-- javascript -->
                         </select>
                     </div>
@@ -147,7 +147,7 @@
                         <button id="frame-clone" class="text-small" title="Clone selected frame.">Clone</button>
                     </div>
                     <div class="p-0 m-0">
-                        <button id="frame-add-new" class="text-small" title="Add new frame.">Add New</button>
+                        <button id="frame-delete" class="text-small" title="Add new frame.">Delete</button>
                     </div>
                 </div>
                 <div id="frames-list" class="box-1 responsive-menu pt-1" style="display:block;">
@@ -155,17 +155,45 @@
                 </div>
                 <div id="animations-list-head" class="title-box flex-between">
                     <div class="p-0 m-0 d-flex">
-                        <span id="animations-show-hide" class="eye-animations-up hover-pointer" title="Show/Hide All animations."></span>
+                        <!-- <span id="animations-show-hide" class="eye-animations-up hover-pointer" title="Show/Hide All animations."></span> -->
                     </div>
                     <span>Animations</span>
                     <div class="p-0 m-0">
-                        <span id="animations-add-new" class="plus hover-pointer" title="Add new animations."></span>
+                        <span id="animation-add-new" class="plus hover-pointer" title="Add new animations."></span>
+                    </div>
+                </div>
+                <div class="title-box-flex text-start mt-2">
+                    <span class="ms-1 me-2 text-small">Name:</span>
+                    <input type="text" id="selected-animation-name" data-animation-index="" autocomplete="off" class="input-name">
+                    <div class="ms-2 d-flex justify-content-between align-items-center">
+                        <div id="animation-play-button" class="action-button-box play me-1">►</div>
                     </div>
                 </div>
                 <div id="animations-list" class="box-1 responsive-menu pt-1" style="display:block;">
                     <!-- javascript -->
                 </div>
-                <div id="animations-list-size-button" data-type-name="animations"></div>
+                <div id="animations-frames" style="display:block;">
+                    <div class="box-1 pt-1 pb-1 d-flex justify-content-between align-items-center">
+                        <div class="p-0 m-0 d-flex justify-content-center align-items-center">
+                            <span class="ms-2 me-2 text-small">Frame:</span>
+                            <select name="animations-select-frame" data-type="short">
+                                <!-- javascript -->
+                            </select>
+                        </div>
+                        <div class="p-0 m-0 d-flex align-items-center">
+                            <span class="ms-2 me-2 text-small">Segment:</span>
+                            <input type="number" min="1" max="50" name="animations-select-segment" value="1" data-type="short">
+                                <!-- javascript -->
+                            </select>
+                        </div>
+                        <div class="ms-2 me-2">
+                            <button id="animations-add-frame" class="text-small" title="Add frame to animation.">Add</button>
+                        </div>                        
+                    </div>
+                    <div id="animations-frames-list" class="box-1 pt-1">
+                        <!-- javascript -->
+                    </div>
+                </div>
             </div>
 
             <!-- LIGHTS -->
@@ -179,6 +207,10 @@
                         <span id="light-add-new" class="plus hover-pointer" title="Add new light."></span>
                     </div>
                 </div>
+                <div class="title-box-flex text-start">
+                    <span class="text-small">light. name:</span>
+                    <input type="text" name="selected-light-name" autocomplete="off" data-name="name" class="input-name">
+                </div>
                 <div id="light-list" class="box-1 responsive-menu pt-1" style="display:block;">
                     <!-- javascript -->
                 </div>
@@ -186,10 +218,6 @@
             </div>
 
             <div id="selected-light-container" class="p-0 m-0" style="display:none;">
-                <div class="title-box-flex text-start">
-                    <span class="text-small">light. name:</span>
-                    <input type="text" name="selected-light-name" data-name="name" class="input-name">
-                </div>
                 <div id="object-add-light" class="box-1">
                     <div class="right-screen-options">
                         <div class="left-side">
@@ -245,7 +273,7 @@
             </div>
 
             <!-- OBJECTS -->
-            <div id="object-list-head" class="title-box flex-between">
+            <div id="object-list-head" class="title-box flex-between mt-2">
                 <div class="p-0 m-0 d-flex">
                     <span id="object-open-close-all" class="triangle-down hover-pointer" data-status="0" title="Open/Close All"></span>
                 </div>
@@ -254,19 +282,18 @@
                     <span id="object-add-new" class="plus hover-pointer" title="Add new object"></span>
                 </div>
             </div>
-
+            <div class="title-box-flex text-start">
+                <span class="text-small">Mesh. name:</span>
+                <input type="text" id="selected-mesh-name" autocomplete="off" class="input-name" data-id=""> <!-- javascript -->
+            </div>
             <div id="object-list" class="box-1 responsive-menu pt-1" style="display:none;">
                 <!-- javascript -->
             </div>
             <div id="object-list-size-button" data-type-name="object"></div>
 
             <div id="selected-mesh-container" class="p-0 m-0" style="display:none;">
-                <div class="title-box-flex text-start">
-                    <span class="text-small">Mesh. name:</span>
-                    <input type="text" id="selected-mesh-name" class="input-name" data-id=""> <!-- javascript -->
-                </div>
 
-                <div id="actions" class="right-screen-options box-1">
+                <div id="actions" class="right-screen-options box-1 mt-2">
                     <div class="text-center py-2 font-12">ACTIONS</div>
                     <div class="text-start">
                         <div class="list d-flex flex-wrap text-small">
@@ -274,12 +301,10 @@
                         </div>
                     </div>
 
-                    <div class="title-box-flex text-start">
+                    <div class="title-box-flex text-start m-0 w-100">
                         <span class="text-small">Actions:</span>
                         <select name="actions-selector">
-                            <option value="none">none</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
+                            <!-- javascript -->
                         </select>
                         <button name="add-action" class="text-small">ADD</button>
                     </div>
@@ -304,7 +329,7 @@
                         <div class="left-side">
                             <div class="h-100-flex">
                                 <span>Size: </span><input type="number" name="move-size" class="w-40" data-mode="mesh" min="-1000" max="1000" step="0.1" value="0.1">
-                                <div class="grid-item arrow w-20 ms-2" data-mode="mesh" data-type="size">⤢</div>
+                                <div class="grid-item arrow w-20 ms-2" title="Scaling by the mesh's proportions. (1.0 is the current state)" data-mode="mesh" data-type="size">⤢</div>
                             </div>
                         </div>
                         <div class="right-side">

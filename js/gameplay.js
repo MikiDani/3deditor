@@ -234,8 +234,8 @@ export default class Gameplay {
       const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
 
       if (futureBox.intersectsBox(playerBox)) {
-        clearInterval(mesh.timeInterval)
-        mesh.timeInterval = null
+        clearInterval(mesh.timeInterval)  // talan mashogy
+        mesh.timeInterval = null          // talan mashogy
         return;
       }
 
@@ -249,8 +249,8 @@ export default class Gameplay {
         const testBox = new THREE.Box3().setFromObject(clone)
         const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
         if (testBox.intersectsBox(playerBox)) {
-          clearInterval(mesh.timeInterval)
-          mesh.timeInterval = null
+          clearInterval(mesh.timeInterval)  // talan mashogy
+          mesh.timeInterval = null          // talan mashogy
           return;
         }
 

@@ -661,8 +661,7 @@ button[class='3d-buttons'] {
 }
 
 #object-list,
-#light-list,
-#animations-list {
+#light-list {
     position: relative;
     flex: 1;
     min-height: 50px;
@@ -671,9 +670,7 @@ button[class='3d-buttons'] {
 }
 
 #object-list-size-button,
-#light-list-size-button,
-#animations-list-size-button
-{
+#light-list-size-button {
     top: -20px;
     height: 5px;
     width: 100%;
@@ -1496,6 +1493,7 @@ li {
     text-transform: uppercase;
 }
 
+.menu-icon-pos-0,
 .menu-icon-pos-1,
 .menu-icon-pos-2,
 .menu-icon-pos-3,
@@ -1510,6 +1508,10 @@ li {
     &:hover {
         cursor: pointer;
     }
+}
+
+.menu-icon-pos-0 {
+    right: 0px;
 }
 
 .menu-icon-pos-1 {
@@ -1640,7 +1642,9 @@ li {
 
 .delete,
 .delete-group,
-.delete-light {
+.delete-light,
+.delete-animation,
+.delete-animation-frame {
     display: inline-block;
     width: 10px;
     height: 10px;
@@ -1756,7 +1760,8 @@ li {
 }
 
 .up,
-.light-up {
+.light-up,
+.up-animation-frame {
     display: inline-block;
     width: 10px;
     height: 10px;
@@ -1776,7 +1781,8 @@ li {
 }
 
 .down,
-.light-down {
+.light-down,
+.down-animation-frame {
     display: inline-block;
     width: 10px;
     height: 10px;
@@ -1918,7 +1924,8 @@ li {
 // +
  
 .list-mesh-selected,
-.list-light-selected {
+.list-light-selected,
+.list-animation-selected {
     color: white !important;
     background-color: darkolivegreen !important;
 }
@@ -1949,8 +1956,8 @@ li {
     gap: 1px;
     width: 100%;
     height: 20px;
-    margin-top: 5px;
-    // margin-bottom: 5px;
+    // margin-top: 5px;
+    margin-bottom: 5px;
 }
 
 .size-number-box {
@@ -2445,5 +2452,42 @@ display: block;
         display: inline-block;
         transform: rotate(90deg);
         transition: transform 0.2s ease;
+    }
+}
+
+.select-animation {
+    &:hover{
+        font-weight: bold;
+        cursor: pointer;
+    }
+}
+
+.action-button-box {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    border: 1px solid gray;
+
+    padding: 2px;
+    &:hover{
+        background-color: yellow !important;
+        cursor: pointer;
+    }
+}
+
+.bg-stop {
+    background-color: red !important;
+    &:hover{
+        background-color: red !important;
+    }
+}
+
+.bg-actual-frame {
+    background-color: #fffac8 !important;
+    &:hover{
+        background-color: #fffac8 !important;
     }
 }
