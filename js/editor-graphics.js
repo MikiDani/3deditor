@@ -525,7 +525,7 @@ export class Graphics {
 
     // Apply Y-axis (yaw) rotation
     let matCameraRotY = this.matrix_MakeRotationY(this.fYaw)                  // Left/right rotation
-    this.vLookDir = this.matrix_MultiplyVector(matCameraRotY, vLookDirX)
+    this.vLookDir = this.matrix_MultiplyVector(matCameraRotY, vLookDirX)  
 
     const vRight = this.vector_CrossProduct(vUp, this.vLookDir)               // Right direction vector
     if (this.keys['KeyD'] && this.keys['ShiftLeft']) this.vCamera = this.vector_Sub(this.vCamera, this.vector_Mul(vRight, this.options.moveScale));
@@ -898,7 +898,7 @@ export class Graphics {
   }
 
   infoTable() {
-    this.memoryCtx.fillStyle = 'rgb(0, 0, 0)'
+    this.memoryCtx.fillStyle = 'rgb(255, 255, 255)'
     this.memoryCtx.font = '12px Arial'
     this.memoryCtx.textAlign = 'left'
 

@@ -26,7 +26,9 @@
             <div class="top-screen-options">
                 <div class="left-side">
                     <div class="side-row">
-                        <span><strong>screen-fps</strong>(F1)</span><span id="goto-player-position" class="reset-center-button" data-name="screen-canvas" title="Reset to default center">&#9679;</span>
+                        <span><strong>screen-fps</strong>(F1)</span>
+                        <span id="save-player-position" data-name="screen-canvas" title="Save this position.">&#128190;</span>
+                        <span id="goto-player-position" class="reset-center-button" data-name="screen-canvas" title="Reset to saved position.">&#9679;</span>
                     </div>
                     <div class="side-row me-2">
                         <span>Player X:</span><input type="number" step="0.1" name="player-x">
@@ -314,6 +316,7 @@
                     <div class="right-screen-options">
                         <div class="side-row">
                             <div class="number-container">
+                                <div class="size-number-box" data-mode="mesh" data-number="0.005">0.005</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="0.025">0.025</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="0.05">0.05</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="0.1">0.1</div>
@@ -323,7 +326,6 @@
                                 <div class="size-number-box" data-mode="mesh" data-number="1.25">1.25</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="1.5">1.5</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="2">2</div>
-                                <div class="size-number-box" data-mode="mesh" data-number="2.5">2.5</div>
                             </div>
                         </div>
                         <div class="left-side">
@@ -489,8 +491,8 @@
                             <div class="side-row">
                                 <span class="ps-2">Normal: </span>
                                 <select name="tri-normal" data-type="short">
+                                    <option value="true" selected>On</option>
                                     <option value="false">Off</option>
-                                    <option value="true">On</option>
                                 </select>
                             </div>
                         </div>
@@ -525,6 +527,7 @@
                         </div>
                         <div class="side-row">
                             <div class="number-container">
+                                <div class="size-number-box" data-mode="rectangle" data-number="0.005">0.005</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="0.025">0.025</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="0.05">0.05</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="0.1">0.1</div>
@@ -534,7 +537,6 @@
                                 <div class="size-number-box" data-mode="rectangle" data-number="1.5">1.5</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="1.25">1.25</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="2">2</div>
-                                <div class="size-number-box" data-mode="rectangle" data-number="2.5">2.5</div>
                             </div>
                         </div>
                         <div class="left-side mt-3">

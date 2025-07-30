@@ -169,11 +169,14 @@ class Editor {
   mapVariableReset(ext = 'mtuc') {
     this.typeShowHide(ext)
 
+    delete this.map
+    this.map = null
+
     if (ext == 'mtuc') { 
       return this.map = {
         type: 'map',
         aid: 0,
-        data: [],
+        data: [[]],
         structure: [],
         actions: [],
         objects: [],
@@ -190,7 +193,7 @@ class Editor {
       return this.map = {
         type: 'object',
         aid: 0,
-        data: [],
+        data: [[]],
         structure: [],
         animations: [],
         player: {
@@ -206,9 +209,9 @@ class Editor {
 
   typeShowHide(ext) {
     if (ext == 'mtuc') {
-      $("#animations").hide(); $("#lights").show(); $('.menu-text-border.modal-button[data-mode="gameactions"]').show();
+      $("#animations").hide(); $("#lights").show(); $('.menu-text-border.modal-button[data-mode="gameactions"]').show(); jQuery("#actions").show();
     } else if (ext == 'otuc') {
-      $("#lights").hide(); $("#animations").show(); $('.menu-text-border.modal-button[data-mode="gameactions"]').hide();
+      $("#lights").hide(); $("#animations").show(); $('.menu-text-border.modal-button[data-mode="gameactions"]').hide(); jQuery("#actions").hide();
     }
   }
 
@@ -385,7 +388,7 @@ class Editor {
   async animationPlay (type) {
     const animationIndex = this.mouse.selectedAnimationIndex
 
-    const waitTime = 100
+    const waitTime = 15
 
     switch(type) {
       case 'stop':
@@ -401,6 +404,10 @@ class Editor {
           if (!this.animationPlayState) {
             this.animationPlayState = true
             this.map.animationState = null
+            
+            this.mouse.selectedMeshId = null
+            this.mouse.selectedMeshData = null
+            
             $(".frame-row").removeClass('bg-actual-frame')
             $('#animation-play-button').html('■').addClass('bg-stop')
             this.animationPlay()
@@ -575,10 +582,9 @@ class Editor {
     // let filename = 'maniac'; let ext = 'mtuc';
 
     // DEFAULT OBJECT
-    let filename = 'asztal'; let ext = 'otuc';
+    let filename = 'bat'; let ext = 'otuc';
 
     $("#modal-ext").val(ext)
-
     this.mapVariableReset(ext)
 
     const response = await this.fetchData({ ajax: true, load: true, filename: filename, ext: ext })
@@ -1077,8 +1083,6 @@ class Editor {
       if (this.mapMemory.length > 15) this.mapMemory.splice(15);
     } else if (mode == 'back') {
       if (this.mapMemory.length > 0) {
-        console.log('BACK')
-
         this.mouse.selectedTri = null; this.mouse.selectedLock = null;
 
         this.map = null
@@ -1175,7 +1179,7 @@ class Editor {
     this.refreshActionSelect()
   }
 
-  refreshAnimationsList() {
+  refreshAnimationsList() {    
     if (this.map.animations && typeof this.map.animations == 'object') {
       // animations-list
       $('#animations-list').html('');  
@@ -1689,11 +1693,7 @@ class Editor {
     $(document).on('click', '#frame-clone', function() {
       const deepData = clone.deepCopy(clone.map.data[clone.map.aid])
       clone.map.data.push(deepData)
-
-      console.log(clone.map.data.length)
-
       clone.map.aid = clone.map.data.length - 1
-
       clone.mouseVariableReset(); clone.refreshFrameSelect();
       clone.refreshObjectList();  clone.fullRefreshCanvasGraphics();
     });
@@ -2257,16 +2257,15 @@ class Editor {
 
       // NEW
       if (mode == 'new') {
-        let result = confirm(`Are you sure you want to new map?`)
+        let result = confirm(`Are you sure you want to new file?`)
         if (result) {
 
-          let typeResult = confirm(`If you want to edit map, press yes, if you want to edit an object, press no.`)
+          let typeResult = confirm(`If you want to edit MAP, press YES, if you want to edit an OBJECT, press NO.`)
           let ext = (typeResult) ? 'mtuc' : 'otuc';
           $("#modal-ext").val(ext)
-          console.log(ext)
 
+          delete clone.map; clone.map = null;
           clone.mapVariableReset(ext)
-          clone.map.data[0] = {}
 
           clone.clipboardMemory = { tris: [], meshs: [], }
           clone.graph.map =  clone.map
@@ -2280,7 +2279,7 @@ class Editor {
           
           clone.backButtonDesign(); clone.refreshLightsList();
           clone.refreshFrameSelect(); clone.refreshObjectList();
-          clone.fullRefreshCanvasGraphics();
+          clone.refreshAnimationsList(); clone.fullRefreshCanvasGraphics();
         }
 
         return;
@@ -2465,6 +2464,7 @@ class Editor {
           clone.loadNewBasicData(response, ext)
           // refresh DOM
           clone.refreshFrameSelect()
+          clone.refreshAnimationsList()
           clone.refreshLightsList()
           clone.refreshObjectList()
 
@@ -2493,53 +2493,6 @@ class Editor {
         if (responseIsset[0]) save = (confirm(`File is isset: ${filename} Are you seure ovverrite?`)) ? true : false;
 
         if (save) {
-          ///////////  SAVE NEW STRUCTURE ! //////////////////////
-          /*
-          let mapMod = clone.deepCopy(clone.map)
-          let dataMod = clone.deepCopy(clone.map.data)
-          let structureMod = clone.deepCopy(clone.map.structure)
-
-          mapMod.type = 'new-test'
-          mapMod.structure = [structureMod]
-          mapMod.data = [dataMod]
-
-          console.log(mapMod)
-
-          // let mapModify = {
-          //   type: 'new',
-          //   data: [{},{}],
-          //   structure: [{},{}],
-          //   actions: [],
-          //   objects: [],
-          //   lights: [],
-          //   player: {
-          //     x:0,
-          //     y:0,
-          //     z:0,
-          //     fYaw:0,
-          //     fXaw:0,
-          //   }
-          // }
-          let saveMapData = JSON.stringify(mapMod)
-          // ---
-          let qweqwe = clone.deepCopy(clone.map.data[0])
-          
-          clone.map.data = null
-          clone.map.data = []
-          clone.map.data[0] = qweqwe
-          // ---
-          */
-
-          console.log('SAVE LŐTTE:')
-
-          console.log(ext)
-          
-
-          console.log(clone.map.animations)
-          
-          
-          clone.map.kisfasz = clone.map.animations;
-
           let saveMapData = JSON.stringify(clone.map)
 
           const responseSave = await clone.fetchData({ ajax: true, save: true, filename, ext: ext, mapdata: saveMapData }); // console.log('response:'); console.log(responseSave);
@@ -2559,7 +2512,7 @@ class Editor {
 
       // AJAX GAME ACTIONS
       if (mode == 'gameactions') {
-        console.log('GAME ACTIONS save click.....')
+        console.log('GAME ACTIONS save click...')
       }
 
       // AJAX IMPORT
@@ -2978,7 +2931,6 @@ class Editor {
           clone.origo[view.vX] = pos.vx
           clone.origo[view.vY] = pos.vy
 
-          console.log(clone.origo)
           clone.fullRefreshCanvasGraphics();
         }
 
@@ -3024,6 +2976,8 @@ class Editor {
                 clone.newTriSide ? $("#add-new-tri.toolbar-icon").addClass('add-triangle-1') : $("#add-new-tri.toolbar-icon").addClass('add-triangle-2');
 
                 let newTriangleName = 'Tri-New-' + Math.floor(Math.random()*99999)
+
+                console.log(clone.mouse.addTri.normal)
 
                 selectedMash.tris.unshift(
                   new Triangle(new Vec3D(clone.mouse.addTri.cords[0].x, clone.mouse.addTri.cords[0].y, clone.mouse.addTri.cords[0].z), new Vec3D(clone.mouse.addTri.cords[1].x, clone.mouse.addTri.cords[1].y, clone.mouse.addTri.cords[1].z), new Vec3D(clone.mouse.addTri.cords[2].x, clone.mouse.addTri.cords[2].y, clone.mouse.addTri.cords[2].z),
@@ -3150,13 +3104,30 @@ class Editor {
         }
       });
 
-      // reset screen-canvas player start point
-      $(document).on('click', "[class='reset-center-button'][data-name='screen-canvas']", () => {              
+      // RESET SCREEN-CANVAS PLAYER LAST SAVE POSITION
+      $(document).on('click', "[class='reset-center-button'][data-name='screen-canvas']", () => {
         this.graph.vCamera.x = this.graph.playerPos.x
         this.graph.vCamera.y = this.graph.playerPos.y
         this.graph.vCamera.z = this.graph.playerPos.z
         this.graph.fYaw = this.graph.playerPos.fYaw
         this.graph.fXaw = this.graph.playerPos.fXaw      
+        this.fullRefreshCanvasGraphics()
+      });
+
+      // SAVE SCREEN-CANVAS PLAYER POSITION
+      $(document).on('click', "#save-player-position", () => {
+        this.map.player.fXaw = parseFloat(this.graph.fXaw.toFixed(2))
+        this.map.player.fYaw = parseFloat(this.graph.fYaw.toFixed(2))
+        this.map.player.x = parseFloat(this.graph.vCamera.x.toFixed(2))
+        this.map.player.y = parseFloat(this.graph.vCamera.y.toFixed(2))
+        this.map.player.z = parseFloat(this.graph.vCamera.z.toFixed(2))
+
+        $("input[name='player-x']").val(this.map.player.x)
+        $("input[name='player-y']").val(this.map.player.y)
+        $("input[name='player-z']").val(this.map.player.z)
+        $("input[name='player-fXaw']").val(this.map.player.fXaw)
+        $("input[name='player-fYaw']").val(this.map.player.fYaw)
+
         this.fullRefreshCanvasGraphics()
       });
 
@@ -3218,7 +3189,7 @@ class Editor {
           $('#add-new-rec').addClass('green2')
           this.resetMouseAddTri()
         } else {
-          console.log('reset add rectangle....')
+          // console.log('reset add rectangle....')
           this.mouse.addRec.mode = false
           this.resetMouseAddRec()
         }
@@ -3687,6 +3658,9 @@ class Editor {
 
     // ADD NEW ROOT OBJECT
     $(document).on('click', '#object-add-new', function() {
+      console.log(clone.map.aid)
+      
+
       let addNewMesh = new Mesh('New Group', null)
       clone.map.data[clone.map.aid].push(addNewMesh)
       clone.map.structure.push({id: addNewMesh.id, visible: true, status: true, child: []})
@@ -4471,8 +4445,7 @@ class Editor {
       if (clipIds) {
         clipIds.forEach(meshId => {
           // copy clipboard memory
-          console.log(meshId)
-          console.log(typeof meshId)
+          // console.log(meshId); console.log(typeof meshId);
           
           let mapdataRow = clone.map.data[clone.map.aid].find(mesh => mesh.id == meshId)
           
