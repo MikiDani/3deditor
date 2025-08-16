@@ -1,5 +1,5 @@
 import { Graphics } from './editor-graphics.js'
-import { Textures, Vec3D, Vec2D, Mesh, Triangle, Light } from './data.js'
+import { Textures, Vec3D, Vec2D, Mesh, Triangle, Light, Being } from './data.js'
 
 class ViewWindow {
   constructor(name, vX, vY, ratio, frequent, showDots, showGrid) {
@@ -116,9 +116,11 @@ class Editor {
       rotateScale: 0.1,
       uvLocketSwitch: false,
       showAllLights: true,
+      showAllbeings: true,
     }
 
     this.animationPlayState = false;
+    this.animationRepeatState = false;
 
     this.mapMemory = []
     this.textureDir = []
@@ -127,6 +129,8 @@ class Editor {
       tris: [],
       meshs: [],
     }
+
+    this.beingsList = []
 
     this.keys = {}
     this.selectedView = null
@@ -153,6 +157,8 @@ class Editor {
       mode: 'move',           // move, point, triangle
       selectedLightId: null,
       selectedLightData: {},
+      selectedBeingId: null,
+      selectedBeingData: {},
       selectedMeshId: null,
       selectedMeshData: null,
       isMouseDown: false,
@@ -180,6 +186,7 @@ class Editor {
         structure: [],
         actions: [],
         objects: [],
+        beings: [],
         lights: [],
         player: {
           x:0,
@@ -209,9 +216,9 @@ class Editor {
 
   typeShowHide(ext) {
     if (ext == 'mtuc') {
-      $("#animations").hide(); $("#lights").show(); $('.menu-text-border.modal-button[data-mode="gameactions"]').show(); jQuery("#actions").show();
+      $("#animations").hide(); $("#lights").show(); $("#beings").show(); $('.menu-text-border.modal-button[data-mode="gameactions"]').show(); jQuery("#actions").show();
     } else if (ext == 'otuc') {
-      $("#lights").hide(); $("#animations").show(); $('.menu-text-border.modal-button[data-mode="gameactions"]').hide(); jQuery("#actions").hide();
+      $("#lights").hide(); $("#beings").hide(); $("#animations").show(); $('.menu-text-border.modal-button[data-mode="gameactions"]').hide(); jQuery("#actions").hide();
     }
   }
 
@@ -236,6 +243,7 @@ class Editor {
 
     this.refreshFrameSelect()
     this.refreshLightsList()
+    this.refreshBeingsList()
     this.refreshObjectList()
     this.fullRefreshCanvasGraphics()
     this.typeShowHide(ext)
@@ -248,13 +256,13 @@ class Editor {
     this.gamedata = await response.json()
     if (consolePrint) {
       console.log('LOADED GAMEDATA:')
-      console.log(this.gamedata);
+      console.log(this.gamedata)
     }
 
     await this.loadTextures()
     if (consolePrint) {
       console.log('LOADED TEXTURES:')
-      console.log(this.text.pic);
+      console.log(this.text.pic)
     }
 
     // FIRST LOAD
@@ -300,10 +308,18 @@ class Editor {
               <span><strong class="text-uppercase">View ${this.views[name].vX}/${this.views[name].vY}(${funcKey})</strong></span><span class="reset-center-button" data-name="${name}" title="Reset to default center.">&#9679;</span>
           </div>
           <div class="side-row">
-              <span>Ratio:</span><input type="number" name="ratio" data-name="${name}" min="0" max="1500" step="50" value="${this.views[name].ratio}">
+              <span>Ratio:</span><input type="number" name="ratio" data-name="${name}" min="0" max="5000" step="50" value="${this.views[name].ratio}">
           </div>
           <div class="side-row">
-              <span>Freq.:</span><input type="number" name="frequent" data-name="${name}" min="0" max="100" step="20" value="${this.views[name].frequent}">
+              <span>Freq.:</span>
+              <select name="frequent" data-name="${name}">
+                <option value="20">20</option>
+                <option value="40">40</option>
+                <option value="80" selected>80</option>
+                <option value="160">160</option>
+                <option value="320">320</option>
+                <option value="640">640</option>
+              </select>
           </div>
         </div>
         <div class="right-side">
@@ -416,11 +432,13 @@ class Editor {
       break;
       default:
         if (animationIndex != null) {
-
           if (this.animationPlayState) {
             const animationFrame = this.map.animations[animationIndex][1]
 
             for (let index = 0; index < animationFrame.length; index++) {
+
+              if (!this.animationRepeatState && index == animationFrame.length - 1) continue; // REPEAT OR ONCE PLAY
+
               let nextIndex = index == animationFrame.length - 1 ? 0 : index + 1;
 
               const frame = parseInt(animationFrame[index][0])
@@ -432,7 +450,16 @@ class Editor {
               $(".frame-row").removeClass('bg-actual-frame')
               $(`.frame-row[data-animation-frame-index='${index}']`).addClass('bg-actual-frame')
 
-              let dataDifference = this.deepCopy(this.map.data[frame])
+              // let dataDifference = this.deepCopy(this.map.data[frame])
+
+              let dataDifference = this.map.data[frame].map(mesh => ({
+                id: mesh.id,
+                tris: mesh.tris.map(tri => ({
+                  id: tri.id,
+                  p: tri.p.map(pt => ({ x: pt.x, y: pt.y, z: pt.z }))
+                }))
+              }));
+
               dataDifference = await this.calcInterpolated(dataDifference, this.map.data[nextFrame], segmentNumber)
 
               // console.log('--')
@@ -463,7 +490,7 @@ class Editor {
             }
           }
 
-          if (this.animationPlayState) {
+          if (this.animationPlayState && this.animationRepeatState) {
             this.animationPlay()
           } else {
             this.animationPlayState = false
@@ -536,12 +563,14 @@ class Editor {
     this.map.data = this.deepCopy(response.data)
     const maxId = Math.max(...this.map.data[this.map.aid].map(obj => obj.id));
     Mesh.setInstanceCount(maxId)
+
     // MAP STRUCTURE
     this.map.structure = this.deepCopy(response.structure)
+
     // MAP PLAYER
     this.map.player = this.deepCopy(response.player)
 
-    // MAP TYPE
+    // EXT = MAP TYPE
     if (ext == 'mtuc') {
       // MAP ACTIONS
       this.map.actions = this.deepCopy(response.actions)
@@ -554,9 +583,14 @@ class Editor {
         AnimAction.setEventIdCounter(countEventsRow)
         this.refreshActionSelect()
       } else this.map.actions = [];
+
       // MAP LIGHTS
       this.map.lights = this.deepCopy(response.lights)
       Light.setInstanceCount(this.getMaxId(this.map.lights))
+
+      // MAP BEINGS
+      this.map.beings = this.deepCopy(response.beings)
+      Being.setInstanceCount(this.getMaxId(this.map.beings))
 
       // LOAD OBJECT MODEL IDS AND NAMES
       let response2 = await this.fetchData({ ajax: true, getobjects: true})      
@@ -566,11 +600,25 @@ class Editor {
           let exp = file.name.split('_')
           this.map.objects.push({id: exp[0], name: exp[1], filename: file.name })
         });
-        // console.log(this.map.objects)
+      }
+
+      // LOAD BEING OBJECT MODEL IDS AND NAMES
+      let response3 = await this.fetchData({ ajax: true, getbeings: true})
+      if (response3.files) {
+        let options = ``;
+        for(const file of response3.files) {
+          let response4 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension });
+          if (response?.data && response?.structure) {
+            this.beingsList[file.name] = this.graph.getObjectBoundingBoxSize(response4.data[0]).size
+          } 
+          options += `<option value="${file.name}">${file.name.toUpperCase()}</option>`
+        }
+        $("select[name='new-being-selector']").html(options)
+        this.refreshBeingsList()
       }
     }
 
-    // OBJECT TYPE
+    // EXT = OBJECT TYPE
     if (ext == 'otuc') {
       // LAYERS
       this.map.animations = this.deepCopy(response.animations)
@@ -579,10 +627,10 @@ class Editor {
 
   async loadMapData() {
     // DEFAULT MAP
-    // let filename = 'maniac'; let ext = 'mtuc';
+    let filename = 'maniac'; let ext = 'mtuc';
 
     // DEFAULT OBJECT
-    let filename = 'bat'; let ext = 'otuc';
+    // let filename = 'zombi'; let ext = 'otuc';
 
     $("#modal-ext").val(ext)
     this.mapVariableReset(ext)
@@ -950,6 +998,11 @@ class Editor {
     return structureCopy
   }
 
+  resetModePoint() {
+    this.mouse.modePoint = null;
+    $(`.0-class`).removeClass('point-border'); $(`.1-class`).removeClass('point-border'); $(`.2-class`).removeClass('point-border');
+  }
+
   findMeshById(data, meshId) {
     if (!Array.isArray(data)) return null;
 
@@ -1080,7 +1133,7 @@ class Editor {
       });
     } else if (mode == 'save') {
       this.mapMemory.unshift(JSON.parse(JSON.stringify(this.map)))
-      if (this.mapMemory.length > 15) this.mapMemory.splice(15);
+      if (this.mapMemory.length > 20) this.mapMemory.splice(20);
     } else if (mode == 'back') {
       if (this.mapMemory.length > 0) {
         this.mouse.selectedTri = null; this.mouse.selectedLock = null;
@@ -1159,6 +1212,27 @@ class Editor {
     }
   }
 
+  refreshBeingsList() {
+    $('#being-list').html('');
+    if (this.map.beings && Array.isArray(this.map.beings) && this.map.beings.length > 0) {
+      let element = `<ul>`;
+      this.map.beings.forEach(being => {
+        let eyeIcon = being.visible ? 'eye-being-up' : 'eye-being-down';
+        element += `
+        <li data-being-id="${being.id}" class="being-element">
+          <span class="being-name">${being.name}</span>
+          <span data-being-id="${being.id}" class="menu-icon menu-icon-pos-1 delete-being" title="Delete being"></span>
+          <span data-being-id="${being.id}" class="menu-icon menu-icon-pos-2 duplicate-being title="Duplicated being"></span>
+          <span data-being-id="${being.id}" class="menu-icon menu-icon-pos-3 being-move being-up" data-type="-1" title="Move up-brother"></span>
+          <span data-being-id="${being.id}" class="menu-icon menu-icon-pos-4 being-move being-down" data-type="1" title="Move down-brother"></span>
+          <span data-being-id="${being.id}" class="menu-icon menu-icon-pos-5 eye-being ${eyeIcon}" title="Show / Hide being in editor"></span>
+        </li>`
+      })
+      element += `</ul>`;
+      $('#being-list').html(element)
+    }
+  }
+
   refreshObjectList() {
     $('#object-list').html('');
     if (this.map.data[this.map.aid] && this.map.structure) {
@@ -1196,7 +1270,7 @@ class Editor {
       if (this.mouse.selectedAnimationIndex != null) {
         $('#animations-frames').show()
         const selectedAnimation = this.map.animations[this.mouse.selectedAnimationIndex]        
-        if (Object.keys(selectedAnimation[1]).length > 0) {          
+        if (selectedAnimation && Object.keys(selectedAnimation[1]).length > 0) {
           let elements2 = ``;
           selectedAnimation[1].forEach((row, index) => {
             elements2 += `
@@ -1247,7 +1321,7 @@ class Editor {
     }
   }
 
-  refreshLightListOff() {    
+  refreshLightListOff() {
     if (!this.mouse.selectedLightId) {
       $("input[name='selected-light-name']").val('');
       $("input[name='light-p-X']").val(''); $("input[name='light-p-Y']").val(''); $("input[name='light-p-Z']").val('');
@@ -1260,6 +1334,22 @@ class Editor {
       });
 
       $('#selected-light-container').hide()
+    }
+  }
+
+  refreshBeingListOff() {
+    if (!this.mouse.selectedBeingId) {
+      $("input[name='selected-being-name']").val('');
+      $("input[name='being-p-X']").val(''); $("input[name='being-p-Y']").val(''); $("input[name='being-p-Z']").val('');
+      $("input[name='being-color']").val(''); $("input[name='being-intensity']").val(''); $("input[name='being-distance']").val('');
+      $("select[name='being-type']").val('');
+      $("select[name='being-edit-color']")[0].selectedIndex = 0;
+
+      $('#being-list ul li').each(function () {
+        $(this).removeClass('list-being-selected')
+      });
+
+      $('#selected-being-container').hide()
     }
   }
 
@@ -1598,63 +1688,69 @@ class Editor {
     });
 
     $(document).on('keydown', (event) => {
-      if (event.key == '1') $(".toolbar-icon[data-mode='move']").trigger('click');
-      if (event.key == '2') $(".toolbar-icon[data-mode='origo']").trigger('click');
-      if (event.key == '3')
-        if (clone.mouse?.selectedTri && Object.keys(clone.mouse.selectedTri).length > 0) $(".toolbar-icon[data-mode='point']").trigger('click');
-        else { $(".toolbar-icon[data-mode='point']").addClass('bg-red-p'); setTimeout(() => { $(".toolbar-icon[data-mode='point']").removeClass('bg-red-p')}, 100) }
-      if (event.key == '4')
-        if (clone.mouse?.selectedMeshId) $("#add-new-tri").trigger('click');
-        else { $("#add-new-tri").addClass('bg-red-p'); setTimeout(() => { $("#add-new-tri").removeClass('bg-red-p')}, 100) }
-      if (event.key == '5')
-        if (clone.mouse?.selectedMeshId) $("#add-new-rec").trigger('click');
-        else { $("#add-new-rec").addClass('bg-red-p'); setTimeout(() => { $("#add-new-rec").removeClass('bg-red-p')}, 100) }
+      if (!$(':focus').is('input, textarea')) {
+        if (event.key == '1') $(".toolbar-icon[data-mode='move']").trigger('click');
+        if (event.key == '2') $(".toolbar-icon[data-mode='origo']").trigger('click');
+        if (event.key == '3')
+          if (clone.mouse?.selectedTri && Object.keys(clone.mouse.selectedTri).length > 0) $(".toolbar-icon[data-mode='point']").trigger('click');
+          else { $(".toolbar-icon[data-mode='point']").addClass('bg-red-p'); setTimeout(() => { $(".toolbar-icon[data-mode='point']").removeClass('bg-red-p')}, 100) }
+        if (event.key == '4')
+          if (clone.mouse?.selectedMeshId) $("#add-new-tri").trigger('click');
+          else { $("#add-new-tri").addClass('bg-red-p'); setTimeout(() => { $("#add-new-tri").removeClass('bg-red-p')}, 100) }
+        if (event.key == '5')
+          if (clone.mouse?.selectedMeshId) $("#add-new-rec").trigger('click');
+          else { $("#add-new-rec").addClass('bg-red-p'); setTimeout(() => { $("#add-new-rec").removeClass('bg-red-p')}, 100) }
+ 
+        if (event.key == 'i') {
+          console.log('this.map:')
+          console.log(this.map)
 
-      if (event.key == 'i') {
-        console.log('this.map:')
-        console.log(this.map)
+          console.log('this.map.data[this.map.aid]:')
+          console.log(this.map.data[this.map.aid])
 
-        console.log('this.map.data[this.map.aid]:')
-        console.log(this.map.data[this.map.aid])
-    
-        console.log('this.map.structure')
-        console.log(this.map.structure)
+          console.log('this.map.structure')
+          console.log(this.map.structure)
 
-        console.log('this.map.player')
-        console.log(this.map.player)
+          console.log('this.map.player')
+          console.log(this.map.player)
 
-        console.log('this.map.lights')
-        console.log(this.map.lights)
+          console.log('this.map.lights')
+          console.log(this.map.lights)
 
-        console.log('this.map.actions')
-        console.log(this.map.actions)
+          console.log('this.map.actions')
+          console.log(this.map.actions)
 
-        console.log('this.gamedata')
-        console.log(this.gamedata)
-      }
+          console.log('this.map.beings')
+          console.log(this.map.beings)
 
-      if (event.key == 'u') {
-        console.log('this.refreshActionSelect')
-        this.refreshActionSelect()
-        console.log(this.map.actions)
-      }
+          //---
+          console.log('this.gamedata')
+          console.log(this.gamedata)
+        }
 
-      if (event.key == 'o') {
-        console.log('this.textureDir')
-        console.log(this.textureDir)
-      }
+        if (event.key == 'u') {
+          console.log('this.refreshActionSelect')
+          this.refreshActionSelect()
+          console.log(this.map.actions)
+        }
 
-      if (event.key == 'p') {
-        console.log('this.map.actions')
-        console.log(this.map.actions)
-      }
+        if (event.key == 'o') {
+          console.log('this.textureDir')
+          console.log(this.textureDir)
+        }
 
-      if (event.key == 'l') {
-        console.log('this.mouse')
-        console.log(this.mouse)
+        if (event.key == 'p') {
+          console.log('this.map.actions')
+          console.log(this.map.actions)
+        }
 
-        console.log('this.map.lights')
-        console.log(this.map.lights)
+        if (event.key == 'l') {
+          console.log('this.mouse')
+          console.log(this.mouse)
+
+          console.log('this.map.lights')
+          console.log(this.map.lights)
+        }
       }
     });
 
@@ -2277,7 +2373,7 @@ class Editor {
           $("#selected-mesh-container, #selected-texture-container, #selected-tri-container, #selected-locket-container").hide()
           $("#filename").html('noname')
           
-          clone.backButtonDesign(); clone.refreshLightsList();
+          clone.backButtonDesign(); clone.refreshLightsList(); clone.refreshBeingsList();
           clone.refreshFrameSelect(); clone.refreshObjectList();
           clone.refreshAnimationsList(); clone.fullRefreshCanvasGraphics();
         }
@@ -2354,22 +2450,22 @@ class Editor {
       }      
     });
 
-    // + texture miatt 
+    // TEXTURE INPUTOK MIATT
     $(document).on('mousedown', "#modal-input", function(e) {
-      e.stopPropagation(); // ne menjen tovább az esemény
+      e.stopPropagation()
     }).on('focus', "#modal-input", function() {
-      // extra védelem, ha kell
-      console.log("Fókuszban van az input");
+      // console.log("THE INPUT IS FOCUSED");
     });
 
     $(document).on('click', "#modal-content .list-element span", function() {
       $("#modal-input").val($(this).text())
 
-      //$("#modal-container .modal-action-button").attr('data-filename', $(this).text())
+      $("#modal-container .modal-action-button").attr('data-filename', $(this).text())
 
       $(".modal-action-button").prop('disabled', false)
       $(".modal-delete-button").prop('disabled', false)
     });
+
     // ----
 
     $(document).on('click', "#modal-container", async function(event) {
@@ -2445,12 +2541,9 @@ class Editor {
       let mode = $("#modal-container").attr('data-mode')
       let filename = $(this).attr('data-filename')
 
-      console.log('--------'); console.log(mode); console.log(filename); console.log('--------');   // !!!
-
       // AJAX LOAD
       if (mode == 'load' && filename) {
         let ext = $(this).attr('data-ext')
-        console.log(ext)  // !!!
 
         const response = await clone.fetchData({ ajax: true, load: true, filename: filename, ext: ext });
         if (response?.data && response?.structure) {
@@ -2466,6 +2559,7 @@ class Editor {
           clone.refreshFrameSelect()
           clone.refreshAnimationsList()
           clone.refreshLightsList()
+          clone.refreshBeingsList()
           clone.refreshObjectList()
 
           clone.fullRefreshCanvasGraphics()
@@ -2491,8 +2585,10 @@ class Editor {
 
         const responseIsset = await clone.fetchData({ ajax: true, issetfile: true, filename, ext: ext }); // console.log(responseIsset)
         if (responseIsset[0]) save = (confirm(`File is isset: ${filename} Are you seure ovverrite?`)) ? true : false;
-
         if (save) {
+
+          if (clone.map.type == 'object') delete clone.map.player;  // !!! Mintha nem menne
+
           let saveMapData = JSON.stringify(clone.map)
 
           const responseSave = await clone.fetchData({ ajax: true, save: true, filename, ext: ext, mapdata: saveMapData }); // console.log('response:'); console.log(responseSave);
@@ -2648,12 +2744,15 @@ class Editor {
     // DELETE
     $(document).on('click', "#modal-container .modal-delete-button", async () => {
       let mode = $("#modal-container").attr('data-mode')
+
+      console.log(mode)
+
       if (mode == 'load' || mode == 'save') {
         // DELETE FILE
         let filename = $("#modal-container .modal-action-button").attr('data-filename')
-        let ext = $("#modal-container .modal-action-button").attr('data-ext')
-        let trueDelete = false;
+        let ext = $("#modal-container .modal-action-button").attr('data-ext')       
 
+        let trueDelete = false;
         const checkFile = await clone.fetchData({ ajax: true, issetfile: true, filename: filename, ext: ext }); 
         if (checkFile[0]) trueDelete = (confirm(`File is isset: ${filename}.${ext} Are you seure delete?`)) ? true : false;
 
@@ -2693,9 +2792,7 @@ class Editor {
     });
 
     $(document).on('input', "#modal-input", function() {
-      let value = $(this).val()
-      console.log(value)
-      
+      let value = $(this).val()      
       let actionButton = $("#modal-container .modal-action-button")
 
       if (value.length > 0) {
@@ -2781,14 +2878,18 @@ class Editor {
     this.refreshToolbar()
 
     $(".toolbar-icon").on('click', function() {
+      clone.resetModePoint()  
+
       let mode = $(this).attr('data-mode')
       if (mode == 'exception') {
         clone.mouse.mode = 'move'
+        clone.mouse.modePoint = null;
         return;
-      } 
+      }
       clone.mouse.mode = mode
       if (mode=='point' && (clone.mouse.selectedTri == null || Object.keys(clone.mouse.selectedTri).length == 0)) {
         clone.mouse.mode = 'move'
+        clone.mouse.modePoint = null;
         alert('Not selected triangle!')
       }
       clone.refreshToolbar()
@@ -2847,7 +2948,7 @@ class Editor {
         let ratioInputValue = parseInt($(`input[name='ratio'][data-name='${name}']`).val())
 
         if (ratioInputValue < 1) ratioInputValue = 1;
-        else if (ratioInputValue > 1500) {
+        else if (ratioInputValue > 5000) {
           ratioInputValue = 5000;
           $(`input[name='ratio'][data-name='${name}']`).val(ratioInputValue)
         }
@@ -2859,11 +2960,11 @@ class Editor {
       });
 
       // frequent
-      $(`input[name='frequent'][data-name='${name}']`).on('input', () => {
-        let frequentInputValue = parseInt($(`input[name='frequent'][data-name='${name}']`).val())
+      $(`select[name='frequent'][data-name='${name}']`).on('input', () => {
+        let frequentInputValue = parseInt($(`select[name='frequent'][data-name='${name}']`).val())
 
         if (frequentInputValue < 1) frequentInputValue = 1;
-        else if (frequentInputValue > 100) frequentInputValue = 100;
+        else if (frequentInputValue > 640) frequentInputValue = 640;
 
         this.views[name].frequent = frequentInputValue
 
@@ -2874,7 +2975,7 @@ class Editor {
       ///////////////////////
       // canvas window click
       $(`#${name}`).on('mousedown', function (event) {
-        if (clone.mouse.mode == 'move') $('body').addClass('cursor-move');
+        if (clone.mouse.mode == 'move') $('body').addClass('cursor-move'); 
 
         clone.selectedView = name
         clone.mouse.isOk = name
@@ -2890,21 +2991,46 @@ class Editor {
           event.stopPropagation()
           clone.saveMapMemory('save')
 
-          $('body').addClass('cursor-crosshair')
-
           let view = clone.views[name]
 
           const rect = this.getBoundingClientRect()
           let pos = clone.getMousePosition(clone, event, rect, name)
+
+          if (clone.mouse.modePoint) {
+            clone.mouse.modePoint = parseInt(clone.mouse.modePoint)
+            clone.mouse.selectedTri.p[clone.mouse.modePoint][view.vX] = pos.vx
+            clone.mouse.selectedTri.p[clone.mouse.modePoint][view.vY] = pos.vy
+
+            $(`.${clone.mouse.modePoint}-class`).removeClass('point-border')
+            clone.mouse.modePoint = null
+
+            clone.fullRefreshCanvasGraphics();
+            return;
+          }
+
+          $('body').addClass('cursor-crosshair')
           
           let findedPoint = clone.mouse.selectedTri.p.find(point => point[view.vX] == pos.vx && point[view.vY] == pos.vy)
           if (findedPoint) clone.mouse.moveTriPoint = findedPoint;
-
         }
 
         ///////////////////
         // MOVE ORIGO POINT
-        if (clone.mouse.selectedLightId && clone.mouse.mode == 'origo') {
+        if (clone.mouse.selectedBeingId && clone.mouse.mode == 'origo') {
+          // BEING MOVE
+          event.stopPropagation()
+          clone.saveMapMemory('save')
+
+          let view = clone.views[name]
+          const rect = this.getBoundingClientRect()
+          let pos = clone.getMousePosition(clone, event, rect, name)
+
+          clone.mouse.selectedBeingData.p[view.vX] = pos.vx
+          clone.mouse.selectedBeingData.p[view.vY] = pos.vy
+
+          clone.fullRefreshCanvasGraphics()
+
+        } else if (clone.mouse.selectedLightId && clone.mouse.mode == 'origo') {
           // LIGHT MOVE
           event.stopPropagation()
           clone.saveMapMemory('save')
@@ -2916,7 +3042,7 @@ class Editor {
           clone.mouse.selectedLightData.p[view.vX] = pos.vx
           clone.mouse.selectedLightData.p[view.vY] = pos.vy
 
-          clone.fullRefreshCanvasGraphics();
+          clone.fullRefreshCanvasGraphics()
 
         } else if (clone.mouse.mode == 'origo') {
           // ORIGO MOVE
@@ -2977,12 +3103,10 @@ class Editor {
 
                 let newTriangleName = 'Tri-New-' + Math.floor(Math.random()*99999)
 
-                console.log(clone.mouse.addTri.normal)
-
                 selectedMash.tris.unshift(
                   new Triangle(new Vec3D(clone.mouse.addTri.cords[0].x, clone.mouse.addTri.cords[0].y, clone.mouse.addTri.cords[0].z), new Vec3D(clone.mouse.addTri.cords[1].x, clone.mouse.addTri.cords[1].y, clone.mouse.addTri.cords[1].z), new Vec3D(clone.mouse.addTri.cords[2].x, clone.mouse.addTri.cords[2].y, clone.mouse.addTri.cords[2].z),
                   t1, t2, t3,
-                  undefined, 1, [255, 200, 40, 1], false, newTriangleName)
+                  undefined, [255, 200, 40, 1], false, newTriangleName)
                 )
               }
             }
@@ -3028,7 +3152,7 @@ class Editor {
                 let ta3 = new Vec2D(1 - clone.mouse.addRec.texture1[2].v, 1 - clone.mouse.addRec.texture1[2].u);
                 
                 let newTriangleName = 'Rec-New-A-' + Math.floor(Math.random()*99999)
-                let newTri1 = new Triangle(new Vec3D(t1_0.x, t1_0.y, t1_0.z), new Vec3D(t1_1.x, t1_1.y, t1_1.z), new Vec3D(t1_2.x, t1_2.y, t1_2.z), ta1, ta2, ta3, undefined, 1, [255, 200, 40, 1], false, newTriangleName)
+                let newTri1 = new Triangle(new Vec3D(t1_0.x, t1_0.y, t1_0.z), new Vec3D(t1_1.x, t1_1.y, t1_1.z), new Vec3D(t1_2.x, t1_2.y, t1_2.z), ta1, ta2, ta3, undefined, [255, 200, 40, 1], false, newTriangleName)
 
                 // add triangle 2.
                 let t2_0 = { x: 0, y: 0, z: 0 }; let t2_1 = { x: 0, y: 0, z: 0 }; let t2_2 = { x: 0, y: 0, z: 0 };
@@ -3040,7 +3164,7 @@ class Editor {
 
                 let newTriangleName2 = 'Rec-New-B-' + Math.floor(Math.random()*99999)
                 
-                let newTri2 = new Triangle(new Vec3D(t2_0.x, t2_0.y, t2_0.z), new Vec3D(t2_1.x, t2_1.y, t2_1.z), new Vec3D(t2_2.x, t2_2.y, t2_2.z), tb1, tb2, tb3, undefined, 1, [255, 200, 40, 1], false, newTriangleName2)
+                let newTri2 = new Triangle(new Vec3D(t2_0.x, t2_0.y, t2_0.z), new Vec3D(t2_1.x, t2_1.y, t2_1.z), new Vec3D(t2_2.x, t2_2.y, t2_2.z), tb1, tb2, tb3, undefined, [255, 200, 40, 1], false, newTriangleName2)
 
                 newTri1.locket = newTri2.id
                 newTri2.locket = newTri1.id
@@ -3062,7 +3186,6 @@ class Editor {
             clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
           } else {
             clone.mouse.addRec.count++
-            console.log('clone.mouse.addRec.count: ', clone.mouse.addRec.count)
           }
         }
       });
@@ -3254,11 +3377,11 @@ class Editor {
             vForward = this.graph.vector_Mul(this.graph.vLookDir, this.options.moveScale)
             this.graph.vCamera = (event.originalEvent.wheelDelta > 0) ? this.graph.vector_Add(this.graph.vCamera, vForward) : this.graph.vector_Sub(this.graph.vCamera, vForward);
           } else {
-            let mod = (event.originalEvent.wheelDelta > 0) ? 50 : -50;
+            let mod = (event.originalEvent.wheelDelta > 0) ? 100 : -100;
             let element = $(`input[name='ratio'][data-name='${this.selectedView}']`)
             let modifyNum = parseInt(element.val()) + mod
 
-            if (modifyNum > 1500) modifyNum = 1500;
+            if (modifyNum > 5000) modifyNum = 5000;
             if (modifyNum < 20) modifyNum = 20;
 
             element.val(modifyNum)
@@ -3368,13 +3491,6 @@ class Editor {
       }
     });
 
-    $(`input[name='tri-light']`).on('input', function () {
-      if (typeof clone.mouse.selectedTri.id !== 'undefined') {
-        clone.mouse.selectedTri.light = $(this).val()
-        clone.fullRefreshCanvasGraphics()
-      }
-    });
-
     // TEXTURE OPTIONS
     $(`select[name='tri-animate']`).on('input', function () {
       if (typeof clone.mouse.selectedTri.id !== 'undefined') {
@@ -3458,19 +3574,6 @@ class Editor {
       clone.refreshRectangleDatas()
     });
 
-    $(`input[name='U-V-locket']`).on('click', () => {
-      this.options.uvLocketSwitch =  !this.options.uvLocketSwitch
-      // console.log('uvLocketSwitch:', this.options.uvLocketSwitch)
-      if (this.options.uvLocketSwitch) {
-        $("input[name='tri-t1-U'").addClass('bg-blue-p'); $("input[name='tri-t2-U'").addClass('bg-blue-p'); $("input[name='tri-t3-U'").addClass('bg-blue-p');
-        $("input[name='tri-t1-V'").addClass('bg-green-p'); $("input[name='tri-t2-V'").addClass('bg-green-p'); $("input[name='tri-t3-V'").addClass('bg-green-p');
-      } else {
-        $("input[name='tri-t1-U'").removeClass('bg-blue-p'); $("input[name='tri-t2-U'").removeClass('bg-blue-p'); $("input[name='tri-t3-U'").removeClass('bg-blue-p');
-        $("input[name='tri-t1-V'").removeClass('bg-green-p'); $("input[name='tri-t2-V'").removeClass('bg-green-p'); $("input[name='tri-t3-V'").removeClass('bg-green-p');
-      }
-      clone.refreshRectangleDatas()
-    });
-
     // LOCKET
     let locketInputs = [
       'lock-t1-U', 'lock-t1-V', 'lock-t2-U', 'lock-t2-V', 'lock-t3-U', 'lock-t3-V',
@@ -3482,18 +3585,10 @@ class Editor {
         let type = $(this).attr('data-type')
         let axis = $(this).attr('data-axis')
         let num = $(this).attr('data-num')
-        console.log(type, num, axis)
-
-        console.log(clone.mouse.selectedTri)
-        console.log(clone.mouse.selectedLock)
 
         if (typeof clone.mouse.selectedTri?.id && typeof clone.mouse.selectedLock?.id) {
-
-          console.log('TRI')
-          console.log(clone.mouse.selectedTri)
-
-          console.log('LOCK')
-          console.log(clone.mouse.selectedLock)
+          // console.log('TRI'); console.log(clone.mouse.selectedTri)
+          // console.log('LOCK');console.log(clone.mouse.selectedLock)
 
           let newValue = parseFloat($(this).val())
 
@@ -3544,14 +3639,6 @@ class Editor {
       }
     });
 
-    $(`input[name='lock-light']`).on('input', function () {
-      if (typeof clone.mouse.selectedTri.id !== 'undefined' && typeof clone.mouse.selectedLock.id !== 'undefined') {
-        clone.mouse.selectedTri.light = $(this).val()
-        clone.mouse.selectedLock.light = $(this).val()
-        clone.fullRefreshCanvasGraphics()
-      }
-    });
-
     $(`input[id='selected-tri-name-1']`).on('input', function (event) {
       event.stopImmediatePropagation()      
       if (typeof clone.mouse.selectedTri.id !== 'undefined' && typeof clone.mouse.selectedLock.id !== 'undefined') {
@@ -3572,6 +3659,22 @@ class Editor {
         let triangle = clone.map.data[clone.map.aid].flatMap(obj => obj.tris).find(triangle => triangle.id == clone.mouse.selectedLock.id)
         triangle.name = $(this).val()
         $(document).find("#object-list").find(`li[data-id='${clone.mouse.selectedLock.id}']`).html($(this).val())
+      }
+    });
+
+    $(`.select-point`).on('click', function () {
+      if (clone.mouse.mode == 'point') {
+        let point = $(this).attr('data-point')
+        if (clone.mouse.modePoint && clone.mouse.modePoint == point) {
+          clone.mouse.modePoint = null;
+          $(`.${point}-class`).removeClass('point-border')
+          return;
+        }
+        $(`.0-class`).removeClass('point-border'); $(`.1-class`).removeClass('point-border'); $(`.2-class`).removeClass('point-border');
+        clone.mouse.modePoint = point;
+        $(`.${point}-class`).addClass('point-border')
+      } else {
+        alert('You can use this point selector when you are in "Move Triangle Point" mode.')
       }
     });
 
@@ -3658,9 +3761,6 @@ class Editor {
 
     // ADD NEW ROOT OBJECT
     $(document).on('click', '#object-add-new', function() {
-      console.log(clone.map.aid)
-      
-
       let addNewMesh = new Mesh('New Group', null)
       clone.map.data[clone.map.aid].push(addNewMesh)
       clone.map.structure.push({id: addNewMesh.id, visible: true, status: true, child: []})
@@ -3715,10 +3815,16 @@ class Editor {
     // PLAY ANIMATION
     $(document).on('click', '#animation-play-button', function() {
       const state = clone.animationPlayState ? 'stop' : 'play';
-      console.log('BUTTON: ', state)
-            
       clone.animationPlay(state)
-      // clone.mouse.selectedAnimationIndex
+    });
+
+    // REPEAT-BUTTON
+    $(document).on('click', '#animation-repeat-button', function() {
+      let state = parseInt($(this).attr('data-value'))
+      state = state == 0 ? 1 : 0;
+      clone.animationRepeatState = state ? true : false;
+      $(this).attr('data-value', state)
+      if (clone.animationRepeatState) $(this).html('⟲').attr('title', 'Repeat play animation.'); else $(this).html('1.').attr('title', 'Only once play animation.');
     });
 
     // OPEN / CLOSE ALL OBJECT LIST
@@ -3816,6 +3922,12 @@ class Editor {
         // reset selected datas
         clone.mouse.selectedMeshId = 0
         clone.mouse.selectedTri = {}
+
+        clone.mouse.selectedBeingId = null
+        clone.mouse.selectedBeingData = {}
+        $('.list-being-selected').removeClass('list-being-selected')
+        $('#selected-being-container').hide()
+
         // modifed selected class
         $('#light-list ul li').each(function () {$(this).removeClass('list-light-selected')});
         $(this).addClass('list-light-selected')
@@ -3924,6 +4036,180 @@ class Editor {
         clone.refreshLightsList()
       }
     });
+
+
+    ////////////////////////
+    ////////////////////////
+    ////////////////////////
+
+
+    // ADD NEW being
+    $(document).on('click', '#being-add-new', function() {
+      let name = $("select[name='new-being-selector']").val()
+
+      if (clone.beingsList[name]) {
+        let position = new Vec3D(0, 0, 0)
+        let newbeing = new Being(name, clone.beingsList[name], 1, position, 'none', true, '0xffddaa')
+        // if (typeof clone.map.beings == 'undefined') clone.map.beings = [];  // ???
+        clone.map.beings.push(newbeing)
+        setTimeout(() => {
+          $(`.being-element[data-being-id='${newbeing.id}']`).trigger('click')
+        }, 10)
+        clone.refreshBeingsList()
+        clone.fullRefreshCanvasGraphics()
+      } else {
+        console.log('NINCSEN ILYEN LÉNY A LISTÁBAN!')
+      }
+    });
+
+    // SHOW/HIDE ALL being
+    $(document).on('click', '#being-show-hide', function() {      
+      clone.options.showAllbeings = !clone.options.showAllbeings
+
+      $(this).removeClass('eye-being-up eye-being-down')
+      if (clone.options.showAllbeings) {
+        $(this).addClass('eye-being-up')
+        $("#being-list").removeClass('bg-gray-6')
+      } else {
+        $(this).addClass('eye-being-down')
+        $("#being-list").addClass('bg-gray-6')
+      }
+
+      clone.fullRefreshCanvasGraphics()
+    });
+
+    // SELECT being
+    $(document).on('click', '.being-element', function() {
+      let selectedbeingId = parseInt($(this).attr('data-being-id'))
+
+      let selectedBeingData = clone.map.beings.find(being => being.id == selectedbeingId)
+      if (selectedbeingId && selectedBeingData) {
+        clone.mouse.selectedBeingId = selectedbeingId
+        clone.mouse.selectedBeingData = selectedBeingData
+
+        clone.mouse.selectedLightId = null
+        clone.mouse.selectedLightData = {}
+        $('.list-light-selected').removeClass('list-light-selected')
+
+        // reset selected datas
+        clone.mouse.selectedMeshId = 0
+        clone.mouse.selectedTri = {}
+        // modifed selected class
+        $('#being-list ul li').each(function () {$(this).removeClass('list-being-selected')});
+        $(this).addClass('list-being-selected')
+
+        $("input[name='selected-being-name']").val(selectedBeingData.name)
+        $("input[name='being-p-X']").val(selectedBeingData.p.x); $("input[name='being-p-Y']").val(selectedBeingData.p.y); $("input[name='being-p-Z']").val(selectedBeingData.p.z);
+
+        $("input[name='being-ratio']").val(selectedBeingData.ratio);
+
+        $("input[name='being-color']").val(selectedBeingData.color); $("input[name='being-intensity']").val(selectedBeingData.intensity); $("input[name='being-distance']").val(selectedBeingData.distance);
+        $("select[name='being-type']").val(selectedBeingData.type); $("select[name='being-edit-color']").val(selectedBeingData.editcolor);
+
+        // HEXA COLOR
+        let bgColor = clone.isValidHex(selectedBeingData.color) ? selectedBeingData.color : 'ffffff';
+        $("input[name='being-color']").css("background-color", `#${bgColor}`)
+
+        $('#selected-being-container').show()
+        clone.refreshObjectList()
+        clone.fullRefreshCanvasGraphics()
+      }
+    });
+
+    // being VARIABLES CHANGE
+    // INPUT
+    $(document).on("input", "input[name='selected-being-name'], input[name='being-ratio'], input[name='being-p-X'], input[name='being-p-Y'], input[name='being-p-Z'], input[name='being-color'], input[name='being-intensity'], input[name='being-distance']", function() {
+      let variableName = $(this).attr('data-name')
+      let variableMiddle = $(this).attr('data-middle')
+      let type = $(this).attr('type');
+      let value = type == 'number' ? parseFloat($(this).val()) : $(this).val();
+      variableMiddle ? clone.mouse.selectedBeingData[variableMiddle][variableName] = value : clone.mouse.selectedBeingData[variableName] = value;
+
+      if (variableName == 'name') $(`.being-element[data-being-id='${clone.mouse.selectedBeingData.id}']`).find(".being-name").text(value.toUpperCase());
+      if (variableName == 'color') {
+        let bgColor = clone.isValidHex(value) ? value : 'ffffff';
+        $(this).css("background-color", `#${bgColor}`)
+      }
+      clone.fullRefreshCanvasGraphics()
+    });
+
+    // SELECT
+    $(document).on("change", "select[name='being-type'], select[name='being-edit-color']", function() {
+      let variableName = $(this).attr('data-name')
+      let value = $(this).val()
+      clone.mouse.selectedBeingData[variableName] = value
+    });
+
+    // DELETE being
+    $(document).on('click', '.delete-being', function() {
+      let beingId = $(this).attr('data-being-id')
+      let result = confirm(`Are you sure you want to delete the being with id ${beingId}?`)
+      if (result) {
+        let index = clone.map.beings.findIndex(being => being.id == beingId)
+        if (index != -1) {
+          // console.log(clone.map.beings[index])
+          clone.map.beings.splice(index, 1)
+          clone.refreshBeingsList()
+        }
+      }
+    });
+
+    // SHOW/HIDE EYE being
+    $(document).on('click', '.eye-being', function() {
+      let beingId = $(this).attr('data-being-id')
+      let being = clone.map.beings.find(being => being.id == beingId)
+      if (being) {
+        being.visible = !being.visible
+        $(this).removeClass('eye-being-up eye-being-down')
+        being.visible ? $(this).addClass('eye-being-up') : $(this).addClass('eye-being-down');
+        clone.fullRefreshCanvasGraphics()
+      }
+    });
+
+    // MOVE beingS PREV / NEXT
+    $(document).on('click', ".menu-icon.being-up, .menu-icon.being-down", function() {
+      let direction = $(this).attr('data-type')
+      let beingId = $(this).attr('data-being-id')
+
+      if (clone.map.beings.find(being => being.id == beingId)) {
+        let firstIndex = clone.map.beings.findIndex(being => being.id == beingId)
+        let secondIndex = firstIndex + parseInt(direction)
+        if (clone.map.beings[secondIndex]) {
+          [clone.map.beings[firstIndex], clone.map.beings[secondIndex]] = [clone.map.beings[secondIndex], clone.map.beings[firstIndex]]
+          clone.mouse.selectedBeingId = clone.map.beings[secondIndex].id
+          clone.mouse.selectedBeingData = clone.map.beings[secondIndex]
+          clone.refreshBeingsList()
+          setTimeout(() => {
+            $(`.being-element[data-being-id='${clone.mouse.selectedbeingId}']`).trigger('click')
+          }, 20)
+        }
+      }      
+    });
+
+    // DUPLICATE being
+    $(document).on('click', ".menu-icon.duplicate-being", function() {
+      let beingId = $(this).attr('data-being-id')
+      let being = clone.map.beings.find(being => being.id == beingId)
+      if (being) {
+        let newbeing = JSON.parse(JSON.stringify(being)) // deepcopy
+
+        newbeing.id = being.getInstanceCount() + 1
+        newbeing.name = newbeing.name + '-clone'
+        being.setInstanceCount(newbeing.id)
+
+        clone.map.beings.push(newbeing)
+
+        setTimeout(() => {
+          $(`.being-element[data-light-id='${newLight.id}']`).trigger('click')
+        }, 20)
+        clone.refreshBeingsList()
+      }
+    });
+
+
+    ////////////////////////
+    ////////////////////////
+    ////////////////////////
 
     // OPEN / CLOSE TRIANGLES
     $(document).on('click', ".triangle", function(event) {
@@ -4144,7 +4430,7 @@ class Editor {
               new Vec3D(cloneTri.p[1].x + addNum, cloneTri.p[1].y + addNum, cloneTri.p[1].z + addNum),
               new Vec3D(cloneTri.p[2].x + addNum, cloneTri.p[2].y + addNum, cloneTri.p[2].z + addNum),
               cloneTri.t[0], cloneTri.t[1], cloneTri.t[2],
-              cloneTri.texture, cloneTri.light, cloneTri.rgba, cloneTri.normal, null
+              cloneTri.texture, cloneTri.rgba, cloneTri.normal, null
             ));
           });
       
@@ -4363,19 +4649,17 @@ class Editor {
 
     // DELETE ANIMATION
     $(document).on('click', ".menu-icon.delete-animation", function(event) {
-      const index = $(this).attr('data-animation-index')
-      console.log(index)
+      const index = $(this).attr('data-animation-index') // console.log(index)
       
       if (index !== null && index !== undefined && !isNaN(Number(index))) {
         let result = confirm(`Are you sure you want to delete animation witch the index is ${index}?`)
         if (result) {
           event.stopPropagation()
           clone.saveMapMemory('save')
-  
+
           clone.map.animations.splice(index, 1)
-  
+
           clone.refreshAnimationsList()
-          // clone.fullRefreshCanvasGraphics()
         }
       }
     });
@@ -4724,7 +5008,6 @@ class Editor {
     $("input[name='tri-p3-Z']").val(this.mouse.selectedTri.p[2].z); $("input[name='tri-t3-U']").val(this.mouse.selectedTri.t[2].u)
     $("input[name='tri-t3-V']").val(this.mouse.selectedTri.t[2].v);
 
-    $("select[name='tri-light']").val(this.mouse.selectedTri.light)
     $("select[name='tri-normal']").val(this.mouse.selectedTri.normal) 
 
     let textInfo = this.mouse.selectedTri.texture || null;
@@ -4941,7 +5224,7 @@ class Editor {
     return false; // Ha nincs metszés
   }
 
-  drawViewTriangeAction(view, lineColor, lineWidth, p0vX, p0vY, p1vX, p1vY, p2vX, p2vY) {
+  drawViewTriangeAction(view, lineColor, lineWidth, p0vX, p0vY, p1vX, p1vY, p2vX, p2vY, selectedTriangle) {
     let p0X = view.posX + p0vX * view.ratio; let p0Y = view.posY + p0vY * view.ratio;
     let p1X = view.posX + p1vX * view.ratio; let p1Y = view.posY + p1vY * view.ratio;
     let p2X = view.posX + p2vX * view.ratio; let p2Y = view.posY + p2vY * view.ratio;
@@ -4967,17 +5250,18 @@ class Editor {
       view.ctx.stroke()
 
       if (view.showDots) {
-        view.ctx.strokeStyle = 'deeppink'
-        view.ctx.lineWidth = 2
-        view.ctx.beginPath()
-        view.ctx.arc(p0X, p0Y, 1, 0, 2 * Math.PI)
-        view.ctx.stroke()
-        view.ctx.beginPath()
-        view.ctx.arc(p1X, p1Y, 1, 0, 2 * Math.PI)
-        view.ctx.stroke()
-        view.ctx.beginPath()
-        view.ctx.arc(p2X, p2Y, 1, 0, 2 * Math.PI)
-        view.ctx.stroke()
+        const points = [[p0X, p0Y], [p1X, p1Y], [p2X, p2Y]]
+        points.forEach((p, i) => {
+          view.ctx.strokeStyle = 'deeppink'
+          view.ctx.lineWidth = 2
+          if (selectedTriangle && this.mouse.modePoint && this.mouse.modePoint == String(i)) {
+            view.ctx.strokeStyle = 'lime'
+            view.ctx.lineWidth = 5
+          }
+          view.ctx.beginPath()
+          view.ctx.arc(p[0], p[1], 1, 0, 2 * Math.PI)
+          view.ctx.stroke()
+        })
       }
     }
   }
@@ -5127,7 +5411,11 @@ class Editor {
 
     await this.graph.renderScreen()
 
+    // RAJZOLJUK A KIVÁLASZTOTT HÁROMSZÖGET IS MÉG IDE
+    if (this.mouse.selectedTri && Object.keys(this.mouse.selectedTri).length > 0) await this.graph.drawSelectedTri(this.mouse.selectedTri);
+
     this.graph.memoryCtx.putImageData(this.graph.screenData, 0, 0)
+
     this.graph.infoTable()
 
     this.graph.screenCtx.drawImage(this.graph.memoryCanvas, 0, 0, this.graph.screenCanvas.width, this.graph.screenCanvas.height)
@@ -5201,11 +5489,11 @@ class Editor {
       if (this.mouse.selectedTri && this.mouse.selectedTri.id) {
         let selectTri = this.mouse.selectedTri
         var lineWidth = 3
-        this.drawViewTriangeAction(view, 'white', lineWidth, selectTri.p[0][view.vX], selectTri.p[0][view.vY], selectTri.p[1][view.vX], selectTri.p[1][view.vY], selectTri.p[2][view.vX], selectTri.p[2][view.vY])
+        this.drawViewTriangeAction(view, 'white', lineWidth, selectTri.p[0][view.vX], selectTri.p[0][view.vY], selectTri.p[1][view.vX], selectTri.p[1][view.vY], selectTri.p[2][view.vX], selectTri.p[2][view.vY], true)
         // DRAW LOCKET IF HAVE
         if (selectTri?.locket) {
           let locketTriangle = selectedFrame.flatMap(obj => obj.tris).find(triangle => triangle.id == selectTri.locket)
-          this.drawViewTriangeAction(view, 'white', lineWidth, locketTriangle.p[0][view.vX], locketTriangle.p[0][view.vY], locketTriangle.p[1][view.vX], locketTriangle.p[1][view.vY], locketTriangle.p[2][view.vX], locketTriangle.p[2][view.vY])
+          this.drawViewTriangeAction(view, 'white', lineWidth, locketTriangle.p[0][view.vX], locketTriangle.p[0][view.vY], locketTriangle.p[1][view.vX], locketTriangle.p[1][view.vY], locketTriangle.p[2][view.vX], locketTriangle.p[2][view.vY], true)
         }
       }
 
@@ -5302,6 +5590,42 @@ class Editor {
               } else {
                 view.ctx.lineWidth = 1; view.ctx.strokeStyle = light.editcolor;
               }
+              view.ctx.stroke()
+            }
+          });
+        }
+      }
+
+      // DRAW BEINGS IN CANVAS
+      if (this.map.beings) {
+        if (this.options.showAllbeings) {
+          this.map.beings.forEach(being => {
+            if (being.visible) {
+              being.ratio = parseFloat(being.ratio)
+
+              if (!being.ratio) being.ratio = 1
+
+              let beginXs = view.posX + being.p[view.vX] * view.ratio
+              let beginYs = view.posY + being.p[view.vY] * view.ratio
+
+              let beginXe = view.posX + being.p[view.vX] * view.ratio + being.boundingBox[view.vX] * being.ratio * view.ratio   // being.p[view.vX]
+              let beginYe = view.posY + being.p[view.vY] * view.ratio + being.boundingBox[view.vY] * being.ratio * view.ratio   // being.p[view.vY]
+
+              view.ctx.setLineDash([10, 4, 2, 4])
+
+              view.ctx.beginPath()
+              if (being.id == this.mouse.selectedBeingId) {
+                view.ctx.fillStyle = being.editcolor
+                view.ctx.strokeStyle = 'pink'
+                view.ctx.lineWidth = 1
+              } else {
+                view.ctx.fillStyle = 'rgba(0,0,0,0)'
+                view.ctx.strokeStyle = 'purple'
+                view.ctx.lineWidth = 3
+              }
+
+              view.ctx.rect(beginXs, beginYs, beginXe - beginXs, beginYe - beginYs)
+              view.ctx.fill()
               view.ctx.stroke()
             }
           });

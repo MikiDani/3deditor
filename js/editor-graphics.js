@@ -364,6 +364,58 @@ export class Graphics {
       );
   }
 
+  getMeshBoundingBoxSize(meshData) {
+    if (!meshData?.tris || meshData.tris.length === 0) return null;
+  
+    let min = { x: Infinity, y: Infinity, z: Infinity };
+    let max = { x: -Infinity, y: -Infinity, z: -Infinity };
+  
+    meshData.tris.forEach(tri => {
+      tri.p.forEach(p => {
+        if (p.x < min.x) min.x = p.x;
+        if (p.y < min.y) min.y = p.y;
+        if (p.z < min.z) min.z = p.z;
+  
+        if (p.x > max.x) max.x = p.x;
+        if (p.y > max.y) max.y = p.y;
+        if (p.z > max.z) max.z = p.z;
+      });
+    });
+
+    return { min, max };
+  }
+
+  getObjectBoundingBoxSize(meshData) {
+    let min = { x: Infinity, y: Infinity, z: Infinity };
+    let max = { x: -Infinity, y: -Infinity, z: -Infinity };
+
+    meshData.forEach(mesh => {
+      // console.log(mesh)
+      let calculate = this.getMeshBoundingBoxSize(mesh)
+      if (calculate) {
+        // console.log(calculate)
+        if (min.x > calculate.min.x) min.x = calculate.min.x; if (max.x < calculate.max.x) max.x = calculate.max.x;
+        if (min.y > calculate.min.y) min.y = calculate.min.y; if (max.y < calculate.max.y) max.y = calculate.max.y;
+        if (min.z > calculate.min.z) min.z = calculate.min.z; if (max.z < calculate.max.z) max.z = calculate.max.z;
+      }
+    });
+
+    return {
+      min,
+      max,
+      size: {
+        x: max.x - min.x,
+        y: max.y - min.y,
+        z: max.z - min.z
+      }
+    };
+    /*
+    x: Number((max.x - min.x).toFixed(3)),
+    y: Number((max.y - min.y).toFixed(3)),
+    z: Number((max.z - min.z).toFixed(3)),
+    */
+  }
+
   vector_IntersectPlane(plane_p, plane_n, lineStart, lineEnd, t) {
     plane_n = this.vector_Normalise(plane_n)
     let plane_d = -this.vector_DotProduct(plane_n, plane_p)
@@ -550,7 +602,6 @@ export class Graphics {
   }
 
   async renderScreen() {
-    
     const selectedFrame = this.map.animationState ? this.map.animationState : this.map.data[this.map.aid];
 
     if (selectedFrame && Object.keys(selectedFrame).length > 0) {
@@ -562,9 +613,18 @@ export class Graphics {
     }
   }
 
+  async drawSelectedTri(selectedTri) {
+    if (selectedTri && Object.keys(selectedTri).length > 0) {
+      let obj = {
+        tris: [selectedTri]
+      }
+     this.drawObject(obj, true)
+    }
+  }
+
   ///////////////
   // DRAW OBJECTS
-  drawObject(object) {
+  drawObject(object, selectedTriangleDraw) {
     let selectedTriangles = []
 
     // CALCULATE AND SELECT TRIANGLES
@@ -715,6 +775,14 @@ export class Graphics {
     });
 
     // DRAW TRIANGLES
+
+    if (selectedTriangleDraw) {
+      drawTriangles.forEach(tri => {
+        this.drawTriangleStrokeFront(tri.p[0], tri.p[1], tri.p[2], tri.light, tri.rgba)
+      });
+      return;
+    }
+
     drawTriangles.forEach(tri => {
       if (this.options3D.textured) this.texturedTriangle(tri.p[0].x, tri.p[0].y, tri.t[0].u, tri.t[0].v, tri.t[0].w, tri.p[1].x, tri.p[1].y, tri.t[1].u, tri.t[1].v, tri.t[1].w, tri.p[2].x, tri.p[2].y, tri.t[2].u, tri.t[2].v, tri.t[2].w, tri.texture, tri.light)
       if (this.options3D.fill) this.drawTriangleFill(tri.p[0], tri.p[1], tri.p[2], tri.light, tri.rgba)
@@ -808,7 +876,11 @@ export class Graphics {
     // image select
     // console.log(texture.name)
     
-    let selectedTexture = (texture.name) ? this.text.pic[texture.name][picIndex] : this.text.pic['notexture'][0];
+    // console.log(texture.name)
+
+    let selectedTexture = (texture.name) ?
+      this.text.pic[texture.name][picIndex] ? this.text.pic[texture.name][picIndex] : this.text.pic['notexture'][0]
+      : this.text.pic['notexture'][0];
 
     // texture
     if (selectedTexture?.width) {
@@ -854,7 +926,8 @@ export class Graphics {
     light = (light < 0.3) ? 0.3 : light;
 
     if (rgba && Array.isArray(rgba)) {
-       this.screenCtx.fillStyle = `rgba(${rgba[0]*light}, ${rgba[1]*light}, ${rgba[2]*light}, ${rgba[3]})`
+       // this.screenCtx.fillStyle = `rgba(${rgba[0]*light}, ${rgba[1]*light}, ${rgba[2]*light}, ${rgba[3]})`
+       this.screenCtx.fillStyle = 'yellow'
     } else {
       this.screenCtx.fillStyle = 'yellow'
     }
@@ -874,7 +947,8 @@ export class Graphics {
       let invertedR = 255 - rgba[0]
       let invertedG = 255 - rgba[1]
       let invertedB = 255 - rgba[2]
-      this.screenCtx.strokeStyle = `rgba(${invertedR}, ${invertedG}, ${invertedB}, ${rgba[3]})`
+      //this.screenCtx.strokeStyle = `rgba(${invertedR}, ${invertedG}, ${invertedB}, ${rgba[3]})`
+      this.screenCtx.strokeStyle = 'yellow'
     } else {
       this.screenCtx.strokeStyle = 'yellow'
     }
@@ -884,7 +958,29 @@ export class Graphics {
     this.screenCtx.lineTo(p2.x*this.RATIO, p2.y*this.RATIO)
     this.screenCtx.lineTo(p3.x*this.RATIO, p3.y*this.RATIO)
     this.screenCtx.closePath()
-    this.screenCtx.lineWidth = 1
+    this.screenCtx.lineWidth = 3
+    this.screenCtx.stroke()
+  }
+
+  drawTriangleStrokeFront(p1, p2, p3, light, rgba) {
+    light = (light < 0.4) ? 0.4 : light;
+
+    if (rgba && Array.isArray(rgba)) {
+      let invertedR = 255 - rgba[0]
+      let invertedG = 255 - rgba[1]
+      let invertedB = 255 - rgba[2]
+      //this.screenCtx.strokeStyle = `rgba(${invertedR}, ${invertedG}, ${invertedB}, ${rgba[3]})`
+      this.screenCtx.strokeStyle = 'yellow'
+    } else {
+      this.screenCtx.strokeStyle = 'yellow'
+    }
+
+    this.screenCtx.beginPath()
+    this.screenCtx.moveTo(p1.x*this.RATIO, p1.y*this.RATIO)
+    this.screenCtx.lineTo(p2.x*this.RATIO, p2.y*this.RATIO)
+    this.screenCtx.lineTo(p3.x*this.RATIO, p3.y*this.RATIO)
+    this.screenCtx.closePath()
+    this.screenCtx.lineWidth = 3
     this.screenCtx.stroke()
   }
 

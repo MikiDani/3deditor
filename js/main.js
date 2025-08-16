@@ -1,3 +1,5 @@
+// THIS IS MY FIRST TEST DEMO OF THREE.JS USE IN MY EDITOR ENGINE
+
 import * as THREE from 'three'
 import $ from 'jquery'
 

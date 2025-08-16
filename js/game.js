@@ -24,8 +24,11 @@ export default class Game {
     this.lightsOn
     this.ghostMode
 
+    this.beingsList = []
+
     this.loadedTextures = {}
     this.loadedLights = []
+    this.loadedBeings = []
     this.loadedMeshs = []
 
     this.config = {}

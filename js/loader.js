@@ -114,12 +114,18 @@ export default class Loader {
       this.game.map.data = this.game.deepCopy(response.data[0], true)
       this.game.map.structure = this.game.deepCopy(response.structure, true)
       this.game.map.lights = this.game.deepCopy(response.lights)
+      this.game.map.beings = this.game.deepCopy(response.beings)
       this.game.map.actions = this.game.deepCopy(response.actions)
       this.game.map.player = this.game.deepCopy(response.player)
 
       this.game.player.position.x = this.game.map.player.x
       this.game.player.position.y = this.game.map.player.y
-      this.game.player.position.z = -this.game.map.player.z / 7
+
+      // this.game.player.position.z = -this.game.map.player.z / 7  // !!!
+      this.game.player.position.z = -this.game.map.player.z / 7 + 3
+      console.log(this.game.player.position.z)
+      
+
       this.game.player.rotation.y -= this.game.map.player.fYaw
       this.game.pitchObject.rotation.x -= -this.game.map.player.fXaw
 
@@ -129,10 +135,11 @@ export default class Loader {
         console.log(this.game.map.structure)
         console.log(this.game.map.player)
         console.log(this.game.map.lights)
+        console.log(this.game.map.beings)
         console.log(this.game.map.actions)
         console.log('----')
       }
-
+      
       // ADD DATA IN THREEJS
       for (let mesh of this.game.map.data) {
 
@@ -239,6 +246,91 @@ export default class Loader {
         const ambient = new THREE.AmbientLight(0xffffff, 1)
         this.game.scene.add(ambient)
       }
+
+      // BEINGS DATA LOADING
+      const response2 = await this.fetchData({ ajax: true, getbeings: true})
+      if (response2.files) {
+        for(const file of response2.files) {
+          const response3 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension });
+          if (response3?.data && response3?.structure) {
+
+            this.game.beingsList[file.name] = response3
+            /*
+            this.game.beingsList[file.name] = {
+              'data': this.game.deepCopy(response3.data),
+              'structure': this.game.deepCopy(response3.structure),
+              'animations': this.game.deepCopy(response3.animations),
+            }
+            */
+          }
+        }
+      }
+
+      console.log(this.game.map.beings)
+      console.log('---')
+      console.log(this.game.beingsList)
+      console.log('---')
+
+      this.game.map.beings.forEach(being => {
+        console.log(being)
+        const ActualBeingData = this.game.beingsList[being.filename].data[0]
+        // BEINGS ADD JS
+        if (ActualBeingData) {
+          const beingGroup = new THREE.Group()
+
+          for (let BeingMesh of ActualBeingData) {
+            const meshGroup = new THREE.Group()
+
+            for (let tri of BeingMesh.tris) {
+              const geometry = new THREE.BufferGeometry()
+
+              const vertices = new Float32Array([
+                tri.p[0].x, tri.p[0].y, tri.p[0].z,
+                tri.p[1].x, tri.p[1].y, tri.p[1].z,
+                tri.p[2].x, tri.p[2].y, tri.p[2].z,
+              ])
+              geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
+          
+              const uvs = new Float32Array([
+                tri.t[0].u, 1 - tri.t[0].v,
+                tri.t[1].u, 1 - tri.t[1].v,
+                tri.t[2].u, 1 - tri.t[2].v,
+              ])
+              geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
+              geometry.computeVertexNormals()
+          
+              const materialType = this.game.lightsOn ? 'MeshLambertMaterial' : 'MeshBasicMaterial'
+              const material = new THREE[materialType]({
+                map: this.game.loadedTextures[tri.texture.name],
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 1,
+              })
+
+              const triangleMesh = new THREE.Mesh(geometry, material)
+              meshGroup.add(triangleMesh)
+            }
+            beingGroup.add(meshGroup)
+          }
+
+          beingGroup.position.set(being.p.x, being.p.y, being.p.z)
+
+          this.game.scene.add(beingGroup)
+          const box = new THREE.Box3().setFromObject(beingGroup)
+          this.game.boundingBoxes.push(box)
+
+          // HELPER
+          if (true) {
+            const helper = new THREE.Box3Helper(box, new THREE.Color(0xffff00))
+            this.game.scene.add(helper);
+          }
+
+          this.game.loadedBeings[being.id] = beingGroup
+        }
+      });
+
+
+      console.log(this.game.loadedBeings)
 
       // SKY BACKGROUND
       const loader = new THREE.CubeTextureLoader()

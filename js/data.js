@@ -142,12 +142,11 @@ export class Vec2D {
 }
 
 export class Triangle {
-    constructor(p1 = new Vec3D(), p2 = new Vec3D(), p3 = new Vec3D(), t1 = new Vec2D, t2 = new Vec2D(), t3 = new Vec2D(), textureObj = { name: 'notexture', animate: false, animframe: null, animspeed: 100 }, light = 1, rgba = [255, 200, 40, 1], normal = 'false', name = null) {
+    constructor(p1 = new Vec3D(), p2 = new Vec3D(), p3 = new Vec3D(), t1 = new Vec2D, t2 = new Vec2D(), t3 = new Vec2D(), textureObj = { name: 'notexture', animate: false, animframe: null, animspeed: 100 }, rgba = [255, 200, 40, 1], normal = 'false', name = null) {
         this.id = Date.now().toString().slice(-5) + '-' + Math.floor(Math.random() * 99999)
         this.texture = textureObj
         this.p = [p1, p2, p3]
         this.t = [t1, t2, t3]
-        this.light = light
         this.rgba = [rgba[0], rgba[1], rgba[2], rgba[3]]
         this.normal = normal
         this.name = name ?? `Tri-${this.id}`
@@ -159,6 +158,9 @@ export class Mesh {
     constructor(name = 'noname', parent_id = null, type = null) {
         this.name = name
         Mesh.instanceCount++
+
+        if (typeof Mesh.instanceCount !== 'number' || !isFinite(Mesh.instanceCount)) Mesh.instanceCount = 1;
+
         this.id = Mesh.instanceCount
         this.parent_id = parent_id
         this.type = type
@@ -166,7 +168,7 @@ export class Mesh {
         this.lineColor = 'yellow'
         this.actions = []
 
-        // console.log('staticMash count: ', Mesh.instanceCount)   
+        // console.log('staticMash count: ', Mesh.instanceCount)
     }
 
     static setInstanceCount(value) {
@@ -209,3 +211,27 @@ export class Light {
     }
 }
 
+export class Being {
+    static instanceCount = 0;
+    constructor(name = 'noname', boundingBox = null, ratio = 1, position = new Vec3D(0, 0, 0), type = 'none', visible = true, color = '0xffc0cb') {
+        Being.instanceCount++
+        this.id = Being.instanceCount
+        this.filename = name
+        this.name = name.toUpperCase() + '-' + Being.instanceCount
+        this.boundingBox = boundingBox
+        this.p = position
+        this.type = type
+        this.visible = visible
+        this.color = color
+
+        this.editcolor = 'rgba(255, 192, 203, 0.2)'
+    }
+
+    static setInstanceCount(value) {
+        Being.instanceCount = value;
+    }
+
+    static getInstanceCount() {
+        return Being.instanceCount;
+    }
+}

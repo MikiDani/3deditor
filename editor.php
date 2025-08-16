@@ -71,6 +71,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
     exit;
 }
 
+// GET BEINGS
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['getbeings'])) {
+
+    $directory = $directory . DIRECTORY_SEPARATOR . '_beings';
+
+    $files = [];
+    $files = get_files($directory);
+    usort($files, function ($a, $b) {
+        return strnatcmp($a['name'], $b['name']);
+    });
+
+    echo json_encode(['files' => $files]);
+    exit;
+}
+
 // GET DIRS
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['getdirs'])) {
 

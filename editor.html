@@ -168,6 +168,7 @@
                     <span class="ms-1 me-2 text-small">Name:</span>
                     <input type="text" id="selected-animation-name" data-animation-index="" autocomplete="off" class="input-name">
                     <div class="ms-2 d-flex justify-content-between align-items-center">
+                        <div id="animation-repeat-button" data-value="0" class="action-button-box play me-1" title="Only once play animation.">1.</div>
                         <div id="animation-play-button" class="action-button-box play me-1">►</div>
                     </div>
                 </div>
@@ -200,7 +201,7 @@
 
             <!-- LIGHTS -->
             <div id="lights" style="display:none;">
-                <div id="light-list-head" class="title-box flex-between">
+                <div class="title-box flex-between">
                     <div class="p-0 m-0 d-flex">
                         <span id="light-show-hide" class="eye-light-up hover-pointer" title="Show/Hide All Lights."></span>
                     </div>
@@ -274,6 +275,89 @@
                 </div>
             </div>
 
+            <!-- BEINGS -->
+            <div id="beings" style="display:none;">
+                <div class="title-box flex-between">
+                    <div class="p-0 m-0 d-flex">
+                        <span id="being-show-hide" class="eye-being-up hover-pointer" title="Show/Hide All beings."></span>
+                    </div>
+                    <span>Beings</span>
+                    <div></div>
+                </div>
+                <div class="title-box-flex text-start">
+                    <span class="text-small">New Being:</span>
+                    <select name="new-being-selector">
+                        <option value="name1">name1</option>
+                        <option value="name2">name2</option>
+                        <option value="name3">name3</option>
+                    </select>
+                    <span id="being-add-new" class="plus hover-pointer" title="Add new being."></span>
+                </div>
+
+                <div class="title-box-flex text-start">
+                    <span class="text-small">Selected being. name:</span>
+                    <input type="text" name="selected-being-name" autocomplete="off" data-name="name" class="input-name">
+                </div>
+                <div id="being-list" class="box-1 responsive-menu pt-1" style="display:block;">
+                    <!-- javascript -->
+                </div>
+                <div id="being-list-size-button" data-type-name="being"></div>
+            </div>
+
+            <div id="selected-being-container" class="p-0 m-0" style="display:none;">
+                <div id="object-add-being" class="box-1">
+                    <div class="right-screen-options">
+                        <div class="left-side">
+                            <div class="side-row">
+                                <span class="w-50 text-start">Edit Color</span>
+                                <select name="being-edit-color" data-name="editcolor" class="w-50">
+                                    <option value="rgba(255, 192, 203, 0.2)">pink</option>
+                                    <option value="rgba(255, 165, 0, 0.2)">orange</option>
+                                    <option value="rgba(255, 0, 0, 0.2)">red</option>
+                                    <option value="rgba(0, 128, 0, 0.2)">green</option>
+                                    <option value="rgba(0, 0, 255, 0.2)">blue</option>
+                                    <option value="rgba(255, 255, 0, 0.2)">yellow</option>
+                                    <option value="rgba(128, 0, 128, 0.2)">purple</option>
+                                    <option value="rgba(0, 255, 255, 0.2)">cyan</option>
+                                    <option value="rgba(0, 0, 0, 0.2)">black</option>
+                                    <option value="rgba(255, 255, 255, 0.2)">white</option>
+                                    <option value="rgba(128, 128, 128, 0.2)">gray</option>
+                                </select>
+                            </div>
+                            <div class="side-row">
+                                <span class="w-70">pX: </span><input class="w-30" type="number" name="being-p-X" data-name="x" data-middle="p" min="-10000" max="10000" step="0.1" value="0">
+                            </div>
+                            <div class="side-row">
+                                <span class="w-70">pY: </span><input class="w-30" type="number" name="being-p-Y" data-name="y" data-middle="p" min="-10000" max="10000" step="0.1" value="0">
+                            </div>
+                            <div class="side-row">
+                                <span class="w-70">pZ: </span><input class="w-30" type="number" name="being-p-Z" data-name="z" data-middle="p" min="-10000" max="10000" step="0.1" value="0">
+                            </div>
+                        </div>
+                        <div class="right-side">
+                            <div class="side-row">
+                                <span class="w-50 text-start text-small ps-2">Type</span>
+                                <select name="being-type" data-name="type" class="w-50">
+                                    <option value="none">None</option>
+                                    <option value="move">Move</option>
+                                    <option value="Attack">Attack</option>
+                                </select>
+                            </div>
+                            <div class="side-row">
+                                <span class="text-start text-small ps-2">Ratio</span>
+                                <input type="text" name="being-ratio" autocomplete="off" data-name="ratio" class="input-name ms-6">
+                            </div>
+                            <div class="side-row">
+                                <!--  -->
+                            </div>
+                            <div class="side-row w-100 text-center">
+                                <!--  -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- OBJECTS -->
             <div id="object-list-head" class="title-box flex-between mt-2">
                 <div class="p-0 m-0 d-flex">
@@ -316,6 +400,7 @@
                     <div class="right-screen-options">
                         <div class="side-row">
                             <div class="number-container">
+                                <div class="size-number-box" data-mode="mesh" data-number="0.001">0.001</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="0.005">0.005</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="0.025">0.025</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="0.05">0.05</div>
@@ -325,7 +410,6 @@
                                 <div class="size-number-box" data-mode="mesh" data-number="1">1</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="1.25">1.25</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="1.5">1.5</div>
-                                <div class="size-number-box" data-mode="mesh" data-number="2">2</div>
                             </div>
                         </div>
                         <div class="left-side">
@@ -415,7 +499,7 @@
                 </div>
                 <div id="object-add-tri" class="box-1">
                     <div class="right-screen-options">
-                        <div class="left-side">
+                        <div class="left-side 0-class">
                             <div class="side-row">
                                 <span class="w-30">p1X: </span><input class="w-70" type="number" name="tri-p1-X" data-type="p" data-axis="x" data-num="0" min="-10000" max="10000" step="0.1" value="0">
                             </div>
@@ -427,6 +511,9 @@
                             </div>
                         </div>
                         <div class="right-side">
+                            <div class="side-row d-flex justify-content-end">
+                                <span class="select-point" data-point="0" title="Entering the new coordinate of point P1.">☉</span>
+                            </div>
                             <div class="side-row">
                                 <span class="w-30">t1U: </span><input class="w-70" type="number" name="tri-t1-U" data-type="t" data-axis="u" data-num="0" step="0.1" value="0">
                             </div>
@@ -437,7 +524,7 @@
                                 <span class="tri-all-move w-100" title="All points rotate">All move ↑</span>
                             </div>
                         </div>
-                        <div class="left-side mt-3">
+                        <div class="left-side mt-3 1-class">
                             <div class="side-row">
                                 <span class="w-30">p2X: </span><input class="w-70" type="number" name="tri-p2-X" data-type="p" data-axis="x" data-num="1" min="-10000" max="10000" step="0.1" value="0">
                             </div>
@@ -449,6 +536,9 @@
                             </div>
                         </div>
                         <div class="right-side mt-3">
+                            <div class="side-row d-flex justify-content-end">
+                                <span class="select-point" data-point="1" title="Entering the new coordinate of point P2.">☉</span>
+                            </div>
                             <div class="side-row">
                                 <span class="w-30">t2U: </span><input class="w-70" type="number" name="tri-t2-U" data-type="t" data-axis="u" data-num="1" step="0.1" value="0">
                             </div>
@@ -460,7 +550,7 @@
                                 <span class="tri-move-down" title="2. point move down">↓</span>
                             </div>
                         </div>
-                        <div class="left-side mt-3">
+                        <div class="left-side mt-3 2-class">
                             <div class="side-row">
                                 <span class="w-30">p3X: </span><input class="w-70" type="number" name="tri-p3-X" data-type="p" data-axis="x" data-num="2" min="-10000" max="10000" step="0.1" value="0">
                             </div>
@@ -472,19 +562,18 @@
                             </div>
                         </div>
                         <div class="right-side mt-3">
+                            <div class="side-row d-flex justify-content-end">
+                                <span class="select-point" data-point="2" title="Entering the new coordinate of point P3.">☉</span>
+                            </div>
                             <div class="side-row">
                                 <span class="w-30">t3U: </span><input class="w-70" type="number" name="tri-t3-U" data-type="t" data-axis="u" data-num="2" step="0.1" value="0">
                             </div>
                             <div class="side-row">
                                 <span class="w-30">t3V: </span><input class="w-70" type="number" name="tri-t3-V" data-type="t" data-axis="v" data-num="2" step="0.1" value="0">
                             </div>
-                            <div class="side-row" title="On the same axes (U, V), values that are equal to the modified one will also be updated to the new specified value.">
-                                <span class="ps-3">U-V locket: </span><input class="me-5" type="checkbox" name="U-V-locket" value="">
-                            </div>
                         </div>
                         <div class="left-side mt-4 mb-3">
                             <div class="side-row">
-                                <span>light: </span><input type="number" name="tri-light" data-axis="light" min="0" max="1" step="0.1" value="1">
                             </div>
                         </div>
                         <div class="right-side mt-4 mb-3">
@@ -522,11 +611,11 @@
                         </div>
                         <div class="right-side">
                             <div class="side-row">
-                                <span>light: </span><input type="number" name="lock-light" data-axis="light" min="0" max="1" step="0.1" value="1">
                             </div>
                         </div>
                         <div class="side-row">
                             <div class="number-container">
+                                <div class="size-number-box" data-mode="rectangle" data-number="0.001">0.001</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="0.005">0.005</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="0.025">0.025</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="0.05">0.05</div>
@@ -536,7 +625,6 @@
                                 <div class="size-number-box" data-mode="rectangle" data-number="1">1</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="1.5">1.5</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="1.25">1.25</div>
-                                <div class="size-number-box" data-mode="rectangle" data-number="2">2</div>
                             </div>
                         </div>
                         <div class="left-side mt-3">

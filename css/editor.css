@@ -245,6 +245,10 @@ body {
   margin-left: 15px;
 }
 
+.ms-6 {
+  margin-left: 25px;
+}
+
 .me-1 {
   margin-right: 2px;
 }
@@ -296,6 +300,10 @@ body {
 
 select[name=actions-selector] {
   min-width: 120px;
+}
+
+select[name=new-being-selector] {
+  min-width: 180px;
 }
 
 input[type=number] {
@@ -655,14 +663,16 @@ button[class="3d-buttons"] {
 }
 
 #object-list-size-button,
-#light-list-size-button {
+#light-list-size-button,
+#being-list-size-button {
   top: -20px;
   height: 5px;
   width: 100%;
   background-color: green !important;
 }
 #object-list-size-button:hover,
-#light-list-size-button:hover {
+#light-list-size-button:hover,
+#being-list-size-button:hover {
   cursor: row-resize;
 }
 
@@ -1083,6 +1093,10 @@ button[class="3d-buttons"] {
 
 .cursor-crosshair {
   cursor: crosshair;
+}
+
+.cursor-e-resize {
+  cursor: e-resize;
 }
 
 .tri-list, .list-mesh-selected {
@@ -1594,6 +1608,7 @@ li:hover {
 .delete,
 .delete-group,
 .delete-light,
+.delete-being,
 .delete-animation,
 .delete-animation-frame {
   display: inline-block;
@@ -1608,6 +1623,7 @@ li:hover {
 .delete::before,
 .delete-group::before,
 .delete-light::before,
+.delete-being::before,
 .delete-animation::before,
 .delete-animation-frame::before {
   content: "✖";
@@ -1615,12 +1631,14 @@ li:hover {
 .delete:hover,
 .delete-group:hover,
 .delete-light:hover,
+.delete-being:hover,
 .delete-animation:hover,
 .delete-animation-frame:hover {
   color: red !important;
 }
 
-.eye-light-up {
+.eye-light-up,
+.eye-being-up {
   display: inline-block;
   width: 10px;
   height: 10px;
@@ -1630,14 +1648,17 @@ li:hover {
   line-height: 10px;
   text-align: center;
 }
-.eye-light-up::before {
+.eye-light-up::before,
+.eye-being-up::before {
   content: "◉";
 }
-.eye-light-up:hover {
+.eye-light-up:hover,
+.eye-being-up:hover {
   color: yellow !important;
 }
 
-.eye-light-down {
+.eye-light-down,
+.eye-being-down {
   display: inline-block;
   width: 10px;
   height: 10px;
@@ -1647,10 +1668,12 @@ li:hover {
   line-height: 10px;
   text-align: center;
 }
-.eye-light-down::before {
+.eye-light-down::before,
+.eye-being-down::before {
   content: "=";
 }
-.eye-light-down:hover {
+.eye-light-down:hover,
+.eye-being-down:hover {
   color: yellow !important;
 }
 
@@ -1689,7 +1712,8 @@ li:hover {
 }
 
 .duplicate,
-.duplicate-light {
+.duplicate-light,
+.duplicate-being {
   display: inline-block;
   width: 10px;
   height: 10px;
@@ -1700,16 +1724,19 @@ li:hover {
   text-align: center;
 }
 .duplicate::before,
-.duplicate-light::before {
+.duplicate-light::before,
+.duplicate-being::before {
   content: "⧉";
 }
 .duplicate:hover,
-.duplicate-light:hover {
+.duplicate-light:hover,
+.duplicate-being:hover {
   color: yellow !important;
 }
 
 .up,
 .light-up,
+.being-up,
 .up-animation-frame {
   display: inline-block;
   width: 10px;
@@ -1722,17 +1749,20 @@ li:hover {
 }
 .up::before,
 .light-up::before,
+.being-up::before,
 .up-animation-frame::before {
   content: "⭡";
 }
 .up:hover,
 .light-up:hover,
+.being-up:hover,
 .up-animation-frame:hover {
   color: yellow !important;
 }
 
 .down,
 .light-down,
+.being-down,
 .down-animation-frame {
   display: inline-block;
   width: 10px;
@@ -1745,11 +1775,13 @@ li:hover {
 }
 .down::before,
 .light-down::before,
+.being-down::before,
 .down-animation-frame::before {
   content: "⭣";
 }
 .down:hover,
 .light-down:hover,
+.being-down:hover,
 .down-animation-frame:hover {
   color: yellow !important;
 }
@@ -1866,6 +1898,7 @@ li:hover {
 
 .list-mesh-selected,
 .list-light-selected,
+.list-being-selected,
 .list-animation-selected {
   color: white !important;
   background-color: darkolivegreen !important;
@@ -2418,4 +2451,26 @@ li:hover {
 }
 .bg-actual-frame:hover {
   background-color: #fffac8 !important;
+}
+
+.point-border {
+  border: 2px solid green;
+}
+
+.select-point {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 21px;
+  height: 21px;
+  background-color: #87b7b7;
+  border-radius: 50%;
+  margin: 0 !important;
+  padding: 0 !important;
+  white-space: 0;
+  padding-top: 1px !important;
+  padding-left: 1px !important;
+}
+.select-point:hover {
+  background-color: #6a9393;
 }/*# sourceMappingURL=editor.css.map */

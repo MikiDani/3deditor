@@ -253,6 +253,10 @@ body {
     margin-left: 15px;
 }
 
+.ms-6 {
+    margin-left: 25px;
+}
+
 .me-1 {
     margin-right: 2px;
 }
@@ -304,6 +308,10 @@ body {
 
 select[name='actions-selector'] {
     min-width: 120px;
+}
+
+select[name='new-being-selector'] {
+    min-width: 180px;
 }
 
 input[type='number'] {
@@ -670,7 +678,8 @@ button[class='3d-buttons'] {
 }
 
 #object-list-size-button,
-#light-list-size-button {
+#light-list-size-button,
+#being-list-size-button {
     top: -20px;
     height: 5px;
     width: 100%;
@@ -1107,6 +1116,10 @@ $cell-size: 30px;
 
 .cursor-crosshair {
     cursor: crosshair;
+}
+
+.cursor-e-resize {
+    cursor: e-resize;
 }
 
 .tri-list, .list-mesh-selected {
@@ -1643,6 +1656,7 @@ li {
 .delete,
 .delete-group,
 .delete-light,
+.delete-being,
 .delete-animation,
 .delete-animation-frame {
     display: inline-block;
@@ -1663,7 +1677,8 @@ li {
     }
 }
 
-.eye-light-up {
+.eye-light-up,
+.eye-being-up {
     display: inline-block;
     width: 10px;
     height: 10px;
@@ -1682,7 +1697,8 @@ li {
     }
 }
 
-.eye-light-down {
+.eye-light-down,
+.eye-being-down {
     display: inline-block;
     width: 10px;
     height: 10px;
@@ -1740,7 +1756,8 @@ li {
 }
 
 .duplicate,
-.duplicate-light {
+.duplicate-light,
+.duplicate-being {
     display: inline-block;
     width: 10px;
     height: 10px;
@@ -1761,6 +1778,7 @@ li {
 
 .up,
 .light-up,
+.being-up,
 .up-animation-frame {
     display: inline-block;
     width: 10px;
@@ -1782,6 +1800,7 @@ li {
 
 .down,
 .light-down,
+.being-down,
 .down-animation-frame {
     display: inline-block;
     width: 10px;
@@ -1925,6 +1944,7 @@ li {
  
 .list-mesh-selected,
 .list-light-selected,
+.list-being-selected,
 .list-animation-selected {
     color: white !important;
     background-color: darkolivegreen !important;
@@ -2489,5 +2509,27 @@ display: block;
     background-color: #fffac8 !important;
     &:hover{
         background-color: #fffac8 !important;
+    }
+}
+
+.point-border {
+    border: 2px solid green;
+}
+
+.select-point {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 21px;
+    height: 21px;
+    background-color: #87b7b7;
+    border-radius: 50%;
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: 0;
+    padding-top: 1px !important;
+    padding-left: 1px !important;
+    &:hover {
+        background-color: #6a9393;
     }
 }
