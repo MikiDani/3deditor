@@ -150,6 +150,7 @@ export class Triangle {
         this.rgba = [rgba[0], rgba[1], rgba[2], rgba[3]]
         this.normal = normal
         this.name = name ?? `Tri-${this.id}`
+        this.transparent = false
     }
 }
 

@@ -105,7 +105,7 @@ export default class Loader {
     return texture;
   }
 
-  async mapLoader(logOn) {
+  async mapLoader() {
     const filename = $("#file-input").val()
     const ext = $("#file-input").attr('data-ext')
 
@@ -124,12 +124,11 @@ export default class Loader {
       // this.game.player.position.z = -this.game.map.player.z / 7  // !!!
       this.game.player.position.z = -this.game.map.player.z / 7 + 3
       console.log(this.game.player.position.z)
-      
 
       this.game.player.rotation.y -= this.game.map.player.fYaw
       this.game.pitchObject.rotation.x -= -this.game.map.player.fXaw
 
-      if (logOn) {
+      if (false) {
         console.log('----')
         console.log(this.game.map.data)
         console.log(this.game.map.structure)
@@ -139,80 +138,76 @@ export default class Loader {
         console.log(this.game.map.actions)
         console.log('----')
       }
-      
-      // ADD DATA IN THREEJS
+
+      // ADD MAP DATA
       for (let mesh of this.game.map.data) {
+        const meshGroup = new THREE.Group()
+        for (let tri of mesh.tris) {
+          const geometry = new THREE.BufferGeometry()
+          const vertices = new Float32Array([
+            tri.p[0].x, tri.p[0].y, tri.p[0].z,
+            tri.p[1].x, tri.p[1].y, tri.p[1].z,
+            tri.p[2].x, tri.p[2].y, tri.p[2].z
+          ]);
 
-        let selectedMeshStructure = this.game.findMeshById(this.game.map.structure, mesh.id)
-        // console.log(mesh.name)
-        // console.log(selectedMeshStructure.visible)
+          geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
 
-        if (selectedMeshStructure.visible == 1) {
-          const meshGroup = new THREE.Group();
-          for (let tri of mesh.tris) {
-            const geometry = new THREE.BufferGeometry()
-            const vertices = new Float32Array([
-              tri.p[0].x, tri.p[0].y, tri.p[0].z,
-              tri.p[1].x, tri.p[1].y, tri.p[1].z,
-              tri.p[2].x, tri.p[2].y, tri.p[2].z
-            ]);
+          const uvs = new Float32Array([
+            tri.t[0].u, 1 - tri.t[0].v,
+            tri.t[1].u, 1 - tri.t[1].v,
+            tri.t[2].u, 1 - tri.t[2].v,
+          ]);
 
-            geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
+          geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))  
+          geometry.computeVertexNormals()
 
-            const uvs = new Float32Array([
-              tri.t[0].u, 1 - tri.t[0].v,
-              tri.t[1].u, 1 - tri.t[1].v,
-              tri.t[2].u, 1 - tri.t[2].v,
-            ]);
+          let triTransparent = tri?.transparent ? true : false;
+          let triNormal = tri?.normal ? 'FrontSide' : 'DoubleSide';
 
-            geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))  
-            geometry.computeVertexNormals()
+          const materialType = (this.game.lightsOn) ? 'MeshLambertMaterial' : 'MeshBasicMaterial';
+          const material = new THREE[materialType]({
+            map: this.game.loadedTextures[tri.texture.name],  // TEXTURA ÚJ MEGOLDÁS
+            side: THREE[triNormal],       // side: THREE.FrontSide, THREE.DoubleSide
+            transparent: triTransparent,  // Fontos a false, mert a tru nagyon lassítja!
+            opacity: 1,
+            alphaTest: 0.1,
+          });
 
-            const materialType = (this.game.lightsOn) ? 'MeshLambertMaterial' : 'MeshBasicMaterial';
-            const material = new THREE[materialType]({
-              map: this.game.loadedTextures[tri.texture.name],  // TEXTURA ÚJ MEGOLDÁS
-              side: THREE.DoubleSide,
-              transparent: true,
-              opacity: 1,
-              alphaTest: 0.01
-            });
+          const triangleMesh = new THREE.Mesh(geometry, material)
+          meshGroup.add(triangleMesh)
 
-            const triangleMesh = new THREE.Mesh(geometry, material)
-            meshGroup.add(triangleMesh)
+          geometry.computeBoundingBox()
+          const box = geometry.boundingBox.clone()
+          box.min.add(triangleMesh.position)
+          box.max.add(triangleMesh.position)
 
-            geometry.computeBoundingBox()
-            const box = geometry.boundingBox.clone()
-            box.min.add(triangleMesh.position)
-            box.max.add(triangleMesh.position)
+          this.game.boundingBoxes.push(box)
 
-            this.game.boundingBoxes.push(box)
-
-            // YELLOW BOX-HELPER
-            if (this.game.boxHelp) {
-              const helper = new THREE.Box3Helper(box, new THREE.Color(0xffff00));
-              this.game.scene.add(helper);
-            }
+          // YELLOW BOX-HELPER
+          const helper = new THREE.Box3Helper(box, new THREE.Color(0xffff00));
+          if (this.game.boxHelp) {
+            this.game.scene.add(helper);
           }
-
-          // LOAD ACTIONS
-          if (mesh?.actions && mesh.actions.length > 0) {
-            console.log('Van AKCIÓJA: ', mesh.name)
-            for (const action of mesh.actions) {
-              let actionData = this.game.map.actions.find(obj => obj.id == action)
-              if (actionData) {
-                actionData.meshname = mesh.name
-                this.game.map.actionelements.push([meshGroup, actionData])
-              }
-            }
-          }
-  
-          this.game.loadedMeshs[mesh.id] = meshGroup
-  
-          this.game.scene.add(meshGroup)
         }
+
+        // LOAD ACTIONS
+        if (mesh?.actions && mesh.actions.length > 0) {
+          console.log('Van AKCIÓJA: ', mesh.name)
+          for (const action of mesh.actions) {
+            let actionData = this.game.map.actions.find(obj => obj.id == action)
+            if (actionData) {
+              actionData.meshname = mesh.name
+              this.game.map.actionelements.push([meshGroup, actionData])
+            }
+          }
+        }
+
+        meshGroup.box = new THREE.Box3().setFromObject(meshGroup)
+        this.game.loadedMeshs[mesh.id] = meshGroup
+        this.game.scene.add(meshGroup)
       }
 
-      //ADD CLICK CHECKS
+      //ADD ACTIONS CLICK CHECKS
       this.game.input.actionsClicksCheck()
 
       // LIGHTS LOADING
@@ -253,84 +248,86 @@ export default class Loader {
         for(const file of response2.files) {
           const response3 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension });
           if (response3?.data && response3?.structure) {
-
-            this.game.beingsList[file.name] = response3
-            /*
+            // this.game.beingsList[file.name] = response3
             this.game.beingsList[file.name] = {
               'data': this.game.deepCopy(response3.data),
               'structure': this.game.deepCopy(response3.structure),
               'animations': this.game.deepCopy(response3.animations),
             }
-            */
           }
+        }
+
+        // FIRST ADD BEINGS
+        if (this.game.map.beings) {          
+          this.game.map.beings.forEach(being => {
+            const ActualBeingData = this.game.beingsList[being.filename].data[0]
+
+            if (ActualBeingData) {
+              const beingGroup = new THREE.Group()
+
+              beingGroup.beingId = being.id
+              beingGroup.ratio = being.ratio
+
+              beingGroup.animState = {
+                'type': being.type,
+                'card': 0,
+                'cardframe': 0,
+                'cardsegment': 0,
+              }
+
+              for (let BeingMesh of ActualBeingData) {
+                const meshGroup = new THREE.Group()
+
+                for (let tri of BeingMesh.tris) {
+                  const geometry = new THREE.BufferGeometry()
+
+                  // console.log('Being.ratio: ', being.ratio)
+
+                  const vertices = new Float32Array([
+                    tri.p[0].x * being.ratio, tri.p[0].y * being.ratio, tri.p[0].z * being.ratio,
+                    tri.p[1].x * being.ratio, tri.p[1].y * being.ratio, tri.p[1].z * being.ratio,
+                    tri.p[2].x * being.ratio, tri.p[2].y * being.ratio, tri.p[2].z * being.ratio,
+                  ])
+                  geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
+
+                  const uvs = new Float32Array([
+                    tri.t[0].u, 1 - tri.t[0].v,
+                    tri.t[1].u, 1 - tri.t[1].v,
+                    tri.t[2].u, 1 - tri.t[2].v,
+                  ])
+                  geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
+                  geometry.computeVertexNormals()
+              
+                  let triTransparent = tri?.transparent ? true : false;
+                  let triNormal = tri?.normal ? 'FrontSide' : 'DoubleSide';
+
+                  const materialType = this.game.lightsOn ? 'MeshLambertMaterial' : 'MeshBasicMaterial'
+                  const material = new THREE[materialType]({
+                    map: this.game.loadedTextures[tri.texture.name],
+                    side: THREE[triNormal], // side: THREE.FrontSide, THREE.DoubleSide
+                    opacity: 1,
+                    transparent: triTransparent,
+                    alphaTest: 0.1,
+                  })
+  
+                  const triangleMesh = new THREE.Mesh(geometry, material)
+                  meshGroup.add(triangleMesh)
+                }
+                beingGroup.add(meshGroup)
+              }
+  
+              beingGroup.position.set(being.p.x, being.p.y, being.p.z)
+  
+              this.game.scene.add(beingGroup)
+    
+              this.game.loadedBeings[being.id] = beingGroup
+              this.game.loadedBeings[being.id].filename = being.filename
+            }
+          });
+
+          console.log(this.game.loadedBeings)
         }
       }
-
-      console.log(this.game.map.beings)
-      console.log('---')
-      console.log(this.game.beingsList)
-      console.log('---')
-
-      this.game.map.beings.forEach(being => {
-        console.log(being)
-        const ActualBeingData = this.game.beingsList[being.filename].data[0]
-        // BEINGS ADD JS
-        if (ActualBeingData) {
-          const beingGroup = new THREE.Group()
-
-          for (let BeingMesh of ActualBeingData) {
-            const meshGroup = new THREE.Group()
-
-            for (let tri of BeingMesh.tris) {
-              const geometry = new THREE.BufferGeometry()
-
-              const vertices = new Float32Array([
-                tri.p[0].x, tri.p[0].y, tri.p[0].z,
-                tri.p[1].x, tri.p[1].y, tri.p[1].z,
-                tri.p[2].x, tri.p[2].y, tri.p[2].z,
-              ])
-              geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
-          
-              const uvs = new Float32Array([
-                tri.t[0].u, 1 - tri.t[0].v,
-                tri.t[1].u, 1 - tri.t[1].v,
-                tri.t[2].u, 1 - tri.t[2].v,
-              ])
-              geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
-              geometry.computeVertexNormals()
-          
-              const materialType = this.game.lightsOn ? 'MeshLambertMaterial' : 'MeshBasicMaterial'
-              const material = new THREE[materialType]({
-                map: this.game.loadedTextures[tri.texture.name],
-                side: THREE.DoubleSide,
-                transparent: true,
-                opacity: 1,
-              })
-
-              const triangleMesh = new THREE.Mesh(geometry, material)
-              meshGroup.add(triangleMesh)
-            }
-            beingGroup.add(meshGroup)
-          }
-
-          beingGroup.position.set(being.p.x, being.p.y, being.p.z)
-
-          this.game.scene.add(beingGroup)
-          const box = new THREE.Box3().setFromObject(beingGroup)
-          this.game.boundingBoxes.push(box)
-
-          // HELPER
-          if (true) {
-            const helper = new THREE.Box3Helper(box, new THREE.Color(0xffff00))
-            this.game.scene.add(helper);
-          }
-
-          this.game.loadedBeings[being.id] = beingGroup
-        }
-      });
-
-
-      console.log(this.game.loadedBeings)
 
       // SKY BACKGROUND
       const loader = new THREE.CubeTextureLoader()

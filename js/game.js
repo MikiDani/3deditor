@@ -57,6 +57,13 @@ export default class Game {
     this.boxHelp = false
 
     this.init()
+
+    this.ro = 0
+
+    setInterval(() => {
+      this.ro = this.ro == 0 ? 1 : 0;
+      // console.log(this.ro)
+    },1200)
   }
 
   async init() {
@@ -226,7 +233,7 @@ export default class Game {
     if (this.currentState == 'game' && !this.mapLoading) {
       try {
         this.mapLoading = true
-        await this.loader.mapLoader(false)
+        await this.loader.mapLoader()
         // console.log(this.loadedMeshs)
       } catch(e) {
         this.loadingErrorAction(); return;

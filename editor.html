@@ -338,9 +338,7 @@
                             <div class="side-row">
                                 <span class="w-50 text-start text-small ps-2">Type</span>
                                 <select name="being-type" data-name="type" class="w-50">
-                                    <option value="none">None</option>
-                                    <option value="move">Move</option>
-                                    <option value="Attack">Attack</option>
+                                    <!-- javascript -->
                                 </select>
                             </div>
                             <div class="side-row">
@@ -574,14 +572,19 @@
                         </div>
                         <div class="left-side mt-4 mb-3">
                             <div class="side-row">
+                                <span class="ps-2">Transparent: </span>
+                                <select name="tri-transparent" data-type="short">
+                                    <option value="false">Off</option>
+                                    <option value="true">On</option>
+                                </select>
                             </div>
                         </div>
                         <div class="right-side mt-4 mb-3">
                             <div class="side-row">
                                 <span class="ps-2">Normal: </span>
                                 <select name="tri-normal" data-type="short">
-                                    <option value="true" selected>On</option>
                                     <option value="false">Off</option>
+                                    <option value="true">On</option>
                                 </select>
                             </div>
                         </div>

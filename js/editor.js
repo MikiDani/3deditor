@@ -460,9 +460,11 @@ class Editor {
                 }))
               }));
 
+              console.log(dataDifference)
+
+
               dataDifference = await this.calcInterpolated(dataDifference, this.map.data[nextFrame], segmentNumber)
 
-              // console.log('--')
               for (let s = 0; s<segmentNumber; s++) {
                 // console.log(s)
                 this.map.animationState = this.deepCopy(this.map.data[frame])
@@ -609,7 +611,10 @@ class Editor {
         for(const file of response3.files) {
           let response4 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension });
           if (response?.data && response?.structure) {
-            this.beingsList[file.name] = this.graph.getObjectBoundingBoxSize(response4.data[0]).size
+            this.beingsList[file.name] = {
+              'boundingbox': this.graph.getObjectBoundingBoxSize(response4.data[0]).size,
+              'animations': response4.animations
+            }            
           } 
           options += `<option value="${file.name}">${file.name.toUpperCase()}</option>`
         }
@@ -1216,7 +1221,7 @@ class Editor {
     $('#being-list').html('');
     if (this.map.beings && Array.isArray(this.map.beings) && this.map.beings.length > 0) {
       let element = `<ul>`;
-      this.map.beings.forEach(being => {
+      this.map.beings.forEach(being => {    
         let eyeIcon = being.visible ? 'eye-being-up' : 'eye-being-down';
         element += `
         <li data-being-id="${being.id}" class="being-element">
@@ -1683,8 +1688,7 @@ class Editor {
 
     // mouse right button off
     $(document).on("contextmenu", function(event) {
-      event.preventDefault();
-      console.log("Jobb klikk letiltva!");
+      event.preventDefault()// console.log("Jobb klikk letiltva!")
     });
 
     $(document).on('keydown', (event) => {
@@ -2587,7 +2591,7 @@ class Editor {
         if (responseIsset[0]) save = (confirm(`File is isset: ${filename} Are you seure ovverrite?`)) ? true : false;
         if (save) {
 
-          if (clone.map.type == 'object') delete clone.map.player;  // !!! Mintha nem menne
+          // if (clone.map.type == 'object') delete clone.map.player;  // !!! Mintha nem menne
 
           let saveMapData = JSON.stringify(clone.map)
 
@@ -2918,7 +2922,7 @@ class Editor {
         $(this).prop('disabled', false)
         const value = $(this).val().toUpperCase()
         $(this).val(value)
-        clone.map.animations[clone.mouse.selectedAnimationIndex][0] = value
+        if (clone.map.animations?.[clone.mouse.selectedAnimationIndex]?.[0] !== undefined) clone.map.animations[clone.mouse.selectedAnimationIndex][0] = value;
       } else {
         $(this).prop('disabled', true)
       }
@@ -3009,9 +3013,11 @@ class Editor {
           }
 
           $('body').addClass('cursor-crosshair')
-          
-          let findedPoint = clone.mouse.selectedTri.p.find(point => point[view.vX] == pos.vx && point[view.vY] == pos.vy)
-          if (findedPoint) clone.mouse.moveTriPoint = findedPoint;
+
+          if (clone.mouse.selectedTri) {
+            let findedPoint = clone.mouse.selectedTri.p.find(point => point[view.vX] == pos.vx && point[view.vY] == pos.vy)
+            if (findedPoint) clone.mouse.moveTriPoint = findedPoint
+          }
         }
 
         ///////////////////
@@ -3377,9 +3383,14 @@ class Editor {
             vForward = this.graph.vector_Mul(this.graph.vLookDir, this.options.moveScale)
             this.graph.vCamera = (event.originalEvent.wheelDelta > 0) ? this.graph.vector_Add(this.graph.vCamera, vForward) : this.graph.vector_Sub(this.graph.vCamera, vForward);
           } else {
-            let mod = (event.originalEvent.wheelDelta > 0) ? 100 : -100;
             let element = $(`input[name='ratio'][data-name='${this.selectedView}']`)
-            let modifyNum = parseInt(element.val()) + mod
+            let ratioValue = element.val()
+
+            let mod = ratioValue > 140
+            ? event.originalEvent.wheelDelta > 0 ? 120 : -120
+            : event.originalEvent.wheelDelta > 0 ? 10 : -10;
+
+            let modifyNum = parseInt(ratioValue) + mod
 
             if (modifyNum > 5000) modifyNum = 5000;
             if (modifyNum < 20) modifyNum = 20;
@@ -3391,6 +3402,15 @@ class Editor {
         clone.fullRefreshCanvasGraphics()
       }
     });
+
+    // SCROLL WINDOW SPEED
+    const ids = ['light-list', 'beings-list'] // 'object-list'
+    $.each(ids, function(_, id) {
+      $(`#${id}`).on('wheel', function(e) {
+        e.preventDefault()
+        $(this).scrollTop($(this).scrollTop() + (e.originalEvent.deltaY > 0 ? 25 : -25))
+      })
+    })
 
     // MOVE MASH AND TRIANGLE
     $(".grid-item.arrow").on('click', function () {
@@ -3483,23 +3503,44 @@ class Editor {
       });
     });
 
-    $(`select[name='tri-normal']`).on('input', function () {
-      console.log($(this).val())
+    $(`select[name='tri-normal']`).on('input focus', function () {
       if (typeof clone.mouse.selectedTri.id !== 'undefined') {
-        clone.mouse.selectedTri.normal = $(this).val()
+        let value = $(this).val()
+        if (typeof value === 'undefined') value = false;
+        if (value === 'false') value = false;
+        if (value === 'true') value = true;
+        console.log(value)
+        clone.mouse.selectedTri.normal = value
+        clone.fullRefreshCanvasGraphics()
+      }
+    });
+
+    $(`select[name='tri-transparent']`).on('input fucus', function () {
+      if (typeof clone.mouse.selectedTri.id !== 'undefined') {
+        let value = $(this).val()
+        if (typeof value === 'undefined') value = false;
+        if (value === 'false') value = false;
+        if (value === 'true') value = true;
+        console.log(value)
+        clone.mouse.selectedTri.transparent = value
         clone.fullRefreshCanvasGraphics()
       }
     });
 
     // TEXTURE OPTIONS
-    $(`select[name='tri-animate']`).on('input', function () {
+    $(`select[name='tri-animate']`).on('input focus', function () {
       if (typeof clone.mouse.selectedTri.id !== 'undefined') {
-        clone.mouse.selectedTri.texture.animate = $(this).val()
+        let value = $(this).val()
+        if (typeof value === 'undefined') value = false;
+        if (value === 'false') value = false;
+        if (value === 'true') value = true;
+        console.log(value)
+        clone.mouse.selectedTri.texture.animate = value
         clone.fullRefreshCanvasGraphics()
       }
     });
 
-    $(`input[name='tri-animspeed']`).on('input', function () {      
+    $(`input[name='tri-animspeed']`).on('input focus', function () {      
       if (typeof clone.mouse.selectedTri.id !== 'undefined') {
         clone.mouse.selectedTri.texture.animspeed = parseInt($(this).val())
         if(clone.mouse.selectedLock) {          
@@ -4048,13 +4089,16 @@ class Editor {
       let name = $("select[name='new-being-selector']").val()
 
       if (clone.beingsList[name]) {
-        let position = new Vec3D(0, 0, 0)
-        let newbeing = new Being(name, clone.beingsList[name], 1, position, 'none', true, '0xffddaa')
-        // if (typeof clone.map.beings == 'undefined') clone.map.beings = [];  // ???
+        let position = new Vec3D(0, 0, 0)        
+        let newbeing = new Being(name, clone.beingsList[name].boundingbox, 1, position, 'none', true, '0xffddaa')
+        
+        if (typeof clone.map.beings == 'undefined') clone.map.beings = [];
         clone.map.beings.push(newbeing)
+
         setTimeout(() => {
           $(`.being-element[data-being-id='${newbeing.id}']`).trigger('click')
         }, 10)
+
         clone.refreshBeingsList()
         clone.fullRefreshCanvasGraphics()
       } else {
@@ -4101,10 +4145,17 @@ class Editor {
         $("input[name='selected-being-name']").val(selectedBeingData.name)
         $("input[name='being-p-X']").val(selectedBeingData.p.x); $("input[name='being-p-Y']").val(selectedBeingData.p.y); $("input[name='being-p-Z']").val(selectedBeingData.p.z);
 
-        $("input[name='being-ratio']").val(selectedBeingData.ratio);
-
         $("input[name='being-color']").val(selectedBeingData.color); $("input[name='being-intensity']").val(selectedBeingData.intensity); $("input[name='being-distance']").val(selectedBeingData.distance);
-        $("select[name='being-type']").val(selectedBeingData.type); $("select[name='being-edit-color']").val(selectedBeingData.editcolor);
+        $("select[name='being-edit-color']").val(selectedBeingData.editcolor); $("input[name='being-ratio']").val(selectedBeingData.ratio);
+
+        // SELECTED BEING ANIMATION NAMES LOAD
+        if (clone.beingsList[selectedBeingData.filename].animations) {
+          let elements = `<option value="none">None</option>`
+          for (const [id, data] of Object.entries(clone.beingsList[selectedBeingData.filename].animations)) {
+            elements += `<option value="${data[0]}" ${selectedBeingData.type == data[0] ? 'selected' : ''}>${data[0]}</option>`
+          }
+          $("select[name='being-type']").html(elements)
+        }
 
         // HEXA COLOR
         let bgColor = clone.isValidHex(selectedBeingData.color) ? selectedBeingData.color : 'ffffff';
@@ -5008,7 +5059,15 @@ class Editor {
     $("input[name='tri-p3-Z']").val(this.mouse.selectedTri.p[2].z); $("input[name='tri-t3-U']").val(this.mouse.selectedTri.t[2].u)
     $("input[name='tri-t3-V']").val(this.mouse.selectedTri.t[2].v);
 
-    $("select[name='tri-normal']").val(this.mouse.selectedTri.normal) 
+    if (typeof this.mouse.selectedTri.normal === 'undefined') this.mouse.selectedTri.normal = false;
+    if (this.mouse.selectedTri.normal === 'false') this.mouse.selectedTri.normal = false;
+    if (this.mouse.selectedTri.normal === 'true') this.mouse.selectedTri.normal = true;
+    if (typeof this.mouse.selectedTri.transparent === 'undefined') this.mouse.selectedTri.transparent = false;
+    if (this.mouse.selectedTri.transparent === 'false') this.mouse.selectedTri.transparent = false;
+    if (this.mouse.selectedTri.transparent === 'true') this.mouse.selectedTri.transparent = true;
+
+    $("select[name='tri-normal']").val(this.mouse.selectedTri.normal ? 'true' : 'false') 
+    $("select[name='tri-transparent']").val(this.mouse.selectedTri.transparent ? 'true' : 'false')
 
     let textInfo = this.mouse.selectedTri.texture || null;
     let textData = this.graph?.text?.pic?.[this.mouse?.selectedTri?.texture?.name]?.[0] ?? null;
@@ -5623,6 +5682,10 @@ class Editor {
                 view.ctx.strokeStyle = 'purple'
                 view.ctx.lineWidth = 3
               }
+
+              /*  KELL MAJD HA FORGATNI KELL !!!
+
+              */
 
               view.ctx.rect(beginXs, beginYs, beginXe - beginXs, beginYe - beginYs)
               view.ctx.fill()

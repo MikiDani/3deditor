@@ -15,13 +15,271 @@ export default class Gameplay {
       this.counter = 0
     }
 
+    // GRAVITI RESPONE
     if (this.game.player.position.y < -5) this.game.player.position.y = 5;  // !!
 
-    await this.game.input.updateCamera()
+    await this.game.input.updatePlayer()
+
+    await this.updateBeings()
 
     await this.startActions()
 
     await this.game.renderer.render(this.game.scene, this.game.camera)
+  }
+
+  async updateBeings() {
+    for (let [id, beingGroup] of Object.entries(this.game.loadedBeings)) {
+      const beingId = Number(id)
+      const beingModell = this.game.beingsList[beingGroup.filename]
+      
+      // console.log(beingGroup.filename)
+      // console.log(beingGroup.beingId)
+      // console.log(beingGroup.ratio)
+      
+      // ANIMATION
+      if (beingGroup.animState.type != 'none' && beingGroup.filename == 'zombi3') {   // !! csak zombi
+        if (beingGroup.animState.type != 'none') {
+          beingGroup.animState = this.animMover(beingGroup.animState, beingModell.animations)
+          // console.log(beingGroup.animState)
+          // console.log('card: ' + beingGroup.animState.card + '| cardframe: ' + beingGroup.animState.cardframe, '| cardsegment: ' +  beingGroup.animState.cardsegment)
+
+          const index = beingGroup.animState.cardframe
+          const actualFrameData = this.game.beingsList[beingGroup.filename]?.data?.[index]
+
+          const nextIndex = index == beingGroup.animState.maxcard ? 0 : index + 1;
+          const nextFrameData = this.game.beingsList[beingGroup.filename]?.data?.[nextIndex]
+
+          let dataDifference = actualFrameData.map(mesh => ({
+            id: mesh.id,
+            tris: mesh.tris.map(tri => ({
+              id: tri.id,
+              p: tri.p.map(pt => ({ x: pt.x, y: pt.y, z: pt.z }))
+            }))
+          }));
+          // console.log(dataDifference)
+
+          dataDifference = await this.calcInterpolated(dataDifference, nextFrameData, beingGroup.animState.cardsegment)
+          
+          for (let s = 0; s<beingGroup.animState.cardsegment; s++) {
+            // console.log(s)
+            this.animationState = this.game.deepCopy(actualFrameData)
+
+            if (s != 0) {
+              for (let row of this.animationState) {
+                if (row?.tris) {
+                  //console.log(row.tris)
+                  for (let tri of row.tris) {
+                    let tri2 = dataDifference.flatMap(obj => obj.tris).find(triangle => triangle.id == tri.id)
+                    if (tri2) {
+                      for (let n = 0; n < 3; n++) {
+                        tri.p[n].x = tri.p[n].x - (tri2.p[n].x * s)
+                        tri.p[n].y = tri.p[n].y - (tri2.p[n].y * s)
+                        tri.p[n].z = tri.p[n].z - (tri2.p[n].z * s)
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+ 
+          if (this.animationState) {
+            this.syncBeingTrianglesPositions(beingGroup, this.animationState);
+          }
+        }
+      }
+
+      // MOVE
+      if (false) this.moveObjectInMap(beingId, beingGroup, new THREE.Vector3(0.01, 0, 0))
+
+      // GRAVITY
+      if (true) this.applyGravity(beingGroup, beingId);
+
+      if (beingGroup.position.y < -1) { beingGroup.position.y = 2; beingGroup.position.x = -3; }
+
+      // végleges box újraszámolása
+      if (!beingGroup.box) {
+        beingGroup.box = new THREE.Box3()
+
+        // HELPER
+        if (false) {
+          beingGroup.helper = new THREE.Box3Helper(beingGroup.box, new THREE.Color(0xffff00))
+          beingGroup.helper.box.copy(beingGroup.box)
+          this.game.scene.add(beingGroup.helper)
+        }
+
+        this.game.boundingBoxes.push(beingGroup.box)
+      }
+
+      beingGroup.updateMatrixWorld(true)
+      beingGroup.box.setFromObject(beingGroup)
+    }
+  }
+
+
+  animMover(beingData, modelAnim) {
+    // console.log(modelAnim)
+
+    const animation = modelAnim.find(anim => anim[0] == beingData.type)
+    if (animation) {
+      // console.log(animation)
+
+      beingData.cardsegment++
+
+      beingData.cardframe = parseInt(animation[1][beingData.card][0])
+      // MAX
+      beingData.maxcard = parseInt(animation[1].length - 1)
+
+      if (beingData.cardsegment == animation[1][beingData.card][1]) {        
+        beingData.cardsegment = 0
+
+        beingData.card++
+
+        if (beingData.card == parseInt(animation[1].length)) {
+          beingData.card = 0;
+          beingData.cardframe = parseInt(animation[1][beingData.card][0])
+        }
+      }
+
+      // console.log('card: ' + beingData.card + '| cardframe: ' + beingData.cardframe, '| cardsegment: ' +  beingData.cardsegment)
+    }
+
+    return beingData;
+  }
+
+  async calcInterpolated(dataDifference, data2, segmentNumber) {
+    for (let row of dataDifference) {
+      if (row?.tris) {
+        for (let tri of row.tris) {
+          let tri2 = data2.flatMap(obj => obj.tris).find(triangle => triangle.id == tri.id)
+          if (tri2) {
+            for (let n = 0; n < 3; n++) {
+              tri.p[n].x = (tri.p[n].x - tri2.p[n].x) / segmentNumber
+              tri.p[n].y = (tri.p[n].y - tri2.p[n].y) / segmentNumber
+              tri.p[n].z = (tri.p[n].z - tri2.p[n].z) / segmentNumber
+            }
+          }
+        }
+      }
+    }
+    return dataDifference;
+  }
+
+  syncBeingTrianglesPositions(beingGroup, data) {
+    if (!beingGroup || !Array.isArray(beingGroup.children)) return;
+    if (!Array.isArray(data)) return;
+
+    for (let m = 0; m < data.length; m++) {
+      const beingMesh = data[m]
+      const meshGroup = beingGroup.children[m]
+      if (!beingMesh || !meshGroup) continue;
+  
+      const tris = beingMesh.tris || [];
+      const triMeshes = (meshGroup.children || [])
+  
+      const count = Math.min(tris.length, triMeshes.length)
+      for (let t = 0; t < count; t++) {
+        const tri = tris[t]
+        const triangleMesh = triMeshes[t]
+        if (!triangleMesh || !triangleMesh.geometry) continue;
+  
+        const geom = triangleMesh.geometry
+        const pos = geom.getAttribute('position')
+        if (!pos || pos.itemSize !== 3 || pos.count < 3) continue;
+  
+        pos.setXYZ(0, tri.p[0].x * beingGroup.ratio, tri.p[0].y * beingGroup.ratio, tri.p[0].z * beingGroup.ratio)
+        pos.setXYZ(1, tri.p[1].x * beingGroup.ratio, tri.p[1].y * beingGroup.ratio, tri.p[1].z * beingGroup.ratio)
+        pos.setXYZ(2, tri.p[2].x * beingGroup.ratio, tri.p[2].y * beingGroup.ratio, tri.p[2].z * beingGroup.ratio)
+        pos.needsUpdate = true
+  
+        // beingGroup.ratio = beingGroup.ratio + 0.000005  // hülyeség : )
+
+        // Normálok és (ha kell) bounding box frissítése
+        // geom.computeVertexNormals()  // ??
+        // geom.computeBoundingBox?.()  // !!!
+      }
+    }
+  }
+
+  moveObjectInMap(objId, object, newPosCords) {
+    const newPos = object.position.clone().add(newPosCords)
+
+    // MAKE TESTBOX
+    const tempGroup = object.clone()
+    tempGroup.position.copy(newPos)
+    tempGroup.updateMatrixWorld(true)
+    const testBox = new THREE.Box3().setFromObject(tempGroup)
+
+    // CHECK CRASH
+    const collision = this.checkCrash(testBox, objId)
+
+    if (!collision) {
+      // IF NO CRASH WE MOVING
+      object.position.copy(newPos)
+    }
+  }
+  
+  checkCrash(testBox, ignoreBeingId = null) {
+    // PLAYER CHECK HIT
+    const half = this.game.playerBoundingBox.clone(); // Vector3 (0.3, 1, 0.3)
+    const playerCenter = this.game.player.position.clone();
+    const playerBox = new THREE.Box3(
+      playerCenter.clone().sub(half),
+      playerCenter.clone().add(half)
+    )
+    if (testBox.intersectsBox(playerBox)) {
+      return true;
+    }
+
+    // MAP CHECK HIT
+    for (const [key, loadedMesh] of Object.entries(this.game.loadedMeshs)) {      
+      if (testBox.intersectsBox(loadedMesh.box)) {
+        return true;
+      }
+    }
+
+    // BEINGS CHECK HIT
+    for (const [beingId, beingGroup] of Object.entries(this.game.loadedBeings)) {
+      const id = Number(beingId);
+      if (id === ignoreBeingId) continue; // saját maga kihagyva
+      if (beingGroup.box && testBox.intersectsBox(beingGroup.box)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // ==== SEGÉDFÜGGVÉNY: Gravitáció ====
+  applyGravity(objectGroup, id = null, fallSpeed = 0.01) {
+    if (!objectGroup.box) return;
+
+    // jelenlegi pozíció
+    const newPos = objectGroup.position.clone();
+    newPos.y -= fallSpeed;
+
+    // teszt doboz a lejjebb lévő pozícióra
+    const tempGroup = objectGroup.clone();
+    tempGroup.position.copy(newPos);
+    tempGroup.updateMatrixWorld(true);
+
+    const testBox = new THREE.Box3().setFromObject(tempGroup);
+
+    // van-e ütközés?
+    const collision = this.checkCrash(testBox, id);
+
+    if (!collision) {
+      // ha nem ütközik, tényleg leesik
+      objectGroup.position.copy(newPos);
+    }
+
+    // boundingBox újraszámolás
+    objectGroup.updateMatrixWorld(true);
+    objectGroup.box.setFromObject(objectGroup);
+
+    if (objectGroup.helper) {
+      objectGroup.helper.box.copy(objectGroup.box);
+    }
   }
 
   async startActions() {
@@ -152,14 +410,15 @@ export default class Gameplay {
   moveFx(mesh, data) {
     switch(data.id) {
       case 0:
+        // FRIDGE
         if (!mesh.openConfig) {
           mesh.openConfig = {
             state: false,
             min: 0,
-            max: 190,
+            max: 45,
             value: 0,
             valueadd: null,
-            addedStep: 0.01,
+            addedStep: 0.05,
             addedValue: null,
             offsetTypeX: 'min',
             offsetTypeY: 'min',
@@ -170,14 +429,15 @@ export default class Gameplay {
         break
 
       case 1:
+        // DOOR + open
         if (!mesh.openConfig) {
           mesh.openConfig = {
             state: false,
             min: 0,
-            max: 190,
+            max: 45,
             value: 0,
             valueadd: null,
-            addedStep: 0.01,
+            addedStep: 0.05,
             addedValue: null,
             offsetTypeX: 'min',
             offsetTypeY: 'min',
@@ -188,14 +448,15 @@ export default class Gameplay {
       break
 
       case 2:
+        // DOOR - open
         if (!mesh.openConfig) {
           mesh.openConfig = {
             state: false,
             min: 0,
-            max: 190,
+            max: 45,
             value: 0,
             valueadd: null,
-            addedStep: -0.01,
+            addedStep: -0.05,
             addedValue: null,
             offsetTypeX: 'max',
             offsetTypeY: 'min',
@@ -271,9 +532,8 @@ export default class Gameplay {
         else this.game.boundingBoxes.push(updatedBox);
         mesh._boundingBox = updatedBox
 
-        console.log(mesh.openConfig.value)  // !!!
-        console.log(mesh.openConfig.value)  // !!!
-
+        // console.log(mesh.openConfig.value)  // !!!
+        
         if (mesh.openConfig.value == mesh.openConfig.max - 1 || mesh.openConfig.value < mesh.openConfig.min + 1) {
           console.log('STOP!');
           mesh.openConfig.state = !mesh.openConfig.state

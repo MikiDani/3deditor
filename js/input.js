@@ -85,6 +85,8 @@ export default class Input {
       }
 
       if (e.key == 'i') {
+        console.log(this.map.lod)
+        
         console.log('map.player')
         console.log(this.game.map.player)
         console.log(this.game.map.player.x)
@@ -93,6 +95,9 @@ export default class Input {
     
         console.log(this.game.map.player.fYaw)
         console.log(this.game.map.player.fXaw)
+        console.log('---')
+        console.log('game.config')
+        console.log(this.game.config)
       }
 
       if (e.key == 'f') {
@@ -204,7 +209,7 @@ export default class Input {
     });
   }
 
-  updateCamera() {
+  updatePlayer() {
     const shift = this.game.keysPressed.has('shift')
     let moved = false;
 
