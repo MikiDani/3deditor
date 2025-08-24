@@ -29,62 +29,92 @@ export default class Gameplay {
 
   async updateBeings() {
     for (let [id, beingGroup] of Object.entries(this.game.loadedBeings)) {
+      
       const beingId = Number(id)
       const beingModell = this.game.beingsList[beingGroup.filename]
       
+      const now = performance.now()
+        
       // console.log(beingGroup.filename)
       // console.log(beingGroup.beingId)
       // console.log(beingGroup.ratio)
-      
-      // ANIMATION
-      if (beingGroup.animState.type != 'none' && beingGroup.filename == 'zombi3') {   // !! csak zombi
-        if (beingGroup.animState.type != 'none') {
-          beingGroup.animState = this.animMover(beingGroup.animState, beingModell.animations)
-          // console.log(beingGroup.animState)
-          // console.log('card: ' + beingGroup.animState.card + '| cardframe: ' + beingGroup.animState.cardframe, '| cardsegment: ' +  beingGroup.animState.cardsegment)
 
-          const index = beingGroup.animState.cardframe
-          const actualFrameData = this.game.beingsList[beingGroup.filename]?.data?.[index]
+      if (now - beingGroup.lastUpdate >= Number(beingGroup.speed)) {
+        beingGroup.lastUpdate = now
 
-          const nextIndex = index == beingGroup.animState.maxcard ? 0 : index + 1;
-          const nextFrameData = this.game.beingsList[beingGroup.filename]?.data?.[nextIndex]
+        // ANIMATION
+        if (beingGroup.animState.type != 'none' && beingGroup.filename == 'zombi3') {   // !! csak zombi
+          console.log('letelt...')
+          if (beingGroup.animState.type != 'none') {
 
-          let dataDifference = actualFrameData.map(mesh => ({
-            id: mesh.id,
-            tris: mesh.tris.map(tri => ({
-              id: tri.id,
-              p: tri.p.map(pt => ({ x: pt.x, y: pt.y, z: pt.z }))
+            beingGroup.animState = this.animMover(beingGroup.animState, beingModell.animations)
+            // console.log('card: ' + beingGroup.animState.card + '| cardframe: ' + beingGroup.animState.cardframe, '| cardsegment: ' +  beingGroup.animState.cardsegment)
+
+            console.log('cardframe: ', beingGroup.animState.cardframe)
+            console.log('next cardframe: ', beingGroup.animState.next.cardframe)
+            console.log('---')
+            
+            
+            
+            const nextFrameData = this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.next.cardframe + 1]
+            let actualFrameData = this.game.deepCopy(this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.cardframe])
+
+            // console.log('actualFrameData:')
+            // console.log(actualFrameData)
+                       
+            let actualFrameDataDifference = actualFrameData.map(mesh => ({
+              id: mesh.id,
+              tris: mesh.tris.map(tri => ({
+                id: tri.id,
+                p: tri.p.map(pt => ({
+                  x: Number(pt.x),
+                  y: Number(pt.y),
+                  z: Number(pt.z),
+                }))
+              }))
             }))
-          }));
-          // console.log(dataDifference)
 
-          dataDifference = await this.calcInterpolated(dataDifference, nextFrameData, beingGroup.animState.cardsegment)
-          
-          for (let s = 0; s<beingGroup.animState.cardsegment; s++) {
-            // console.log(s)
-            this.animationState = this.game.deepCopy(actualFrameData)
+            // console.log('actualFrameDataDifference');console.log(actualFrameDataDifference)
 
-            if (s != 0) {
-              for (let row of this.animationState) {
-                if (row?.tris) {
-                  //console.log(row.tris)
-                  for (let tri of row.tris) {
-                    let tri2 = dataDifference.flatMap(obj => obj.tris).find(triangle => triangle.id == tri.id)
-                    if (tri2) {
-                      for (let n = 0; n < 3; n++) {
-                        tri.p[n].x = tri.p[n].x - (tri2.p[n].x * s)
-                        tri.p[n].y = tri.p[n].y - (tri2.p[n].y * s)
-                        tri.p[n].z = tri.p[n].z - (tri2.p[n].z * s)
+            actualFrameDataDifference = await this.calcInterpolated(actualFrameDataDifference, nextFrameData, beingGroup.animState.segmentlength)
+
+            let interpolatedFrame
+            if (beingGroup.animState.cardsegment > 0) {
+              interpolatedFrame = actualFrameData
+
+              // mindig friss deepCopy az aktuális kártyaframe-ből
+              interpolatedFrame = this.game.deepCopy(actualFrameData);
+            
+              if (beingGroup.animState.cardsegment != 0) {
+                for (let row of interpolatedFrame) {
+                  if (row?.tris) {
+                    for (let tri of row.tris) {
+                      let tri2 = actualFrameDataDifference
+                        .flatMap(obj => obj.tris)
+                        .find(triangle => triangle.id == tri.id);
+                      if (tri2) {
+                        for (let n = 0; n < 3; n++) {
+                          tri.p[n].x = tri.p[n].x - (tri2.p[n].x * beingGroup.animState.cardsegment)
+                          tri.p[n].y = tri.p[n].y - (tri2.p[n].y * beingGroup.animState.cardsegment)
+                          tri.p[n].z = tri.p[n].z - (tri2.p[n].z * beingGroup.animState.cardsegment)
+                        }
+                        
                       }
                     }
                   }
                 }
+                console.log(beingGroup.animState.cardsegment)
               }
+
+              
+            } else {
+              console.log('első')
+              interpolatedFrame = actualFrameData
             }
-          }
- 
-          if (this.animationState) {
-            this.syncBeingTrianglesPositions(beingGroup, this.animationState);
+            
+            //let interpolatedFrame = actualFrameData
+
+            this.syncBeingTrianglesPositions(beingGroup, interpolatedFrame);
           }
         }
       }
@@ -116,58 +146,85 @@ export default class Gameplay {
     }
   }
 
-
   animMover(beingData, modelAnim) {
-    // console.log(modelAnim)
-
     const animation = modelAnim.find(anim => anim[0] == beingData.type)
-    if (animation) {
-      // console.log(animation)
-
-      beingData.cardsegment++
-
-      beingData.cardframe = parseInt(animation[1][beingData.card][0])
-      // MAX
-      beingData.maxcard = parseInt(animation[1].length - 1)
-
-      if (beingData.cardsegment == animation[1][beingData.card][1]) {        
-        beingData.cardsegment = 0
-
-        beingData.card++
-
-        if (beingData.card == parseInt(animation[1].length)) {
-          beingData.card = 0;
-          beingData.cardframe = parseInt(animation[1][beingData.card][0])
+    if (!animation) {
+      return {
+        ...beingData,
+        next: {
+          card: beingData.card,
+          cardframe: beingData.cardframe,
+          cardsegment: beingData.cardsegment,
         }
       }
-
-      // console.log('card: ' + beingData.card + '| cardframe: ' + beingData.cardframe, '| cardsegment: ' +  beingData.cardsegment)
     }
-
-    return beingData;
+  
+    const animationList = animation[1]
+  
+    // jelenlegi állapot
+    const thisCard = beingData.card
+    const thisSegment = beingData.cardsegment
+    const segmentLength = parseInt(animationList[thisCard][1])
+  
+    // következő állapot kiszámítása
+    let nextSeg = thisSegment + 1
+    let nextCard = thisCard
+    if (nextSeg == segmentLength) {
+      nextSeg = 0
+      nextCard = (thisCard + 1) % animationList.length
+    }
+    const nextFrame = parseInt(animationList[nextCard][0])
+    const nextSegmentLength = parseInt(animationList[nextCard][1])
+  
+    // tényleges állapot növelése a következő tickre
+    let newCard = thisCard
+    let newSegment = thisSegment + 1
+    let newFrame = parseInt(animationList[newCard][0])
+    if (newSegment == segmentLength) {
+      newSegment = 0
+      newCard = (thisCard + 1) % animationList.length
+      newFrame = parseInt(animationList[newCard][0])
+    }
+  
+    return {
+      ...beingData,
+      card: newCard,
+      cardframe: newFrame,
+      segmentlength: segmentLength,
+      cardsegment: newSegment,
+      next: {
+        card: nextCard,
+        cardframe: nextFrame,
+        segmentlength: nextSegmentLength,
+        cardsegment: nextSeg,
+      }
+    }
   }
 
-  async calcInterpolated(dataDifference, data2, segmentNumber) {
-    for (let row of dataDifference) {
+  async calcInterpolated(actualFrameDataDifference, nextFrameData, segmentlength) {
+    for (let row of actualFrameDataDifference) {
       if (row?.tris) {
         for (let tri of row.tris) {
-          let tri2 = data2.flatMap(obj => obj.tris).find(triangle => triangle.id == tri.id)
+          let tri2 = nextFrameData.flatMap(obj => obj.tris).find(triangle => triangle.id == tri.id)
           if (tri2) {
             for (let n = 0; n < 3; n++) {
-              tri.p[n].x = (tri.p[n].x - tri2.p[n].x) / segmentNumber
-              tri.p[n].y = (tri.p[n].y - tri2.p[n].y) / segmentNumber
-              tri.p[n].z = (tri.p[n].z - tri2.p[n].z) / segmentNumber
+              tri.p[n].x = (tri.p[n].x - tri2.p[n].x) / segmentlength
+              tri.p[n].y = (tri.p[n].y - tri2.p[n].y) / segmentlength
+              tri.p[n].z = (tri.p[n].z - tri2.p[n].z) / segmentlength              
             }
           }
         }
       }
     }
-    return dataDifference;
+    return actualFrameDataDifference;
   }
 
   syncBeingTrianglesPositions(beingGroup, data) {
     if (!beingGroup || !Array.isArray(beingGroup.children)) return;
     if (!Array.isArray(data)) return;
+
+    console.log('ITT')
+    
 
     for (let m = 0; m < data.length; m++) {
       const beingMesh = data[m]

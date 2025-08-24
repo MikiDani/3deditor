@@ -321,7 +321,9 @@ export default class Loader {
               this.game.scene.add(beingGroup)
     
               this.game.loadedBeings[being.id] = beingGroup
-              this.game.loadedBeings[being.id].filename = being.filename
+              this.game.loadedBeings[being.id].filename = being.filename              
+              this.game.loadedBeings[being.id].lastUpdate = performance.now()
+              this.game.loadedBeings[being.id].speed = 50
             }
           });
 
