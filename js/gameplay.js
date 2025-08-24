@@ -44,23 +44,17 @@ export default class Gameplay {
 
         // ANIMATION
         if (beingGroup.animState.type != 'none' && beingGroup.filename == 'zombi3') {   // !! csak zombi
-          console.log('letelt...')
+          // console.log('letelt...')
           if (beingGroup.animState.type != 'none') {
 
             beingGroup.animState = this.animMover(beingGroup.animState, beingModell.animations)
             // console.log('card: ' + beingGroup.animState.card + '| cardframe: ' + beingGroup.animState.cardframe, '| cardsegment: ' +  beingGroup.animState.cardsegment)
 
-            console.log('cardframe: ', beingGroup.animState.cardframe)
-            console.log('next cardframe: ', beingGroup.animState.next.cardframe)
-            console.log('---')
+            const nextFrameData = (beingGroup.animState.cardframe == beingGroup.animState.maxcard)
+            ? this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.firstframe]
+            : this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.cardframe + 1];
             
-            
-            
-            const nextFrameData = this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.next.cardframe + 1]
             let actualFrameData = this.game.deepCopy(this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.cardframe])
-
-            // console.log('actualFrameData:')
-            // console.log(actualFrameData)
                        
             let actualFrameDataDifference = actualFrameData.map(mesh => ({
               id: mesh.id,
@@ -74,17 +68,12 @@ export default class Gameplay {
               }))
             }))
 
-            // console.log('actualFrameDataDifference');console.log(actualFrameDataDifference)
-
             actualFrameDataDifference = await this.calcInterpolated(actualFrameDataDifference, nextFrameData, beingGroup.animState.segmentlength)
 
             let interpolatedFrame
             if (beingGroup.animState.cardsegment > 0) {
-              interpolatedFrame = actualFrameData
+              interpolatedFrame = this.game.deepCopy(actualFrameData)
 
-              // mindig friss deepCopy az aktuális kártyaframe-ből
-              interpolatedFrame = this.game.deepCopy(actualFrameData);
-            
               if (beingGroup.animState.cardsegment != 0) {
                 for (let row of interpolatedFrame) {
                   if (row?.tris) {
@@ -97,22 +86,13 @@ export default class Gameplay {
                           tri.p[n].x = tri.p[n].x - (tri2.p[n].x * beingGroup.animState.cardsegment)
                           tri.p[n].y = tri.p[n].y - (tri2.p[n].y * beingGroup.animState.cardsegment)
                           tri.p[n].z = tri.p[n].z - (tri2.p[n].z * beingGroup.animState.cardsegment)
-                        }
-                        
+                        }       
                       }
                     }
                   }
                 }
-                console.log(beingGroup.animState.cardsegment)
-              }
-
-              
-            } else {
-              console.log('első')
-              interpolatedFrame = actualFrameData
-            }
-            
-            //let interpolatedFrame = actualFrameData
+              }              
+            } else interpolatedFrame = actualFrameData
 
             this.syncBeingTrianglesPositions(beingGroup, interpolatedFrame);
           }
@@ -147,34 +127,13 @@ export default class Gameplay {
   }
 
   animMover(beingData, modelAnim) {
-    const animation = modelAnim.find(anim => anim[0] == beingData.type)
-    if (!animation) {
-      return {
-        ...beingData,
-        next: {
-          card: beingData.card,
-          cardframe: beingData.cardframe,
-          cardsegment: beingData.cardsegment,
-        }
-      }
-    }
-  
+    const animation = modelAnim.find(anim => anim[0] == beingData.type)  
     const animationList = animation[1]
-  
+
     // jelenlegi állapot
     const thisCard = beingData.card
     const thisSegment = beingData.cardsegment
     const segmentLength = parseInt(animationList[thisCard][1])
-  
-    // következő állapot kiszámítása
-    let nextSeg = thisSegment + 1
-    let nextCard = thisCard
-    if (nextSeg == segmentLength) {
-      nextSeg = 0
-      nextCard = (thisCard + 1) % animationList.length
-    }
-    const nextFrame = parseInt(animationList[nextCard][0])
-    const nextSegmentLength = parseInt(animationList[nextCard][1])
   
     // tényleges állapot növelése a következő tickre
     let newCard = thisCard
@@ -188,16 +147,13 @@ export default class Gameplay {
   
     return {
       ...beingData,
+      firstframe: parseInt(animation[1][0][0]),
+      firstsegment: parseInt(animation[1][0][1]),
+      maxcard: parseInt(animation[1].length - 1),
       card: newCard,
       cardframe: newFrame,
       segmentlength: segmentLength,
       cardsegment: newSegment,
-      next: {
-        card: nextCard,
-        cardframe: nextFrame,
-        segmentlength: nextSegmentLength,
-        cardsegment: nextSeg,
-      }
     }
   }
 
@@ -221,10 +177,7 @@ export default class Gameplay {
 
   syncBeingTrianglesPositions(beingGroup, data) {
     if (!beingGroup || !Array.isArray(beingGroup.children)) return;
-    if (!Array.isArray(data)) return;
-
-    console.log('ITT')
-    
+    if (!Array.isArray(data)) return;   
 
     for (let m = 0; m < data.length; m++) {
       const beingMesh = data[m]
@@ -249,11 +202,13 @@ export default class Gameplay {
         pos.setXYZ(2, tri.p[2].x * beingGroup.ratio, tri.p[2].y * beingGroup.ratio, tri.p[2].z * beingGroup.ratio)
         pos.needsUpdate = true
   
+        beingGroup.position.z = beingGroup.position.z + 0.000005  // !!
+
         // beingGroup.ratio = beingGroup.ratio + 0.000005  // hülyeség : )
 
         // Normálok és (ha kell) bounding box frissítése
         // geom.computeVertexNormals()  // ??
-        // geom.computeBoundingBox?.()  // !!!
+        // geom.computeBoundingBox?.()  // !!
       }
     }
   }
