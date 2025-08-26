@@ -267,6 +267,11 @@ export default class Loader {
 
               beingGroup.beingId = being.id
               beingGroup.ratio = being.ratio
+              beingGroup.speed = being.speed
+              beingGroup.energy = being.energy
+              beingGroup.damage = being.damage
+
+              // console.log(being.id, being.ratio, being.speed, being.energy, being.damage)
 
               beingGroup.animState = {
                 'type': being.type,
@@ -323,7 +328,6 @@ export default class Loader {
               this.game.loadedBeings[being.id] = beingGroup
               this.game.loadedBeings[being.id].filename = being.filename              
               this.game.loadedBeings[being.id].lastUpdate = performance.now()
-              this.game.loadedBeings[being.id].speed = 5 // Az editorban kell hozzáadni !
             }
           });
 

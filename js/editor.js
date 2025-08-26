@@ -4148,6 +4148,8 @@ class Editor {
         $("input[name='being-color']").val(selectedBeingData.color); $("input[name='being-intensity']").val(selectedBeingData.intensity); $("input[name='being-distance']").val(selectedBeingData.distance);
         $("select[name='being-edit-color']").val(selectedBeingData.editcolor); $("input[name='being-ratio']").val(selectedBeingData.ratio);
 
+        $("input[name='being-speed']").val(selectedBeingData.speed); $("input[name='being-energy']").val(selectedBeingData.energy); $("input[name='being-damage']").val(selectedBeingData.damage);
+
         // SELECTED BEING ANIMATION NAMES LOAD
         if (clone.beingsList[selectedBeingData.filename].animations) {
           let elements = `<option value="none">None</option>`
@@ -4169,7 +4171,7 @@ class Editor {
 
     // being VARIABLES CHANGE
     // INPUT
-    $(document).on("input", "input[name='selected-being-name'], input[name='being-ratio'], input[name='being-p-X'], input[name='being-p-Y'], input[name='being-p-Z'], input[name='being-color'], input[name='being-intensity'], input[name='being-distance']", function() {
+    $(document).on("input", "input[name='selected-being-name'], input[name='being-ratio'], input[name='being-speed'], input[name='being-energy'], input[name='being-damage'], input[name='being-p-X'], input[name='being-p-Y'], input[name='being-p-Z'], input[name='being-color'], input[name='being-intensity'], input[name='being-distance']", function() {
       let variableName = $(this).attr('data-name')
       let variableMiddle = $(this).attr('data-middle')
       let type = $(this).attr('type');

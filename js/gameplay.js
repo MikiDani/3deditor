@@ -34,28 +34,24 @@ export default class Gameplay {
       const beingModell = this.game.beingsList[beingGroup.filename]
       
       const now = performance.now()
-        
-      // console.log(beingGroup.filename)
-      // console.log(beingGroup.beingId)
-      // console.log(beingGroup.ratio)
 
       if (now - beingGroup.lastUpdate >= Number(beingGroup.speed)) {
         beingGroup.lastUpdate = now
 
+        // console.log(beingGroup.id, beingGroup.filename, beingGroup.beingId, beingGroup.ratio, beingGroup.speed, beingGroup.energy, beingGroup.damage)
+
         // ANIMATION
-        if (beingGroup.animState.type != 'none' && beingGroup.filename == 'zombi3') {   // !! csak zombi
-          // console.log('letelt...')
+        if (true || beingGroup.animState.type != 'none' && (beingGroup.filename == 'zombi3' || beingGroup.filename == 'zombi4')) {   // !! csak zombi
           if (beingGroup.animState.type != 'none') {
 
-            beingGroup.animState = this.animMover(beingGroup.animState, beingModell.animations)
-            // console.log('card: ' + beingGroup.animState.card + '| cardframe: ' + beingGroup.animState.cardframe, '| cardsegment: ' +  beingGroup.animState.cardsegment)
+            beingGroup.animState = this.stepAnimState(beingGroup.animState, beingModell.animations)
+            //console.log('card: ' + beingGroup.animState.card + '| cardframe: ' + beingGroup.animState.cardframe + '| cardsegment: ' + beingGroup.animState.cardsegment)
 
-            const nextFrameData = (beingGroup.animState.cardframe == beingGroup.animState.maxcard)
-            ? this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.firstframe]
-            : this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.cardframe + 1];
-            
-            let actualFrameData = this.game.deepCopy(this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.cardframe])
-                       
+            const actualFrameData = this.game.deepCopy(this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.cardframe])
+            const nextFrameData = this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.nextFrameIndex]
+
+            if (!actualFrameData || !nextFrameData) return;
+
             let actualFrameDataDifference = actualFrameData.map(mesh => ({
               id: mesh.id,
               tris: mesh.tris.map(tri => ({
@@ -126,34 +122,35 @@ export default class Gameplay {
     }
   }
 
-  animMover(beingData, modelAnim) {
-    const animation = modelAnim.find(anim => anim[0] == beingData.type)  
-    const animationList = animation[1]
-
-    // jelenlegi állapot
-    const thisCard = beingData.card
-    const thisSegment = beingData.cardsegment
-    const segmentLength = parseInt(animationList[thisCard][1])
+  stepAnimState(animState, modellAnimations) {
+    const animation = modellAnimations.find(anim => anim[0] == animState.type)
+    const animationList = animation ? animation[1] : []
   
-    // tényleges állapot növelése a következő tickre
-    let newCard = thisCard
-    let newSegment = thisSegment + 1
-    let newFrame = parseInt(animationList[newCard][0])
-    if (newSegment == segmentLength) {
-      newSegment = 0
-      newCard = (thisCard + 1) % animationList.length
-      newFrame = parseInt(animationList[newCard][0])
+    let card = animState.card
+    let cardsegment = animState.cardsegment
+    const segmentlength = parseInt(animationList[card][1])
+  
+    cardsegment++
+    if (cardsegment == segmentlength) {
+      cardsegment = 0
+      card = (card + 1) % animationList.length
     }
   
+    const cardframe = parseInt(animationList[card][0])
+    const maxcard = animationList.length - 1
+
+    const isLastCard = card == maxcard
+    const nextCard = isLastCard ? 0 : card + 1
+    const nextFrameIndex = parseInt(animationList?.[nextCard]?.[0])
+
     return {
-      ...beingData,
-      firstframe: parseInt(animation[1][0][0]),
-      firstsegment: parseInt(animation[1][0][1]),
-      maxcard: parseInt(animation[1].length - 1),
-      card: newCard,
-      cardframe: newFrame,
-      segmentlength: segmentLength,
-      cardsegment: newSegment,
+      ...animState,
+      maxcard,
+      card,
+      cardframe,
+      cardsegment,
+      segmentlength,
+      nextFrameIndex,
     }
   }
 
