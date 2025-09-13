@@ -213,7 +213,7 @@ export class Light {
 }
 
 export class Being {
-    static instanceCount = 0;
+    static instanceCount = 0
     constructor(name = 'noname', boundingBox = null, ratio = 1, position = new Vec3D(0, 0, 0), type = 'none', visible = true, color = '0xffc0cb') {
         Being.instanceCount++
         this.id = Being.instanceCount
@@ -224,15 +224,87 @@ export class Being {
         this.type = type
         this.visible = visible
         this.color = color
+        this.angle = 0
+
+        if (this.boundingBox) {
+            this.boxlines = Being.beingBoxLines(this.boundingBox, this.angle)
+        }
+        //console.log(this.boxlines)
 
         this.editcolor = 'rgba(255, 192, 203, 0.2)'
     }
 
     static setInstanceCount(value) {
-        Being.instanceCount = value;
+        Being.instanceCount = value
     }
 
     static getInstanceCount() {
-        return Being.instanceCount;
+        return Being.instanceCount
+    }
+
+    static rotate(axis, p, rad) {
+        let cos = Math.cos(rad)
+        let sin = Math.sin(rad)
+    
+        switch (axis) {
+            case 'x':
+                return {
+                    x: p.x,
+                    y: p.y * cos - p.z * sin,
+                    z: p.y * sin + p.z * cos
+                }
+            case 'y':
+                return {
+                    x: p.x * cos + p.z * sin,
+                    y: p.y,
+                    z: -p.x * sin + p.z * cos
+                }
+            case 'z':
+                return {
+                    x: p.x * cos - p.y * sin,
+                    y: p.x * sin + p.y * cos,
+                    z: p.z
+                }
+            default:
+                return null
+        }
+    }
+
+    static beingBoxLines(boundingBox, angle) {
+        let rad = angle * (Math.PI / 180);
+        let { x, y, z } = boundingBox
+
+        // 8 csúcs
+        let vertices = [
+            {x:0, y:0, z:0},
+            {x:x, y:0, z:0},
+            {x:0, y:y, z:0},
+            {x:0, y:0, z:z},
+            {x:x, y:y, z:0},
+            {x:x, y:0, z:z},
+            {x:0, y:y, z:z},
+            {x:x, y:y, z:z}
+        ]
+
+        // forgatás minden csúcsra
+        let rotated = vertices.map(v => this.rotate('y', v, rad))
+
+        // élek (12 db)
+        let edges = [
+            [0,1],[0,2],[0,3],
+            [1,4],[1,5],
+            [2,4],[2,6],
+            [3,5],[3,6],
+            [4,7],
+            [5,7],
+            [6,7]
+        ]
+
+        // élvonalak: minden él 2 pontja
+        return edges.map(e => ({
+            from: rotated[e[0]],
+            to: rotated[e[1]]
+        }))
     }
 }
+

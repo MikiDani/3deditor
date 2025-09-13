@@ -6,6 +6,8 @@ export default class Input {
   constructor(game) {
     this.game = game
 
+    this.selectedObjectIndex = 1 // !!! ide kell ?
+
     this.gravity = 0
 
     this.ideiglenesMenuInputs() // ! Ideiglenes
@@ -65,6 +67,12 @@ export default class Input {
   }
 
   async gameControls() {
+
+    // mouse right button off
+    $(document).on("contextmenu", function(event) {
+      event.preventDefault()// console.log("Jobb klikk letiltva!")
+    });
+
     this.setupCameraControls()
     this.mousePointerClickLoader()
 
@@ -116,6 +124,29 @@ export default class Input {
         this.game.currentState = 'inventory'
         this.game.showHideOptions('inventory')
       }
+
+      if (this.game.currentState == 'inventory') {
+        console.log('INVENTORY')
+
+        console.log(e.key)
+
+        if (e.key == ' ') {
+          console.log('space!')
+
+          console.log(this.game.inventory.selectedObjectId)
+          this.game.loadedObjects[this.game.inventory.selectedObjectId].visible = false
+
+          this.selectedObjectIndex = Number(this.selectedObjectIndex) + 1;
+
+          if (this.selectedObjectIndex == 4) this.selectedObjectIndex = 1;
+          console.log(this.selectedObjectIndex)          
+
+          let obj = this.game.loadedObjects.find(obj => obj && obj.index == this.selectedObjectIndex)
+          let objectId = obj ? obj.id : null
+
+          if (objectId) this.game.inventory.selectedObjectId = objectId;
+        }        
+      }
     });
 
     this.game.inputsLoading = true
@@ -140,7 +171,7 @@ export default class Input {
     window.addEventListener('keydown', (e) => {
       if (typeof e.key == 'string') this.game.keysPressed.add(e.key.toLowerCase())
     })
-    
+
     window.addEventListener('keyup', (e) => {
       if (typeof e.key == 'string') this.game.keysPressed.delete(e.key.toLowerCase())
     })
@@ -158,31 +189,63 @@ export default class Input {
     return collides;
   }
 
-  attemptMove(offset) {    
-    const testPosFull = this.game.player.position.clone().add(offset)
+  testMove(offset, allowStep = false) {
+    const player = this.game.player
+    const start = player.position.clone()
 
     if (this.game.ghostMode) {
-      this.game.player.position.add(offset)
-      return true;
-    } 
-
-    if (!this.willCollide(testPosFull)) {
-      this.game.player.position.add(offset)
+      player.position.add(offset)
       return true;
     }
 
-    const testOffsetX = new THREE.Vector3(offset.x, 0, 0)
-    const testPosX = this.game.player.position.clone().add(testOffsetX)
-    const xOK = !this.willCollide(testPosX)
+    // 1) Teljes mozgás
+    const target = start.clone().add(offset)
+    if (!this.willCollide(target)) {
+      player.position.copy(target)
+      return true;
+    }
 
-    const testOffsetZ = new THREE.Vector3(0, 0, offset.z)
-    const testPosZ = this.game.player.position.clone().add(testOffsetZ)
-    const zOK = !this.willCollide(testPosZ)
+    // 2) Tengelyenkénti csúsztatás
+    let moved = false
+    let blocked = false
 
-    if (xOK) this.game.player.position.add(testOffsetX)
-    if (zOK) this.game.player.position.add(testOffsetZ)
+    const dx = new THREE.Vector3(offset.x, 0, 0)
+    const tryX = start.clone().add(dx)
+    if (!this.willCollide(tryX)) {
+      player.position.copy(tryX)
+      moved = true
+    } else blocked = true;
+  
+    const dz = new THREE.Vector3(0, 0, offset.z)
+    const tryZ = player.position.clone().add(dz)
+    if (!this.willCollide(tryZ)) {
+      player.position.copy(tryZ)
+      moved = true
+    } else {
+      blocked = true
+    }
 
-    return xOK || zOK;
+    if (allowStep && blocked) {
+      const originalY = player.position.y
+      const up = new THREE.Vector3(0, this.game.stepHeight, 0)
+
+      const raised = player.position.clone().add(up)
+      if (!this.willCollide(raised)) {
+        const stepTarget = raised.clone().add(offset)
+        if (!this.willCollide(stepTarget)) {
+          const supportProbe = stepTarget.clone().add(new THREE.Vector3(0, -this.game.stepHeight - 0.01, 0))
+          const hasSupport = this.willCollide(supportProbe)
+          if (hasSupport) {
+            player.position.copy(stepTarget)
+            return true
+          }
+        }
+      }
+
+      player.position.y = originalY
+    }
+  
+    return moved
   }
 
   mousePointerClickLoader() {
@@ -219,12 +282,12 @@ export default class Input {
       if (shift) {
         if (!moved) {
           moved = this.game.ghostMode
-          ? this.attemptMove(new THREE.Vector3(0, this.game.moveSpeed, 0)) // UP
-          : this.attemptMove(direction.clone().multiplyScalar(this.game.moveSpeed * 2));
+          ? this.testMove(new THREE.Vector3(0, this.game.moveSpeed, 0)) // UP
+          : this.testMove(direction.clone().multiplyScalar(this.game.moveSpeed * 2), true);
         }
       } else {
         if (!moved) {
-          moved = this.attemptMove(direction.clone().multiplyScalar(this.game.moveSpeed))
+          moved = this.testMove(direction.clone().multiplyScalar(this.game.moveSpeed), true)
         }
       }
     }
@@ -233,12 +296,12 @@ export default class Input {
       if (shift) {
         if (!moved) {
           moved = this.game.ghostMode
-          ? this.attemptMove(new THREE.Vector3(0, -this.game.moveSpeed, 0)) // DOWN
-          : this.attemptMove(direction.clone().multiplyScalar(-this.game.moveSpeed * 2));
+          ? this.testMove(new THREE.Vector3(0, -this.game.moveSpeed, 0)) // DOWN
+          : this.testMove(direction.clone().multiplyScalar(-this.game.moveSpeed * 2));
         }
       } else {
         if (!moved) {
-          moved = this.attemptMove(direction.clone().multiplyScalar(-this.game.moveSpeed))
+          moved = this.testMove(direction.clone().multiplyScalar(-this.game.moveSpeed))
         }
       }
     }
@@ -246,7 +309,7 @@ export default class Input {
     if (this.game.keysPressed.has('a')) {
       if (shift || this.game.isPointerLocked) {
         const left = new THREE.Vector3().crossVectors(this.game.camera.up, direction).normalize().multiplyScalar(this.game.moveSpeed)
-        moved ||= this.attemptMove(left);
+        moved ||= this.testMove(left);
       } else {
         this.game.player.rotation.y += this.game.rotateSpeed
         moved = true
@@ -256,7 +319,7 @@ export default class Input {
     if (this.game.keysPressed.has('d')) {
       if (shift || this.game.isPointerLocked) {
         const right = new THREE.Vector3().crossVectors(direction, this.game.camera.up).normalize().multiplyScalar(this.game.moveSpeed)
-        moved ||= this.attemptMove(right)
+        moved ||= this.testMove(right)
       } else {
         this.game.player.rotation.y -= this.game.rotateSpeed
         moved = true

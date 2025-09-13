@@ -203,6 +203,7 @@ class Editor {
         data: [[]],
         structure: [],
         animations: [],
+        ratio: 1,
         player: {
           x:0,
           y:0,
@@ -230,6 +231,7 @@ class Editor {
       if (!this.map.lights) this.map.lights = [];
 
       if (this.map.animations) delete this.map.animations;
+      if (this.map.ratio) delete this.map.ratio;
     } else if (ext == 'otuc') {
       this.map.type = 'object'
       if (this.map.actions) delete this.map.actions;
@@ -237,6 +239,7 @@ class Editor {
       if (this.map.lights) delete this.map.lights;
 
       if (!this.map.animations) this.map.animations = [];
+      if (!this.map.ratio) this.map.ratio = 1;
     }
 
     console.log(this.map)
@@ -450,8 +453,6 @@ class Editor {
               $(".frame-row").removeClass('bg-actual-frame')
               $(`.frame-row[data-animation-frame-index='${index}']`).addClass('bg-actual-frame')
 
-              // let dataDifference = this.deepCopy(this.map.data[frame])
-
               let dataDifference = this.map.data[frame].map(mesh => ({
                 id: mesh.id,
                 tris: mesh.tris.map(tri => ({
@@ -459,9 +460,6 @@ class Editor {
                   p: tri.p.map(pt => ({ x: pt.x, y: pt.y, z: pt.z }))
                 }))
               }));
-
-              console.log(dataDifference)
-
 
               dataDifference = await this.calcInterpolated(dataDifference, this.map.data[nextFrame], segmentNumber)
 
@@ -472,7 +470,6 @@ class Editor {
                 if (s != 0) {
                   for (let row of this.map.animationState) {
                     if (row?.tris) {
-                      //console.log(row.tris)
                       for (let tri of row.tris) {
                         let tri2 = dataDifference.flatMap(obj => obj.tris).find(triangle => triangle.id == tri.id)
                         if (tri2) {
@@ -595,7 +592,7 @@ class Editor {
       Being.setInstanceCount(this.getMaxId(this.map.beings))
 
       // LOAD OBJECT MODEL IDS AND NAMES
-      let response2 = await this.fetchData({ ajax: true, getobjects: true})      
+      let response2 = await this.fetchData({ ajax: true, getobjects: true})
       if (response2.files) {
         let fileList = response2.files.filter(file => file.extension == 'otuc')
         fileList.filter(file => file.extension == 'otuc').forEach(file => {
@@ -609,9 +606,9 @@ class Editor {
       if (response3.files) {
         let options = ``;
         for(const file of response3.files) {
-          let response4 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension });
-          if (response?.data && response?.structure) {
-            this.beingsList[file.name] = {
+          let response4 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension, beingsdir:'_beings' });
+          if (response4?.data && response4?.structure) {            
+            this.beingsList[file.name] = {  
               'boundingbox': this.graph.getObjectBoundingBoxSize(response4.data[0]).size,
               'animations': response4.animations
             }            
@@ -627,6 +624,8 @@ class Editor {
     if (ext == 'otuc') {
       // LAYERS
       this.map.animations = this.deepCopy(response.animations)
+      this.map.ratio = response.ratio ?? 1;
+      this.refreshRatioInput(this.map.ratio)
     }
   }
 
@@ -639,6 +638,11 @@ class Editor {
 
     $("#modal-ext").val(ext)
     this.mapVariableReset(ext)
+
+    // OBJECT RATIO CONTAINER
+    ext == 'mtuc'
+    ? $("#object-ratio-container").hide()
+    : $("#object-ratio-container").show()
 
     const response = await this.fetchData({ ajax: true, load: true, filename: filename, ext: ext })
     if (response?.data && response?.structure) {
@@ -1258,6 +1262,10 @@ class Editor {
     this.refreshActionSelect()
   }
 
+  refreshRatioInput(ratio) {
+    $('#object-ratio').val(Number(ratio));
+  }
+
   refreshAnimationsList() {    
     if (this.map.animations && typeof this.map.animations == 'object') {
       // animations-list
@@ -1346,9 +1354,10 @@ class Editor {
     if (!this.mouse.selectedBeingId) {
       $("input[name='selected-being-name']").val('');
       $("input[name='being-p-X']").val(''); $("input[name='being-p-Y']").val(''); $("input[name='being-p-Z']").val('');
-      $("input[name='being-color']").val(''); $("input[name='being-intensity']").val(''); $("input[name='being-distance']").val('');
-      $("select[name='being-type']").val('');
       $("select[name='being-edit-color']")[0].selectedIndex = 0;
+      
+      $("input[name='being-angle']").val(''); $("input[name='being-ratio']").val(''); $("select[name='being-speed']").val('');
+      $("select[name='being-energy']").val(''); $("select[name='being-damage']").val('');
 
       $('#being-list ul li').each(function () {
         $(this).removeClass('list-being-selected')
@@ -1681,6 +1690,12 @@ class Editor {
     }
   
     $("#actions .list").html(elements)
+  }
+
+  refreshBeingDataDOM(selectedBeingData) {
+    $("input[name='selected-being-name']").val(selectedBeingData.name)
+    $("input[name='being-p-X']").val(selectedBeingData.p.x); $("input[name='being-p-Y']").val(selectedBeingData.p.y); $("input[name='being-p-Z']").val(selectedBeingData.p.z);
+    $("input[name='being-angle']").val(selectedBeingData.angle); $("input[name='being-color']").val(selectedBeingData.color); $("input[name='being-intensity']").val(selectedBeingData.intensity); $("input[name='being-distance']").val(selectedBeingData.distance); $("select[name='being-edit-color']").val(selectedBeingData.editcolor); $("input[name='being-ratio']").val(selectedBeingData.ratio); $("input[name='being-speed']").val(selectedBeingData.speed); $("input[name='being-energy']").val(selectedBeingData.energy); $("input[name='being-damage']").val(selectedBeingData.damage);
   }
 
   initInputs() {
@@ -2067,6 +2082,12 @@ class Editor {
           $(`.action-selected-box-container[data-action-id='${selectedActionId}']`).html(this.arrayElementMaker(selectedElementName, selectedActionId, animActionRow.conditions[selectedElementName]))
         }
       }
+    });
+
+    // OBJECT RATIO INPUT
+    $("#object-ratio").on('input', function() {
+      clone.map.ratio = Number($(this).val())
+      // console.log(clone.map.ratio)
     });
 
     //////////
@@ -2548,6 +2569,11 @@ class Editor {
       // AJAX LOAD
       if (mode == 'load' && filename) {
         let ext = $(this).attr('data-ext')
+
+        // OBJECT RATIO CONTAINER
+        ext == 'mtuc'
+        ? $("#object-ratio-container").hide()
+        : $("#object-ratio-container").show()
 
         const response = await clone.fetchData({ ajax: true, load: true, filename: filename, ext: ext });
         if (response?.data && response?.structure) {
@@ -3034,6 +3060,7 @@ class Editor {
           clone.mouse.selectedBeingData.p[view.vX] = pos.vx
           clone.mouse.selectedBeingData.p[view.vY] = pos.vy
 
+          clone.refreshBeingDataDOM(clone.mouse.selectedBeingData)
           clone.fullRefreshCanvasGraphics()
 
         } else if (clone.mouse.selectedLightId && clone.mouse.mode == 'origo') {
@@ -3504,12 +3531,10 @@ class Editor {
     });
 
     $(`select[name='tri-normal']`).on('input focus', function () {
-      if (typeof clone.mouse.selectedTri.id !== 'undefined') {
-        let value = $(this).val()
-        if (typeof value === 'undefined') value = false;
-        if (value === 'false') value = false;
-        if (value === 'true') value = true;
-        console.log(value)
+      if (typeof clone.mouse.selectedTri.id !== 'undefined') {        
+        const raw = $(this).val()
+        const value = raw === "true" ? true : raw === "false" ? false : undefined        
+        // console.log(value)
         clone.mouse.selectedTri.normal = value
         clone.fullRefreshCanvasGraphics()
       }
@@ -3521,7 +3546,7 @@ class Editor {
         if (typeof value === 'undefined') value = false;
         if (value === 'false') value = false;
         if (value === 'true') value = true;
-        console.log(value)
+        // console.log(value)
         clone.mouse.selectedTri.transparent = value
         clone.fullRefreshCanvasGraphics()
       }
@@ -4088,6 +4113,10 @@ class Editor {
     $(document).on('click', '#being-add-new', function() {
       let name = $("select[name='new-being-selector']").val()
 
+      console.log(name)
+      console.log(clone.beingsList)
+      
+
       if (clone.beingsList[name]) {
         let position = new Vec3D(0, 0, 0)        
         let newbeing = new Being(name, clone.beingsList[name].boundingbox, 1, position, 'none', true, '0xffddaa')
@@ -4142,13 +4171,10 @@ class Editor {
         $('#being-list ul li').each(function () {$(this).removeClass('list-being-selected')});
         $(this).addClass('list-being-selected')
 
-        $("input[name='selected-being-name']").val(selectedBeingData.name)
-        $("input[name='being-p-X']").val(selectedBeingData.p.x); $("input[name='being-p-Y']").val(selectedBeingData.p.y); $("input[name='being-p-Z']").val(selectedBeingData.p.z);
+        if (typeof selectedBeingData.angle == 'undefined' || selectedBeingData.angle == 'null' || selectedBeingData.angle == null) selectedBeingData.angle = 0;
+        if (typeof selectedBeingData.speed == 'undefined' || selectedBeingData.speed == 'null' || selectedBeingData.speed == null) selectedBeingData.speed = 10;
 
-        $("input[name='being-color']").val(selectedBeingData.color); $("input[name='being-intensity']").val(selectedBeingData.intensity); $("input[name='being-distance']").val(selectedBeingData.distance);
-        $("select[name='being-edit-color']").val(selectedBeingData.editcolor); $("input[name='being-ratio']").val(selectedBeingData.ratio);
-
-        $("input[name='being-speed']").val(selectedBeingData.speed); $("input[name='being-energy']").val(selectedBeingData.energy); $("input[name='being-damage']").val(selectedBeingData.damage);
+        clone.refreshBeingDataDOM(clone.mouse.selectedBeingData)
 
         // SELECTED BEING ANIMATION NAMES LOAD
         if (clone.beingsList[selectedBeingData.filename].animations) {
@@ -4171,7 +4197,7 @@ class Editor {
 
     // being VARIABLES CHANGE
     // INPUT
-    $(document).on("input", "input[name='selected-being-name'], input[name='being-ratio'], input[name='being-speed'], input[name='being-energy'], input[name='being-damage'], input[name='being-p-X'], input[name='being-p-Y'], input[name='being-p-Z'], input[name='being-color'], input[name='being-intensity'], input[name='being-distance']", function() {
+    $(document).on("input", "input[name='selected-being-name'], input[name='being-ratio'], input[name='being-speed'], input[name='being-energy'], input[name='being-damage'], input[name='being-p-X'], input[name='being-p-Y'], input[name='being-p-Z'], input[name='being-angle'], input[name='being-color'], input[name='being-intensity'], input[name='being-distance']", function() {
       let variableName = $(this).attr('data-name')
       let variableMiddle = $(this).attr('data-middle')
       let type = $(this).attr('type');
@@ -4182,6 +4208,11 @@ class Editor {
       if (variableName == 'color') {
         let bgColor = clone.isValidHex(value) ? value : 'ffffff';
         $(this).css("background-color", `#${bgColor}`)
+      }
+
+      // ROTATE BEING
+      if (variableName == 'angle') {
+        clone.mouse.selectedBeingData.boxlines = Being.beingBoxLines(clone.mouse.selectedBeingData.boundingBox, clone.mouse.selectedBeingData[variableName])        
       }
       clone.fullRefreshCanvasGraphics()
     });
@@ -5619,7 +5650,7 @@ class Editor {
         }
       }
 
-      // POS ORIGO
+      // POS FULL AXIS ORIGO
       view.ctx.fillStyle = 'green';
       view.ctx.beginPath(); view.ctx.arc(view.posX, view.posY, 3, 0, 2 * Math.PI); view.ctx.fill();
 
@@ -5666,13 +5697,7 @@ class Editor {
 
               if (!being.ratio) being.ratio = 1
 
-              let beginXs = view.posX + being.p[view.vX] * view.ratio
-              let beginYs = view.posY + being.p[view.vY] * view.ratio
-
-              let beginXe = view.posX + being.p[view.vX] * view.ratio + being.boundingBox[view.vX] * being.ratio * view.ratio   // being.p[view.vX]
-              let beginYe = view.posY + being.p[view.vY] * view.ratio + being.boundingBox[view.vY] * being.ratio * view.ratio   // being.p[view.vY]
-
-              view.ctx.setLineDash([10, 4, 2, 4])
+              view.ctx.setLineDash([10, 4, 2, 4]) // line design
 
               view.ctx.beginPath()
               if (being.id == this.mouse.selectedBeingId) {
@@ -5685,13 +5710,20 @@ class Editor {
                 view.ctx.lineWidth = 3
               }
 
-              /*  KELL MAJD HA FORGATNI KELL !!!
+              // DRAW BEING LINES
+              being.boxlines.forEach(row => {
+                view.ctx.beginPath()
 
-              */
+                let beginXs = view.posX + (being.p[view.vX] + (row.from[view.vX] * being.ratio)) * view.ratio
+                let beginYs = view.posY + (being.p[view.vY] + (row.from[view.vY] * being.ratio)) * view.ratio
 
-              view.ctx.rect(beginXs, beginYs, beginXe - beginXs, beginYe - beginYs)
-              view.ctx.fill()
-              view.ctx.stroke()
+                let beginXe = view.posX + (being.p[view.vX] + (row.to[view.vX] * being.ratio)) * view.ratio
+                let beginYe = view.posY + (being.p[view.vY] + (row.to[view.vY] * being.ratio)) * view.ratio
+
+                view.ctx.moveTo(beginXs, beginYs)
+                view.ctx.lineTo(beginXe, beginYe)
+                view.ctx.stroke()
+              });
             }
           });
         }

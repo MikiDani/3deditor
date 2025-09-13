@@ -640,7 +640,7 @@ export class Graphics {
       triTransformed.texture = tri.texture
       triTransformed.light = tri.light
       triTransformed.rgba = tri.rgba
-      triTransformed.normal = tri.normal
+      triTransformed.normal = Boolean(tri.normal)
 
       // Get lines either side of triangle
 			let line1 = this.vector_Sub(triTransformed.p[1], triTransformed.p[0])
@@ -648,31 +648,20 @@ export class Graphics {
 
 			// Take cross product of lines to get normal to triangle surface
 			let normal = this.vector_CrossProduct(line1, line2)
-			// You normally need to normalise a normal!
 			normal = this.vector_Normalise(normal)
 
       let vCameraRay = this.vector_Sub(triTransformed.p[0], this.vCamera)
 
       // CHECK NORMALS // if (normal.z < 0) // If ray is aligned with normal, then triangle is visible
-      if ((triTransformed.normal != 'true') || (this.vector_DotProduct(normal, vCameraRay) < 0)) {
-      
-      // if (this.vector_DotProduct(normal, vCameraRay)) {
-
-        // Illumination
-        this.lightDirection = this.vector_Normalise(this.lightDirection)
-
-        // How similar is normal to light direction
-        let maplight = this.vector_DotProduct(this.lightDirection, normal)  // !!!
+      if ((triTransformed.normal != true) || (this.vector_DotProduct(normal, vCameraRay) < 0)) {      
+        this.lightDirection = this.vector_Normalise(this.lightDirection)        
+        let maplight = this.vector_DotProduct(this.lightDirection, normal)
 
         let triViewed = new Triangle()
         triViewed.p[0] = this.matrix_MultiplyVector(this.matView, triTransformed.p[0])
 				triViewed.p[1] = this.matrix_MultiplyVector(this.matView, triTransformed.p[1])
 				triViewed.p[2] = this.matrix_MultiplyVector(this.matView, triTransformed.p[2])
-        /*
-        triViewed.t[0] = triTransformed.t[0]
-        triViewed.t[1] = triTransformed.t[1]
-        triViewed.t[2] = triTransformed.t[2]
-        */
+
         for (let i = 0; i < 3; i++) {
           const p = this.matrix_MultiplyVector(this.matView, triTransformed.p[i]);
           triViewed.p[i] = p;

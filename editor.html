@@ -136,6 +136,19 @@
                 <button id="clipboard-button" type="button" class="hover-pointer">Insert</button>
             </div>
 
+            <div id="object-ratio-container" class="title-box flex-between flex-column" style="display:block;">
+                <div class="d-inline-block w-45 p-0 m-0 d-flex justify-content-between align-items-center">
+                    <!--                     
+                    <span class="text-small">Valami</span>
+                    <input type="number" min="0.1" max="9" step="0.1" id="object-ratio" class="input-name">
+                     -->
+                </div>
+                <div class="d-inline-block w-45 p-0 m-0 d-flex justify-content-between align-items-center">
+                    <span class="text-small">Ratio</span>
+                    <input id="object-ratio" type="number" min="0.1" max="9" step="0.1" class="input-style-1">
+                </div>
+            </div>
+
             <!-- ANIMATIONS -->
             <div id="animations" style="display:none;">
                 <div id="frames-list-head" class="title-box flex-between">
@@ -333,6 +346,9 @@
                             <div class="side-row">
                                 <span class="w-70">pZ: </span><input class="w-30" type="number" name="being-p-Z" data-name="z" data-middle="p" min="-10000" max="10000" step="0.1" value="0">
                             </div>
+                            <div class="side-row">
+                                <span class="w-70">Angle</span><input type="number" name="being-angle" autocomplete="off" data-name="angle" class="input-name w-40 text-end">
+                            </div>
                         </div>
                         <div class="right-side">
                             <div class="side-row">
@@ -343,7 +359,7 @@
                             </div>
                             <div class="side-row">
                                 <span class="text-start text-small ps-2">Ratio</span>
-                                <input type="number" name="being-ratio" autocomplete="off" data-name="ratio" class="input-name w-40 text-end">
+                                <input type="number" name="being-ratio" autocomplete="off" data-name="ratio" step="0.1" class="input-name w-40 text-end">
                             </div>
                             <div class="side-row">
                                 <span class="text-start text-small ps-2">Speed</span>
@@ -407,16 +423,16 @@
                     <div class="right-screen-options">
                         <div class="side-row">
                             <div class="number-container">
-                                <div class="size-number-box" data-mode="mesh" data-number="0.001">0.001</div>
-                                <div class="size-number-box" data-mode="mesh" data-number="0.005">0.005</div>
-                                <div class="size-number-box" data-mode="mesh" data-number="0.025">0.025</div>
-                                <div class="size-number-box" data-mode="mesh" data-number="0.05">0.05</div>
-                                <div class="size-number-box" data-mode="mesh" data-number="0.1">0.1</div>
+                                <div class="size-number-box" data-mode="mesh" data-number="0.001953125">0.001~</div>
+                                <div class="size-number-box" data-mode="mesh" data-number="0.00390625">0.003~</div>
+                                <div class="size-number-box" data-mode="mesh" data-number="0.0078125">0.007~</div>
+                                <div class="size-number-box" data-mode="mesh" data-number="0.015625">0.015~</div>
+                                <div class="size-number-box" data-mode="mesh" data-number="0.03125">0.031~</div>
+                                <div class="size-number-box" data-mode="mesh" data-number="0.0625">0.062~</div>
+                                <div class="size-number-box" data-mode="mesh" data-number="0.125">0.125</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="0.25">0.25</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="0.5">0.5</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="1">1</div>
-                                <div class="size-number-box" data-mode="mesh" data-number="1.25">1.25</div>
-                                <div class="size-number-box" data-mode="mesh" data-number="1.5">1.5</div>
                             </div>
                         </div>
                         <div class="left-side">
@@ -627,16 +643,16 @@
                         </div>
                         <div class="side-row">
                             <div class="number-container">
-                                <div class="size-number-box" data-mode="rectangle" data-number="0.001">0.001</div>
-                                <div class="size-number-box" data-mode="rectangle" data-number="0.005">0.005</div>
-                                <div class="size-number-box" data-mode="rectangle" data-number="0.025">0.025</div>
-                                <div class="size-number-box" data-mode="rectangle" data-number="0.05">0.05</div>
-                                <div class="size-number-box" data-mode="rectangle" data-number="0.1">0.1</div>
+                                <div class="size-number-box" data-mode="rectangle" data-number="0.001953125">0.001~</div>
+                                <div class="size-number-box" data-mode="rectangle" data-number="0.00390625">0.003~</div>
+                                <div class="size-number-box" data-mode="rectangle" data-number="0.0078125">0.007~</div>
+                                <div class="size-number-box" data-mode="rectangle" data-number="0.015625">0.015~</div>
+                                <div class="size-number-box" data-mode="rectangle" data-number="0.03125">0.031~</div>
+                                <div class="size-number-box" data-mode="rectangle" data-number="0.0625">0.062~</div>
+                                <div class="size-number-box" data-mode="rectangle" data-number="0.125">0.125</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="0.25">0.25</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="0.5">0.5</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="1">1</div>
-                                <div class="size-number-box" data-mode="rectangle" data-number="1.5">1.5</div>
-                                <div class="size-number-box" data-mode="rectangle" data-number="1.25">1.25</div>
                             </div>
                         </div>
                         <div class="left-side mt-3">

@@ -25,10 +25,14 @@ export default class Game {
     this.ghostMode
 
     this.beingsList = []
+    this.objectsList = []
+
+    this.playerObjects = []
 
     this.loadedTextures = {}
     this.loadedLights = []
     this.loadedBeings = []
+    this.loadedObjects = []
     this.loadedMeshs = []
 
     this.config = {}
@@ -42,13 +46,14 @@ export default class Game {
     this.currentGravity = -0.05,
     this.gravityValue = 0.05,
 
-    this.playerObjects = []
+
+    this.stepHeight = 0.2
 
     // ---
     this.boundingBoxes = []
     this.playerBoundingBox = new THREE.Vector3(0.3, 1, 0.3)
 
-    this.renderInterval = 20
+    this.renderInterval = 20  // 20
 
     // HELP 
     this.ghostMode = false
@@ -77,7 +82,7 @@ export default class Game {
     this.inventory = new Inventory(this)
     this.gameplay = new Gameplay(this)
     this.input = new Input(this)
-    
+
     // Ha új betöltés lenne, init akkor már nem tölti be amit nem kell
     if (!this.generalLoading) await this.loader.generalLoader(false);
     if (this.loadingError) { this.loadingErrorAction(); return; }
@@ -164,8 +169,8 @@ export default class Game {
       </div>`)
     this.$menu = $(`
       <div id="menu-container">
-      <div class="full-size bg-dark d-flex justify-content-center align-items-center">
-        <div class="delta-time-menu text-white"></div>
+        <div class="full-size d-flex justify-content-center align-items-center">
+          <div class="delta-time-menu text-white"></div>
           <button class="btn btn-primary rounded-0" data-bs-toggle="modal" data-bs-target="#myModal">
             Join the menu
           </button>
@@ -205,8 +210,11 @@ export default class Game {
       <div class="delta-time-game text-white"></div>`)
 
     this.$inventory = $(`
-    <div id="inventory-container" class="bg-success">
-      <h4>Inventory</h4>
+    <div id="inventory-container">
+      <h4 class="w-100 text-center">Inventory</h4>
+
+      <canvas id="inventory-3d-canvas"></canvas>
+
       <div class="delta-time-inventory text-white"></div>
       <div class="inventory-list text-white fw-bold"></div>
     </div>`)
@@ -224,21 +232,16 @@ export default class Game {
   }
 
   async loop(timestamp = 0) {
-    requestAnimationFrame((timestamp) => this.loop(timestamp))
-  
-    if (!this.lastRenderTime) this.lastRenderTime = timestamp
-    const delta = timestamp - this.lastRenderTime
-
     // FIRST LOAD OF MAP | MAPLOADED + ANIMATED START
     if (this.currentState == 'game' && !this.mapLoading) {
-      try {
-        this.mapLoading = true
-        await this.loader.mapLoader()
-        // console.log(this.loadedMeshs)
-      } catch(e) {
-        this.loadingErrorAction(); return;
-      }
+      this.$loading.show()
+      await this.loader.mapLoader()  
+      this.$loading.hide()
     }
+
+    requestAnimationFrame((timestamp) => this.loop(timestamp))
+    if (!this.lastRenderTime) this.lastRenderTime = timestamp
+    const delta = timestamp - this.lastRenderTime
 
     switch (this.currentState) {
       case 'menu':
@@ -246,14 +249,14 @@ export default class Game {
         break
       case 'game':
         if (delta >= this.renderInterval) {
-          await this.gameplay.update(delta)
+          if (this.mapLoading) await this.gameplay.update(delta)
           this.lastRenderTime = timestamp
         }
         break
       case 'inventory':
         this.inventory.update(delta)
         break
-    }  
+    }
   }
 
   loadingErrorAction() {    

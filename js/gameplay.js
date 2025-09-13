@@ -4,16 +4,10 @@ import $ from 'jquery'
 export default class Gameplay {
   constructor(game) {
     this.game = game
-    this.counter = 0
   }
 
   async update(deltaTime) {
-    this.counter++
-
-    if (this.counter > 5) {
-      $(".delta-time-game").html(deltaTime.toFixed(1))
-      this.counter = 0
-    }
+   $(".delta-time-game").html(deltaTime.toFixed(1))
 
     // GRAVITI RESPONE
     if (this.game.player.position.y < -5) this.game.player.position.y = 5;  // !!
@@ -27,79 +21,73 @@ export default class Gameplay {
     await this.game.renderer.render(this.game.scene, this.game.camera)
   }
 
-  async updateBeings() {
+  async updateBeings() {    
     for (let [id, beingGroup] of Object.entries(this.game.loadedBeings)) {
       
       const beingId = Number(id)
       const beingModell = this.game.beingsList[beingGroup.filename]
-      
-      const now = performance.now()
 
+      // ANIMATION
+      const now = performance.now()
       if (now - beingGroup.lastUpdate >= Number(beingGroup.speed)) {
         beingGroup.lastUpdate = now
-
         // console.log(beingGroup.id, beingGroup.filename, beingGroup.beingId, beingGroup.ratio, beingGroup.speed, beingGroup.energy, beingGroup.damage)
+        if (beingGroup.animState.type != 'none') {
+          beingGroup.animState = this.stepAnimState(beingGroup.animState, beingModell.animations)
+          // console.log('card: ' + beingGroup.animState.card + '| cardframe: ' + beingGroup.animState.cardframe + '| cardsegment: ' + beingGroup.animState.cardsegment)
 
-        // ANIMATION
-        if (true || beingGroup.animState.type != 'none' && (beingGroup.filename == 'zombi3' || beingGroup.filename == 'zombi4')) {   // !! csak zombi
-          if (beingGroup.animState.type != 'none') {
+          const actualFrameData = this.game.deepCopy(this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.cardframe])
+          const nextFrameData = this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.nextFrameIndex]
 
-            beingGroup.animState = this.stepAnimState(beingGroup.animState, beingModell.animations)
-            //console.log('card: ' + beingGroup.animState.card + '| cardframe: ' + beingGroup.animState.cardframe + '| cardsegment: ' + beingGroup.animState.cardsegment)
+          if (!actualFrameData || !nextFrameData) return;
 
-            const actualFrameData = this.game.deepCopy(this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.cardframe])
-            const nextFrameData = this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.nextFrameIndex]
-
-            if (!actualFrameData || !nextFrameData) return;
-
-            let actualFrameDataDifference = actualFrameData.map(mesh => ({
-              id: mesh.id,
-              tris: mesh.tris.map(tri => ({
-                id: tri.id,
-                p: tri.p.map(pt => ({
-                  x: Number(pt.x),
-                  y: Number(pt.y),
-                  z: Number(pt.z),
-                }))
+          let actualFrameDataDifference = actualFrameData.map(mesh => ({
+            id: mesh.id,
+            tris: mesh.tris.map(tri => ({
+              id: tri.id,
+              p: tri.p.map(pt => ({
+                x: Number(pt.x),
+                y: Number(pt.y),
+                z: Number(pt.z),
               }))
             }))
+          }))
 
-            actualFrameDataDifference = await this.calcInterpolated(actualFrameDataDifference, nextFrameData, beingGroup.animState.segmentlength)
+          actualFrameDataDifference = await this.calcInterpolated(actualFrameDataDifference, nextFrameData, beingGroup.animState.segmentlength)
 
-            let interpolatedFrame
-            if (beingGroup.animState.cardsegment > 0) {
-              interpolatedFrame = this.game.deepCopy(actualFrameData)
+          let interpolatedFrame
+          if (beingGroup.animState.cardsegment > 0) {
+            interpolatedFrame = this.game.deepCopy(actualFrameData)
 
-              if (beingGroup.animState.cardsegment != 0) {
-                for (let row of interpolatedFrame) {
-                  if (row?.tris) {
-                    for (let tri of row.tris) {
-                      let tri2 = actualFrameDataDifference
-                        .flatMap(obj => obj.tris)
-                        .find(triangle => triangle.id == tri.id);
-                      if (tri2) {
-                        for (let n = 0; n < 3; n++) {
-                          tri.p[n].x = tri.p[n].x - (tri2.p[n].x * beingGroup.animState.cardsegment)
-                          tri.p[n].y = tri.p[n].y - (tri2.p[n].y * beingGroup.animState.cardsegment)
-                          tri.p[n].z = tri.p[n].z - (tri2.p[n].z * beingGroup.animState.cardsegment)
-                        }       
-                      }
+            if (beingGroup.animState.cardsegment != 0) {
+              for (let row of interpolatedFrame) {
+                if (row?.tris) {
+                  for (let tri of row.tris) {
+                    let tri2 = actualFrameDataDifference
+                      .flatMap(obj => obj.tris)
+                      .find(triangle => triangle.id == tri.id);
+                    if (tri2) {
+                      for (let n = 0; n < 3; n++) {
+                        tri.p[n].x = tri.p[n].x - (tri2.p[n].x * beingGroup.animState.cardsegment)
+                        tri.p[n].y = tri.p[n].y - (tri2.p[n].y * beingGroup.animState.cardsegment)
+                        tri.p[n].z = tri.p[n].z - (tri2.p[n].z * beingGroup.animState.cardsegment)
+                      }       
                     }
                   }
                 }
-              }              
-            } else interpolatedFrame = actualFrameData
+              }
+            }              
+          } else interpolatedFrame = actualFrameData
 
-            this.syncBeingTrianglesPositions(beingGroup, interpolatedFrame);
-          }
+          this.syncBeingTrianglesPositions(beingGroup, interpolatedFrame)
         }
       }
 
-      // MOVE
-      if (false) this.moveObjectInMap(beingId, beingGroup, new THREE.Vector3(0.01, 0, 0))
+      // ROTATE + MOVE
+      this.beingReactions(beingGroup)
 
       // GRAVITY
-      if (true) this.applyGravity(beingGroup, beingId);
+      if (true) this.applyGravity(beingGroup, beingId)
 
       if (beingGroup.position.y < -1) { beingGroup.position.y = 2; beingGroup.position.x = -3; }
 
@@ -199,35 +187,97 @@ export default class Gameplay {
         pos.setXYZ(2, tri.p[2].x * beingGroup.ratio, tri.p[2].y * beingGroup.ratio, tri.p[2].z * beingGroup.ratio)
         pos.needsUpdate = true
   
-        beingGroup.position.z = beingGroup.position.z + 0.000005  // !!
-
         // beingGroup.ratio = beingGroup.ratio + 0.000005  // hülyeség : )
 
-        // Normálok és (ha kell) bounding box frissítése
         // geom.computeVertexNormals()  // ??
-        // geom.computeBoundingBox?.()  // !!
+        geom.computeBoundingBox?.()  // !!
       }
     }
   }
 
-  moveObjectInMap(objId, object, newPosCords) {
-    const newPos = object.position.clone().add(newPosCords)
-
-    // MAKE TESTBOX
-    const tempGroup = object.clone()
-    tempGroup.position.copy(newPos)
-    tempGroup.updateMatrixWorld(true)
-    const testBox = new THREE.Box3().setFromObject(tempGroup)
-
-    // CHECK CRASH
-    const collision = this.checkCrash(testBox, objId)
-
-    if (!collision) {
-      // IF NO CRASH WE MOVING
-      object.position.copy(newPos)
+  beingReactions(beingGroup) {
+    // MOVE
+    switch (beingGroup.animState.type) {
+      case('MOVE'):
+        switch (beingGroup.filename) {
+          case('zombi-t'):
+            this.rotateAndMoveInPlayer(beingGroup, true, true) // rotate, move
+            break;
+          case('bat'):
+            this.rotateAndMoveInPlayer(beingGroup, true, false) // rotate, move
+            break;
+        }
+      break;
+      case('ATTACK'):
+        switch (beingGroup.filename) {
+          case('zombi4'):
+            // ATTACK ZOMBIE
+            break;
+          case('bat'):
+            // ATTACK BAT
+            break;
+        }
+      break;
     }
   }
+
+  rotateAndMoveInPlayer(beingGroup, rotateOn, moveOn) {
+    const playerPos = this.game.player.position.clone()
+    const beingPos = beingGroup.position.clone()
+    const dirToPlayer = playerPos.clone().sub(beingPos).normalize()
+
+    // ROTATE SECTION
+    if (rotateOn) {  
+      const targetAngle = Math.atan2(dirToPlayer.x, dirToPlayer.z)
+      const currentAngle = beingGroup.rotation.y
   
+      let angleDiff = targetAngle - currentAngle
+      angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
+  
+      if (Math.abs(angleDiff) > THREE.MathUtils.degToRad(1)) {
+        const step = THREE.MathUtils.degToRad(1)
+        if (angleDiff > 0) beingGroup.rotation.y += step; else beingGroup.rotation.y -= step;
+      } else beingGroup.rotation.y = targetAngle;
+    }
+
+    // MOVE SECTION
+    if (moveOn) {
+      // CHECK DISTANCE
+      const distanceToPlayer = beingGroup.position.distanceTo(this.game.player.position)
+      if (distanceToPlayer <= 0.8) {
+        return;
+      }
+
+      dirToPlayer.y = 0
+      if (dirToPlayer.lengthSq() > 0) dirToPlayer.normalize();
+
+      const moveStep = dirToPlayer.clone().multiplyScalar(beingGroup.speed / 1000)
+      const tempGroup = beingGroup.clone()
+      tempGroup.position.copy(beingGroup.position.clone().add(moveStep).add(new THREE.Vector3(0, this.game.gravityValue, 0)))
+      tempGroup.updateMatrixWorld(true)
+
+      // CHECK CRASH
+      const testBox = new THREE.Box3().setFromObject(tempGroup)
+      const collision = this.checkCrash(testBox, beingGroup.beingId)
+      if (!collision) {
+        beingGroup.position.add(moveStep)
+      } else {
+        const stepHeight = this.game.stepHeight
+        const tempGroup2 = tempGroup.clone()
+        tempGroup2.position.copy(
+          beingGroup.position.clone().add(moveStep).add(new THREE.Vector3(0, stepHeight, 0))
+        )
+        tempGroup2.updateMatrixWorld(true)
+
+        const testBox2 = new THREE.Box3().setFromObject(tempGroup2)
+        const collision2 = this.checkCrash(testBox2, beingGroup.beingId)
+        if (!collision2) {
+          beingGroup.position.add(moveStep).y += stepHeight
+        }
+      }
+    }
+  }
+
   checkCrash(testBox, ignoreBeingId = null) {
     // PLAYER CHECK HIT
     const half = this.game.playerBoundingBox.clone(); // Vector3 (0.3, 1, 0.3)
@@ -259,32 +309,24 @@ export default class Gameplay {
     return false;
   }
 
-  // ==== SEGÉDFÜGGVÉNY: Gravitáció ====
-  applyGravity(objectGroup, id = null, fallSpeed = 0.01) {
+  applyGravity(objectGroup, id = null) {
     if (!objectGroup.box) return;
 
-    // jelenlegi pozíció
-    const newPos = objectGroup.position.clone();
-    newPos.y -= fallSpeed;
+    const newPos = objectGroup.position.clone()
+    newPos.y -= this.game.gravityValue
 
-    // teszt doboz a lejjebb lévő pozícióra
-    const tempGroup = objectGroup.clone();
-    tempGroup.position.copy(newPos);
-    tempGroup.updateMatrixWorld(true);
+    const tempGroup = objectGroup.clone()
+    tempGroup.position.copy(newPos)
+    tempGroup.updateMatrixWorld(true)
 
-    const testBox = new THREE.Box3().setFromObject(tempGroup);
+    const testBox = new THREE.Box3().setFromObject(tempGroup)
 
-    // van-e ütközés?
-    const collision = this.checkCrash(testBox, id);
+    // CHECK CRASH
+    const collision = this.checkCrash(testBox, id)
+    if (!collision) objectGroup.position.copy(newPos);
 
-    if (!collision) {
-      // ha nem ütközik, tényleg leesik
-      objectGroup.position.copy(newPos);
-    }
-
-    // boundingBox újraszámolás
-    objectGroup.updateMatrixWorld(true);
-    objectGroup.box.setFromObject(objectGroup);
+    objectGroup.updateMatrixWorld(true)
+    objectGroup.box.setFromObject(objectGroup)
 
     if (objectGroup.helper) {
       objectGroup.helper.box.copy(objectGroup.box);
@@ -424,10 +466,11 @@ export default class Gameplay {
           mesh.openConfig = {
             state: false,
             min: 0,
-            max: 45,
+            max: 90,
             value: 0,
+            waiting: 10,
             valueadd: null,
-            addedStep: 0.05,
+            addedStep: 0.025,
             addedValue: null,
             offsetTypeX: 'min',
             offsetTypeY: 'min',
@@ -443,10 +486,11 @@ export default class Gameplay {
           mesh.openConfig = {
             state: false,
             min: 0,
-            max: 45,
+            max: 90,
             value: 0,
+            waiting: 10,
             valueadd: null,
-            addedStep: 0.05,
+            addedStep: 0.025,
             addedValue: null,
             offsetTypeX: 'min',
             offsetTypeY: 'min',
@@ -462,10 +506,11 @@ export default class Gameplay {
           mesh.openConfig = {
             state: false,
             min: 0,
-            max: 45,
+            max: 90,
             value: 0,
+            waiting: 10,
             valueadd: null,
-            addedStep: -0.05,
+            addedStep: -0.025,
             addedValue: null,
             offsetTypeX: 'max',
             offsetTypeY: 'min',
@@ -513,43 +558,49 @@ export default class Gameplay {
 
       mesh.timeInterval = setInterval(() => {
         // TEST NEXT MOVE
-        const tempRotation = mesh.container.rotation.y + mesh.openConfig.addedValue
-        const clone = mesh.container.clone(true)
-        clone.rotation.y = tempRotation
-        const testBox = new THREE.Box3().setFromObject(clone)
-        const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
-        if (testBox.intersectsBox(playerBox)) {
-          clearInterval(mesh.timeInterval)  // talan mashogy
-          mesh.timeInterval = null          // talan mashogy
-          return;
+        const now = performance.now()
+        if (mesh.lastUpdate === undefined) mesh.lastUpdate = now - (mesh.openConfig.waiting * 2);
+
+        if (now - mesh.lastUpdate >= mesh.openConfig.waiting) {
+          mesh.lastUpdate = now          
+          const tempRotation = mesh.container.rotation.y + mesh.openConfig.addedValue
+          const clone = mesh.container.clone(true)
+          clone.rotation.y = tempRotation
+          const testBox = new THREE.Box3().setFromObject(clone)
+          const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
+          if (testBox.intersectsBox(playerBox)) {
+            clearInterval(mesh.timeInterval)  // talan mashogy
+            mesh.timeInterval = null          // talan mashogy
+            return;
+          }
+
+          // MOVE AND REFRESH
+          mesh.container.rotation.y = tempRotation
+          mesh.openConfig.value += mesh.openConfig.valueAdd
+
+          // CLAMP VALUE
+          mesh.openConfig.value = Math.max(
+            mesh.openConfig.min,
+            Math.min(mesh.openConfig.max, mesh.openConfig.value)
+          )
+
+          // REFRESH BOUNDING BOX FRISSÍTÉS
+          const updatedBox = new THREE.Box3().setFromObject(mesh.container)
+          const index = this.game.boundingBoxes.findIndex(box => box === mesh._boundingBox)
+          if (index !== -1) this.game.boundingBoxes[index] = updatedBox;
+          else this.game.boundingBoxes.push(updatedBox);
+          mesh._boundingBox = updatedBox
+
+          // console.log(mesh.openConfig.value)  // !!!
+
+          if (mesh.openConfig.value == mesh.openConfig.max - 1 || mesh.openConfig.value < mesh.openConfig.min + 1) {
+            console.log('STOP!');
+            mesh.openConfig.state = !mesh.openConfig.state
+            clearInterval(mesh.timeInterval);
+            mesh.timeInterval = null;
+          }
         }
-
-        // MOVE AND REFRESH
-        mesh.container.rotation.y = tempRotation
-        mesh.openConfig.value += mesh.openConfig.valueAdd
-
-        // CLAMP VALUE
-        mesh.openConfig.value = Math.max(
-          mesh.openConfig.min,
-          Math.min(mesh.openConfig.max, mesh.openConfig.value)
-        )
-      
-        // REFRESH BOUNDING BOX FRISSÍTÉS
-        const updatedBox = new THREE.Box3().setFromObject(mesh.container)
-        const index = this.game.boundingBoxes.findIndex(box => box === mesh._boundingBox)
-        if (index !== -1) this.game.boundingBoxes[index] = updatedBox;
-        else this.game.boundingBoxes.push(updatedBox);
-        mesh._boundingBox = updatedBox
-
-        // console.log(mesh.openConfig.value)  // !!!
-        
-        if (mesh.openConfig.value == mesh.openConfig.max - 1 || mesh.openConfig.value < mesh.openConfig.min + 1) {
-          console.log('STOP!');
-          mesh.openConfig.state = !mesh.openConfig.state
-          clearInterval(mesh.timeInterval);
-          mesh.timeInterval = null;
-        }
-      }, 10);
+      }, 5);
     } else {
       // IF NEW CLICK
       mesh.openConfig.state = !mesh.openConfig.state

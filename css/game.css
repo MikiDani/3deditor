@@ -4,6 +4,21 @@ html {
   background-color: black;
 }
 
+html, body {
+  height: 100%;
+  margin: 0;
+  background: black;
+  cursor: url("/img/cursors/cursor-default2.png") 5 5, auto !important;
+}
+
+a, button, input, textarea {
+  cursor: url("/img/cursors/cursor-default2.png") 5 5, auto !important;
+}
+
+a:hover, button:hover, input:hover, textarea:hover {
+  cursor: url("/img/cursors/cursor-default2.png") 5 5, auto !important;
+}
+
 #game-canvas {
   background-color: black;
   width: 100vw;
@@ -34,6 +49,17 @@ html {
   position: relative;
   width: 100vw;
   height: 100vh;
+}
+
+#inventory-3d-canvas {
+  width: 800px;
+  height: 800px;
+  border: 1px solid gray;
+}
+
+#inventory-container,
+#menu-container {
+  background-color: black;
 }
 
 .cursor-pointer:hover {

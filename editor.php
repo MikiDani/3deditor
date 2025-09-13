@@ -316,6 +316,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
 
     $ext = basename($_POST['ext']);
     $ext = mb_strtolower($ext);
+    
+    if (isset($_POST['objectdir']) && $_POST['objectdir'] !== '')
+    {
+        $objectdir = $_POST['objectdir'];
+        $directory = $directory . DIRECTORY_SEPARATOR . $objectdir;
+    }
+
+    if (isset($_POST['beingsdir']) && $_POST['beingsdir'] !== '')
+    {
+        $beingsdir = $_POST['beingsdir'];
+        $directory = $directory . DIRECTORY_SEPARATOR . $beingsdir;
+    }
 
     if (file_exists($directory . DIRECTORY_SEPARATOR . $filename . '.' . $ext)) {
         $compressed_data = file_get_contents($directory . DIRECTORY_SEPARATOR . $filename . '.' . $ext);

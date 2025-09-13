@@ -243,12 +243,11 @@ export default class Loader {
       }
 
       // BEINGS DATA LOADING
-      const response2 = await this.fetchData({ ajax: true, getbeings: true})
+      const response2 = await this.fetchData({ ajax: true, getbeings: true })
       if (response2.files) {
         for(const file of response2.files) {
-          const response3 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension });
+          const response3 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension, beingsdir: '_beings' });
           if (response3?.data && response3?.structure) {
-            // this.game.beingsList[file.name] = response3
             this.game.beingsList[file.name] = {
               'data': this.game.deepCopy(response3.data),
               'structure': this.game.deepCopy(response3.structure),
@@ -258,10 +257,9 @@ export default class Loader {
         }
 
         // FIRST ADD BEINGS
-        if (this.game.map.beings) {          
-          this.game.map.beings.forEach(being => {
+        if (this.game.map.beings) {
+          for (const being of this.game.map.beings) {
             const ActualBeingData = this.game.beingsList[being.filename].data[0]
-
             if (ActualBeingData) {
               const beingGroup = new THREE.Group()
 
@@ -270,6 +268,10 @@ export default class Loader {
               beingGroup.speed = being.speed
               beingGroup.energy = being.energy
               beingGroup.damage = being.damage
+              beingGroup.boxlines = being.boxlines
+              beingGroup.angle = being.angle
+
+              console.log('beingGroup.angle: ', beingGroup.angle)
 
               // console.log(being.id, being.ratio, being.speed, being.energy, being.damage)
 
@@ -280,48 +282,10 @@ export default class Loader {
                 'cardsegment': 0,
               }
 
-              for (let BeingMesh of ActualBeingData) {
-                const meshGroup = new THREE.Group()
-
-                for (let tri of BeingMesh.tris) {
-                  const geometry = new THREE.BufferGeometry()
-
-                  // console.log('Being.ratio: ', being.ratio)
-
-                  const vertices = new Float32Array([
-                    tri.p[0].x * being.ratio, tri.p[0].y * being.ratio, tri.p[0].z * being.ratio,
-                    tri.p[1].x * being.ratio, tri.p[1].y * being.ratio, tri.p[1].z * being.ratio,
-                    tri.p[2].x * being.ratio, tri.p[2].y * being.ratio, tri.p[2].z * being.ratio,
-                  ])
-                  geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
-
-                  const uvs = new Float32Array([
-                    tri.t[0].u, 1 - tri.t[0].v,
-                    tri.t[1].u, 1 - tri.t[1].v,
-                    tri.t[2].u, 1 - tri.t[2].v,
-                  ])
-                  geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
-                  geometry.computeVertexNormals()
-              
-                  let triTransparent = tri?.transparent ? true : false;
-                  let triNormal = tri?.normal ? 'FrontSide' : 'DoubleSide';
-
-                  const materialType = this.game.lightsOn ? 'MeshLambertMaterial' : 'MeshBasicMaterial'
-                  const material = new THREE[materialType]({
-                    map: this.game.loadedTextures[tri.texture.name],
-                    side: THREE[triNormal], // side: THREE.FrontSide, THREE.DoubleSide
-                    opacity: 1,
-                    transparent: triTransparent,
-                    alphaTest: 0.1,
-                  })
-  
-                  const triangleMesh = new THREE.Mesh(geometry, material)
-                  meshGroup.add(triangleMesh)
-                }
-                beingGroup.add(meshGroup)
-              }
+              this.createTHREEObject(being, beingGroup, ActualBeingData)
   
               beingGroup.position.set(being.p.x, being.p.y, being.p.z)
+              beingGroup.rotation.y = THREE.MathUtils.degToRad(beingGroup.angle)
   
               this.game.scene.add(beingGroup)
     
@@ -329,19 +293,37 @@ export default class Loader {
               this.game.loadedBeings[being.id].filename = being.filename              
               this.game.loadedBeings[being.id].lastUpdate = performance.now()
             }
-          });
-
-          console.log(this.game.loadedBeings)
+          }
+          // console.log(this.game.loadedBeings)
         }
+      }
+
+      // OBJECTS DATA LOADING
+      const response3 = await this.fetchData({ ajax: true, getobjects: true })
+      if (response3.files) {
+        for (const file of response3.files) {          
+          const response4 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension, objectdir: '_objects' });
+          if (response4?.data && response4?.structure) {
+            let exp = file.name.split('_')
+            this.game.objectsList[exp[0]] = {
+              'id': exp[0],
+              'name': exp[1],
+              'filename': file.name,
+              'ratio': response4.ratio ?? 1,
+              'data': this.game.deepCopy(response4.data),
+              'structure': this.game.deepCopy(response4.structure),
+            }
+          }
+        }
+        console.log(this.game.objectsList)
       }
 
       // SKY BACKGROUND
       const loader = new THREE.CubeTextureLoader()
       loader.setPath('img/skybox/')
       const texture = loader.load(
-        [ 'sky-01.png', 'sky-01.png', 'sky-01.png', 'sky-01.png', 'sky-01.png', 'sky-01.png' ],
+        [ 'px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png' ],
         () => {
-          // console.log('Skybox betöltve')
           texture.magFilter = THREE.NearestFilter
           texture.minFilter = THREE.NearestFilter
           texture.generateMipmaps = false
@@ -354,10 +336,52 @@ export default class Loader {
     }
   }
 
+  createTHREEObject(object, beingGroup, ActualBeingData) {    
+    for (let BeingMesh of ActualBeingData) {
+      const meshGroup = new THREE.Group()
+
+      for (let tri of BeingMesh.tris) {
+        const geometry = new THREE.BufferGeometry()
+
+        const vertices = new Float32Array([
+          tri.p[0].x * object.ratio, tri.p[0].y * object.ratio, tri.p[0].z * object.ratio,
+          tri.p[1].x * object.ratio, tri.p[1].y * object.ratio, tri.p[1].z * object.ratio,
+          tri.p[2].x * object.ratio, tri.p[2].y * object.ratio, tri.p[2].z * object.ratio,
+        ])
+        geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
+
+        const uvs = new Float32Array([
+          tri.t[0].u, 1 - tri.t[0].v,
+          tri.t[1].u, 1 - tri.t[1].v,
+          tri.t[2].u, 1 - tri.t[2].v,
+        ])
+        geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
+        geometry.computeVertexNormals()
+    
+        let triTransparent = tri?.transparent ? true : false;
+        let triNormal = tri?.normal ? 'FrontSide' : 'DoubleSide';
+
+        const materialType = this.game.lightsOn ? 'MeshLambertMaterial' : 'MeshBasicMaterial'
+        const material = new THREE[materialType]({
+          map: this.game.loadedTextures[tri.texture.name],
+          side: THREE[triNormal], // side: THREE.FrontSide, THREE.DoubleSide
+          opacity: 1,
+          transparent: triTransparent,
+          alphaTest: 0.1,
+        })
+
+        const triangleMesh = new THREE.Mesh(geometry, material)
+        meshGroup.add(triangleMesh)
+      }
+
+      beingGroup.add(meshGroup)
+    }
+  }
+
   // ---
 
   async fetchData(data, originaldata) {
-    // const path = 'https://tuccmann.com/3deditor/editor.php'; // Online
+    // const path = 'https://tuccmann.com/3deditor1/editor.php'; // Online
     const path = 'http://localhost/3deditor/editor.php';
     try {
       const response = await $.ajax({

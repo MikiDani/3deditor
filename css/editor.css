@@ -623,6 +623,13 @@ button[class="3d-buttons"] {
   text-align: left;
 }
 
+.input-style-1 {
+  height: 14px;
+  display: inline-block;
+  width: auto;
+  text-align: right;
+}
+
 .box-1 {
   width: calc(100% - 10px);
   text-align: left;
@@ -928,6 +935,10 @@ button[class="3d-buttons"] {
 
 .w-50 {
   width: 50% !important;
+}
+
+.w-45 {
+  width: 45% !important;
 }
 
 .w-40 {
@@ -1322,6 +1333,18 @@ button[class="3d-buttons"] {
 }
 .modal-delete-button:hover {
   cursor: pointer;
+}
+
+.bg-red {
+  background-color: red !important;
+}
+
+.bg-green {
+  background-color: green !important;
+}
+
+.bg-blue {
+  background-color: blue !important;
 }
 
 .bg-pink {
@@ -1997,7 +2020,7 @@ li:hover {
 .texture-minipic-selected {
   text-align: center;
   max-width: 100%;
-  max-height: 180px;
+  max-height: 120px;
   width: auto;
   height: auto;
   -o-object-fit: contain;
