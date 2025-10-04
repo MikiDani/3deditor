@@ -174,6 +174,8 @@ export default class Loader {
           });
 
           const triangleMesh = new THREE.Mesh(geometry, material)
+
+          // console.log(triangleMesh)
           meshGroup.add(triangleMesh)
 
           geometry.computeBoundingBox()
@@ -201,6 +203,9 @@ export default class Loader {
             }
           }
         }
+
+        if (mesh.name) meshGroup.name = mesh.name;  // IF HAVE MESH NAME
+        if (mesh.text) meshGroup.text = mesh.text;  // IF HAVE MESH INFO TEXT ADD
 
         meshGroup.box = new THREE.Box3().setFromObject(meshGroup)
         this.game.loadedMeshs[mesh.id] = meshGroup
@@ -303,13 +308,21 @@ export default class Loader {
       if (response3.files) {
         for (const file of response3.files) {          
           const response4 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension, objectdir: '_objects' });
-          if (response4?.data && response4?.structure) {
+          if (response4?.data && response4?.structure) {            
             let exp = file.name.split('_')
+
             this.game.objectsList[exp[0]] = {
               'id': exp[0],
               'name': exp[1],
               'filename': file.name,
               'ratio': response4.ratio ?? 1,
+              'text': response4.text,
+              'read': response4.read
+              ? (response4.read === 'false' ? false : response4.read)
+              : false,
+              'eat': response4.eat
+              ? (response4.eat === 'false' ? false : parseInt(response4.eat))
+              : false,
               'data': this.game.deepCopy(response4.data),
               'structure': this.game.deepCopy(response4.structure),
             }

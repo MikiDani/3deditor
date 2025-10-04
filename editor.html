@@ -136,19 +136,6 @@
                 <button id="clipboard-button" type="button" class="hover-pointer">Insert</button>
             </div>
 
-            <div id="object-ratio-container" class="title-box flex-between flex-column" style="display:block;">
-                <div class="d-inline-block w-45 p-0 m-0 d-flex justify-content-between align-items-center">
-                    <!--                     
-                    <span class="text-small">Valami</span>
-                    <input type="number" min="0.1" max="9" step="0.1" id="object-ratio" class="input-name">
-                     -->
-                </div>
-                <div class="d-inline-block w-45 p-0 m-0 d-flex justify-content-between align-items-center">
-                    <span class="text-small">Ratio</span>
-                    <input id="object-ratio" type="number" min="0.1" max="9" step="0.1" class="input-style-1">
-                </div>
-            </div>
-
             <!-- ANIMATIONS -->
             <div id="animations" style="display:none;">
                 <div id="frames-list-head" class="title-box flex-between">
@@ -395,6 +382,10 @@
                 <span class="text-small">Mesh. name:</span>
                 <input type="text" id="selected-mesh-name" autocomplete="off" class="input-name" data-id=""> <!-- javascript -->
             </div>
+            <div class="title-box-flex text-start h-50px">
+                <span class="text-small">Mesh. text:</span>
+                <textarea id="selected-mesh-text" class="w-100" row="2" data-id=""></textarea> <!-- javascript -->
+            </div>
             <div id="object-list" class="box-1 responsive-menu pt-1" style="display:none;">
                 <!-- javascript -->
             </div>
@@ -584,6 +575,7 @@
                                 <span class="w-30">p3Z: </span><input class="w-70" type="number" name="tri-p3-Z" data-type="p" data-axis="z" data-num="2" min="-10000" max="10000" step="0.1" value="0">
                             </div>
                         </div>
+
                         <div class="right-side mt-3">
                             <div class="side-row d-flex justify-content-end">
                                 <span class="select-point" data-point="2" title="Entering the new coordinate of point P3.">☉</span>
@@ -595,28 +587,31 @@
                                 <span class="w-30">t3V: </span><input class="w-70" type="number" name="tri-t3-V" data-type="t" data-axis="v" data-num="2" step="0.1" value="0">
                             </div>
                         </div>
-                        <div class="left-side mt-4 mb-3">
-                            <div class="side-row">
-                                <span class="ps-2">Transparent: </span>
-                                <select name="tri-transparent" data-type="short">
-                                    <option value="false">Off</option>
-                                    <option value="true">On</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="right-side mt-4 mb-3">
-                            <div class="side-row">
-                                <span class="ps-2">Normal: </span>
-                                <select name="tri-normal" data-type="short">
-                                    <option value="false">Off</option>
-                                    <option value="true">On</option>
-                                </select>
+                        <div id="object-add-tri" class="box-1">
+                            <div class="right-screen-options">
+                                <div class="left-side mt-4 mb-3">
+                                    <div class="side-row">
+                                        <span class="ps-2">Transparent: </span>
+                                        <select name="tri-transparent" data-type="short">
+                                            <option value="false">Off</option>
+                                            <option value="true">On</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="right-side mt-4 mb-3">
+                                    <div class="side-row">
+                                        <span class="ps-2">Normal: </span>
+                                        <select name="tri-normal" data-type="short">
+                                            <option value="false">Off</option>
+                                            <option value="true">On</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>    
+                </div>
             </div>
-
             <div id="selected-locket-container" class="p-0 m-0" style="display:none;">
                 <div class="title-box-flex text-start">
                     <span class="text-small">Selected Tri. name:</span>
@@ -685,16 +680,32 @@
                     </div>
                 </div>
             </div>
-
             <div id="textures-container" class="p-0 m-0">
                 <div id="textures-list" class="p-0 m-0">
                     <!-- javascript -->
                 </div>
             </div>
-
+            <!-- OBJECT PLUS OPTIONS -->
+            <div id="object-options-container" style="display:block;">
+                <div class="title-box-border text-start">
+                    <div class="text-small text-center mt-3 mb-3 text-uppercase">Object info text:</div>
+                    <textarea id="object-text" rows="5" class="mb-3"></textarea>
+                </div>
+                <div class="title-box-flex text-start">
+                    <span class="text-small">Ratio: </span>
+                    <input id="object-ratio" type="number" min="0.1" max="9" step="0.1" class="input-name">
+                </div>
+                <div class="title-box-flex text-start">
+                    <span class="text-small">Eat: </span>
+                    <input type="text" id="object-eat">
+                </div>
+                <div class="title-box-flex text-start">
+                    <span class="text-small">Read: </span>
+                    <input type="text" id="object-read">
+                </div>
+            </div>
         </div>
     </div>
-
     <!-- Modal Structure -->
     <div id="modal-bg" style="display:none;">
         <div id="modal-container" data-mode="">

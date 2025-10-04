@@ -27,8 +27,6 @@ export default class Game {
     this.beingsList = []
     this.objectsList = []
 
-    this.playerObjects = []
-
     this.loadedTextures = {}
     this.loadedLights = []
     this.loadedBeings = []
@@ -42,12 +40,20 @@ export default class Game {
     this.$inventory = {}
     this.currentState = 'menu'
 
-    this.moveSpeed = 0.03,
+    this.moveSpeed = 0.015,
     this.currentGravity = -0.05,
     this.gravityValue = 0.05,
 
-
     this.stepHeight = 0.2
+
+    //this.playerObjects = [3,2,1]
+    //this.playerObjects = [4,5,6,7,0,1,2,3,3,4,5,6,7,0,1,2,3]
+    this.playerObjects = [0,1,2,3]
+
+    this.playerMouse = {
+      mode: null,    // use, view,
+      selectedObject: null,
+    }
 
     // ---
     this.boundingBoxes = []
@@ -82,6 +88,13 @@ export default class Game {
     this.inventory = new Inventory(this)
     this.gameplay = new Gameplay(this)
     this.input = new Input(this)
+
+    // FIRST MOUSE MODE
+    this.playerMouse.mode = 'use'
+    this.input.removeAllCursorClass()
+    $('html').addClass('cursor-use')
+
+    $('#mouseorkey-selector').addClass('click-selector-pic')
 
     // Ha új betöltés lenne, init akkor már nem tölti be amit nem kell
     if (!this.generalLoading) await this.loader.generalLoader(false);
@@ -171,10 +184,10 @@ export default class Game {
       <div id="menu-container">
         <div class="full-size d-flex justify-content-center align-items-center">
           <div class="delta-time-menu text-white"></div>
-          <button class="btn btn-primary rounded-0" data-bs-toggle="modal" data-bs-target="#myModal">
+          <button class="btn btn-primary rounded-0" data-bs-toggle="modal" data-bs-target="#topLayer">
             Join the menu
           </button>
-          <div class="modal" id="myModal" tabindex="-1">
+          <div class="modal" id="topLayer" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
               <div class="modal-content bg-light">
                 <div class="modal-header">
@@ -203,21 +216,80 @@ export default class Game {
           </div>
         </div>
       </div>`)
+
     this.$game = $(`
       <div id="game-container">
         <canvas id="game-canvas"></canvas>
+
+        <div id="cursor-box">Próba text.</div>
+
+        <div id="text-box-container">
+          <div id="text-box" style="display:none;">
+            <button id="text-box-close-button"></button>
+            <div id="text-box-text"></div>
+          </div>
+        </div>       
+
+        <div id="use-selector"></div>
+        <div id="look-selector"></div>
+        <div id="mouseorkey-selector"></div>
       </div>
       <div class="delta-time-game text-white"></div>`)
 
     this.$inventory = $(`
     <div id="inventory-container">
-      <h4 class="w-100 text-center">Inventory</h4>
-
+      <div id="inventory-logo"></div>
       <canvas id="inventory-3d-canvas"></canvas>
+      <div id="object-text-container">
+        Nisi similique perferendis et, recusandae suscipit molestiae eos fuga iste hic, temporibus est vero soluta quo voluptates blanditiis ab. Eius, qui? Harum ea similique enim illum odio saepe nobis repudiandae! Nisi similique perferendis et.
+      </div>
+      <div id="inventory-item-text-container">
+        <div class="item-text-container"></div>
+        <div class="item-text-container"></div>
+        <div class="item-text-container"></div>
+        <div class="item-text-container"></div>
+        <div class="item-text-container"></div>
+        <div class="item-text-container"></div>
+        <div class="item-text-container"></div>
+      </div>
+      <div id="arrow-up"></div>
+      <div id="arrow-down"></div>
+      <div id="inventory-selected-item-container">
+        <div id="object-use" data-mode="use" class="item-selected-text-container">USE OBJECT</div>
+        <div id="object-eat" data-mode="eat" class="item-selected-text-container">EAT OBJECT</div>
+        <div id="object-read" data-mode="read" class="item-selected-text-container">READ CONTENT</div>
+      </div>
+
+      <div id="note-container" style="display:none;">
+        <div id="note-background">
+          <div id="note-content">
+            <span class="note-title"></span><br><br>
+            <span class="note-text"></span>
+          </div>
+          <div id="note-arrow-left"></div>
+          <div id="note-arrow-right"></div>
+          <button class="note-close-button"></button>
+        </div>
+      </div>
+
+      <div id="book-container" style="display:none;">
+        <div id="book-background">
+          <div id="book-content-1">
+            <span class="book-title-1"></span><br><br>
+            <span class="book-text-1"></span>
+          </div>
+          <div id="book-content-2">
+            <span class="book-title-2"></span><br><br>
+            <span class="book-text-2"></span>
+          </div>
+          <div id="book-arrow-left"></div>
+          <div id="book-arrow-right"></div>
+          <button class="book-close-button"></button>
+        </div>
+      </div>
 
       <div class="delta-time-inventory text-white"></div>
-      <div class="inventory-list text-white fw-bold"></div>
-    </div>`)
+    </div>`);
 
     // this.$loading.hide();
     this.$menu.hide();
@@ -235,7 +307,8 @@ export default class Game {
     // FIRST LOAD OF MAP | MAPLOADED + ANIMATED START
     if (this.currentState == 'game' && !this.mapLoading) {
       this.$loading.show()
-      await this.loader.mapLoader()  
+      await this.loader.mapLoader() // LOADING MAP
+      if (!this.inventory.firstLoadedAllObjects) await this.inventory.firstLoadAllObjects(); // LOADING INVENTORY
       this.$loading.hide()
     }
 

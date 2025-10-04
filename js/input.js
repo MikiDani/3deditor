@@ -6,9 +6,13 @@ export default class Input {
   constructor(game) {
     this.game = game
 
-    this.selectedObjectIndex = 1 // !!! ide kell ?
+    this.selectedObjectIndex = 0
 
     this.gravity = 0
+
+    this.mouseMoveTimer = 0
+    this.eventMouse = { x: 0, y: 0 }
+    this.chechLookInterval = null
 
     this.ideiglenesMenuInputs() // ! Ideiglenes
   }
@@ -25,6 +29,8 @@ export default class Input {
     }
 
     // ADD EVENT LISTENERS
+
+    // CLOSE BUTTON
     $('.btn-close').on('click', function () {
       setTimeout(function () {
         if (document.activeElement) {
@@ -32,6 +38,70 @@ export default class Input {
         }
       }, 10);
     });
+
+    // CHECK LOOKING OBJECTS
+    $(document).on('mousemove', (event) => {
+      this.eventMouse.x = event.clientX
+      this.eventMouse.y = event.clientY
+      if (this.game.playerMouse.mode == 'use') $('#cursor-box').css({ left: event.clientX + 40 + 'px', top: event.clientY - 10 + 'px' });
+    })
+
+    this.chechLookInterval = setInterval(() => {
+      const now = Date.now()
+      if (this.game.currentState == 'game' && this.game.playerMouse.mode == 'look' && now - this.mouseMoveTimer > 200) {
+        this.mouseMoveTimer = Date.now();
+
+        const mouse = new THREE.Vector2()
+        mouse.x = (this.eventMouse.x / window.innerWidth) * 2 - 1
+        mouse.y = -(this.eventMouse.y / window.innerHeight) * 2 + 1
+    
+        // console.log(mouse.x, mouse.y)
+
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, this.game.camera);
+
+        let find = false;
+
+        for (const [meshId, meshGroup] of Object.entries(this.game.loadedMeshs)) {
+          // ellenőrzés: van gyerek objektuma?
+          if (!meshGroup || !meshGroup.children) continue;
+          // sugár-metszés
+          const intersects = raycaster.intersectObjects(meshGroup.children, true)
+
+          if (intersects.length > 0) {
+            const intersect = intersects[0]
+
+            // kamera pozíció
+            const cameraPos = new THREE.Vector3()
+            this.game.camera.getWorldPosition(cameraPos)
+
+            // találati pont
+            const hitPoint = intersect.point;
+
+            // távolság számítás
+            const distance = cameraPos.distanceTo(hitPoint)
+
+            console.log(meshGroup.visible)  // Ez ascene en lesz szerintem mármint a false visible. Lászik a szem amikor felvetted a sajtot       //!!     
+
+            if (distance < 1 && meshGroup.text) {
+              console.log("Mesh Name:", meshGroup.text)
+              // console.log("Mesh ID:", meshId)
+              // console.log("Mesh Name:", meshGroup.name)
+              // console.log("Távolság:", distance.toFixed(2))
+              find = true
+              break
+            }
+          }
+        }
+
+        this.removeAllCursorClass()
+        if (find) {
+          $("html").addClass('cursor-look-on')
+        } else {
+          $("html").addClass('cursor-look-off')
+        }
+      }
+    }, 100);
 
     $('#gravity-button').on('click', (event) => {
       let $this = $(event.target)
@@ -57,7 +127,7 @@ export default class Input {
     });
 
     $('#closeBtn').on('click', () => {
-      const modal = bootstrap.Modal.getInstance(document.getElementById('myModal'))
+      const modal = bootstrap.Modal.getInstance(document.getElementById('topLayer'))
       if (modal) modal.hide()
 
       this.game.play = true
@@ -73,27 +143,127 @@ export default class Input {
       event.preventDefault()// console.log("Jobb klikk letiltva!")
     });
 
+    // MOUSE INVENTORY BUTTON
+    $(document).on('mousedown', e => {
+
+      // MOUSE ACTION: USE
+      if (e.button == 0 && this.game.currentState == 'game' && $(e.target).attr('id') == 'use-selector') {
+        e.preventDefault(); e.stopPropagation();        
+        this.useSelectorChange()
+        return;
+      }
+
+      // MOUSE ACTION: LOOK
+      if (e.button == 0 && this.game.currentState == 'game' && $(e.target).attr('id') == 'look-selector') {
+        e.preventDefault(); e.stopPropagation();        
+        this.lookSelectorChange()
+        return;
+      }
+
+      // CLOSE TEXT BUTTON            
+      if (e.button == 0 && this.game.currentState == 'game' && $(e.target).attr('id') == 'text-box-close-button') {
+        e.preventDefault(); e.stopPropagation();
+        $("#text-box").hide()
+        return;
+      }
+
+      // RIGHT MOUSE CLICK
+      if (e.button == 2) {
+        e.preventDefault(); e.stopPropagation();
+        if (this.game.inventory.readArray.readType !== null) return;
+        this.getActualCursor()
+        this.changeGameOrInventory()
+      }
+    })
+
+    // INVENTORY MOUSE CLICK
+    $(document).on('click', '#inventory-item-text-container .item-text-container', (e) => {
+      if ($(e.currentTarget).html() == '') return;
+
+      if (!this.game.inventory.inventoryMenu.selectedObject) {
+        // DEFINITELY BACK
+        if (this.game.inventory.inventoryMenu.objectSelected) this.definitelyBack();
+  
+        // PERVIOUS OBJECT HIDE AND REFRESH LIST
+        this.game.loadedObjects[this.game.inventory.selectedObject.id].visible = false
+        this.game.inventory.inventoryMenu.reloadInventory = true;
+  
+        let index = $(e.currentTarget).index('#inventory-item-text-container .item-text-container')
+        this.game.inventory.inventoryMenu.inventoryPosition = index;
+  
+        let selectedObjectIndex = this.game.playerObjects[this.game.inventory.inventoryMenu.inventoryStartIndex + this.game.inventory.inventoryMenu.inventoryPosition]
+        this.setInventorySelectedMeshObject(selectedObjectIndex)
+      }
+    })
+
+    // DOUBLE CLICK 1.
+    $(document).on('dblclick', '#inventory-item-text-container .item-text-container', (e) => {
+      if ($(e.currentTarget).html() == '') return;
+
+      if (!this.game.inventory.inventoryMenu.selectedObject) {
+        console.log('DB click')
+        this.game.inventory.inventoryMenu.objectSelected = true
+        this.game.inventory.inventoryMenu.reloadInventory = true
+        $('#inventory-item-text-container .item-selected-text-container').removeClass('text-hover').addClass('text-selected')
+      }
+    })
+
+    $(document).on('click', '#arrow-up', () => { if (!this.game.inventory.inventoryMenu.selectedObject) { this.moveUp() } })
+    $(document).on('click', '#arrow-down', () => { if (!this.game.inventory.inventoryMenu.selectedObject) { this.moveDown() } })
+
+    // DOUBLE CLICK 2.
+    $(document).on('click', '#inventory-selected-item-container .item-selected-text-container:visible', e => {
+      if (!this.game.inventory.inventoryMenu.selectedObject) {
+        $('#inventory-item-text-container .item-text-container.text-hover').removeClass('text-hover').addClass('text-selected')
+        let $items = $('#inventory-selected-item-container .item-selected-text-container:visible')
+        this.game.inventory.inventoryMenu.selectedLength = $("#inventory-selected-item-container .item-selected-text-container:visible").length
+        let index = $items.index(e.currentTarget)
+
+        this.game.inventory.inventoryMenu.selectedPosition = index
+        this.game.inventory.inventoryMenu.objectSelected = true
+
+        $items.removeClass('text-hover text-selected')
+        $items.eq(index).addClass('text-hover')
+      }
+    })
+
+    $(document).on('dblclick', '#inventory-selected-item-container .item-selected-text-container:visible', e => {
+      if (!this.game.inventory.inventoryMenu.selectedObject) {
+        let index = $('#inventory-selected-item-container .item-selected-text-container:visible').index(e.currentTarget)
+        this.game.inventory.inventoryMenu.selectedPosition = index
+        this.game.inventory.inventoryMenu.selectedObject = true
+        this.game.inventory.inventoryMenu.reloadInventory = true
+      }
+    })
+
+    // BOOK AND NOTE - ARROW RIGHT
+    $(document).on('click', '#book-arrow-right, #note-arrow-right', (e) => {
+      this.turnPage(1)
+    });
+
+    $(document).on('click', '#book-arrow-left, #note-arrow-left', (e) => {
+      this.turnPage(-1)
+    });
+
+    $(document).on('click', '#mouseorkey-selector', () => {
+      this.changeMouseLock()
+    });
+
+    // CLODE BOOK OR NOTE
+    $(document).on('click', '.book-close-button, .note-close-button', (e) => {
+      this.hitEscToInventory(e)
+    });
+
     this.setupCameraControls()
     this.mousePointerClickLoader()
 
-    $(document).on('keydown', (e) => {
-      if(e.key =='Escape') {        
-        const modal = bootstrap.Modal.getInstance(document.getElementById('myModal'))
-        if (modal) modal.hide()
+    // // // //
+    // KEYS
+    $(document).on('keydown', async (e) => {
 
-        if (this.game.currentState =='game') {
-          this.game.play = false
-          this.game.currentState = 'menu'
-          this.game.showHideOptions('menu')
-        } else if (this.game.currentState =='menu' || this.game.currentState =='inventory') {
-          this.game.play = true
-          this.game.currentState = 'game'
-          this.game.showHideOptions('game')
-        }
-      }
-
+      // HELPERS
       if (e.key == 'i') {
-        console.log(this.map.lod)
+        console.log(this.game.map)
         
         console.log('map.player')
         console.log(this.game.map.player)
@@ -107,49 +277,283 @@ export default class Input {
         console.log('game.config')
         console.log(this.game.config)
       }
+      if (e.key == 'm') {
+        console.log(this.game.playerMouse)
+      }
+      //---
 
-      if (e.key == 'f') {
-        if (document.pointerLockElement === this.game.canvas) {
-          console.log('PointerLock kikapcsolás...')
-          document.exitPointerLock()
-        } else {
-          console.log('PointerLock bekapcsolás...')
-          this.game.canvas.requestPointerLock()
+      // GAME KEYS
+      if (this.game.currentState == 'game') {
+        if(e.key =='Escape') {
+          const modal = bootstrap.Modal.getInstance(document.getElementById('topLayer'))
+          if (modal) modal.hide()
+
+          if (this.game.currentState =='game') {
+            this.game.play = false
+            this.game.currentState = 'menu'
+            this.game.showHideOptions('menu')
+          } else if (this.game.currentState =='menu' || this.game.currentState =='inventory') {
+            this.game.play = true
+            this.game.currentState = 'game'
+            this.game.showHideOptions('game')
+          }
+        }
+
+        if(e.key =='Enter') {
+          e.preventDefault(); e.stopPropagation();
+          this.changeGameOrInventory()
+        }
+
+        // POINTERLOCK MOUSE
+        if (e.key == 'f') {
+          e.preventDefault(); e.stopPropagation();
+          this.changeMouseLock()
+          return
+        }
+
+        // USE MOUSE MODE
+        if (e.key == 'e') {
+          e.preventDefault(); e.stopPropagation();
+          this.useSelectorChange()
+          return
+        }
+
+        // LOOK MOUSE MODE
+        if (e.key == 'q') {
+          e.preventDefault(); e.stopPropagation();
+          this.lookSelectorChange()
+          return
+        }
+
+        if (e.key == 'n' && this.game.currentState == 'game') {
+          console.log('INVENTORY')
+          this.game.play = false
+          this.game.currentState = 'inventory'
+          this.game.showHideOptions('inventory')
         }
       }
 
-      if (e.key == 'n') {
-        console.log('INVENTORY')
-        this.game.play = false
-        this.game.currentState = 'inventory'
-        this.game.showHideOptions('inventory')
-      }
-
+      // INVENTORY KEYS
       if (this.game.currentState == 'inventory') {
-        console.log('INVENTORY')
 
-        console.log(e.key)
+        // BOOK AND NOTE
+        if (e.key == 'ArrowRight' || e.key == 'd' || e.key == 'D') this.turnPage(1);
+        if (e.key == 'ArrowLeft' || e.key == 'a' || e.key == 'A') this.turnPage(-1);
 
-        if (e.key == ' ') {
-          console.log('space!')
+        // ESC
+        if (e.key == 'Escape' || e.key == 'Backspace') this.hitEscToInventory(e);
 
-          console.log(this.game.inventory.selectedObjectId)
-          this.game.loadedObjects[this.game.inventory.selectedObjectId].visible = false
+        // console.log(this.game.inventory.inventoryMenu.inventoryStartIndex + this.game.inventory.inventoryMenu.inventoryPosition)
+        if (!this.game.inventory.inventoryMenu.selectedObject) {
+          if (!this.game.inventory.inventoryMenu.objectSelected) {
 
-          this.selectedObjectIndex = Number(this.selectedObjectIndex) + 1;
+            if ($('#book-container:visible').length || $('#note-container:visible').length) return
 
-          if (this.selectedObjectIndex == 4) this.selectedObjectIndex = 1;
-          console.log(this.selectedObjectIndex)          
-
-          let obj = this.game.loadedObjects.find(obj => obj && obj.index == this.selectedObjectIndex)
-          let objectId = obj ? obj.id : null
-
-          if (objectId) this.game.inventory.selectedObjectId = objectId;
-        }        
+            // FIRST LEVEL MOVE - WHAT
+            if (e.key == 'ArrowUp' || e.key == 'w' || e.key == 'W') this.moveUp();
+            if (e.key == 'ArrowDown' || e.key == 's' || e.key == 'S') this.moveDown();
+    
+            if (e.key == 'Enter' || e.key == 'ArrowRight' || e.key == 'd' || e.key == 'D') {
+              this.game.inventory.inventoryMenu.objectSelected = true
+              this.game.inventory.inventoryMenu.reloadInventory = true
+              $('#inventory-item-text-container .item-text-container.text-hover').removeClass('text-hover').addClass('text-selected')
+            }
+          } else {
+            // SECOND LEVEL MOVE - HOW
+            if (e.key == 'ArrowUp' || e.key == 'w' || e.key == 'W') {
+              if (this.game.inventory.inventoryMenu.selectedPosition > 0) {
+                this.game.inventory.inventoryMenu.selectedPosition--
+                console.log(this.game.inventory.inventoryMenu.selectedPosition)
+  
+                this.game.inventory.inventoryMenu.reloadInventory = true
+              }
+            }
+  
+            if (e.key == 'ArrowDown' || e.key == 's' || e.key == 'S') {
+              if (this.game.inventory.inventoryMenu.selectedPosition < this.game.inventory.inventoryMenu.selectedLength - 1) {
+                this.game.inventory.inventoryMenu.selectedPosition++
+                console.log(this.game.inventory.inventoryMenu.selectedPosition)
+                
+                this.game.inventory.inventoryMenu.reloadInventory = true
+              }
+            }
+  
+            if (e.key == 'Enter') {
+              this.game.inventory.inventoryMenu.selectedObject = true
+              this.game.inventory.inventoryMenu.reloadInventory = true
+            }
+  
+            // SELECTED OBJECT MOVE
+            if (e.key == 'Backspace' || e.key == 'ArrowLeft' || e.key == 'a' || e.key == 'A') {
+              this.game.inventory.inventoryMenu.objectSelected = false
+              this.game.inventory.inventoryMenu.selectedPosition = 0
+              this.game.inventory.inventoryMenu.reloadInventory = true
+              $('#inventory-item-text-container .item-text-container.text-selected').removeClass('text-selected').addClass('text-hover')
+            }
+          }
+        }
       }
     });
-
     this.game.inputsLoading = true
+  }
+
+  hitEscToInventory(e = null) {
+    this.game.inventory.readArray = {
+      readType: null,
+      readData: null,
+      readIndex: 0,
+    }
+
+    if ($("#book-container").css('display') == 'flex') {
+      $("#book-background").removeClass('anim-in').addClass('anim-out')
+      setTimeout(() => {
+        $("#book-background").removeClass('anim-out')
+        $("#book-container").css('display', 'none')
+      }, 300)
+      return;
+    }
+
+    if ($("#note-container").css('display') == 'flex') {
+      $("#note-background").removeClass('anim-in').addClass('anim-out')
+      setTimeout(() => {
+        $("#note-background").removeClass('anim-out')
+        $("#note-container").css('display', 'none')
+      }, 300)
+      return;
+    }
+
+    // BACK GAME
+    console.log('BACK GAME')
+    this.game.play = true
+    this.game.currentState = 'game'
+    this.game.showHideOptions('game')
+
+    if (e) e.stopPropagation();
+    if (e) e.preventDefault();
+  }
+
+  changeGameOrInventory() {
+    if (this.game.currentState == 'game') {
+      // GO INVENTORY
+      console.log('INVENTORY')
+      if (document.pointerLockElement === this.game.canvas) document.exitPointerLock();
+      this.setDefaultCursor()
+      this.game.play = false
+      this.game.currentState = 'inventory'
+      this.game.showHideOptions('inventory')
+
+    } else if (this.game.currentState == 'inventory') {
+      // BACK GAME
+      console.log('BACK GAME')
+      this.getActualCursor()
+      this.game.play = true
+      this.game.currentState = 'game'
+      this.game.showHideOptions('game')
+    }
+  }
+
+  moveUp() {
+    this.game.inventory.inventoryMenu.reloadInventory = true
+
+    // DEFINITELY BACK
+    if (this.game.inventory.inventoryMenu.objectSelected) this.definitelyBack();
+
+    if (this.game.inventory.inventoryMenu.inventoryPosition > 0) {
+      // HIDE OBJECT
+      this.game.loadedObjects[this.game.inventory.selectedObject.id].visible = false
+      this.game.inventory.inventoryMenu.inventoryPosition--;
+    } else {
+      // MOVE inventoryStartIndex
+      if (this.game.inventory.inventoryMenu.inventoryStartIndex + this.game.inventory.inventoryMenu.inventoryPosition > 0) this.game.inventory.inventoryMenu.inventoryStartIndex--;
+    }
+
+    this.game.loadedObjects[this.game.inventory.selectedObject.id].visible = false
+    let selectedObjectIndex = this.game.playerObjects[this.game.inventory.inventoryMenu.inventoryStartIndex + this.game.inventory.inventoryMenu.inventoryPosition]
+    this.setInventorySelectedMeshObject(selectedObjectIndex)
+  }
+
+  moveDown() {
+    this.game.inventory.inventoryMenu.reloadInventory = true
+
+    // DEFINITELY BACK
+    if (this.game.inventory.inventoryMenu.objectSelected) this.definitelyBack();
+
+    if (this.game.inventory.inventoryMenu.inventoryPosition < this.game.inventory.inventoryMenu.inventoryLength - 1) {
+      // IF SHORT INVENTORY LIST
+      if (this.game.playerObjects.length <= 7 && this.game.inventory.inventoryMenu.inventoryPosition == this.game.playerObjects.length - 1) return;
+
+      // HIDE OBJECT
+      this.game.loadedObjects[this.game.inventory.selectedObject.id].visible = false
+      this.game.inventory.inventoryMenu.inventoryPosition++;
+    } else {
+      // MOVE inventoryStartIndex
+      if (this.game.inventory.inventoryMenu.inventoryStartIndex + this.game.inventory.inventoryMenu.inventoryPosition < this.game.playerObjects.length - 1) this.game.inventory.inventoryMenu.inventoryStartIndex++;
+    }
+
+    this.game.loadedObjects[this.game.inventory.selectedObject.id].visible = false
+    let selectedObjectIndex = this.game.playerObjects[this.game.inventory.inventoryMenu.inventoryStartIndex + this.game.inventory.inventoryMenu.inventoryPosition]
+    this.setInventorySelectedMeshObject(selectedObjectIndex)
+  }
+
+  turnPage(readIndexMove) {
+    // console.log(this.game.inventory.readArray)
+    if (this.game.inventory.readArray.readData) {
+      let length = this.game.inventory.readArray.readData.texts.length
+
+      let testValue = parseInt(this.game.inventory.readArray.readIndex) + parseInt(readIndexMove)
+
+      if (testValue >= 0 && testValue < length) {
+        this.game.inventory.readArray.readIndex = parseInt(this.game.inventory.readArray.readIndex) + parseInt(readIndexMove)
+        if (this.game.inventory.readArray.readType == 'note') this.game.inventory.loadNotePage();
+        if (this.game.inventory.readArray.readType == 'book') this.game.inventory.loadBookPage();
+      }
+    }
+  }
+
+  // -- CURSOR OPTIONS
+  setDefaultCursor() {
+    this.removeAllCursorClass()
+    $("html").addClass('cursor-default')
+  }
+
+  useSelectorChange() {
+    this.game.playerMouse.mode = 'use'
+
+    this.removeAllCursorClass()
+    $("html").addClass('cursor-use')
+
+    console.log(this.game.playerMouse.mode)
+  }
+
+  lookSelectorChange() {
+    this.game.playerMouse.mode = 'look'
+
+    this.removeAllCursorClass()
+    $("html").addClass('cursor-look-off')
+
+    console.log(this.game.playerMouse.mode)
+  }
+
+  getActualCursor() {
+    if (this.game.playerMouse.mode == 'use') this.useSelectorChange()
+    if (this.game.playerMouse.mode == 'look') this.lookSelectorChange()
+  }
+
+  removeAllCursorClass() {
+    $("html").removeClass('cursor-default').removeClass('cursor-look-on').removeClass('cursor-look-off').removeClass('cursor-use')
+  }
+
+  // --
+
+  setInventorySelectedMeshObject(inventoryIndex) {
+    let object = this.game.loadedObjects.find(obj => obj && obj.index == inventoryIndex)
+    if (object) this.game.inventory.selectedObject = object;
+  }
+
+  definitelyBack() {
+    this.game.inventory.inventoryMenu.objectSelected = false
+    this.game.inventory.inventoryMenu.selectedPosition = 0
+    $(document).find('.item-text-container.text-selected').removeClass('text-selected')
   }
 
   setupCameraControls() {
@@ -248,6 +652,19 @@ export default class Input {
     return moved
   }
 
+  changeMouseLock() {
+    $('#mouseorkey-selector').removeClass('key-selector-pic').removeClass('mouse-selector-pic')
+    if (document.pointerLockElement === this.game.canvas) {
+      console.log('PointerLock kikapcsolás...')
+      document.exitPointerLock()
+      $('#mouseorkey-selector').addClass('key-selector-pic')
+    } else {
+      console.log('PointerLock bekapcsolás...')
+      this.game.canvas.requestPointerLock()
+      $('#mouseorkey-selector').addClass('mouse-selector-pic')
+    }
+  }
+
   mousePointerClickLoader() {
     this.game.isPointerLocked = false
 
@@ -276,9 +693,9 @@ export default class Input {
     const shift = this.game.keysPressed.has('shift')
     let moved = false;
 
-    const direction = new THREE.Vector3(-Math.sin(this.game.player.rotation.y), 0, -Math.cos(this.game.player.rotation.y)).normalize()
+    const direction = new THREE.Vector3(-Math.sin(this.game.player.rotation.y), 0, -Math.cos(this.game.player.rotation.y)).normalize()   
 
-    if (this.game.keysPressed.has('w')) {
+    if (this.game.keysPressed.has('w') || this.game.keysPressed.has('W') || this.game.keysPressed.has('arrowup')) {
       if (shift) {
         if (!moved) {
           moved = this.game.ghostMode
@@ -292,7 +709,7 @@ export default class Input {
       }
     }
 
-    if (this.game.keysPressed.has('s')) {
+    if (this.game.keysPressed.has('s') || this.game.keysPressed.has('S') || this.game.keysPressed.has('arrowdown')) {
       if (shift) {
         if (!moved) {
           moved = this.game.ghostMode
@@ -306,7 +723,7 @@ export default class Input {
       }
     }
 
-    if (this.game.keysPressed.has('a')) {
+    if (this.game.keysPressed.has('a') || this.game.keysPressed.has('A') || this.game.keysPressed.has('arrowleft')) {
       if (shift || this.game.isPointerLocked) {
         const left = new THREE.Vector3().crossVectors(this.game.camera.up, direction).normalize().multiplyScalar(this.game.moveSpeed)
         moved ||= this.testMove(left);
@@ -316,7 +733,7 @@ export default class Input {
       }
     }
 
-    if (this.game.keysPressed.has('d')) {
+    if (this.game.keysPressed.has('d') || this.game.keysPressed.has('D') || this.game.keysPressed.has('arrowright')) {
       if (shift || this.game.isPointerLocked) {
         const right = new THREE.Vector3().crossVectors(direction, this.game.camera.up).normalize().multiplyScalar(this.game.moveSpeed)
         moved ||= this.testMove(right)
@@ -326,7 +743,7 @@ export default class Input {
       }
     }
 
-    const pitchLimit = THREE.MathUtils.degToRad(80);
+    const pitchLimit = THREE.MathUtils.degToRad(80)
 
     if (this.game.keysPressed.has('pagedown')) {
       this.game.pitchObject.rotation.x -= this.game.rotateSpeed;
@@ -390,19 +807,26 @@ export default class Input {
     return moved;
   }
 
+  // CANVAS CLICK
   actionsClicksCheck() {
-    let clickTimer;
-  
+    let clickTimer
+
     // MOUSEDOWN
-    $(document).on('mousedown', (event) => {
+    $("#game-canvas").on('mousedown', (event) => {
       clickTimer = setTimeout(() => {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+
         this.handleClickEvent(event, 'mousedown');
       }, 150);
     });
   
     // DBLCLICK
-    $(document).on('dblclick', (event) => {
+    $("#game-canvas").on('dblclick', (event) => {
       clearTimeout(clickTimer);
+      event.preventDefault()
+      event.stopImmediatePropagation()
+
       this.handleClickEvent(event, 'dblclick');
     });
   }
@@ -418,9 +842,9 @@ export default class Input {
     const raycaster = new THREE.Raycaster()
     raycaster.setFromCamera(mouse, this.game.camera)
 
-    this.game.map.actionelements.forEach(action => {
+    // this.game.map.actionelements.forEach(action => {
+    for (const action of this.game.map.actionelements) {
       if (action[1].conditions.click == clickType) {
-
         const intersects = raycaster.intersectObjects(action[0].children, true)
         // IF HAVE CLICK SHOT MESH
         if (intersects.length > 0) {
@@ -430,11 +854,36 @@ export default class Input {
           const hitPoint = intersect.point
           const distance = cameraPos.distanceTo(hitPoint)
 
-          // console.clear()
+          console.log('---')
+          console.log(action[0].text)
+          console.log('---')
+          
+          // IF HAVE TEXT
+          if (this.game.playerMouse.mode == 'look' && action[0].text && distance < 1) {
+
+            console.log('---')
+            console.log(action[0].text)
+            console.log(distance)
+            console.log(this.game.playerMouse.mode)          
+            console.log('---')
+
+            console.log($("#text-box-text").html(), action[0].text)
+
+            if ($("#text-box").is(":visible") && $("#text-box-text").html() == action[0].text) {
+              $("#text-box").hide()
+              $("#text-box-text").html('')
+              continue
+            } else {
+              $("#text-box-text").html(action[0].text)
+              $("#text-box").show()
+              continue
+            }
+
+          }
 
           this.game.gameplay.checkActions(action, distance)
         }
       }
-    });
+    }
   }
 }

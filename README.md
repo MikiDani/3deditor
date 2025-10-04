@@ -1,7 +1,7 @@
 My 3D Editor
 
-This is the beginning of my own 3D editor project.
+This is my own 3D editor and engine project.
 
-Current version: 0.5
+Current version: 0.6 BETA
 
 Stay tuned for updates!

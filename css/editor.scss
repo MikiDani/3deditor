@@ -943,6 +943,10 @@ button[class='3d-buttons'] {
     width: 100% !important;
 }
 
+.w-90 {
+    width: 90% !important;
+}
+
 .w-70 {
     width: 70% !important;
 }
@@ -991,6 +995,10 @@ button[class='3d-buttons'] {
     height: 100% !important;
 }
 
+.h-50px {
+    height: 50px !important;
+}
+
 .pe-5 {
     padding-right: 5px !important;
 }
@@ -1013,6 +1021,10 @@ button[class='3d-buttons'] {
 
 .me-10 {
     margin-right: 10px !important;
+}
+
+.me-35 {
+    margin-right: 35px !important;
 }
 
 .text-start {
@@ -2033,7 +2045,7 @@ li {
 #textures-container {
     position: relative;
     display: block;
-    min-height: 400px;
+    min-height: 300px;
     font-size: 12px;
     padding: 0;
     margin: 0;
@@ -2205,6 +2217,12 @@ display: block;
 
 .short-input {
     width: 34px !important;
+    height: 15px;
+    font-size: 8px !important;
+}
+
+.long-input {
+    width: 134px !important;
     height: 15px;
     font-size: 8px !important;
 }
@@ -2556,4 +2574,21 @@ display: block;
     &:hover {
         background-color: #6a9393;
     }
+}
+
+#object-text {
+    display: block;
+    min-height: 60px !important;
+    width: 98%;
+}
+
+.title-box-border {
+    display: block;
+    font-weight: bold;
+    text-decoration: double;
+    border: 1px solid gray;
+    margin-top: 0;
+    padding-left: 5px;
+    padding-right: 5px;
+    margin-bottom: 10px;
 }

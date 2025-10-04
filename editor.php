@@ -20,7 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
         $structure = [];
         $files = get_files($directory);
         foreach ($files as $row) {
-            if ($row['name'] == '_objects') continue;
+            if ($row['name'] == '_objects' || $row['name'] == '_beings') continue;
 
             $path = $directory . DIRECTORY_SEPARATOR . $row['name'];
 

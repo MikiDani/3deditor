@@ -378,14 +378,15 @@ export default class Gameplay {
     for(const event of actions[1].events) {
       // ACTION
       var oncePlayEvent = async () => {
-        console.log('Start settimeout: '+ event.name)
-
+        // console.log('Start settimeout: '+ event.name)  // ?? EVENT NAME
         event.timeout = setTimeout(() => {
           // EVENT CHECK ADD OBJECTS
           if (event.addobjects.length > 0) {
+
             for (const addObjectId of event.addobjects) {
               // ADD OBJECT - Többször is előfordulhat egy tárgy, pl.: energiaital
               this.game.playerObjects.push(parseInt(addObjectId))
+              this.game.inventory.inventoryMenu.reloadInventory = true
             }
             // REMOVE THREE OBJECT
             this.game.removeObjectOfMap(actions[0])

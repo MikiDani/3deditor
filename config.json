@@ -20,32 +20,7 @@
       "time": 0
     }
   ],
-  "objectsdata": [
-  	{
-      "id": 1,
-      "name": "chees",
-      "type": "healt",
-      "value": 25
-    },
-    {
-      "id": 2,
-      "name": "salad",
-      "type": "healt",
-      "value": 10
-    },
-    {
-      "id": 3,
-      "name": "ketchup",
-      "type": "healt",
-      "value": 5
-    },
-    {
-      "id": 4,
-      "name": "silverkey",
-      "type": "key",
-      "value": "2"
-    }
-  ],
+
     "sounds": [
     {
       "id": 1,
@@ -58,6 +33,135 @@
     {
       "id": 3,
       "name": "dong"
+    }
+  ],
+
+  "textdata": [
+    {
+      "id": "note_1",
+      "titles": [
+        "A 1. Minus assumenda rerum dicta minus libero nostrum.",
+        "A 2. Assumenda rerum dicta minus libero nostrum.",
+        "A 3. Aliquam minus libero nostrum."
+      ],
+      "texts": [
+        "n1 Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore.<br> Placeat sint!",
+
+        "n2 Ad est provident voluptas tempore repellendus obcaecati, nobis eos corrupti enim dolores fugit dignissimos ipsum saepe molestiae. Quidem quod numquam laboriosam dolorem, consequatur earum doloribus. Voluptatibus quis molestiae incidunt officiis?<br>Aliquam assumenda rerum dicta minus libero nostrum iusto.",
+
+        "n3 Perferendis cumque ipsum, veritatis exercitationem ab animi illo harum nulla deleniti suscipit voluptates, molestiae quidem obcaecati repellendus ipsa qui aliquam perspiciatis vitae impedit necessitatibus odio nobis! Numquam commodi delectus blanditiis?"
+      ]
+    },
+    {
+      "id": "note_2",
+      "titles": [
+        "B 1. Assumenda rerum dicta minus libero nostrum.",
+        "B 2. Aliquam  rerum dicta minus libero nostrum.",
+        "B 3. Rerum dicta minus libero nostrum."
+      ],
+      "texts": [
+        "Marnin ipsum dolor sit amet consectetur adipisicing elit. <img src='img/inventory/book-img-01.png' style='float:right;'> Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem.",
+
+        "Placeat sint, velit nobis quaerat et ullam adipisci laborum laboriosam quibusdam numquam alias repellat dolorem unde a vitae culpa perspiciatis! Nihil recusandae est provident iure possimus architecto doloribus, beatae ullam! &nbsp;&nbsp;&nbsp; <strong>Peter Pan</strong>"
+      ]
+    },
+    {
+      "id": "note_3",
+      "titles": [
+        "C 1. Vsumenda rerum dicta minus libero nostrum.",
+        "C 2. Aliquam rerum dicta minus libero nostrum.",
+        "C 3. Rerum dicta minus libero nostrum."
+      ],
+      "texts": [
+        "3n1 Quibusdam veritatis accusantium dolore similique numquam, adipisci molestiae. <img src='img/inventory/book-img-04.png' style='float:right;'> Odio officiis harum fuga saepe voluptates quas! Incidunt exercitationem atque debitis, error quae assumenda fugiat inventore tempore quos corrupti? Tempora, obcaecati.",
+        "3n2 Dolore nemo, incidunt architecto aliquam inventore, amet officia modi maiores, consequuntur soluta! Tenetur distinctio vero ipsam, vel rerum cumque dolores non. At, fugiat eos iure corrupti sapiente amet cum nulla."
+      ]
+    },    
+    {
+      "id": "book_1",
+     "titles": [
+        ["Book I. Tempora vitae fugit.", "Book II. Tempora vitae fugit."],
+        ["Book III. Dolorum atque modi.", "Book IV. Dolorum atque modi."],
+        ["", "Book VI. Quisquam rerum iste."],
+        ["Book VII. Voluptates nulla omnis.", "Book VIII. Voluptates nulla omnis."],
+        ["Book IX. Repudiandae dicta natus.", ""],
+        ["Book XI. Laudantium sit facere.", "Book XII. Laudantium sit facere."]
+      ],
+      "texts": [
+        [
+          "A b1 Lorem, ipsum dolor sit amet consectetur adipisicing elit.<img src='img/inventory/book-img-01.png' class='usn mt-4 me-3' style='float:right;'> Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? dolore.Reiciendis aut corporis soluta quidem consequuntur libero dolore. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem?",
+
+          "A b2 Quibusdam numquam alias repellat dolorem unde a vitae culpa perspiciatis! Nihil recusandae est provident iure possimus architecto doloribus, beatae ullam! Reiciendis aut corporis soluta quidem consequuntur libero dolore. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero."
+        ],
+        [
+          "B b1 Lorem, ipsum dolor sit amet consectetur adipisicing elit ullam magnam in ad, facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore.",
+
+          "B b2 Et ullam adipisci laborum laboriosam quibusdam numquam alias repellat dolorem unde a vitae culpa perspiciatis! Nihil recusandae est provident iure possimus architecto doloribus, beatae ullam!"
+        ],
+        [
+          "A b3 Voluptates delectus nesciunt cum repellendus asperiores odit alias sed quibusdam quaerat. Eveniet, ducimus vitae. <img src='img/inventory/book-img-02.png' class='usn mt-4 me-3' style='float:right;'> Atque veritatis laborum fugit libero obcaecati quidem earum cumque sapiente aliquid consequuntur! Rem, aperiam cum. Expedita laudantium quas reprehenderit, minima mollitia?",
+
+          "A b4 Harum natus blanditiis, deserunt molestias aliquam ipsam incidunt fugit repellendus numquam cumque alias nobis consequatur ex assumenda dolorum officia. Voluptatibus, deleniti. Mollitia dicta itaque ipsam sed praesentium nulla voluptas eligendi saepe reprehenderit quod fuga iure labore."
+        ],
+        [
+          "B b3 Magnam aspernatur distinctio saepe excepturi molestiae ipsam nesciunt deserunt. Eveniet quaerat asperiores suscipit temporibus. Quasi blanditiis beatae placeat fugiat, necessitatibus earum consequuntur doloribus saepe! Reprehenderit quibusdam nihil provident dignissimos eius, minima incidunt.",
+
+          "B b4 Inventore molestiae in, temporibus eligendi quos hic, consequuntur ipsa omnis velit quia laboriosam quibusdam minus facere doloremque cum, voluptatibus porro ratione. Optio quibusdam minima exercitationem dolor laudantium doloremque pariatur vero explicabo!"
+        ],
+        [
+          "C b1 Repudiandae ducimus delectus possimus commodi vero eveniet cum, voluptates nesciunt reiciendis alias iste obcaecati labore quidem, asperiores corporis neque amet debitis. <img src='img/inventory/book-img-03.png' class='usn mt-4 me-3' style='float:left;'> Sed, voluptate laborum eligendi accusantium aut exercitationem laboriosam vitae similique!",
+
+          "C b2 Voluptatum id eveniet iusto sunt accusantium perferendis cum inventore ullam consequuntur voluptatibus mollitia commodi, nemo fuga. Reiciendis, doloremque. Cumque, fugiat quidem nihil ex repudiandae earum quibusdam laboriosam nulla voluptate?"
+        ],
+        [
+          "D b1 Quis modi laborum fuga, nesciunt esse harum blanditiis sapiente unde placeat dolore? Beatae ipsa consequuntur voluptas! Consectetur, asperiores! Ipsum esse est, quibusdam non, similique sed aperiam nobis nihil recusandae aut?",
+
+          "D b2 Tempore repellat vitae magni, est molestias mollitia alias rem explicabo. Cumque laudantium libero laboriosam, iste voluptatum doloremque iusto expedita dolorem eaque dicta possimus obcaecati porro eveniet, architecto saepe. Illo, nihil."
+        ]
+      ]
+    },
+    {
+      "id": "book_2",
+      "titles": [
+        ["Two I. Tempora vitae fugit.", "Two II. Vitae fugit."],
+        ["Two III. Dolorum atque modi.", ""],
+        ["Two V. Quisquam rerum iste delectus.", "Two VI. Quisquam rerum."],
+        ["", "Two VIII. Omnis."],
+        ["Two IX. Repudiandae dicta natus labore et fuga.", "Two X. Repudiandae dicta."],
+        ["Two XI. Laudantium sit facere.", "Two XII. Laudantium."]
+      ],
+      "texts": [
+        [
+          "A b1 Eveniet adipisci deleniti laudantium repellendus harum perferendis voluptatem, impedit perspiciatis error doloribus corporis. <img src='img/inventory/book-img-04.png' class='usn mt-4 me-3' style='float:right;'> Autem maiores rerum officiis consequatur, provident eligendi delectus nihil vel. Dolorum odit mollitia, magni inventore? Eaque voluptas optio temporibus libero recusandae repellat!",
+
+          "A b2 Voluptatem expedita quaerat illum aspernatur deleniti ab laboriosam repudiandae cumque qui porro! Mollitia perspiciatis nobis ratione natus repellat possimus dolorem fugit architecto ipsa, voluptatum est laudantium reiciendis non quo."
+        ],
+        [
+          "B b1 Officiis alias atque cumque dolore nulla, est laboriosam dolorum? Quidem, expedita fugit! Libero debitis atque quisquam delectus deleniti necessitatibus. Perspiciatis eius voluptate mollitia cumque molestiae harum optio quasi repellendus!",
+
+          "B b2 Quo inventore saepe nobis rem maiores dolore dicta, explicabo iusto quisquam. <img src='img/inventory/book-img-05.png' class='usn mt-4 me-3' style='float:right;'> Obcaecati, impedit laboriosam dolor ullam, officiis accusantium rerum minima consequatur dolorum deserunt, quia voluptatibus!"
+        ],
+        [
+          "C b1 Facilis cupiditate iste vero officiis animi numquam minus. Facere laboriosam itaque dolorem voluptates, blanditiis voluptatibus. Expedita praesentium voluptatem distinctio tempora ea voluptates labore, officia eligendi possimus, atque, quis sequi.",
+
+          "C b2 Recusandae dolores voluptate illum deserunt optio unde aliquam dolore quibusdam laudantium? Ipsam itaque vel at? Reprehenderit quidem vero doloremque error animi, corporis architecto rem unde saepe dolore veniam alias."
+        ],
+        [
+          "D b1 Consectetur pariatur sit fugiat accusamus iure nostrum placeat asperiores exercitationem quas ad suscipit. Aliquam rerum assumenda praesentium vero ratione labore, eaque, eveniet quis deleniti itaque consequuntur repudiandae aspernatur laudantium.",
+
+          "D b2 Soluta odio amet quasi saepe libero tenetur. <img src='img/inventory/book-img-06.png' class='usn mt-4 me-3' style='float:right;'> Tempora magnam perspiciatis, incidunt ullam, nemo dicta molestias temporibus iure possimus quidem facilis. Voluptatibus, esse!"
+        ],
+        [
+          "E b1 Illum dignissimos quas adipisci excepturi dolore, voluptatum deleniti molestiae aut at magnam. Dolores distinctio nemo iusto odit ipsa amet necessitatibus reiciendis mollitia similique explicabo voluptates voluptatem, ab facilis repellat?",
+
+          "E b2 Odit, voluptatibus veritatis. Quia blanditiis expedita, excepturi perferendis fugiat quidem ducimus! <img src='img/inventory/book-img-01.png' style='float:right;'> Mollitia fuga officia sint accusantium, commodi perferendis autem molestias tenetur!"
+        ],
+        [
+          "F b1 Velit deleniti tempora possimus repellat voluptatibus soluta natus veritatis. Officiis id, debitis voluptates neque, provident impedit aspernatur voluptas aut quaerat eum alias eveniet. Minima, eligendi reiciendis itaque quibusdam sunt.",
+
+          "F b2 Consequuntur ex asperiores totam mollitia illum architecto voluptates veritatis. Quas debitis sed libero sit beatae commodi, doloribus qui minus fugit voluptatibus, vero expedita, explicabo omnis animi? Vel, laborum alias."
+        ]
+      ]
     }
   ]
 }

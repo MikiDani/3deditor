@@ -36,7 +36,9 @@ class AnimAction {
       click: true,            // null, 'click', 'dclick'
       distance_far: null,     // float
       distance_near: null,    // float
-      issetobjects: []        // array
+      issetobjects: [],       // array
+      success_text: '',       // string
+      failed_text: '',        // string
     }
     this.events = []
   }
@@ -625,7 +627,14 @@ class Editor {
       // LAYERS
       this.map.animations = this.deepCopy(response.animations)
       this.map.ratio = response.ratio ?? 1;
+      this.map.eat = response.eat ?? 'false';
+      this.map.read = response.read ?? 'false';
+      this.map.text = response.text ?? '';
+
       this.refreshRatioInput(this.map.ratio)
+      this.refreshEatInput(this.map.eat)
+      this.refreshReadInput(this.map.read)
+      this.refreshTextInput(this.map.text)
     }
   }
 
@@ -641,8 +650,8 @@ class Editor {
 
     // OBJECT RATIO CONTAINER
     ext == 'mtuc'
-    ? $("#object-ratio-container").hide()
-    : $("#object-ratio-container").show()
+    ? $("#object-options-container").hide()
+    : $("#object-options-container").show()
 
     const response = await this.fetchData({ ajax: true, load: true, filename: filename, ext: ext })
     if (response?.data && response?.structure) {
@@ -783,7 +792,7 @@ class Editor {
     return elements;
   }
 
-  gameActionsElementMaker(animAction) {
+  gameActionsElementMaker(animAction) {    
     let elements =`
       <div class="animaction-container box-2-title" data-action-id="${animAction.id}">
         <div class="box-2-eye action-eye eye-switch" data-action-id="${animAction.id}">👁</div>
@@ -814,8 +823,22 @@ class Editor {
                 </select>
                 <button name="add-array" data-element-name="issetobjects" data-action-id="${animAction.id}" class="text-small" title="Add the selected new object.">ADD</button>
               </div>
-              <div data-action-id="${animAction.id}" class="action-selected-box-container text-start list d-flex flex-wrap text-small">
+              <div data-action-id="${animAction.id}" class="action-selected-box-container text-start list d-flex flex-wrap text-small mt-2 mb-2">
                 ${this.arrayElementMaker('issetobjects', animAction.id, animAction.conditions.issetobjects)}
+              </div>
+            </div>
+            <div class="d-flex justify-content-start align-items-center">
+              <div class='w-50 pe-3'>
+                <span title="The event text when the action is successful.">Success text:</span>
+                <div class="text-start list d-flex flex-wrap text-small bg-red">
+                  <textarea name="success-text" data-action-id="${animAction.id}" class="w-100">${animAction.conditions.success_text ? animAction.conditions.success_text : ''}</textarea>
+                </div>
+              </div>
+              <div class='w-50'>
+                <span title="The event text when the action is failed.">Failed text:</span>
+                <div class="text-start list d-flex flex-wrap text-small bg-red">
+                  <textarea name="failed-text" data-action-id="${animAction.id}" class="w-100">${animAction.conditions.failed_text ? animAction.conditions.failed_text : ''}</textarea>
+                </div>
               </div>
             </div>
           </div>
@@ -1243,7 +1266,8 @@ class Editor {
   }
 
   refreshObjectList() {
-    $('#object-list').html('');
+    $("#selected-mesh-text").val('')
+    $('#object-list').html('')
     if (this.map.data[this.map.aid] && this.map.structure) {
       if (this.map.structure.length > 0) {
         this.refreshClipboard()
@@ -1264,6 +1288,18 @@ class Editor {
 
   refreshRatioInput(ratio) {
     $('#object-ratio').val(Number(ratio));
+  }
+
+  refreshEatInput(eat) {
+    $('#object-eat').val(eat);
+  }
+
+  refreshReadInput(read) {
+    $('#object-read').val(read);
+  }
+
+  refreshTextInput(text) {
+    $('#object-text').val(text);
   }
 
   refreshAnimationsList() {    
@@ -2041,6 +2077,20 @@ class Editor {
       if (animActionRow) animActionRow.conditions.distance_near = parseFloat($(event.target).val())
     });
 
+    // SUCCESS-TEXT
+    $(document).on('input', "textarea[name='success-text']", (event) => {
+      let selectedActionId = $(event.target).attr('data-action-id')
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) animActionRow.conditions.success_text = $(event.target).val()
+    });
+
+    // FAILED-TEXT
+    $(document).on('input', "textarea[name='failed-text']", (event) => {
+      let selectedActionId = $(event.target).attr('data-action-id')
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) animActionRow.conditions.failed_text = $(event.target).val()
+    });
+
     // CHECKBOXS
 
     // SELECTS
@@ -2088,6 +2138,24 @@ class Editor {
     $("#object-ratio").on('input', function() {
       clone.map.ratio = Number($(this).val())
       // console.log(clone.map.ratio)
+    });
+
+    // OBJECT EAT INPUT
+    $("#object-eat").on('input', function() {
+      clone.map.eat = $(this).val()
+      // console.log(clone.map.eat)
+    });
+
+    // OBJECT READ INPUT
+    $("#object-read").on('input', function() {
+      clone.map.read = $(this).val()
+      // console.log(clone.map.read)
+    });
+
+    // OBJECT TEXT INPUT
+    $("#object-text").on('input', function() {
+      clone.map.text = $(this).val()
+      // console.log(clone.map.text)
     });
 
     //////////
@@ -2572,8 +2640,8 @@ class Editor {
 
         // OBJECT RATIO CONTAINER
         ext == 'mtuc'
-        ? $("#object-ratio-container").hide()
-        : $("#object-ratio-container").show()
+        ? $("#object-options-container").hide()
+        : $("#object-options-container").show()
 
         const response = await clone.fetchData({ ajax: true, load: true, filename: filename, ext: ext });
         if (response?.data && response?.structure) {
@@ -2643,17 +2711,19 @@ class Editor {
 
       // AJAX IMPORT
       if (mode == 'import' && filename) {
+        let ext = $(this).attr('data-ext')       
 
-        const response = await clone.fetchData({ ajax: true, load: true, filename: filename }); // console.log(response)
+        const response = await clone.fetchData({ ajax: true, load: true, filename: filename, ext: ext }); // console.log(response)
         if (response?.data && response?.structure) {
           clone.saveMapMemory('save')
           
-          let importData = response.data;
-          let importStructure = response.structure;
-          
-          let lastIdNumber = Mesh.getInstanceCount() + 1;
-          let idMapping = {}; // régiId => újId
+          let importData = response.data[0]
+          let importStructure = response.structure
 
+          let lastIdNumber = Mesh.getInstanceCount() + 1;
+          let idMapping = {};
+
+          // ADD NEW ID
           importData.forEach(item => {
             idMapping[item.id] = lastIdNumber++;
           });
@@ -2674,7 +2744,7 @@ class Editor {
               child: item.child.map(childId => idMapping[childId] ?? childId)
             };
           });
-          
+
           let selectedMapData = clone.map.data[clone.map.aid].find(obj => obj.id == clone.mouse.selectedMeshId)
           let selectedStructureData = clone.findMeshById(clone.map.structure, clone.mouse.selectedMeshId)
 
@@ -2940,6 +3010,17 @@ class Editor {
         selectedMesh.name = value; $(this).val(value);
         $("#object-list").find(`[data-id='${selectedMesh.id}']`).text(selectedMesh.name)
         clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
+      }
+    })
+
+    // MASH TEXT MODIFY
+    $("#selected-mesh-text").on('input', function() {
+      let selectedMesh = clone.map.data[clone.map.aid].find(mesh => mesh.id == clone.mouse.selectedMeshId)
+      if (selectedMesh) {
+        let value = $(this).val()
+        selectedMesh.text = value
+        $(this).val(value)
+        clone.refreshObjectList();
       }
     })
 
@@ -4471,7 +4552,7 @@ class Editor {
         let selectedTri = selectedObject.tris.filter(triangle => triangle.id == triId)[0]
         let cloneTri = clone.deepCopy(selectedTri)
         cloneTri.id = this.id = Date.now().toString().slice(-5) + '-' + Math.floor(Math.random() * 99999)
-        cloneTri.name = cloneTri.id + '-clone'       
+        cloneTri.name = cloneTri.id + '-clone'
         delete cloneTri.locket
 
         clone.clipboardMemory.tris.push(cloneTri) // copy clipboard
@@ -4851,8 +4932,18 @@ class Editor {
         // DATA
         let meshData = clone.map.data[clone.map.aid].find(m => m.id == getMeshStructure.id)
         let meshCopy = clone.deepCopy(meshData)
+
         meshCopy.id = newId
         meshCopy.parent_id = null
+
+        let count = 0
+        meshCopy.tris.forEach(tri => {          
+          tri.id = `${Date.now().toString().slice(-8)}-${count}`;
+          tri.name = tri.name + '-' + count;
+          tri.locket = 0;
+          count++;          
+        });
+
         clone.clipboardMemory.meshs.push(meshCopy)
 
         // STRUCTURE
@@ -4947,7 +5038,9 @@ class Editor {
         return;
       }
 
+      if (event.key == '_') return;
       if (event.code == 'F12') return;
+      if (event.code == 'Space') return;
       if (event.ctrlKey && event.shiftKey && event.code == 'KeyC') return;
       if (event.shiftKey && event.code == 'F5') return;
       if (event.code.startsWith('Digit') || event.code.startsWith('Key') || event.code.startsWith('Arrow')) return;
@@ -5170,6 +5263,9 @@ class Editor {
 
       $("#selected-mesh-name").val(selectedMesh.name)
       $("#selected-mesh-name").attr('data-id', selectedMesh.id)
+
+      $("#selected-mesh-text").val(selectedMesh.text ?? '')
+      $("#selected-mesh-text").attr('data-id', selectedMesh.id)
 
       this.refreshActionList()
 
