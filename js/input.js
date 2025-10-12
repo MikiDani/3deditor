@@ -12,6 +12,7 @@ export default class Input {
 
     this.mouseMoveTimer = 0
     this.eventMouse = { x: 0, y: 0 }
+    this.lastEventMouse
     this.chechLookInterval = null
 
     this.ideiglenesMenuInputs() // ! Ideiglenes
@@ -39,66 +40,82 @@ export default class Input {
       }, 10);
     });
 
-    // CHECK LOOKING OBJECTS
-    $(document).on('mousemove', (event) => {
-      this.eventMouse.x = event.clientX
-      this.eventMouse.y = event.clientY
-      if (this.game.playerMouse.mode == 'use') $('#cursor-box').css({ left: event.clientX + 40 + 'px', top: event.clientY - 10 + 'px' });
-    })
+    // CHECK CURSOR DESIGNS
+    $(document).on('mousemove', (event) => { this.checkMousePositionOptions(event) })
 
     this.chechLookInterval = setInterval(() => {
       const now = Date.now()
-      if (this.game.currentState == 'game' && this.game.playerMouse.mode == 'look' && now - this.mouseMoveTimer > 200) {
-        this.mouseMoveTimer = Date.now();
+      if (now - this.mouseMoveTimer > 200) {
+        if (document.pointerLockElement === null && this.game.currentState == 'game') {
+          this.mouseMoveTimer = Date.now()
 
-        const mouse = new THREE.Vector2()
-        mouse.x = (this.eventMouse.x / window.innerWidth) * 2 - 1
-        mouse.y = -(this.eventMouse.y / window.innerHeight) * 2 + 1
-    
-        // console.log(mouse.x, mouse.y)
+          const mouse = new THREE.Vector2()
+          mouse.x = (this.eventMouse.x / window.innerWidth) * 2 - 1
+          mouse.y = -(this.eventMouse.y / window.innerHeight) * 2 + 1
+          // console.log(mouse.x, mouse.y)
 
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(mouse, this.game.camera);
+          const raycaster = new THREE.Raycaster()
+          raycaster.setFromCamera(mouse, this.game.camera)
 
-        let find = false;
+          let findLook = false;
+          let findUse = false;
 
-        for (const [meshId, meshGroup] of Object.entries(this.game.loadedMeshs)) {
-          // ellenőrzés: van gyerek objektuma?
-          if (!meshGroup || !meshGroup.children) continue;
-          // sugár-metszés
-          const intersects = raycaster.intersectObjects(meshGroup.children, true)
+          for (const [meshId, meshGroup] of Object.entries(this.game.loadedMeshs)) {
+            // ellenőrzés: van gyerek objektuma?
+            if (!meshGroup || !meshGroup.children) continue;
+            // sugár-metszés
+            const intersects = raycaster.intersectObjects(meshGroup.children, true)
 
-          if (intersects.length > 0) {
-            const intersect = intersects[0]
+            if (intersects.length > 0) {
+              const intersect = intersects[0]
 
-            // kamera pozíció
-            const cameraPos = new THREE.Vector3()
-            this.game.camera.getWorldPosition(cameraPos)
+              // kamera pozíció
+              const cameraPos = new THREE.Vector3()
+              this.game.camera.getWorldPosition(cameraPos)
 
-            // találati pont
-            const hitPoint = intersect.point;
+              // találati pont
+              const hitPoint = intersect.point;
 
-            // távolság számítás
-            const distance = cameraPos.distanceTo(hitPoint)
+              // távolság számítás
+              const distance = cameraPos.distanceTo(hitPoint)
 
-            console.log(meshGroup.visible)  // Ez ascene en lesz szerintem mármint a false visible. Lászik a szem amikor felvetted a sajtot       //!!     
-
-            if (distance < 1 && meshGroup.text) {
-              console.log("Mesh Name:", meshGroup.text)
-              // console.log("Mesh ID:", meshId)
-              // console.log("Mesh Name:", meshGroup.name)
-              // console.log("Távolság:", distance.toFixed(2))
-              find = true
-              break
+              // CHECK
+              // console.log(meshGroup.id, meshGroup.name)
+              if (this.game.playerMouse.mode == 'look') {
+                // LOOK
+                if (meshGroup.text) {
+                  const found = this.game.map.actionelements.find(pair => pair[0].id === meshGroup.id)
+                  if (found) {
+                    if (distance < found[1].conditions.distance_far) {
+                      findLook = true
+                      break
+                    }
+                  }
+                }
+              } else if (this.game.playerMouse.mode == 'use') {
+                // USE
+                const found = this.game.map.actionelements.find(pair => pair[0].id === meshGroup.id)
+                if (found) {
+                  if (distance < found[1].conditions.distance_far) {
+                    // const group = found[0]; const action = found[1]; console.log(action); console.log(group);
+                    findUse = true
+                    break
+                  }
+                }
+              }
             }
           }
-        }
 
-        this.removeAllCursorClass()
-        if (find) {
-          $("html").addClass('cursor-look-on')
-        } else {
-          $("html").addClass('cursor-look-off')
+          this.removeAllCursorClass()
+          if (this.game.playerMouse.mode == 'look') {
+            // LOOK
+            findLook ? $("html").addClass('cursor-look-on') : $("html").addClass('cursor-look-off');
+          } else if (this.game.playerMouse.mode == 'use') {
+            // USE
+            findUse
+            ? this.game.playerMouse.selectedObject ? $("html").addClass('cursor-get-on') : $("html").addClass('cursor-use-on')
+            : this.game.playerMouse.selectedObject ? $("html").addClass('cursor-get-off') : $("html").addClass('cursor-use-off')
+          }
         }
       }
     }, 100);
@@ -136,8 +153,17 @@ export default class Input {
     });
   }
 
-  async gameControls() {
+  checkMousePositionOptions(event) {
+    this.lastEventMouse = event
+    this.eventMouse.x = event.clientX
+    this.eventMouse.y = event.clientY   
 
+    if (this.game.playerMouse.mode == 'use' && $('#cursor-text-box:visible').length) {
+      $('#cursor-text-box').css({ left: event.clientX + 40 + 'px', top: event.clientY - 10 + 'px' });
+    }
+  }
+
+  async gameControls() {
     // mouse right button off
     $(document).on("contextmenu", function(event) {
       event.preventDefault()// console.log("Jobb klikk letiltva!")
@@ -293,6 +319,7 @@ export default class Input {
             this.game.currentState = 'menu'
             this.game.showHideOptions('menu')
           } else if (this.game.currentState =='menu' || this.game.currentState =='inventory') {
+            this.game.playerMouse.selectedObject = null
             this.game.play = true
             this.game.currentState = 'game'
             this.game.showHideOptions('game')
@@ -421,9 +448,10 @@ export default class Input {
       }, 300)
       return;
     }
-
+    
     // BACK GAME
     console.log('BACK GAME')
+    this.removeUsedObject()
     this.game.play = true
     this.game.currentState = 'game'
     this.game.showHideOptions('game')
@@ -445,11 +473,17 @@ export default class Input {
     } else if (this.game.currentState == 'inventory') {
       // BACK GAME
       console.log('BACK GAME')
-      this.getActualCursor()
+      this.removeUsedObject()
       this.game.play = true
       this.game.currentState = 'game'
       this.game.showHideOptions('game')
     }
+  }
+
+  removeUsedObject() {
+    this.game.playerMouse.selectedObject = null
+    $("#cursor-text-box").hide().html('')
+    this.getActualCursor()
   }
 
   moveUp() {
@@ -511,16 +545,35 @@ export default class Input {
   }
 
   // -- CURSOR OPTIONS
+  removeAllCursorClass() {
+    $("html").removeClass('cursor-default').removeClass('cursor-look-on').removeClass('cursor-look-off').removeClass('cursor-use-on').removeClass('cursor-use-off').removeClass('cursor-get-on').removeClass('cursor-get-off')
+  }
+
   setDefaultCursor() {
     this.removeAllCursorClass()
     $("html").addClass('cursor-default')
+  }
+
+  setGetCursor() {
+    this.removeAllCursorClass()
+    $("html").addClass('cursor-get')
+  }
+
+  getActualCursor() {
+    if (this.game.currentState == 'game') {
+      if (this.game.playerMouse.mode == 'use') this.useSelectorChange()
+      if (this.game.playerMouse.mode == 'look') this.lookSelectorChange()
+
+    } else if (this.game.currentState == 'inventory') {
+      this.setDefaultCursor()
+    }
   }
 
   useSelectorChange() {
     this.game.playerMouse.mode = 'use'
 
     this.removeAllCursorClass()
-    $("html").addClass('cursor-use')
+    $("html").addClass('cursor-use-off')
 
     console.log(this.game.playerMouse.mode)
   }
@@ -532,15 +585,6 @@ export default class Input {
     $("html").addClass('cursor-look-off')
 
     console.log(this.game.playerMouse.mode)
-  }
-
-  getActualCursor() {
-    if (this.game.playerMouse.mode == 'use') this.useSelectorChange()
-    if (this.game.playerMouse.mode == 'look') this.lookSelectorChange()
-  }
-
-  removeAllCursorClass() {
-    $("html").removeClass('cursor-default').removeClass('cursor-look-on').removeClass('cursor-look-off').removeClass('cursor-use')
   }
 
   // --
@@ -667,6 +711,14 @@ export default class Input {
 
   mousePointerClickLoader() {
     this.game.isPointerLocked = false
+
+    document.addEventListener('mousedown', (e) => {
+      if (document.pointerLockElement) {
+        document.exitPointerLock()
+        $('#mouseorkey-selector').removeClass('mouse-selector-pic').addClass('key-selector-pic')
+        console.log('MOUSE: Kiléptél a pointer lockból')
+      }
+    });
 
     document.addEventListener('pointerlockchange', () => {
       this.game.isPointerLocked = document.pointerLockElement == this.game.canvas
@@ -842,7 +894,6 @@ export default class Input {
     const raycaster = new THREE.Raycaster()
     raycaster.setFromCamera(mouse, this.game.camera)
 
-    // this.game.map.actionelements.forEach(action => {
     for (const action of this.game.map.actionelements) {
       if (action[1].conditions.click == clickType) {
         const intersects = raycaster.intersectObjects(action[0].children, true)
@@ -854,21 +905,8 @@ export default class Input {
           const hitPoint = intersect.point
           const distance = cameraPos.distanceTo(hitPoint)
 
-          console.log('---')
-          console.log(action[0].text)
-          console.log('---')
-          
-          // IF HAVE TEXT
-          if (this.game.playerMouse.mode == 'look' && action[0].text && distance < 1) {
-
-            console.log('---')
-            console.log(action[0].text)
-            console.log(distance)
-            console.log(this.game.playerMouse.mode)          
-            console.log('---')
-
-            console.log($("#text-box-text").html(), action[0].text)
-
+          // IF LOOK MODE AND HAVE TEXT
+          if (this.game.playerMouse.mode == 'look' && action[0].text && distance < action[1].conditions.distance_far) {
             if ($("#text-box").is(":visible") && $("#text-box-text").html() == action[0].text) {
               $("#text-box").hide()
               $("#text-box-text").html('')
@@ -878,12 +916,18 @@ export default class Input {
               $("#text-box").show()
               continue
             }
-
           }
 
-          this.game.gameplay.checkActions(action, distance)
+          // IF USE MODE
+          if (this.game.playerMouse.mode == 'use') this.game.gameplay.checkActions('click', action, distance);
+
         }
       }
     }
+
+    // REMOVE-CURSOR
+    this.getActualCursor()
+    this.game.playerMouse.selectedObject = null
+    $('#cursor-text-box').hide().html('')
   }
 }

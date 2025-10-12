@@ -46,9 +46,10 @@ export default class Game {
 
     this.stepHeight = 0.2
 
-    //this.playerObjects = [3,2,1]
     //this.playerObjects = [4,5,6,7,0,1,2,3,3,4,5,6,7,0,1,2,3]
     this.playerObjects = [0,1,2,3]
+    
+    this.playerProtectedObjects = [7]
 
     this.playerMouse = {
       mode: null,    // use, view,
@@ -221,7 +222,7 @@ export default class Game {
       <div id="game-container">
         <canvas id="game-canvas"></canvas>
 
-        <div id="cursor-box">Próba text.</div>
+        <div id="cursor-text-box" style="display:none;">Próba text.</div>
 
         <div id="text-box-container">
           <div id="text-box" style="display:none;">
@@ -347,23 +348,51 @@ export default class Game {
   removeObjectOfMap(threeObject) {
     // DELETE SCENE
     this.scene.remove(threeObject)
-  
+
     // DELETE ACTIONELEMENTS
     this.map.actionelements = this.map.actionelements.filter(
       ([group, _]) => group !== threeObject
     )
-  
-    // DELETE BOUNDINGBOXES
-    threeObject.children.forEach(child => {
-      if (child.geometry?.boundingBox) {
-        const box = child.geometry.boundingBox.clone()
-        box.min.add(child.position); box.max.add(child.position);
-        this.boundingBoxes = this.boundingBoxes.filter(existingBox =>
-          !existingBox.equals(box)
-        )
+
+    // DELETE BOUNDING BOXES
+    this.boundingBoxes = this.boundingBoxes.filter(box => {
+      if (!threeObject.children) return true
+      for (const child of threeObject.children) {
+        if (child.geometry?.boundingBox) {
+          const childBox = child.geometry.boundingBox.clone()
+          childBox.min.add(child.position)
+          childBox.max.add(child.position)
+          if (box.equals(childBox)) return false
+        }
+      }
+      return true
+    })
+
+    // DELETE BOX HELPERS
+    if (this.boxHelp && this.scene.children.length > 0) {
+      this.scene.children = this.scene.children.filter(obj => {
+        return !(obj.type === 'LineSegments' && obj.material.color?.getHex() === 0xffff00)
+      })
+    }
+
+    // DELETE LOADED MESHES
+    for (const [id, meshGroup] of Object.entries(this.loadedMeshs)) {
+      if (meshGroup === threeObject) {
+        delete this.loadedMeshs[id]
+        break
+      }
+    }
+
+    // CLEAR GEOMETRY & MATERIALS
+    threeObject.traverse(obj => {
+      if (obj.geometry) obj.geometry.dispose()
+      if (obj.material) {
+        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose())
+        else obj.material.dispose() // DELETE DATA GPU BUFFER
       }
     })
   }
+  
 
   removeBoundingBoxOfMap(threeObject) {    
     // DELETE BOUNDINGBOXES

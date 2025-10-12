@@ -89,25 +89,21 @@ export default class Inventory {
       if (this.inventoryMenu.reloadInventory) {
         this.inventoryMenu.reloadInventory = false
 
+        $(".item-text-container").html('')
+
         // IF SELECTED OBJECT
         if (this.inventoryMenu.selectedObject) {
           const selectedRow = $("#inventory-selected-item-container .item-selected-text-container:visible").eq(this.game.inventory.inventoryMenu.selectedPosition)
           const mode = selectedRow.attr('data-mode')
 
-          console.log(mode)
-          
           this.game.playerMouse = {
             mode: mode,
             selectedObject: this.inventoryMenu.objectSelectedData
           }
 
-          console.log('--MOUSE--')
-          console.log(this.game.playerMouse)
-          console.log('------')
-
           // WAIT
           selectedRow.removeClass('text-hover').addClass('text-selected')
-          await new Promise(wait => setTimeout(wait, 500))
+          await new Promise(wait => setTimeout(wait, 10))
           selectedRow.removeClass('text-selected')
 
           // RESET INVENTORY SELECED
@@ -142,12 +138,20 @@ export default class Inventory {
               if (readDetails[0] == 'book') this.loadBookPage();
             }
             return;
-          } 
+          }
 
-          console.log('BACK GAME')
+          // BACK GAME
           this.game.play = true
           this.game.currentState = 'game'
           this.game.showHideOptions('game')
+
+          // SHOW OBJECT NAME
+          if (mode == 'use') {
+            this.game.input.setGetCursor()
+            $("#cursor-text-box").html(this.game.playerMouse.selectedObject.name).show()            
+            this.game.input.checkMousePositionOptions(this.game.input.lastEventMouse)
+          }
+
           return;
         }
 
@@ -156,31 +160,32 @@ export default class Inventory {
         for (let i = 0; i < listElements.length; i++) {
           let objId = listElements[i]
           let objectData = await this.getInventorySelecteObjectData(objId)
+          objectData.objId =  objId // ADD this.game.loadedObjects ID
 
-            let element = $("#inventory-item-text-container .item-text-container"); element.eq(i).html(objectData.name);
-            if (i == this.inventoryMenu.inventoryPosition) {
-              // ACTUAL SELECTED OBJECT
-              this.inventoryMenu.objectSelectedData = objectData
-              // console.log('---'); console.log(objectData.read); console.log(objectData.eat); console.log('---');
+          let element = $("#inventory-item-text-container .item-text-container"); element.eq(i).html(objectData.name);
+          if (i == this.inventoryMenu.inventoryPosition) {
+            // ACTUAL SELECTED OBJECT
+            this.inventoryMenu.objectSelectedData = objectData
+            // console.log('---'); console.log(objectData.read); console.log(objectData.eat); console.log('---');
 
-              element.eq(i).addClass('text-hover')
-              $("#object-text-container").html(objectData.text)
+            element.eq(i).addClass('text-hover')
+            $("#object-text-container").html(objectData.text)
 
-              objectData.read ? $("#object-read").show() : $("#object-read").hide();
-              objectData.eat ? $("#object-eat").show() : $("#object-eat").hide();
+            objectData.read ? $("#object-read").show() : $("#object-read").hide();
+            objectData.eat ? $("#object-eat").show() : $("#object-eat").hide();
 
-              // IF SELECTED OBJECT MODE
-              if (this.inventoryMenu.objectSelected) {
-                this.inventoryMenu.selectedLength = $("#inventory-selected-item-container .item-selected-text-container:visible").length
-    
-                $("#inventory-selected-item-container .item-selected-text-container").removeClass('text-hover').removeClass('text-selected')
-                $("#inventory-selected-item-container .item-selected-text-container:visible").eq(this.inventoryMenu.selectedPosition).addClass('text-hover')
-              } else {
-                $("#inventory-selected-item-container .item-selected-text-container").removeClass('text-hover').removeClass('text-selected')
-              }
+            // IF SELECTED OBJECT MODE
+            if (this.inventoryMenu.objectSelected) {
+              this.inventoryMenu.selectedLength = $("#inventory-selected-item-container .item-selected-text-container:visible").length
+  
+              $("#inventory-selected-item-container .item-selected-text-container").removeClass('text-hover').removeClass('text-selected')
+              $("#inventory-selected-item-container .item-selected-text-container:visible").eq(this.inventoryMenu.selectedPosition).addClass('text-hover')
             } else {
-              element.eq(i).removeClass('text-hover').removeClass('text-selected')
+              $("#inventory-selected-item-container .item-selected-text-container").removeClass('text-hover').removeClass('text-selected')
             }
+          } else {
+            element.eq(i).removeClass('text-hover').removeClass('text-selected')
+          }
         }
 
         // ARROWS UP AND DOWN SHOW/HIDE
@@ -217,15 +222,12 @@ export default class Inventory {
     }
 
     async firstLoadAllObjects() {
-      console.log(this.game.objectsList)
-
       Object.entries(this.game.objectsList).forEach(([index, value]) => {
         this.loadObjectInScreen(index)
       })
 
       // FIRST OBJECT SELECTED
       this.selectedObject = await this.getInventorySelecteObjectData(this.game.playerObjects[0])
-
       this.firstLoadedAllObjects = true
     }
 

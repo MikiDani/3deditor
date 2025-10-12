@@ -33,6 +33,22 @@ $secondary: #ea8708;
 $third: #32ad0c;
 $fourth: #274223;
 $fifth: #aaa;
+$brown-light: #a36209;
+$brown-dark: #a0410d;
+$yellow-gold: #ffdd00;
+$yellow-light: #ffff00;
+
+.text-white {
+  color: white !important;
+}
+
+.text-yellow-light {
+  color: $yellow-light !important;
+}
+
+.text-yellow-gold {
+  color: $yellow-gold !important;
+}
 
 .text-hover {
   color: $third !important;
@@ -40,25 +56,6 @@ $fifth: #aaa;
 
 .text-selected {
   color: $secondary !important;
-}
-
-.cursor-pointer {
-  &:hover{
-      cursor: pointer;
-  }
-}
-
-#cursor-box {
-  position: fixed;
-  pointer-events: none;
-  background: rgba(0,0,0,0.7);
-  color: $primary;
-  border: 5px solid $fourth;
-  padding: 5px 10px;
-  border-radius: 6px;
-  font-size: 14px;
-  transform: translate(10px, 10px);
-  z-index: 10qe;
 }
 
 .usn {
@@ -83,12 +80,43 @@ a:hover, button:hover, input:hover, textarea:hover {
     cursor: url('/img/cursors/cursor-default.png') 5 5, auto !important;
 }
 
+.cursor-pointer {
+  &:hover{
+      cursor: pointer;
+  }
+}
+
+#cursor-text-box {
+  position: fixed;
+  pointer-events: none;
+  background: $brown-light;
+  color: white;
+  border: 5px solid $brown-dark;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  transform: translate(10px, 10px);
+  z-index: 10;
+}
+
 .cursor-default {
   cursor: url('/img/cursors/cursor-default.png') 5 5, auto !important;
 }
 
-.cursor-use {
-  cursor: url('/img/cursors/cursor-use.png') 5 5, auto !important;
+.cursor-use-on {
+  cursor: url('/img/cursors/cursor-use-on.png') 5 5, auto;
+}
+
+.cursor-use-off {
+  cursor: url('/img/cursors/cursor-use-off.png') 5 5, auto;
+}
+
+.cursor-get-on {
+  cursor: url('/img/cursors/cursor-get-on.png') 5 5, auto;
+}
+
+.cursor-get-off {
+  cursor: url('/img/cursors/cursor-get-off.png') 5 5, auto;
 }
 
 .cursor-look-on {
@@ -150,10 +178,29 @@ a:hover, button:hover, input:hover, textarea:hover {
     border-image-slice: 25;
     border-image-repeat: stretch;
     max-width: 70%;
-    margin-bottom: 10vh;
+    margin-bottom: 17vh;
     color: $primary;
     background-image: url('../img/inventory/green-dark-bg.png');
+    
+    cursor: url('/img/cursors/cursor-default.png') 5 5, auto !important;
+
     z-index: 10;
+  }
+
+  .check-mark {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background-image: url('/img/check-mark.png');
+    background-size: cover;
+  }
+
+  .error-mark {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background-image: url('/img/error-mark.png');
+    background-size: cover;
   }
 
   #text-box-close-button {

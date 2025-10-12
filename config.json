@@ -11,6 +11,14 @@
     {
       "id": 2,
       "name": "Open-3 (door2) x:min y:min z:min"
+    },
+    {
+      "id": 3,
+      "name": "Switch 1."
+    },
+    {
+      "id": 4,
+      "name": "Switch 2."
     }
   ],
   "lightfx": [
@@ -40,8 +48,8 @@
     {
       "id": "note_1",
       "titles": [
-        "A 1. Minus assumenda rerum dicta minus libero nostrum.",
-        "A 2. Assumenda rerum dicta minus libero nostrum.",
+        "A 1. Minus assumenda rerum dicta minus libero.",
+        "A 2. Assumenda rerum dicta minus libero.",
         "A 3. Aliquam minus libero nostrum."
       ],
       "texts": [
@@ -49,18 +57,20 @@
 
         "n2 Ad est provident voluptas tempore repellendus obcaecati, nobis eos corrupti enim dolores fugit dignissimos ipsum saepe molestiae. Quidem quod numquam laboriosam dolorem, consequatur earum doloribus. Voluptatibus quis molestiae incidunt officiis?<br>Aliquam assumenda rerum dicta minus libero nostrum iusto.",
 
-        "n3 Perferendis cumque ipsum, veritatis exercitationem ab animi illo harum nulla deleniti suscipit voluptates, molestiae quidem obcaecati repellendus ipsa qui aliquam perspiciatis vitae impedit necessitatibus odio nobis! Numquam commodi delectus blanditiis?"
+        "n3 Perferendis cumque ipsum, veritatis exercitationem ab animi illo harum nulla deleniti suscipit voluptates, molestiae quidem obcaecati repellendus ipsa qui aliquam perspiciatis vitae impedit necessitatibus odio."
       ]
     },
     {
       "id": "note_2",
       "titles": [
-        "B 1. Assumenda rerum dicta minus libero nostrum.",
-        "B 2. Aliquam  rerum dicta minus libero nostrum.",
+        "B 1. Assumenda rerum dicta minus libero.",
+        "B 2. Aliquam  rerum dicta minus libero.",
         "B 3. Rerum dicta minus libero nostrum."
       ],
       "texts": [
         "Marnin ipsum dolor sit amet consectetur adipisicing elit. <img src='img/inventory/book-img-01.png' style='float:right;'> Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem.",
+
+        "n3 Perferendis cumque ipsum, veritatis exercitationem ab animi. <img src='img/inventory/book-img-05.png' class='w-50 me-3' style='float:left;'> Illo harum nulla deleniti suscipit voluptates, molestiae quidem obcaecati repellendus ipsa qui aliquam perspiciatis vitae impedit necessitatibus odio nobis! Numquam commodi.",
 
         "Placeat sint, velit nobis quaerat et ullam adipisci laborum laboriosam quibusdam numquam alias repellat dolorem unde a vitae culpa perspiciatis! Nihil recusandae est provident iure possimus architecto doloribus, beatae ullam! &nbsp;&nbsp;&nbsp; <strong>Peter Pan</strong>"
       ]
@@ -111,10 +121,10 @@
         [
           "C b1 Repudiandae ducimus delectus possimus commodi vero eveniet cum, voluptates nesciunt reiciendis alias iste obcaecati labore quidem, asperiores corporis neque amet debitis. <img src='img/inventory/book-img-03.png' class='usn mt-4 me-3' style='float:left;'> Sed, voluptate laborum eligendi accusantium aut exercitationem laboriosam vitae similique!",
 
-          "C b2 Voluptatum id eveniet iusto sunt accusantium perferendis cum inventore ullam consequuntur voluptatibus mollitia commodi, nemo fuga. Reiciendis, doloremque. Cumque, fugiat quidem nihil ex repudiandae earum quibusdam laboriosam nulla voluptate?"
+          "C b2 Voluptatum id eveniet iusto sunt accusantium perferendis cum inventore ullam consequuntur voluptatibus mollitia commodi, nemo fuga. Reiciendis, doloremque.<img src='img/inventory/book-img-05.png' class='w-50 me-3' style='float:center;'> Cumque, fugiat quidem nihil ex repudiandae earum quibusdam laboriosam nulla voluptate?"
         ],
         [
-          "D b1 Quis modi laborum fuga, nesciunt esse harum blanditiis sapiente unde placeat dolore? Beatae ipsa consequuntur voluptas! Consectetur, asperiores! Ipsum esse est, quibusdam non, similique sed aperiam nobis nihil recusandae aut?",
+          "D b1 Quis modi laborum fuga, nesciunt esse harum blanditiis sapiente unde placeat dolore? Beatae ipsa consequuntur voluptas! Consectetur, asperiores! <img src='img/inventory/book-img-04.png' class='w-50 me-3' style='float:left;'> Ipsum esse est, quibusdam non, similique sed aperiam nobis nihil recusandae aut?",
 
           "D b2 Tempore repellat vitae magni, est molestias mollitia alias rem explicabo. Cumque laudantium libero laboriosam, iste voluptatum doloremque iusto expedita dolorem eaque dicta possimus obcaecati porro eveniet, architecto saepe. Illo, nihil."
         ]

@@ -77,8 +77,4 @@ export default class Graphics {
       return false
     }
   }
-
-  render() {
-    // this.game.renderer.render(this.game.scene, this.game.camera)
-  }
 }

@@ -21,7 +21,7 @@ export default class Gameplay {
     await this.game.renderer.render(this.game.scene, this.game.camera)
   }
 
-  async updateBeings() {    
+  async updateBeings() {
     for (let [id, beingGroup] of Object.entries(this.game.loadedBeings)) {
       
       const beingId = Number(id)
@@ -200,7 +200,7 @@ export default class Gameplay {
     switch (beingGroup.animState.type) {
       case('MOVE'):
         switch (beingGroup.filename) {
-          case('zombi-t'):
+          case('zombi-t!X'):  //!!  ne mozogjon ideiglenesen a Zombi
             this.rotateAndMoveInPlayer(beingGroup, true, true) // rotate, move
             break;
           case('bat'):
@@ -361,19 +361,74 @@ export default class Gameplay {
     
         if (intersects.length > 0) {
           // NO CLICK ACTIONS CHECK
-          this.checkActions(action, intersects[0].distance)
+          this.checkActions('noclick', action, intersects[0].distance)
         }
       }
     });
   }
 
-  async checkActions(actions, distance) {
+  async checkActions(type, actions, distance) {
+    // MAKE USEDOBJECTS ARRAY
+    if (typeof actions[1].conditions.usedobjects === 'undefined') actions[1].conditions.usedobjects = []
+
     // CHECK DISTANCES
     if (!(distance > actions[1].conditions.distance_near && distance < actions[1].conditions.distance_far)) return;
-  
-    // CHECK OBJECTS
-    if (actions[1].conditions.issetobjects.length > 0 && !this.game.checkPlayerObject(actions[1].conditions.issetobjects)) return;
-  
+
+    // CHECK USER CLICK TYPE
+    if (type == 'click') {
+      // CHECK OBJECTS
+      if (actions[1].conditions.success) {
+        // TASK COMPLETTED // this.makeActionObjectsMessageElement({type: 'actionmessage', actionText: actions[1].conditions.success_text})
+      } else if (actions[1].conditions.issetobjects.length === 0 && this.game.playerMouse.selectedObject !== null) {
+        // OBJECT IS IN HAND, BUT ACTION DOESN’T HAVE ISSETOBJECT ARRAY
+        this.makeActionObjectsMessageElement({type: 'cantuse', cantUseObject: this.game.playerMouse.selectedObject.name}) 
+        return;
+      } else if (actions[1].conditions.issetobjects.length > 0 && !this.game.playerMouse.selectedObject) {
+        // ACTION HAVE ISSETOBJECT DOESN’T HAVE IN HEAND
+
+        const objects = actions[1].conditions.issetobjects.map(x => [this.game.objectsList[x].name, actions[1].conditions.usedobjects.includes(x)])
+        let listElements = this.makeActionObjectsMessageElement({type: 'list', objects: objects})
+
+        this.makeActionObjectsMessageElement({type: 'actionmessage', actionText: actions[1].conditions.failed_text + listElements})
+        return;
+      } else if (actions[1].conditions.issetobjects.length > 0 && this.game.playerMouse.selectedObject) {
+        // HAVE ISSETOBJECT AND HAVE OBJECT IN HEAND
+        let usedObjectName = null
+        // PUSH OBJECT ID
+        if (actions[1].conditions.issetobjects.includes(this.game.playerMouse.selectedObject.objId) && !actions[1].conditions.usedobjects.includes(this.game.playerMouse.selectedObject.objId)) {
+          actions[1].conditions.usedobjects.push(this.game.playerMouse.selectedObject.objId)
+          usedObjectName = this.game.playerMouse.selectedObject.name
+          // IF NOT PROTECTED DELETE OBJECT FROM INVENTORY
+          const isProtected = this.game.playerProtectedObjects.includes(this.game.playerMouse.selectedObject.objId)          
+          if (!isProtected) {
+            this.game.playerObjects = this.game.playerObjects.filter(obj => obj !== this.game.playerMouse.selectedObject.objId)
+            this.game.inventory.inventoryMenu.reloadInventory = true
+          }
+        }
+        // CHECK EXACT MATCH
+        const success = actions[1].conditions.issetobjects.length === actions[1].conditions.usedobjects.length && actions[1].conditions.issetobjects.every(x => actions[1].conditions.usedobjects.includes(x))
+        if (success) {
+          // COMPLETT ACTION OBJECTS
+          actions[1].conditions.success = true
+          this.makeActionObjectsMessageElement({type: 'actionmessage', actionText: actions[1].conditions.success_text})
+        } else {
+          // MISSING ACTION OBJECTS
+          const objects = actions[1].conditions.issetobjects.map(x => [this.game.objectsList[x].name, actions[1].conditions.usedobjects.includes(x)])
+          let listElements = this.makeActionObjectsMessageElement({type: 'list', objects: objects})
+          usedObjectName
+          ? this.makeActionObjectsMessageElement({type: 'use', useObject: usedObjectName, listElements: listElements})
+          : this.makeActionObjectsMessageElement({type: 'actionmessage', actionText: listElements})
+          return;
+        }
+      }
+    }
+
+    // CHECK NOCLICK TYPE
+    if (type == 'noclick') {
+      // CHECK OBJECTS
+      if (actions[1].conditions.issetobjects.length > 0 && !this.game.checkPlayerObject(actions[1].conditions.issetobjects)) return;
+    }
+
     // START EVENTS
     for(const event of actions[1].events) {
       // ACTION
@@ -406,8 +461,8 @@ export default class Gameplay {
           // MOVE FX
           if (event.moveactions.length > 0) {
             for (const fx of event.moveactions) {
-              console.log(fx[0])
-              console.log(fx[1])
+              // console.log(fx[0])
+              // console.log(fx[1])
               let mesh = this.game.loadedMeshs[parseInt(fx[0])]        
               let fxData = this.game.config.movefx.find(fxpc => fxpc.id == parseInt(fx[1]))
               if (mesh && fxData) this.moveFx(mesh, fxData);
@@ -436,6 +491,43 @@ export default class Gameplay {
       } else {
         await oncePlayEvent()
       }
+    }
+  }
+
+  makeActionObjectsMessageElement({type: type, objects: objects, cantUseObject: cantUseObject, useObject: useObject, actionText, listElements: listElements}) {
+    const removeCursor = () => {
+      // REMOVE SELECTED OBJECT AND CURSOR
+      this.game.playerMouse.selectedObject = null
+      $('#cursor-text-box').hide().html('')
+      this.game.input.getActualCursor()
+    }
+
+    switch(type) {
+      case "list":
+        let elements = ``;
+        objects.forEach(object => {
+          elements += `
+          <div class="text-center">
+            <span class="${object[1] ? 'check-mark' : 'error-mark'}"></span> <span class="text-white">${object[0]}</span>
+          </div>`;
+        });
+        return elements;
+      case "use":
+        let message = `<div class="text-center">You was used the <strong class="text-white">${useObject}</strong> here!<br>You neaded objects:</div>`
+        message += listElements
+        $("#text-box-text").html(message)
+        $("#text-box").show()
+      break
+      case "cantuse":
+        $("#text-box-text").html(`You can't use the ${cantUseObject} here!`)
+        $("#text-box").show()
+        removeCursor()
+      break
+      case "actionmessage":
+        $("#text-box-text").html(actionText)
+        $("#text-box").show()
+        removeCursor()
+      break
     }
   }
 
@@ -526,8 +618,6 @@ export default class Gameplay {
   openFx(mesh) {
     mesh.openConfig.addedValue = mesh.openConfig.state ? -mesh.openConfig.addedStep : mesh.openConfig.addedStep; // ÉRTÉKE
     mesh.openConfig.valueAdd = mesh.openConfig.state ? -1 : 1; // COUNT-JA
-
-    console.log(mesh.openConfig.addedValue)
 
     if (!mesh?.timeInterval) {
       // FIRST OFFSET OPTIONS

@@ -51,7 +51,7 @@ export default class Loader {
   }
 
   // Spritesheet generálása több képből és animált textúra létrehozása
-  async createSpritesheetTexture(name, imagePaths, interval = 100) {
+  async createSpritesheetTexture(name, imagePaths, interval = 100) {    // !! KÉP ANIMÁCIÓ IDŐ az iterval
     const loader = new THREE.ImageLoader()
     const tilesHoriz = imagePaths.length
     const images = []
@@ -121,8 +121,9 @@ export default class Loader {
       this.game.player.position.x = this.game.map.player.x
       this.game.player.position.y = this.game.map.player.y
 
-      // this.game.player.position.z = -this.game.map.player.z / 7  // !!!
-      this.game.player.position.z = -this.game.map.player.z / 7 + 3
+      this.game.player.position.z = -this.game.map.player.z / 7 + 1
+      // this.game.player.position.z = -this.game.map.player.z / 7 + 3  // !!!
+
       console.log(this.game.player.position.z)
 
       this.game.player.rotation.y -= this.game.map.player.fYaw
@@ -194,7 +195,7 @@ export default class Loader {
 
         // LOAD ACTIONS
         if (mesh?.actions && mesh.actions.length > 0) {
-          console.log('Van AKCIÓJA: ', mesh.name)
+          // console.log('Van AKCIÓJA: ', mesh.name)
           for (const action of mesh.actions) {
             let actionData = this.game.map.actions.find(obj => obj.id == action)
             if (actionData) {
@@ -237,8 +238,10 @@ export default class Loader {
             }
           }
           // MINIMUM AMBIENT LIGHT
-          const ambient = new THREE.AmbientLight(0xffffff, 0.0)  // 0.05
-          this.game.scene.add(ambient)
+          if (false) {
+            const ambient = new THREE.AmbientLight(0xffffff, 0.0)  // 0.05
+            this.game.scene.add(ambient)
+          }
         }
 
       } else {
