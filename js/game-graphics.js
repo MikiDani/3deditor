@@ -14,6 +14,7 @@ export default class Graphics {
     this.game.renderer.domElement.style.imageRendering = 'pixelated'
     this.game.renderer.setPixelRatio(1)
     this.game.scene = new THREE.Scene()
+    this.game.heandScene = new THREE.Scene()
 
     // console.log(this.checkGPU())
     if (this.checkGPU()) {
@@ -65,7 +66,8 @@ export default class Graphics {
       }
 
       const fullInfo = (vendor + ' ' + renderer).toLowerCase()
-      console.log('GPU info:', vendor, renderer)
+      
+      // console.log('GPU info:', vendor, renderer) //?? GRAPHICS CARD INFO
 
       // ha a stringben gyanús szavak vannak, akkor CPU fallback
       const blacklist = ['swiftshader', 'software', 'llvmpipe', 'mesa', 'angle (google', 'soft']

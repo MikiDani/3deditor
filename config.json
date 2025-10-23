@@ -14,18 +14,22 @@
     },
     {
       "id": 3,
-      "name": "Switch 1."
-    },
-    {
-      "id": 4,
-      "name": "Switch 2."
+      "name": "Switch 1.",
+      "state": "switch-on",
+      "texture_on": "switch-on",
+      "texture_off": "switch-off"
     }
   ],
   "lightfx": [
     {
       "id": 0,
       "name": "Random color 0ms",
-      "time": 0
+      "time": 100
+    },
+    {
+      "id": 1,
+      "name": "Turn OFF / ON",
+      "state": true
     }
   ],
 
@@ -41,6 +45,24 @@
     {
       "id": 3,
       "name": "dong"
+    }
+  ],
+
+  "actionmessages": [
+    {
+      "object_id": 3,
+      "action_id": 1,
+      "message": "Your idiote! The table dont use on the fridge! : )"
+    },
+    {
+      "object_id": 0,
+      "action_id": 1,
+      "message": "If you cast a spell on the fridge with the magic book, that's funny! : )"
+    },
+    {
+      "object_id": 1,
+      "action_id": 8,
+      "message": "To use a bush on the door... Funny :P"
     }
   ],
 

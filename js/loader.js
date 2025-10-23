@@ -1,4 +1,4 @@
-import $ from 'jquery'
+import $, { map } from 'jquery'
 import * as THREE from 'three'
 
 export default class Loader {
@@ -123,8 +123,7 @@ export default class Loader {
 
       this.game.player.position.z = -this.game.map.player.z / 7 + 1
       // this.game.player.position.z = -this.game.map.player.z / 7 + 3  // !!!
-
-      console.log(this.game.player.position.z)
+      // console.log(this.game.player.position.z)
 
       this.game.player.rotation.y -= this.game.map.player.fYaw
       this.game.pitchObject.rotation.x -= -this.game.map.player.fXaw
@@ -139,6 +138,8 @@ export default class Loader {
         console.log(this.game.map.actions)
         console.log('----')
       }
+
+
 
       // ADD MAP DATA
       for (let mesh of this.game.map.data) {
@@ -168,15 +169,13 @@ export default class Loader {
           const materialType = (this.game.lightsOn) ? 'MeshLambertMaterial' : 'MeshBasicMaterial';
           const material = new THREE[materialType]({
             map: this.game.loadedTextures[tri.texture.name],  // TEXTURA ÚJ MEGOLDÁS
-            side: THREE[triNormal],       // side: THREE.FrontSide, THREE.DoubleSide
-            transparent: triTransparent,  // Fontos a false, mert a tru nagyon lassítja!
+            side: THREE[triNormal],                           // side: THREE.FrontSide, THREE.DoubleSide
+            transparent: triTransparent,                      // Fontos a false, mert a tru nagyon lassítja!
             opacity: 1,
             alphaTest: 0.1,
           });
 
           const triangleMesh = new THREE.Mesh(geometry, material)
-
-          // console.log(triangleMesh)
           meshGroup.add(triangleMesh)
 
           geometry.computeBoundingBox()
@@ -187,7 +186,7 @@ export default class Loader {
           this.game.boundingBoxes.push(box)
 
           // YELLOW BOX-HELPER
-          const helper = new THREE.Box3Helper(box, new THREE.Color(0xffff00));
+          const helper = new THREE.Box3Helper(box, new THREE.Color('#ffff00'));
           if (this.game.boxHelp) {
             this.game.scene.add(helper);
           }
@@ -210,7 +209,7 @@ export default class Loader {
 
         meshGroup.box = new THREE.Box3().setFromObject(meshGroup)
         this.game.loadedMeshs[mesh.id] = meshGroup
-        this.game.scene.add(meshGroup)
+        this.game.scene.add(meshGroup)       
       }
 
       //ADD ACTIONS CLICK CHECKS
@@ -223,7 +222,8 @@ export default class Loader {
             //console.log('light.visible: ', light.visible)
             if (light.visible) {
               // console.log(light.color); console.log(light.editcolor); console.log(light.intensity); console.log(light.distance); console.log(light.type);
-              let lightColor = new THREE.Color(parseInt(light.color, 16))
+              console.log(light.color)
+              let lightColor = new THREE.Color(`#${light.color}`)
 
               let pointLight
               if (light.type == 'point') pointLight = new THREE.PointLight(lightColor, light.intensity, light.distance * 5);    
@@ -231,22 +231,26 @@ export default class Loader {
           
               if (pointLight) {
                 pointLight.position.set(light.p.x, light.p.y, light.p.z)
+                // PRIMARY LIGHT
                 this.game.scene.add(pointLight)
+                // HAND LIGHT
+                const handLight = pointLight.clone()
+                this.game.heandScene.add(handLight)
 
                 this.game.loadedLights[light.id] = [light.name, pointLight]
               }
             }
           }
           // MINIMUM AMBIENT LIGHT
-          if (false) {
-            const ambient = new THREE.AmbientLight(0xffffff, 0.0)  // 0.05
+          if (false) {  // !!!
+            const ambient = new THREE.AmbientLight('#ffffff', 0.0)  // 0.05
             this.game.scene.add(ambient)
           }
         }
 
       } else {
         console.log('AMBIENT ALAP FÉNY')
-        const ambient = new THREE.AmbientLight(0xffffff, 1)
+        const ambient = new THREE.AmbientLight('#ffffff', 1)
         this.game.scene.add(ambient)
       }
 
@@ -263,12 +267,11 @@ export default class Loader {
             }
           }
         }
-
         // FIRST ADD BEINGS
         if (this.game.map.beings) {
           for (const being of this.game.map.beings) {
-            const ActualBeingData = this.game.beingsList[being.filename].data[0]
-            if (ActualBeingData) {
+            const actualBeingData = this.game.beingsList[being.filename].data[0]
+            if (actualBeingData) {
               const beingGroup = new THREE.Group()
 
               beingGroup.beingId = being.id
@@ -277,11 +280,7 @@ export default class Loader {
               beingGroup.energy = being.energy
               beingGroup.damage = being.damage
               beingGroup.boxlines = being.boxlines
-              beingGroup.angle = being.angle
-
-              console.log('beingGroup.angle: ', beingGroup.angle)
-
-              // console.log(being.id, being.ratio, being.speed, being.energy, being.damage)
+              beingGroup.angle = being.angle    
 
               beingGroup.animState = {
                 'type': being.type,
@@ -290,7 +289,7 @@ export default class Loader {
                 'cardsegment': 0,
               }
 
-              this.createTHREEObject(being, beingGroup, ActualBeingData)
+              this.createTHREEObject(being, beingGroup, actualBeingData, false)
   
               beingGroup.position.set(being.p.x, being.p.y, being.p.z)
               beingGroup.rotation.y = THREE.MathUtils.degToRad(beingGroup.angle)
@@ -304,6 +303,71 @@ export default class Loader {
           }
           // console.log(this.game.loadedBeings)
         }
+      }
+
+      // HEANDS DATA LOADING
+      const response4 = await this.fetchData({ ajax: true, getheands: true })
+      if (response4.files) {
+        for (const file of response4.files) {          
+          const response5 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension, objectdir: '_heands' });
+          if (response5?.data && response5?.structure) {
+            let exp = file.name.split('_')
+
+            this.game.heandsList[exp[0]] = {
+              'id': exp[0],
+              'name': exp[1],
+              'filename': file.name,
+              'ratio': response5.ratio ?? 1,
+              'speed': 25,
+              'data': this.game.deepCopy(response5.data),
+              'structure': this.game.deepCopy(response5.structure),
+              'animations': this.game.deepCopy(response5.animations),
+            }
+            // IF HAVE LIGHTS (lamp, lighter)
+            if (response5.lights) this.game.heandsList[exp[0]].lights = this.game.deepCopy(response5.lights);
+          }
+        }
+        // FIRST ADD HEANDS
+        for (const heand of this.game.heandsList) {
+          const actualHeandData = this.game.heandsList[heand.id].data[0]
+          if (actualHeandData) {
+            const heandGroup = new THREE.Group()
+            heandGroup.heandId = heand.id
+            heandGroup.filename = heand.filename
+            heandGroup.ratio = heand.ratio
+            heandGroup.speed = heand.speed
+            heandGroup.boxlines = heand.boxlines
+            heandGroup.angle = 0
+            heandGroup.animations = heand.animations
+            heandGroup.animState = {
+              'type': heand.animations?.[0][0] ?? null,
+              'card': 0,
+              'cardframe': 0,
+              'cardsegment': 0,
+            }
+            heandGroup.visible = heand.id == this.game.playerMouse.selectedHeand ? true : false;
+            heandGroup.lastUpdate = performance.now()
+
+            // LOAD HEAND LIGHTS
+            if (heand.lights) {
+              heandGroup.lights = []
+              heand.lights.map(light => {
+                light.decay = light.decay ?? 1
+                const newLight = new THREE.PointLight(`#${light.color}`, light.intensity, light.distance, light.decay)
+                newLight.name = light.name
+                newLight.position.set(light.p.x, light.p.y, light.p.z)
+
+                heandGroup.lights.push(newLight)
+              });
+              //console.log(heandGroup.lights)
+            }
+
+            this.createTHREEObject(heand, heandGroup, actualHeandData, true)
+
+            this.game.loadedHeands[heand.id] = heandGroup
+          }
+        }
+        // console.log(this.game.loadedHeands)
       }
 
       // OBJECTS DATA LOADING
@@ -331,7 +395,7 @@ export default class Loader {
             }
           }
         }
-        console.log(this.game.objectsList)
+        // console.log(this.game.objectsList)
       }
 
       // SKY BACKGROUND
@@ -352,11 +416,11 @@ export default class Loader {
     }
   }
 
-  createTHREEObject(object, beingGroup, ActualBeingData) {    
-    for (let BeingMesh of ActualBeingData) {
+  createTHREEObject(object, group, actualData, first = false) {
+    for (let mesh of actualData) {      
       const meshGroup = new THREE.Group()
 
-      for (let tri of BeingMesh.tris) {
+      for (let tri of mesh.tris) {
         const geometry = new THREE.BufferGeometry()
 
         const vertices = new Float32Array([
@@ -373,7 +437,7 @@ export default class Loader {
         ])
         geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
         geometry.computeVertexNormals()
-    
+
         let triTransparent = tri?.transparent ? true : false;
         let triNormal = tri?.normal ? 'FrontSide' : 'DoubleSide';
 
@@ -387,10 +451,20 @@ export default class Loader {
         })
 
         const triangleMesh = new THREE.Mesh(geometry, material)
+
+        //!! FIRST
+        if (first) {
+          // material.depthTest = false
+          // triangleMesh.renderOrder = 10_000
+
+          // material.depthWrite = false;  // ne írjon a z-bufferbe
+          // material.renderOrder = 999999; // mindig utolsónak rajzolódjon
+        }
+
         meshGroup.add(triangleMesh)
       }
 
-      beingGroup.add(meshGroup)
+      group.add(meshGroup)
     }
   }
 

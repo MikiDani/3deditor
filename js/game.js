@@ -25,12 +25,14 @@ export default class Game {
     this.ghostMode
 
     this.beingsList = []
+    this.heandsList = []
     this.objectsList = []
 
     this.loadedTextures = {}
     this.loadedLights = []
     this.loadedBeings = []
     this.loadedObjects = []
+    this.loadedHeands = []
     this.loadedMeshs = []
 
     this.config = {}
@@ -51,9 +53,20 @@ export default class Game {
     
     this.playerProtectedObjects = [7]
 
+    this.mouseMaxPitchDefault = 80
+    this.mouseMinPitchDefault = -80
+
     this.playerMouse = {
       mode: null,    // use, view,
       selectedObject: null,
+      selectedHeand: 0,
+      mouseMaxPitch: 80,
+      mouseMinPitch: -60,
+    }
+
+    this.autoMovePlayerData = {
+      mode: null,
+      weapon: null,
     }
 
     // ---
@@ -130,7 +143,7 @@ export default class Game {
     }
   }
 
-  deepCopy(data, allVisible) { 
+  deepCopy(data, allVisible = false) {
     if (Array.isArray(data)) {
       return data.map(item => this.deepCopy(item, allVisible));
     }

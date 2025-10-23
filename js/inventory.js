@@ -34,8 +34,6 @@ export default class Inventory {
     }
 
     init() {
-      console.log('Inventory init')
-
       this.inventory.canvas = document.getElementById('inventory-3d-canvas')
       this.inventory.renderer = new THREE.WebGLRenderer({ canvas: this.inventory.canvas })
       this.inventory.renderer.domElement.style.imageRendering = 'pixelated'
@@ -53,7 +51,7 @@ export default class Inventory {
       this.inventory.camera.position.set(0, 0.5, 0.8)
       this.inventory.camera.rotateX(-0.5)
 
-      const ambient = new THREE.AmbientLight(0xffffff, 1)
+      const ambient = new THREE.AmbientLight('#ffffff', 1)
       this.inventory.scene.add(ambient)
 
       // Pitch object és hozzáadás a kamerához
@@ -96,10 +94,8 @@ export default class Inventory {
           const selectedRow = $("#inventory-selected-item-container .item-selected-text-container:visible").eq(this.game.inventory.inventoryMenu.selectedPosition)
           const mode = selectedRow.attr('data-mode')
 
-          this.game.playerMouse = {
-            mode: mode,
-            selectedObject: this.inventoryMenu.objectSelectedData
-          }
+          this.game.playerMouse.mode = mode
+          this.game.playerMouse.selectedObject = this.inventoryMenu.objectSelectedData
 
           // WAIT
           selectedRow.removeClass('text-hover').addClass('text-selected')

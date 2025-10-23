@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import $ from 'jquery'
+import $ from 'jquery';
 
 export default class Gameplay {
   constructor(game) {
@@ -14,16 +14,89 @@ export default class Gameplay {
 
     await this.game.input.updatePlayer()
 
+    await this.autoMovePlayer()
+
     await this.updateBeings()
+
+    await this.updateHeand()
 
     await this.startActions()
 
     await this.game.renderer.render(this.game.scene, this.game.camera)
+    
+    // RENDER HEAND
+    let selectedHeand = this.game.loadedHeands[this.game.playerMouse.selectedHeand]
+    if (!selectedHeand) return;
+
+    this.game.renderer.autoClear = false
+    this.game.renderer.clearDepth()
+
+    this.game.heandScene.add(selectedHeand)
+    await this.game.renderer.render(this.game.heandScene, this.game.camera)
+
+    this.game.renderer.autoClear = true
+  }
+  
+
+  async autoMovePlayer() {    
+    if (this.game.autoMovePlayerData.mode == null) return;
+
+    switch (this.game.autoMovePlayerData.mode) {
+      case 'y-center': {
+        const step = THREE.MathUtils.degToRad(5)
+        let x = this.game.pitchObject.rotation.x
+  
+        // NORMALIZE REGION
+        x = THREE.MathUtils.euclideanModulo(x + Math.PI, Math.PI * 2) - Math.PI
+
+        if (Math.abs(x) <= step) {
+          // CENTER
+          this.game.pitchObject.rotation.x = 0;
+          $(document).trigger($.Event('keydown', { key: `${this.game.autoMovePlayerData.weapon}`, which: 49, keyCode: 49 }));
+
+          this.game.autoMovePlayerData.mode = null
+          this.game.autoMovePlayerData.weapon = null
+        } else {
+          // MOVEING
+          this.game.pitchObject.rotation.x += (x > 0 ? -step : step);
+        }
+        break;
+      }
+    }
+    //console.log(this.game.autoMovePlayerData)
   }
 
-  async updateBeings() {
+  async refreshHeandLights() {
+    // töröljük a korábbi fényeket
+    const lightsToRemove = []
+    this.game.heandScene.traverse(obj => {
+      if (obj.isLight) lightsToRemove.push(obj)
+    })
+    lightsToRemove.forEach(light => this.game.heandScene.remove(light))
+  
+    // console.log(this.game.loadedLights)
+
+    // új fények hozzáadása
+    this.game.loadedLights.map(element => {
+      const light = element[1]
+  
+      const newLight = new THREE.PointLight(
+        light.color.clone ? light.color.clone() : light.color,
+        light.intensity,
+        light.distance,
+        light.decay,
+      )
+
+      newLight.position.copy(light.position)
+      newLight.visible = light.visible
+  
+      this.game.heandScene.add(newLight)
+    })
+  }
+
+  async updateBeings() {    
     for (let [id, beingGroup] of Object.entries(this.game.loadedBeings)) {
-      
+
       const beingId = Number(id)
       const beingModell = this.game.beingsList[beingGroup.filename]
 
@@ -79,7 +152,7 @@ export default class Gameplay {
             }              
           } else interpolatedFrame = actualFrameData
 
-          this.syncBeingTrianglesPositions(beingGroup, interpolatedFrame)
+          this.syncTrianglesPositions(beingGroup, interpolatedFrame)
         }
       }
 
@@ -97,7 +170,7 @@ export default class Gameplay {
 
         // HELPER
         if (false) {
-          beingGroup.helper = new THREE.Box3Helper(beingGroup.box, new THREE.Color(0xffff00))
+          beingGroup.helper = new THREE.Box3Helper(beingGroup.box, new THREE.Color('#ffff00'))
           beingGroup.helper.box.copy(beingGroup.box)
           this.game.scene.add(beingGroup.helper)
         }
@@ -110,6 +183,172 @@ export default class Gameplay {
     }
   }
 
+  async updateHeand() {
+    // console.log(this.game.heandsList)
+    for (let [id, heandGroup] of Object.entries(this.game.loadedHeands)) {
+      // SELECTED HEAND
+      if (id == this.game.playerMouse.selectedHeand) {
+        heandGroup.visible = true;
+
+        const heandModell = this.game.heandsList[heandGroup.heandId]
+        if (heandModell) {
+
+          // ANIMATION
+          const now = performance.now()
+          if (now - heandGroup.lastUpdate >= Number(heandGroup.speed)) {
+            heandGroup.lastUpdate = now
+            if (heandGroup.animState.type != 'none') {
+              heandGroup.animState = this.stepAnimState(heandGroup.animState, heandModell.animations)  
+              const actualFrameData = this.game.deepCopy(heandModell?.data?.[heandGroup.animState.cardframe])
+              const nextFrameData = heandModell?.data?.[heandGroup.animState.nextFrameIndex]
+              if (!actualFrameData || !nextFrameData) return;
+  
+              let actualFrameDataDifference = actualFrameData.map(mesh => ({
+                id: mesh.id,
+                tris: mesh.tris.map(tri => ({
+                  id: tri.id,
+                  p: tri.p.map(pt => ({
+                    x: Number(pt.x),
+                    y: Number(pt.y),
+                    z: Number(pt.z),
+                  }))
+                }))
+              }))
+              actualFrameDataDifference = await this.calcInterpolated(actualFrameDataDifference, nextFrameData, heandGroup.animState.segmentlength)
+  
+              let interpolatedFrame
+              if (heandGroup.animState.cardsegment > 0) {
+                interpolatedFrame = this.game.deepCopy(actualFrameData)
+  
+                if (heandGroup.animState.cardsegment != 0) {
+                  for (let row of interpolatedFrame) {
+                    if (row?.tris) {
+                      for (let tri of row.tris) {
+                        let tri2 = actualFrameDataDifference
+                          .flatMap(obj => obj.tris)
+                          .find(triangle => triangle.id == tri.id);
+                        if (tri2) {
+                          for (let n = 0; n < 3; n++) {
+                            tri.p[n].x = tri.p[n].x - (tri2.p[n].x * heandGroup.animState.cardsegment)
+                            tri.p[n].y = tri.p[n].y - (tri2.p[n].y * heandGroup.animState.cardsegment)
+                            tri.p[n].z = tri.p[n].z - (tri2.p[n].z * heandGroup.animState.cardsegment)
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              } else interpolatedFrame = actualFrameData
+  
+              this.syncTrianglesPositions(heandGroup, interpolatedFrame)
+            }
+          }
+  
+          // végleges box újraszámolása
+          if (!heandGroup.box) heandGroup.box = new THREE.Box3()
+          
+          // CAMERA WORLD ROTATION (yaw + pitch)
+          const camQuat = new THREE.Quaternion()
+          this.game.camera.getWorldQuaternion(camQuat)
+          
+          // CAMERA WORLD POSITION
+          const camPos = new THREE.Vector3()
+          this.game.camera.getWorldPosition(camPos)         
+
+          // MOD UP/DOWN LOOK HEAD POSITION
+          const yModifyToXaw = ((this.game.pitchObject.rotation._x + 1) / 20) * -1
+
+          const forwardDistance = 0.5
+          const heightOffset = -0.1 + yModifyToXaw
+          const localOffset = new THREE.Vector3(-0.15, heightOffset, -forwardDistance)
+
+          // az offsetet a kamera rotációjával elforgatjuk és a kamera világpozíciójához adjuk
+          const worldPos = camPos.clone().add(localOffset.clone().applyQuaternion(camQuat))
+
+          // HEAND POSITION
+          heandGroup.position.copy(worldPos)
+
+          if (false) {
+            // y tengelyen ne vegye át a forgást
+            const camEuler = new THREE.Euler().setFromQuaternion(camQuat, 'YXZ')  // változás
+            const yawOnlyQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, camEuler.y, 0, 'YXZ'))  // változás
+            heandGroup.quaternion.copy(yawOnlyQuat)  // változás
+          } else {
+            heandGroup.quaternion.copy(camQuat)
+          }
+
+
+          // IF HAVE LIGHT          
+          if (!heandGroup.lightsAdded) {
+            if (heandGroup.lights) {
+              if (!heandGroup.lightsGroup) {
+                heandGroup.lightsGroup = new THREE.Group()
+                this.game.scene.add(heandGroup.lightsGroup)
+              }
+              heandGroup.lights.forEach(light => {
+                heandGroup.heandindex = heandGroup.heandindex ?? []
+                heandGroup.lightsGroup.add(light)
+                heandGroup.heandindex.push(this.game.loadedLights.push([heandModell.filename, light.clone()]) - 1)
+              })
+            } else {
+              // RESET
+              console.log('reset')
+              if (heandGroup.heandindex) {
+                heandGroup.heandindex.forEach(index => {
+                  delete this.game.loadedLights[index]
+                });
+              }
+              if (heandGroup.lightsGroup) {
+                this.game.scene.remove(heandGroup.lightsGroup)
+                heandGroup.lightsGroup = null
+                heandGroup.lightsAdded = false
+              }
+            }
+
+            heandGroup.lightsAdded = true; // ONLY ONE
+          }
+          if (heandGroup.lightsGroup) {
+            const originalCamPos = new THREE.Vector3()
+            this.game.camera.getWorldPosition(originalCamPos)
+
+            const originalCamQuat = new THREE.Quaternion()
+            this.game.camera.getWorldQuaternion(originalCamQuat)
+
+            heandGroup.lightsGroup.position.copy(originalCamPos)
+            heandGroup.lightsGroup.quaternion.copy(originalCamQuat)
+
+            heandGroup.heandindex.forEach((index, i) => {
+              const localOffset = new THREE.Vector3(-0.15, i * 0.1, i * -0.1)
+              this.game.loadedLights[index][1].position.copy(originalCamPos).add(localOffset)
+              this.game.loadedLights[index][1].quaternion.copy(originalCamQuat)
+            })
+          }
+          this.refreshHeandLights()
+
+          heandGroup.updateMatrixWorld(true)
+          heandGroup.box.setFromObject(heandGroup)
+        }
+      } else {
+        heandGroup.visible = false;
+      }
+    }
+  }
+
+  removeHeandLight() {
+    const actHeand = this.game.loadedHeands[this.game.playerMouse.selectedHeand]
+    if (actHeand  && actHeand.heandindex) {
+      actHeand.heandindex.forEach(index => {
+        delete this.game.loadedLights[index]
+      });
+      actHeand.heandindex = []
+    }
+    if (actHeand && actHeand.lightsGroup) {
+      this.game.scene.remove(actHeand.lightsGroup)
+      actHeand.lightsGroup = null
+      actHeand.lightsAdded = false
+    }
+  }
+
   stepAnimState(animState, modellAnimations) {
     const animation = modellAnimations.find(anim => anim[0] == animState.type)
     const animationList = animation ? animation[1] : []
@@ -117,13 +356,13 @@ export default class Gameplay {
     let card = animState.card
     let cardsegment = animState.cardsegment
     const segmentlength = parseInt(animationList[card][1])
-  
+
     cardsegment++
     if (cardsegment == segmentlength) {
       cardsegment = 0
       card = (card + 1) % animationList.length
     }
-  
+
     const cardframe = parseInt(animationList[card][0])
     const maxcard = animationList.length - 1
 
@@ -160,16 +399,16 @@ export default class Gameplay {
     return actualFrameDataDifference;
   }
 
-  syncBeingTrianglesPositions(beingGroup, data) {
-    if (!beingGroup || !Array.isArray(beingGroup.children)) return;
+  syncTrianglesPositions(group, data) {
+    if (!group || !Array.isArray(group.children)) return;
     if (!Array.isArray(data)) return;   
 
     for (let m = 0; m < data.length; m++) {
-      const beingMesh = data[m]
-      const meshGroup = beingGroup.children[m]
-      if (!beingMesh || !meshGroup) continue;
+      const mesh = data[m]
+      const meshGroup = group.children[m]
+      if (!mesh || !meshGroup) continue;
   
-      const tris = beingMesh.tris || [];
+      const tris = mesh.tris || [];
       const triMeshes = (meshGroup.children || [])
   
       const count = Math.min(tris.length, triMeshes.length)
@@ -182,13 +421,12 @@ export default class Gameplay {
         const pos = geom.getAttribute('position')
         if (!pos || pos.itemSize !== 3 || pos.count < 3) continue;
   
-        pos.setXYZ(0, tri.p[0].x * beingGroup.ratio, tri.p[0].y * beingGroup.ratio, tri.p[0].z * beingGroup.ratio)
-        pos.setXYZ(1, tri.p[1].x * beingGroup.ratio, tri.p[1].y * beingGroup.ratio, tri.p[1].z * beingGroup.ratio)
-        pos.setXYZ(2, tri.p[2].x * beingGroup.ratio, tri.p[2].y * beingGroup.ratio, tri.p[2].z * beingGroup.ratio)
+        pos.setXYZ(0, tri.p[0].x * group.ratio, tri.p[0].y * group.ratio, tri.p[0].z * group.ratio)
+        pos.setXYZ(1, tri.p[1].x * group.ratio, tri.p[1].y * group.ratio, tri.p[1].z * group.ratio)
+        pos.setXYZ(2, tri.p[2].x * group.ratio, tri.p[2].y * group.ratio, tri.p[2].z * group.ratio)
         pos.needsUpdate = true
   
-        // beingGroup.ratio = beingGroup.ratio + 0.000005  // hülyeség : )
-
+        // group.ratio = group.ratio + 0.000005  // hülyeség : )
         // geom.computeVertexNormals()  // ??
         geom.computeBoundingBox?.()  // !!
       }
@@ -376,6 +614,21 @@ export default class Gameplay {
 
     // CHECK USER CLICK TYPE
     if (type == 'click') {
+
+      // EXCEPTION MESSAGES
+      const objId = this.game.playerMouse.selectedObject?.objId
+      const actionId = actions[1].id
+      if (objId != null && actionId != null) {
+        console.log('objId: ', objId)
+        console.log('actionId: ', actionId)
+
+        const found = this.game.config.actionmessages.find(item => item.object_id === objId && item.action_id === actionId)
+        if (found) {
+          console.log(found)
+          this.makeActionObjectsMessageElement({type: 'actionmessage', actionText: found.message})
+          return;
+        }
+      }
       // CHECK OBJECTS
       if (actions[1].conditions.success) {
         // TASK COMPLETTED // this.makeActionObjectsMessageElement({type: 'actionmessage', actionText: actions[1].conditions.success_text})
@@ -452,7 +705,7 @@ export default class Gameplay {
           // LIGHT FX
           if (event.lightfx.length > 0) {
             for (const fx of event.lightfx) {
-              let light = this.game.loadedLights[parseInt(fx[0])][1]
+              let light = this.game.loadedLights[parseInt(fx[0])]?.[1] != null ? this.game.loadedLights[parseInt(fx[0])][1] : null;
               let fxData = this.game.config.lightfx.find(fxpc => fxpc.id == parseInt(fx[1]))
               if (light, fxData) this.lightFx(light, fxData);
             }
@@ -474,7 +727,7 @@ export default class Gameplay {
 
         }, parseInt(event.timer))
       }
-  
+
       // START
 
       // CHECK INTERVAL
@@ -498,6 +751,10 @@ export default class Gameplay {
     const removeCursor = () => {
       // REMOVE SELECTED OBJECT AND CURSOR
       this.game.playerMouse.selectedObject = null
+
+      console.log(this.game.playerMouse)
+      
+
       $('#cursor-text-box').hide().html('')
       this.game.input.getActualCursor()
     }
@@ -531,21 +788,39 @@ export default class Gameplay {
     }
   }
 
-  changeLightColorRandom(light) {
-    if (!(light instanceof THREE.PointLight)) return;
-
-    const randomColor = new THREE.Color(Math.random(), Math.random(), Math.random());
-    light.color = randomColor;
-  }
-
   // LIGHT FX
   lightFx(light, data) {
     switch(data.id) {
       case 0:
-        this.changeLightColorRandom(light)
+        // RANDOM COLOR 100ms
+        if (!(light instanceof THREE.PointLight)) return;
+        setTimeout(() => {
+          const randomColor = new THREE.Color(Math.random(), Math.random(), Math.random());
+          light.color = randomColor;
+        }, data.time)
+
+        this.refreshHeandLights()
       break
       case 1:
-        //
+        // TURN OFF LIGHT / ON
+        if (!(light instanceof THREE.PointLight)) return;
+        if (data.save_color == null) data.save_color = light.color;
+        if (data.save_distance == null) data.save_distance = light.distance;
+        if (data.save_intensity == null) data.save_intensity = light.intensity;
+
+        if (data.state) {
+          const darkColor = new THREE.Color(0, 0, 0)
+          light.color = darkColor;
+          light.distance = 0
+          light.intensity = 0
+        } else {
+          light.color = data.save_color
+          light.distance = data.save_distance
+          light.intensity = data.save_intensity
+        }
+        data.state = !data.state
+
+        this.refreshHeandLights()
       break
     }
   }
@@ -611,6 +886,19 @@ export default class Gameplay {
           }
         }
         this.openFx(mesh)
+      break
+
+      case 3:
+        // SWITCH TEXTURE CHANGE
+        // console.log(mesh, data)
+        data.state = data.state == data.texture_on ? data.texture_off : data.texture_on;
+
+        mesh.traverse(obj => {
+          if (obj.isMesh && obj.material && obj.material.map) {            
+            obj.material.map = this.game.loadedTextures[data.state]
+            obj.material.needsUpdate = true
+          }
+        })
       break
     }
   }

@@ -20,7 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
         $structure = [];
         $files = get_files($directory);
         foreach ($files as $row) {
-            if ($row['name'] == '_objects' || $row['name'] == '_beings') continue;
+            if ($row['name'] == '_objects' || $row['name'] == '_beings' || $row['name'] == '_heands') continue;
 
             $path = $directory . DIRECTORY_SEPARATOR . $row['name'];
 
@@ -75,6 +75,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['getbeings'])) {
 
     $directory = $directory . DIRECTORY_SEPARATOR . '_beings';
+
+    $files = [];
+    $files = get_files($directory);
+    usort($files, function ($a, $b) {
+        return strnatcmp($a['name'], $b['name']);
+    });
+
+    echo json_encode(['files' => $files]);
+    exit;
+}
+
+// GET HEANDS
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['getheands'])) {
+
+    $directory = $directory . DIRECTORY_SEPARATOR . '_heands';
 
     $files = [];
     $files = get_files($directory);
@@ -327,6 +342,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
     {
         $beingsdir = $_POST['beingsdir'];
         $directory = $directory . DIRECTORY_SEPARATOR . $beingsdir;
+    }
+
+    if (isset($_POST['heandsdir']) && $_POST['heandsdir'] !== '')
+    {
+        $heandsdir = $_POST['heandsdir'];
+        $directory = $directory . DIRECTORY_SEPARATOR . $heandsdir;
     }
 
     if (file_exists($directory . DIRECTORY_SEPARATOR . $filename . '.' . $ext)) {

@@ -340,7 +340,7 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 .note-title {
   font-family: 'Absolute', sans-serif;
-  font-size: 4rem;
+  font-size: 3.5vw;
   font-weight: bold;
   letter-spacing: 0.3rem;
   line-height: 2.5rem;
@@ -349,10 +349,10 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 .note-text {
   font-family: 'Absolute', sans-serif;
-  font-size: 3.7rem;
+  font-size: 3.5vw;
   font-weight: normal;
-  letter-spacing: 0.2rem;
-  line-height: 2.8rem;
+  letter-spacing: 0.25vw;
+  line-height: 2.5vw;
   width: 100%;
   transform: rotate(-2deg);
   color: $fourth;
@@ -456,7 +456,7 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 .book-title-1 {
   font-family: 'Absolute', sans-serif;
-  font-size: 4rem;
+  font-size: 3.5vw;
   font-weight: bold;
   letter-spacing: 0.3rem;
   line-height: 2.5rem;
@@ -465,7 +465,7 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 .book-text-1 {
   font-family: 'Absolute', sans-serif;
-  font-size: 4rem;
+  font-size: 3.5vw;
   font-weight: normal;
   letter-spacing: 0.2rem;
   line-height: 2.8rem;
@@ -494,7 +494,7 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 .book-title-2 {
   font-family: 'Absolute', sans-serif;
-  font-size: 4rem;
+  font-size: 3.5vw;
   font-weight: bold;
   letter-spacing: 0.3rem;
   line-height: 2.5rem;
@@ -504,7 +504,7 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 .book-text-2 {
   font-family: 'Absolute', sans-serif;
-  font-size: 3.7rem;
+  font-size: 3.5vw;
   font-weight: normal;
   letter-spacing: 0.2rem;
   line-height: 2.8rem;
@@ -516,7 +516,7 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 .book-title-2 {
   font-family: 'Absolute', sans-serif;
-  font-size: 4rem;
+  font-size: 3.5vw;
   font-weight: bold;
   letter-spacing: 0.3rem;
   line-height: 2.5rem;
@@ -525,7 +525,7 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 .book-text-2 {
   font-family: 'Absolute', sans-serif;
-  font-size: 3.7rem;
+  font-size: 3.5vw;
   font-weight: normal;
   letter-spacing: 0.2rem;
   line-height: 2.8rem;
@@ -617,6 +617,8 @@ a:hover, button:hover, input:hover, textarea:hover {
     background-repeat: no-repeat;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+
+    background-color: #000;
 }
 
   #inventory-logo {

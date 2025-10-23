@@ -18,6 +18,14 @@ export default class Input {
     this.ideiglenesMenuInputs() // ! Ideiglenes
   }
 
+  resetautoMovePlayerData() {
+    this.game.autoMovePlayerData = {
+      ...this.game.autoMovePlayerData,
+      mode: null,
+      weapon: null,
+    }
+  }
+
   async ideiglenesMenuInputs() {
     const response = await this.game.loader.fetchData({ ajax: true, getfiles: true })  
     if (response?.files) {
@@ -118,7 +126,7 @@ export default class Input {
           }
         }
       }
-    }, 100);
+    }, 25);
 
     $('#gravity-button').on('click', (event) => {
       let $this = $(event.target)
@@ -187,10 +195,11 @@ export default class Input {
       }
 
       // CLOSE TEXT BUTTON            
-      if (e.button == 0 && this.game.currentState == 'game' && $(e.target).attr('id') == 'text-box-close-button') {
+      if (e.button == 0 && this.game.currentState == 'game' && ( $(e.target).attr('id') == 'text-box-close-button' || $(e.target).closest('#text-box').length )) {
+        console.log($(e.target).attr('id'))
         e.preventDefault(); e.stopPropagation();
         $("#text-box").hide()
-        return;
+        return
       }
 
       // RIGHT MOUSE CLICK
@@ -304,7 +313,11 @@ export default class Input {
         console.log(this.game.config)
       }
       if (e.key == 'm') {
+        console.log('this.game.playerMouse:')
         console.log(this.game.playerMouse)
+        console.log('---')
+        console.log('this.game.loadedLights:')
+        console.log(this.game.loadedLights)
       }
       //---
 
@@ -324,6 +337,64 @@ export default class Input {
             this.game.currentState = 'game'
             this.game.showHideOptions('game')
           }
+        }
+
+        if(e.key =='0') {
+          e.preventDefault(); e.stopPropagation();
+          this.game.gameplay.removeHeandLight()
+          this.resetautoMovePlayerData()
+
+          this.game.playerMouse.selectedHeand = ''
+          this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
+          this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
+        }
+
+        if(e.key =='1') {
+          e.preventDefault(); e.stopPropagation();
+          this.game.gameplay.removeHeandLight()
+          this.resetautoMovePlayerData()
+
+          const camQuat = new THREE.Quaternion()
+          this.game.camera.getWorldQuaternion(camQuat)          
+          const euler = new THREE.Euler().setFromQuaternion(camQuat, 'YXZ') // X → pitch (fel–le nézés)
+
+          if (THREE.MathUtils.radToDeg(euler.x) < 25 && THREE.MathUtils.radToDeg(euler.x) > -30) {
+
+            console.log(THREE.MathUtils.radToDeg(euler.x))
+
+            this.game.playerMouse.selectedHeand = 0
+            this.game.playerMouse.mouseMaxPitch = 25
+            this.game.playerMouse.mouseMinPitch = -30
+          } else {
+            console.log('Wrong!!!')
+
+            this.game.autoMovePlayerData = {
+              ...this.game.autoMovePlayerData,
+              mode: 'y-center',
+              weapon: 1,
+            }
+
+          }
+        }
+
+        if(e.key =='2') {
+          e.preventDefault(); e.stopPropagation();
+          this.game.gameplay.removeHeandLight()
+          this.resetautoMovePlayerData()
+
+          this.game.playerMouse.selectedHeand = 1
+          this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
+          this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
+        }
+
+        if(e.key =='3') {
+          e.preventDefault(); e.stopPropagation();
+          this.game.gameplay.removeHeandLight()
+          this.resetautoMovePlayerData()
+
+          this.game.playerMouse.selectedHeand = 2
+          this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
+          this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
         }
 
         if(e.key =='Enter') {
@@ -704,6 +775,7 @@ export default class Input {
       $('#mouseorkey-selector').addClass('key-selector-pic')
     } else {
       console.log('PointerLock bekapcsolás...')
+      
       this.game.canvas.requestPointerLock()
       $('#mouseorkey-selector').addClass('mouse-selector-pic')
     }
@@ -724,21 +796,24 @@ export default class Input {
       this.game.isPointerLocked = document.pointerLockElement == this.game.canvas
     });
 
-    document.addEventListener('mousemove', (event) => {
-      if (!this.game.isPointerLocked) return;
+    $(document).on('mousemove', { game: this.game }, function(event) {
+      const g = event.data.game
+      if (!g.isPointerLocked) return
 
-      const movementX = event.movementX || 0;
-      const movementY = event.movementY || 0;
+      const movementX = event.originalEvent.movementX || 0
+      const movementY = event.originalEvent.movementY || 0
+    
+      g.player.rotation.y -= movementX * 0.002
+      g.pitchObject.rotation.x -= movementY * 0.002
+    
+      const maxPitch = THREE.MathUtils.degToRad(g.playerMouse.mouseMaxPitch)
+      const minPitch = THREE.MathUtils.degToRad(g.playerMouse.mouseMinPitch)
+    
+      g.pitchObject.rotation.x = Math.max(minPitch, Math.min(maxPitch, g.pitchObject.rotation.x))
+      g.camera.rotation.z = 0
 
-      this.game.player.rotation.y -= movementX * 0.002
-      this.game.pitchObject.rotation.x -= movementY * 0.002
-
-      const maxPitch = THREE.MathUtils.degToRad(80)
-      const minPitch = THREE.MathUtils.degToRad(-80)
-      this.game.pitchObject.rotation.x = Math.max(minPitch, Math.min(maxPitch, this.game.pitchObject.rotation.x))
-
-      this.game.camera.rotation.z = 0
-    });
+      // console.log(THREE.MathUtils.radToDeg(g.pitchObject.rotation.x))  // pitch x deg
+    })
   }
 
   updatePlayer() {

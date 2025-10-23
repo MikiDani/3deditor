@@ -238,7 +238,7 @@ class Editor {
       this.map.type = 'object'
       if (this.map.actions) delete this.map.actions;
       if (this.map.objects) delete this.map.objects;
-      if (this.map.lights) delete this.map.lights;
+      // if (this.map.lights) delete this.map.lights;   // !!!!!!
 
       if (!this.map.animations) this.map.animations = [];
       if (!this.map.ratio) this.map.ratio = 1;
@@ -255,7 +255,7 @@ class Editor {
   }
 
   async init() {
-    let consolePrint = false  // !!!
+    let consolePrint = true  // !!!
 
     let response = await fetch('config.json')
     this.gamedata = await response.json()
@@ -318,9 +318,9 @@ class Editor {
           <div class="side-row">
               <span>Freq.:</span>
               <select name="frequent" data-name="${name}">
-                <option value="20">20</option>
+                <option value="20" selected>20</option>
                 <option value="40">40</option>
-                <option value="80" selected>80</option>
+                <option value="80">80</option>
                 <option value="160">160</option>
                 <option value="320">320</option>
                 <option value="640">640</option>
@@ -630,6 +630,12 @@ class Editor {
       this.map.eat = response.eat ?? 'false';
       this.map.read = response.read ?? 'false';
       this.map.text = response.text ?? '';
+
+      // IF HAVE LIGHT (LAMP)
+      if (response.lights != null) {
+        this.map.lights = this.deepCopy(response.lights)
+        Light.setInstanceCount(this.getMaxId(this.map.lights))
+      }
 
       this.refreshRatioInput(this.map.ratio)
       this.refreshEatInput(this.map.eat)
@@ -1800,9 +1806,8 @@ class Editor {
         }
 
         if (event.key == 'l') {
-          console.log('this.mouse')
-          console.log(this.mouse)
-
+          this.refreshLightsList()
+          $("#lights").toggle()
           console.log('this.map.lights')
           console.log(this.map.lights)
         }
@@ -4032,8 +4037,8 @@ class Editor {
 
     // ADD NEW LIGHT
     $(document).on('click', '#light-add-new', function() {
-      let newLight = new Light('Light-', 0, 0.5, 1, 'point', '0xffddaa', 0.5, 5)
-      if (typeof clone.map.lights == 'undefined') clone.map.lights = [];
+      let newLight = new Light('Light-', 0, 0.5, 1, 'point', '#ffddaa', 0.5, 5)
+      if (clone.map.lights == null) clone.map.lights = [];
       clone.map.lights.push(newLight)
       setTimeout(() => {
         $(`.light-element[data-light-id='${newLight.id}']`).trigger('click')
@@ -4200,7 +4205,7 @@ class Editor {
 
       if (clone.beingsList[name]) {
         let position = new Vec3D(0, 0, 0)        
-        let newbeing = new Being(name, clone.beingsList[name].boundingbox, 1, position, 'none', true, '0xffddaa')
+        let newbeing = new Being(name, clone.beingsList[name].boundingbox, 1, position, 'none', true, '#ffddaa')
         
         if (typeof clone.map.beings == 'undefined') clone.map.beings = [];
         clone.map.beings.push(newbeing)
