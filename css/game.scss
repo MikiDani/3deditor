@@ -58,6 +58,14 @@ $yellow-light: #ffff00;
   color: $secondary !important;
 }
 
+.bg-test {
+  background-color: $secondary !important;
+}
+
+.margin-left {
+  border: 2px 2px 2px 2px solid gray;
+}
+
 .usn {
   user-select: none;
 }

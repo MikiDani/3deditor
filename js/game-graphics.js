@@ -35,6 +35,8 @@ export default class Graphics {
     this.game.renderer.setPixelRatio(1)
 
     this.game.camera = new THREE.PerspectiveCamera(60, this.scX / this.scY, 0.1, this.far)
+    this.game.listener = new THREE.AudioListener()
+    this.game.camera.add(this.game.listener)
 
     this.game.pitchObject = new THREE.Object3D()
     this.game.pitchObject.add(this.game.camera)

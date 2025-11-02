@@ -30,6 +30,14 @@
   color: #ea8708 !important;
 }
 
+.bg-test {
+  background-color: #ea8708 !important;
+}
+
+.margin-left {
+  border: 2px 2px 2px 2px solid gray;
+}
+
 .usn {
   -webkit-user-select: none;
      -moz-user-select: none;

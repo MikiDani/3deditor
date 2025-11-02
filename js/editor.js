@@ -1008,6 +1008,19 @@ class Editor {
     return data;
   }
 
+  getStructureRecursive(structure, idMapping) {
+    return structure.map(node => {
+      const newNode = {
+        ...node,
+        id: idMapping[node.id],
+        child: node.child && node.child.length > 0
+          ? this.getStructureRecursive(node.child, idMapping)
+          : []
+      };
+      return newNode;
+    });
+  }
+
   cloneStructure(originalNode, newParentId = null) {
     const newId = Mesh.getInstanceCount() + 1
     Mesh.setInstanceCount(newId)
@@ -1423,12 +1436,16 @@ class Editor {
       let showMesh
       if (meshData.parent_id != null) {
         let parentData = this.findMeshById(this.map.structure, meshData.parent_id)
-        showMesh = Number(parentData.status) ? 'block' : 'none';
+        if (parentData) {
+          showMesh = Number(parentData.status) ? 'block' : 'none';
+        } else {
+          showMesh = 'block'; // ha nincs parent, akkor jelenjen meg
+        }
       } else {
         // FIRST ELEMENT
         showMesh = 'block';
       }
-
+      
       let classTriangle = itemData.status ? 'triangle-up' : 'triangle-down';
       let classEye = itemData.visible ? 'eye-up' : 'eye-down';
 
@@ -2723,7 +2740,6 @@ class Editor {
           clone.saveMapMemory('save')
           
           let importData = response.data[0]
-          let importStructure = response.structure
 
           let lastIdNumber = Mesh.getInstanceCount() + 1;
           let idMapping = {};
@@ -2742,6 +2758,7 @@ class Editor {
             };
           });
 
+          /*
           importStructure = importStructure.map(item => {
             return {
               ...item,
@@ -2749,6 +2766,12 @@ class Editor {
               child: item.child.map(childId => idMapping[childId] ?? childId)
             };
           });
+          */
+
+          const importStructure = clone.getStructureRecursive(response.structure, idMapping)
+
+          console.log(importStructure)
+          
 
           let selectedMapData = clone.map.data[clone.map.aid].find(obj => obj.id == clone.mouse.selectedMeshId)
           let selectedStructureData = clone.findMeshById(clone.map.structure, clone.mouse.selectedMeshId)

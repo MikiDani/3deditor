@@ -27,7 +27,9 @@ export default class Loader {
 
   async loadTextures() {
     await this.loadTexturesLinks()
-    // console.log(this.texturesLinks)
+
+    console.log(this.texturesLinks)
+
     for (const [name, path] of Object.entries(this.texturesLinks)) {
       // console.log(name, path)
       let texturePaths = Object.values(this.texturesLinks[name])
@@ -139,9 +141,7 @@ export default class Loader {
         console.log('----')
       }
 
-
-
-      // ADD MAP DATA
+      // LOAD MAP MESHS
       for (let mesh of this.game.map.data) {
         const meshGroup = new THREE.Group()
         for (let tri of mesh.tris) {
@@ -186,13 +186,30 @@ export default class Loader {
           this.game.boundingBoxes.push(box)
 
           // YELLOW BOX-HELPER
-          const helper = new THREE.Box3Helper(box, new THREE.Color('#ffff00'));
-          if (this.game.boxHelp) {
+          if (mesh.name == 'radio' && false) {
+            const helper = new THREE.Box3Helper(box, new THREE.Color('#ffff00'));
             this.game.scene.add(helper);
           }
         }
 
-        // LOAD ACTIONS
+        meshGroup.box = new THREE.Box3().setFromObject(meshGroup)
+
+        if (mesh.name) meshGroup.name = mesh.name;  // IF HAVE MESH NAME
+        if (mesh.text) meshGroup.text = mesh.text;  // IF HAVE MESH INFO TEXT ADD
+        
+        this.game.scene.add(meshGroup)
+
+        // SOUND POSITION SAVE
+        meshGroup.updateMatrixWorld(true)
+        meshGroup.box = new THREE.Box3().setFromObject(meshGroup)
+        meshGroup.center = new THREE.Vector3()
+        meshGroup.box.getCenter(meshGroup.center)
+
+        meshGroup.center.applyMatrix4(meshGroup.matrixWorld)
+
+        this.game.loadedMeshs[mesh.id] = meshGroup
+
+        // LOAD ACTIONS OF MESH
         if (mesh?.actions && mesh.actions.length > 0) {
           // console.log('Van AKCIÓJA: ', mesh.name)
           for (const action of mesh.actions) {
@@ -203,13 +220,6 @@ export default class Loader {
             }
           }
         }
-
-        if (mesh.name) meshGroup.name = mesh.name;  // IF HAVE MESH NAME
-        if (mesh.text) meshGroup.text = mesh.text;  // IF HAVE MESH INFO TEXT ADD
-
-        meshGroup.box = new THREE.Box3().setFromObject(meshGroup)
-        this.game.loadedMeshs[mesh.id] = meshGroup
-        this.game.scene.add(meshGroup)       
       }
 
       //ADD ACTIONS CLICK CHECKS
@@ -306,6 +316,7 @@ export default class Loader {
       }
 
       // HEANDS DATA LOADING
+      this.game.heandsList[0] = false;
       const response4 = await this.fetchData({ ajax: true, getheands: true })
       if (response4.files) {
         for (const file of response4.files) {          
@@ -329,7 +340,9 @@ export default class Loader {
         }
         // FIRST ADD HEANDS
         for (const heand of this.game.heandsList) {
-          const actualHeandData = this.game.heandsList[heand.id].data[0]
+          if (heand.id == null) continue;          
+
+          const actualHeandData = this.game.heandsList[heand.id].data[0] ? this.game.heandsList[heand.id].data[0] : null;
           if (actualHeandData) {
             const heandGroup = new THREE.Group()
             heandGroup.heandId = heand.id

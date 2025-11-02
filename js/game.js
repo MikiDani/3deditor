@@ -10,12 +10,15 @@ import Menu from './menu.js'
 import Gameplay from './gameplay.js'
 import Inventory from './inventory.js'
 
+import Sound from './sound.js'
+
 export default class Game {
   constructor() {
     this.loadingError = false
     this.generalLoading = false
     this.graphicsLoading = false
     this.inputsLoading = false
+    this.soundsLoading = false
     this.mapLoading = false
     this.animating = false
     this.play = true
@@ -59,7 +62,7 @@ export default class Game {
     this.playerMouse = {
       mode: null,    // use, view,
       selectedObject: null,
-      selectedHeand: 0,
+      selectedHeand: '',
       mouseMaxPitch: 80,
       mouseMinPitch: -60,
     }
@@ -102,6 +105,7 @@ export default class Game {
     this.inventory = new Inventory(this)
     this.gameplay = new Gameplay(this)
     this.input = new Input(this)
+    this.sound = new Sound(this)
 
     // FIRST MOUSE MODE
     this.playerMouse.mode = 'use'
@@ -114,10 +118,14 @@ export default class Game {
     if (!this.generalLoading) await this.loader.generalLoader(false);
     if (this.loadingError) { this.loadingErrorAction(); return; }
 
-    if (!this.graphicsLoading) await this.graphics.init(); if (this.loadingError) return;
+    if (!this.graphicsLoading) await this.graphics.init();
     if (this.loadingError) { this.loadingErrorAction(); return; }
 
-    if (!this.inputsLoading) await this.input.gameControls(); if (this.loadingError) return;
+    if (!this.soundsLoading) await this.sound.init();    
+    if (this.loadingError) { this.loadingErrorAction(); return; }
+
+    if (!this.inputsLoading) await this.input.gameControls();
+    if (this.loadingError) { this.loadingErrorAction(); return; }
 
     this.raycaster = new THREE.Raycaster()
     this.mouse = new THREE.Vector2()
@@ -202,15 +210,24 @@ export default class Game {
             Join the menu
           </button>
           <div class="modal" id="topLayer" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-dialog modal-dialog-centered modal-xl">
               <div class="modal-content bg-light">
                 <div class="modal-header">
                   <h5 class="modal-title text-uppercase text-center w-100">The forgotten cottage</h5>
                   <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body text-center">
-                  <div id="filelist-container" class="w-100 mb-3" style="display: grid; grid-template-columns:repeat(3, 1fr);gap:5px;"></div>
-                  <input id="file-input" type="text" name="filename" value="maniac" data-ext="mtuc">
+                <div class="modal-body text-center row">
+                  <div id="filelist-container" class="w-50 mb-3" style="display: grid; grid-template-columns:repeat(3, 1fr);gap:5px;"></div>
+                  
+                  <div id="load-save-container" class="w-50 mb-3" style="display: grid; grid-template-columns:repeat(3, 1fr);gap:5px;">
+                    <span class="p-0 m-0">qweqweqweqwe<span>
+                    <span class="p-0 m-0">qweqweqweqwe<span>
+                    <span class="p-0 m-0">qweqweqweqwe<span>
+                  </div>
+
+                  <div class="text-center">
+                    <input id="file-input" type="text" class="w-50" name="filename" value="maniac" data-ext="mtuc">
+                  </div>
                   <div class="my-2">
                       <input type="checkbox" id="lights-button" checked>
                       <span class="text-black"> All Lights ON</span>
@@ -232,18 +249,15 @@ export default class Game {
       </div>`)
 
     this.$game = $(`
-      <div id="game-container">
+      <div id="game-container" style="display:none;">
         <canvas id="game-canvas"></canvas>
-
         <div id="cursor-text-box" style="display:none;">Próba text.</div>
-
         <div id="text-box-container">
           <div id="text-box" style="display:none;">
             <button id="text-box-close-button"></button>
             <div id="text-box-text"></div>
           </div>
-        </div>       
-
+        </div>
         <div id="use-selector"></div>
         <div id="look-selector"></div>
         <div id="mouseorkey-selector"></div>
@@ -251,59 +265,59 @@ export default class Game {
       <div class="delta-time-game text-white"></div>`)
 
     this.$inventory = $(`
-    <div id="inventory-container">
-      <div id="inventory-logo"></div>
-      <canvas id="inventory-3d-canvas"></canvas>
-      <div id="object-text-container">
-        Nisi similique perferendis et, recusandae suscipit molestiae eos fuga iste hic, temporibus est vero soluta quo voluptates blanditiis ab. Eius, qui? Harum ea similique enim illum odio saepe nobis repudiandae! Nisi similique perferendis et.
-      </div>
-      <div id="inventory-item-text-container">
-        <div class="item-text-container"></div>
-        <div class="item-text-container"></div>
-        <div class="item-text-container"></div>
-        <div class="item-text-container"></div>
-        <div class="item-text-container"></div>
-        <div class="item-text-container"></div>
-        <div class="item-text-container"></div>
-      </div>
-      <div id="arrow-up"></div>
-      <div id="arrow-down"></div>
-      <div id="inventory-selected-item-container">
-        <div id="object-use" data-mode="use" class="item-selected-text-container">USE OBJECT</div>
-        <div id="object-eat" data-mode="eat" class="item-selected-text-container">EAT OBJECT</div>
-        <div id="object-read" data-mode="read" class="item-selected-text-container">READ CONTENT</div>
-      </div>
-
-      <div id="note-container" style="display:none;">
-        <div id="note-background">
-          <div id="note-content">
-            <span class="note-title"></span><br><br>
-            <span class="note-text"></span>
-          </div>
-          <div id="note-arrow-left"></div>
-          <div id="note-arrow-right"></div>
-          <button class="note-close-button"></button>
+      <div id="inventory-container">
+        <div id="inventory-logo"></div>
+        <canvas id="inventory-3d-canvas"></canvas>
+        <div id="object-text-container">
+          Nisi similique perferendis et, recusandae suscipit molestiae eos fuga iste hic, temporibus est vero soluta quo voluptates blanditiis ab. Eius, qui? Harum ea similique enim illum odio saepe nobis repudiandae! Nisi similique perferendis et.
         </div>
-      </div>
-
-      <div id="book-container" style="display:none;">
-        <div id="book-background">
-          <div id="book-content-1">
-            <span class="book-title-1"></span><br><br>
-            <span class="book-text-1"></span>
-          </div>
-          <div id="book-content-2">
-            <span class="book-title-2"></span><br><br>
-            <span class="book-text-2"></span>
-          </div>
-          <div id="book-arrow-left"></div>
-          <div id="book-arrow-right"></div>
-          <button class="book-close-button"></button>
+        <div id="inventory-item-text-container">
+          <div class="item-text-container"></div>
+          <div class="item-text-container"></div>
+          <div class="item-text-container"></div>
+          <div class="item-text-container"></div>
+          <div class="item-text-container"></div>
+          <div class="item-text-container"></div>
+          <div class="item-text-container"></div>
         </div>
-      </div>
+        <div id="arrow-up"></div>
+        <div id="arrow-down"></div>
+        <div id="inventory-selected-item-container">
+          <div id="object-use" data-mode="use" class="item-selected-text-container">USE OBJECT</div>
+          <div id="object-eat" data-mode="eat" class="item-selected-text-container">EAT OBJECT</div>
+          <div id="object-read" data-mode="read" class="item-selected-text-container">READ CONTENT</div>
+        </div>
 
-      <div class="delta-time-inventory text-white"></div>
-    </div>`);
+        <div id="note-container" style="display:none;">
+          <div id="note-background">
+            <div id="note-content">
+              <span class="note-title"></span><br><br>
+              <span class="note-text"></span>
+            </div>
+            <div id="note-arrow-left"></div>
+            <div id="note-arrow-right"></div>
+            <button class="note-close-button"></button>
+          </div>
+        </div>
+
+        <div id="book-container" style="display:none;">
+          <div id="book-background">
+            <div id="book-content-1">
+              <span class="book-title-1"></span><br><br>
+              <span class="book-text-1"></span>
+            </div>
+            <div id="book-content-2">
+              <span class="book-title-2"></span><br><br>
+              <span class="book-text-2"></span>
+            </div>
+            <div id="book-arrow-left"></div>
+            <div id="book-arrow-right"></div>
+            <button class="book-close-button"></button>
+          </div>
+        </div>
+
+        <div class="delta-time-inventory text-white"></div>
+      </div>`);
 
     // this.$loading.hide();
     this.$menu.hide();
@@ -324,6 +338,9 @@ export default class Game {
       await this.loader.mapLoader() // LOADING MAP
       if (!this.inventory.firstLoadedAllObjects) await this.inventory.firstLoadAllObjects(); // LOADING INVENTORY
       this.$loading.hide()
+
+      // SOUND MUSIC TESZT //!!
+      // this.sound.play(1, {volume: 0.1, loop: false})wfw
     }
 
     requestAnimationFrame((timestamp) => this.loop(timestamp))

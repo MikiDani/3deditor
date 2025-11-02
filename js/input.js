@@ -344,7 +344,7 @@ export default class Input {
           this.game.gameplay.removeHeandLight()
           this.resetautoMovePlayerData()
 
-          this.game.playerMouse.selectedHeand = ''
+          this.game.playerMouse.selectedHeand = 0
           this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
           this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
         }
@@ -362,7 +362,7 @@ export default class Input {
 
             console.log(THREE.MathUtils.radToDeg(euler.x))
 
-            this.game.playerMouse.selectedHeand = 0
+            this.game.playerMouse.selectedHeand = 1
             this.game.playerMouse.mouseMaxPitch = 25
             this.game.playerMouse.mouseMinPitch = -30
           } else {
@@ -382,7 +382,7 @@ export default class Input {
           this.game.gameplay.removeHeandLight()
           this.resetautoMovePlayerData()
 
-          this.game.playerMouse.selectedHeand = 1
+          this.game.playerMouse.selectedHeand = 2
           this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
           this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
         }
@@ -392,7 +392,7 @@ export default class Input {
           this.game.gameplay.removeHeandLight()
           this.resetautoMovePlayerData()
 
-          this.game.playerMouse.selectedHeand = 2
+          this.game.playerMouse.selectedHeand = 3
           this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
           this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
         }
@@ -403,21 +403,33 @@ export default class Input {
         }
 
         // POINTERLOCK MOUSE
-        if (e.key == 'f') {
+        if (e.key == 'f' || e.key == 'F') {
           e.preventDefault(); e.stopPropagation();
           this.changeMouseLock()
           return
         }
 
         // USE MOUSE MODE
-        if (e.key == 'e') {
+        if (e.key == 'e' || e.key == 'E') {
+
+          // SOUND TEST
+          if (this.musicSound && this.musicSound.isPlaying) {
+            console.log('MUSIC STOP')
+            this.musicSound.stop()
+            this.musicSound = null
+          } else {
+            console.log('MUSIC PLAY')
+            this.musicSound = this.game.sound.play('music2', true, 0.3)
+          }
+
           e.preventDefault(); e.stopPropagation();
           this.useSelectorChange()
+
           return
         }
 
         // LOOK MOUSE MODE
-        if (e.key == 'q') {
+        if (e.key == 'q' || e.key == 'Q') {
           e.preventDefault(); e.stopPropagation();
           this.lookSelectorChange()
           return

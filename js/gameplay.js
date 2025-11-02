@@ -12,9 +12,13 @@ export default class Gameplay {
     // GRAVITI RESPONE
     if (this.game.player.position.y < -5) this.game.player.position.y = 5;  // !!
 
+    // REFRESH SOUND POSITION
+
     await this.game.input.updatePlayer()
 
     await this.autoMovePlayer()
+
+    this.game.sound.listener.position.copy(this.game.camera.position)
 
     await this.updateBeings()
 
@@ -23,7 +27,7 @@ export default class Gameplay {
     await this.startActions()
 
     await this.game.renderer.render(this.game.scene, this.game.camera)
-    
+
     // RENDER HEAND
     let selectedHeand = this.game.loadedHeands[this.game.playerMouse.selectedHeand]
     if (!selectedHeand) return;
@@ -36,9 +40,8 @@ export default class Gameplay {
 
     this.game.renderer.autoClear = true
   }
-  
 
-  async autoMovePlayer() {    
+  async autoMovePlayer() {
     if (this.game.autoMovePlayerData.mode == null) return;
 
     switch (this.game.autoMovePlayerData.mode) {
@@ -188,7 +191,7 @@ export default class Gameplay {
     for (let [id, heandGroup] of Object.entries(this.game.loadedHeands)) {
       // SELECTED HEAND
       if (id == this.game.playerMouse.selectedHeand) {
-        heandGroup.visible = true;
+        heandGroup.visible = true
 
         const heandModell = this.game.heandsList[heandGroup.heandId]
         if (heandModell) {
@@ -202,7 +205,7 @@ export default class Gameplay {
               const actualFrameData = this.game.deepCopy(heandModell?.data?.[heandGroup.animState.cardframe])
               const nextFrameData = heandModell?.data?.[heandGroup.animState.nextFrameIndex]
               if (!actualFrameData || !nextFrameData) return;
-  
+
               let actualFrameDataDifference = actualFrameData.map(mesh => ({
                 id: mesh.id,
                 tris: mesh.tris.map(tri => ({
@@ -215,11 +218,11 @@ export default class Gameplay {
                 }))
               }))
               actualFrameDataDifference = await this.calcInterpolated(actualFrameDataDifference, nextFrameData, heandGroup.animState.segmentlength)
-  
+
               let interpolatedFrame
               if (heandGroup.animState.cardsegment > 0) {
                 interpolatedFrame = this.game.deepCopy(actualFrameData)
-  
+
                 if (heandGroup.animState.cardsegment != 0) {
                   for (let row of interpolatedFrame) {
                     if (row?.tris) {
@@ -239,11 +242,11 @@ export default class Gameplay {
                   }
                 }
               } else interpolatedFrame = actualFrameData
-  
+
               this.syncTrianglesPositions(heandGroup, interpolatedFrame)
             }
           }
-  
+
           // végleges box újraszámolása
           if (!heandGroup.box) heandGroup.box = new THREE.Box3()
           
@@ -253,80 +256,80 @@ export default class Gameplay {
           
           // CAMERA WORLD POSITION
           const camPos = new THREE.Vector3()
-          this.game.camera.getWorldPosition(camPos)         
+          this.game.camera.getWorldPosition(camPos)
 
-          // MOD UP/DOWN LOOK HEAD POSITION
-          const yModifyToXaw = ((this.game.pitchObject.rotation._x + 1) / 20) * -1
+          const heandConfig = this.game.config.heands.find(heand=> heand.id == this.game.playerMouse.selectedHeand)
+          if (heandConfig) {
+            // MOD UP/DOWN LOOK HEAD POSITION            
+            const yModifyToXaw = ((this.game.pitchObject.rotation._x + 1) / heandConfig.yRatio) * -1
 
-          const forwardDistance = 0.5
-          const heightOffset = -0.1 + yModifyToXaw
-          const localOffset = new THREE.Vector3(-0.15, heightOffset, -forwardDistance)
+            const localOffset = new THREE.Vector3(heandConfig.xDistance, heandConfig.yDistance + yModifyToXaw, -heandConfig.zDistance)
+            const worldPos = camPos.clone().add(localOffset.clone().applyQuaternion(camQuat))
 
-          // az offsetet a kamera rotációjával elforgatjuk és a kamera világpozíciójához adjuk
-          const worldPos = camPos.clone().add(localOffset.clone().applyQuaternion(camQuat))
+            // HEAND POSITION
+            heandGroup.position.copy(worldPos)
 
-          // HEAND POSITION
-          heandGroup.position.copy(worldPos)
-
-          if (false) {
-            // y tengelyen ne vegye át a forgást
-            const camEuler = new THREE.Euler().setFromQuaternion(camQuat, 'YXZ')  // változás
-            const yawOnlyQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, camEuler.y, 0, 'YXZ'))  // változás
-            heandGroup.quaternion.copy(yawOnlyQuat)  // változás
-          } else {
-            heandGroup.quaternion.copy(camQuat)
-          }
-
-
-          // IF HAVE LIGHT          
-          if (!heandGroup.lightsAdded) {
-            if (heandGroup.lights) {
-              if (!heandGroup.lightsGroup) {
-                heandGroup.lightsGroup = new THREE.Group()
-                this.game.scene.add(heandGroup.lightsGroup)
-              }
-              heandGroup.lights.forEach(light => {
-                heandGroup.heandindex = heandGroup.heandindex ?? []
-                heandGroup.lightsGroup.add(light)
-                heandGroup.heandindex.push(this.game.loadedLights.push([heandModell.filename, light.clone()]) - 1)
-              })
+            // FIX Y
+            if (heandConfig.tilt) {
+              // y tengelyen ne vegye át a forgást
+              const camEuler = new THREE.Euler().setFromQuaternion(camQuat, 'YXZ')  // változás
+              const yawOnlyQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, camEuler.y, 0, 'YXZ'))  // változás
+              heandGroup.quaternion.copy(yawOnlyQuat)  // változás
             } else {
-              // RESET
-              console.log('reset')
-              if (heandGroup.heandindex) {
-                heandGroup.heandindex.forEach(index => {
-                  delete this.game.loadedLights[index]
-                });
-              }
-              if (heandGroup.lightsGroup) {
-                this.game.scene.remove(heandGroup.lightsGroup)
-                heandGroup.lightsGroup = null
-                heandGroup.lightsAdded = false
-              }
+              heandGroup.quaternion.copy(camQuat)
             }
 
-            heandGroup.lightsAdded = true; // ONLY ONE
+            // IF HAVE LIGHT          
+            if (!heandGroup.lightsAdded) {
+              if (heandGroup.lights) {
+                if (!heandGroup.lightsGroup) {
+                  heandGroup.lightsGroup = new THREE.Group()
+                  this.game.scene.add(heandGroup.lightsGroup)
+                }
+                heandGroup.lights.forEach(light => {
+                  heandGroup.heandindex = heandGroup.heandindex ?? []
+                  heandGroup.lightsGroup.add(light)
+                  heandGroup.heandindex.push(this.game.loadedLights.push([heandModell.filename, light.clone()]) - 1)
+                })
+              } else {
+                // RESET
+                console.log('reset')
+                if (heandGroup.heandindex) {
+                  heandGroup.heandindex.forEach(index => {
+                    delete this.game.loadedLights[index]
+                  });
+                }
+                if (heandGroup.lightsGroup) {
+                  this.game.scene.remove(heandGroup.lightsGroup)
+                  heandGroup.lightsGroup = null
+                  heandGroup.lightsAdded = false
+                }
+              }
+
+              heandGroup.lightsAdded = true; // ONLY ONE
+            }
+
+            if (heandGroup.lightsGroup) {
+              const originalCamPos = new THREE.Vector3()
+              this.game.camera.getWorldPosition(originalCamPos)
+
+              const originalCamQuat = new THREE.Quaternion()
+              this.game.camera.getWorldQuaternion(originalCamQuat)
+
+              heandGroup.lightsGroup.position.copy(originalCamPos)
+              heandGroup.lightsGroup.quaternion.copy(originalCamQuat)
+
+              heandGroup.heandindex.forEach((index, i) => {
+                const localOffset = new THREE.Vector3(-0.15, i * 0.1, i * -0.1)
+                this.game.loadedLights[index][1].position.copy(originalCamPos).add(localOffset)
+                this.game.loadedLights[index][1].quaternion.copy(originalCamQuat)
+              })
+            }
+            this.refreshHeandLights()
+
+            heandGroup.updateMatrixWorld(true)
+            heandGroup.box.setFromObject(heandGroup)
           }
-          if (heandGroup.lightsGroup) {
-            const originalCamPos = new THREE.Vector3()
-            this.game.camera.getWorldPosition(originalCamPos)
-
-            const originalCamQuat = new THREE.Quaternion()
-            this.game.camera.getWorldQuaternion(originalCamQuat)
-
-            heandGroup.lightsGroup.position.copy(originalCamPos)
-            heandGroup.lightsGroup.quaternion.copy(originalCamQuat)
-
-            heandGroup.heandindex.forEach((index, i) => {
-              const localOffset = new THREE.Vector3(-0.15, i * 0.1, i * -0.1)
-              this.game.loadedLights[index][1].position.copy(originalCamPos).add(localOffset)
-              this.game.loadedLights[index][1].quaternion.copy(originalCamQuat)
-            })
-          }
-          this.refreshHeandLights()
-
-          heandGroup.updateMatrixWorld(true)
-          heandGroup.box.setFromObject(heandGroup)
         }
       } else {
         heandGroup.visible = false;
@@ -579,15 +582,13 @@ export default class Gameplay {
         const children = meshGroup.children
         if (!children.length) return
 
-        // Vegyük az első gyereket (vagy akár végig is mehetsz többön)
-        const firstMesh = children[0];
-        // bounding box alapján pozíció
-        firstMesh.geometry.computeBoundingBox();
-        const boundingBox = firstMesh.geometry.boundingBox.clone();
-        // A mesh pozíciójához hozzáadjuk a bounding box center-t
-        const center = new THREE.Vector3();
-        boundingBox.getCenter(center);
-        firstMesh.localToWorld(center); // átváltjuk world pos-ra
+        const firstMesh = children[0]
+        firstMesh.geometry.computeBoundingBox()
+        const boundingBox = firstMesh.geometry.boundingBox.clone()
+
+        const center = new THREE.Vector3()
+        boundingBox.getCenter(center)
+        firstMesh.localToWorld(center)
 
         const cameraPos = new THREE.Vector3()
         this.game.camera.getWorldPosition(cameraPos)
@@ -610,7 +611,19 @@ export default class Gameplay {
     if (typeof actions[1].conditions.usedobjects === 'undefined') actions[1].conditions.usedobjects = []
 
     // CHECK DISTANCES
-    if (!(distance > actions[1].conditions.distance_near && distance < actions[1].conditions.distance_far)) return;
+    if (!(distance > actions[1].conditions.distance_near && distance < actions[1].conditions.distance_far)) {
+      // REMOVE PLAYING SOUND
+      if (actions[0].endFunction && actions[0].playSound) {
+        let phantom = actions[0].playSound
+        let audio = phantom.children[0]
+        if (audio && audio.source) {
+          audio.stop();
+          actions[0].playSound = null
+          actions[0].endFunction = null
+        }
+      }
+      return;
+    } 
 
     // CHECK USER CLICK TYPE
     if (type == 'click') {
@@ -654,6 +667,7 @@ export default class Gameplay {
           // IF NOT PROTECTED DELETE OBJECT FROM INVENTORY
           const isProtected = this.game.playerProtectedObjects.includes(this.game.playerMouse.selectedObject.objId)          
           if (!isProtected) {
+            // DELETE OBJECT FROM INVENTORY
             this.game.playerObjects = this.game.playerObjects.filter(obj => obj !== this.game.playerMouse.selectedObject.objId)
             this.game.inventory.inventoryMenu.reloadInventory = true
           }
@@ -687,10 +701,57 @@ export default class Gameplay {
       // ACTION
       var oncePlayEvent = async () => {
         // console.log('Start settimeout: '+ event.name)  // ?? EVENT NAME
-        event.timeout = setTimeout(() => {
+        event.timeout = setTimeout(async() => {
+          // EVENT CHECKS
+          // ---
+
+          // SOUND FX
+          if (event.playsounds.length > 0) {
+            for (const soundId of event.playsounds) {
+              // console.log(actions[0])
+
+              // NOCLICK SOUND PLAYING ONLY ONE TIME
+              (async () => {
+                if (type == 'noclick') {
+                  if (!actions[0].endFunction) {
+                    actions[0].endFunction = true
+
+                    actions[0].updateMatrixWorld(true)
+                    const phantom = await this.game.sound.play(soundId, {loop: true}, true, actions[0])
+
+                    actions[0].playSound = phantom
+                    let audio = phantom.children[0]
+
+                    if (audio && audio.source) {
+                      const endFunction = () => {
+                        console.log("Vége a hangnak")
+
+                        audio.stop()
+                        audio.disconnect()
+                        if (phantom.parent) phantom.parent.remove(phantom);
+                
+                        actions[0].playSound = null
+                        actions[0].endFunction = null
+                      };
+
+                      audio.source.onended = endFunction
+                      actions[0].endFunction = endFunction
+                    }
+                  }
+                } else {
+                  const soundsMemory = this.game.sound.soundsMemory.find(obj => obj.id == soundId)
+                  if (soundsMemory) {
+                    console.log(soundsMemory)
+                    await this.game.sound.play(soundsMemory.id, null, true, actions[0])
+                  }
+                }
+              })();
+
+            }
+          }
+
           // EVENT CHECK ADD OBJECTS
           if (event.addobjects.length > 0) {
-
             for (const addObjectId of event.addobjects) {
               // ADD OBJECT - Többször is előfordulhat egy tárgy, pl.: energiaital
               this.game.playerObjects.push(parseInt(addObjectId))
@@ -699,9 +760,7 @@ export default class Gameplay {
             // REMOVE THREE OBJECT
             this.game.removeObjectOfMap(actions[0])
           }
-  
-          // EVENT CHECKS
-          // ---
+
           // LIGHT FX
           if (event.lightfx.length > 0) {
             for (const fx of event.lightfx) {
@@ -890,6 +949,60 @@ export default class Gameplay {
 
       case 3:
         // SWITCH TEXTURE CHANGE
+        // console.log(mesh, data)
+        data.state = data.state == data.texture_on ? data.texture_off : data.texture_on;
+
+        mesh.traverse(obj => {
+          if (obj.isMesh && obj.material && obj.material.map) {            
+            obj.material.map = this.game.loadedTextures[data.state]
+            obj.material.needsUpdate = true
+          }
+        })
+      break
+
+      case 4:
+        // RADIO ON / OFF
+        if (!mesh.radioSwitch) mesh.radioSwitch = data.state;
+
+        if (mesh.radioSwitch == "off") {
+          // OFF->ON
+          this.game.sound.play(7, { volume: 0.5 }, true, mesh).then(phantom => {
+            if (!phantom) return; // console.log(phantom)
+
+            mesh.playSound = phantom;
+            mesh.playSound.audio = phantom.children[0]
+            mesh.radioSwitch = "on";
+          }).catch(err => console.warn("Sound play error:", err));
+
+        } else if (mesh.radioSwitch == "on") {
+          // ON->OFF
+          if (mesh.playSound) {
+            const phantom = mesh.playSound
+            const audio = phantom.children[0]
+
+            if (audio && audio.isPlaying) audio.stop()
+            if (phantom.parent) phantom.parent.remove(phantom)
+            if (audio) audio.disconnect()
+
+            mesh.playSound = null;
+          }
+          mesh.radioSwitch = "off";
+        }
+      break;
+      case 5:
+        // PICTURE TEXTURE CHANGE
+        // console.log(mesh, data)
+        data.state = data.state == data.texture_on ? data.texture_off : data.texture_on;
+
+        mesh.traverse(obj => {
+          if (obj.isMesh && obj.material && obj.material.map) {            
+            obj.material.map = this.game.loadedTextures[data.state]
+            obj.material.needsUpdate = true
+          }
+        })
+      break
+      case 6:
+        // MICRO HAMSTER TEXTURE CHANGE
         // console.log(mesh, data)
         data.state = data.state == data.texture_on ? data.texture_off : data.texture_on;
 
