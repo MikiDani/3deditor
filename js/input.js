@@ -40,6 +40,13 @@ export default class Input {
     // ADD EVENT LISTENERS
 
     // CLOSE BUTTON
+    $(window).on('resize', () => {
+      console.log('RELOAD SCREEN')
+      
+      this.game.graphics.reloadScreen()
+    });
+
+    // CLOSE BUTTON
     $('.btn-close').on('click', function () {
       setTimeout(function () {
         if (document.activeElement) {
@@ -48,12 +55,114 @@ export default class Input {
       }, 10);
     });
 
-    // CHECK CURSOR DESIGNS
-    $(document).on('mousemove', (event) => { this.checkMousePositionOptions(event) })
+    $("#console-reset").on('click', () => {
+      $("#loading-console").html('')
+    });
 
+    // CHECK CURSOR POINT AND CLICK INTERVAL
+    $(document).on('mousemove', (event) => { this.checkMousePositionOptions(event) })
+    this.checkLookingInterval()
+
+    $('#gravity-button').on('click', (event) => {
+      let $this = $(event.target)
+      this.game.gravity = $this.prop('checked') ? gravityValue : 0;
+    });
+
+    $('#lights-button').on('click', (event) => {
+      let $this = $(event.target)
+      this.game.lightsOn = $this.prop('checked')
+    });
+
+    $('#ghost-button').on('click', (event) => {
+      let $this = $(event.target)
+      this.game.ghostMode = $this.prop('checked')
+    });
+
+    $(document).on('click', '.filename-listelement, .savegame-listelement', (event) => {
+      const $this = $(event.target)
+      const filename = $this.attr('data-filename')
+      const ext = $this.attr('data-ext')
+
+      this.game.filename = filename
+      this.game.ext = ext
+
+      console.log(this.game.filename)
+      console.log(this.game.ext)
+
+      console.log(filename, ext)
+
+      $('#file-input').val(filename).attr('data-ext', ext)
+    });
+
+    $('#closeBtn').on('click', () => {
+      const modal = bootstrap.Modal.getInstance(document.getElementById('topLayer'))
+      if (modal) modal.hide()
+
+      this.game.play = true
+      this.game.currentState = 'game'
+      this.game.showHideOptions('game')
+    });
+
+    $('#savegame-button').on('click', async () => {
+      if (this.game.mapLoading) {
+        console.log('save...');
+        const request = await this.game.loader.saveGame()
+        // RELOAD SAVED GAMES FILE LIST
+        if (request) await this.game.loader.loadSavedgamesList()
+      } else {
+        console.log('Error: not loaded map!');
+        $("#savegame-message").html(`<div class="text-center text-danger">Not loaded map!</div>`)
+        setTimeout(() => {$("#savegame-message").html('')}, 4000);
+        return true;
+      }
+    });
+
+    $('#loadgame-button').on('click', async () => {
+      if (this.game.filename && this.game.ext && this.game.ext == 'stuc') {
+        console.log('Loading saved game...');
+
+        this.game.forceClearAllTimers()
+
+        // DELETE ALL PLAYING SOUNDS
+        this.game.sound.removeAllPlayedAudio()
+
+        // DELETE ALL MESHS
+        this.game.deleteAllObjectInScene(this.game.scene)
+        this.game.deleteAllObjectInScene(this.game.heandScene)
+
+        this.game.loadedLights = []
+        this.game.loadedBeings = []
+        this.game.loadedHeands = [] // fények miatt újra kell tölteni
+        this.game.loadedMeshs = []
+
+        // inventory datas
+        this.game.playerObjects = this.game.playerObjectsDefault
+        console.log(this.game.playerObjects)
+
+        this.game.mapLoading = false
+
+        //--- start
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('topLayer'))
+        if (modal) modal.hide()
+  
+        this.game.play = true
+        this.game.currentState = 'game'
+        this.game.showHideOptions('game')
+
+      } else {
+        console.log('Error: Not saved game selected!');
+        $("#savegame-message").html(`<div class="text-center text-danger">Not saved game selected!</div>`)
+        setTimeout(() => {$("#savegame-message").html('')}, 4000);
+        return true;
+      }
+    });
+  }
+
+  checkLookingInterval() {
     this.chechLookInterval = setInterval(() => {
       const now = Date.now()
-      if (now - this.mouseMoveTimer > 200) {
+      if (now - this.mouseMoveTimer > 200) { 
         if (document.pointerLockElement === null && this.game.currentState == 'game') {
           this.mouseMoveTimer = Date.now()
 
@@ -69,26 +178,18 @@ export default class Input {
           let findUse = false;
 
           for (const [meshId, meshGroup] of Object.entries(this.game.loadedMeshs)) {
-            // ellenőrzés: van gyerek objektuma?
-            if (!meshGroup || !meshGroup.children) continue;
-            // sugár-metszés
-            const intersects = raycaster.intersectObjects(meshGroup.children, true)
 
+            if (!meshGroup || !meshGroup.children) continue;
+            const intersects = raycaster.intersectObjects(meshGroup.children, true)
             if (intersects.length > 0) {
               const intersect = intersects[0]
+              const hitPoint = intersect.point;
 
-              // kamera pozíció
               const cameraPos = new THREE.Vector3()
               this.game.camera.getWorldPosition(cameraPos)
 
-              // találati pont
-              const hitPoint = intersect.point;
-
-              // távolság számítás
               const distance = cameraPos.distanceTo(hitPoint)
-
-              // CHECK
-              // console.log(meshGroup.id, meshGroup.name)
+              // CHECK // console.log(meshGroup.id, meshGroup.name)
               if (this.game.playerMouse.mode == 'look') {
                 // LOOK
                 if (meshGroup.text) {
@@ -105,7 +206,6 @@ export default class Input {
                 const found = this.game.map.actionelements.find(pair => pair[0].id === meshGroup.id)
                 if (found) {
                   if (distance < found[1].conditions.distance_far) {
-                    // const group = found[0]; const action = found[1]; console.log(action); console.log(group);
                     findUse = true
                     break
                   }
@@ -127,38 +227,6 @@ export default class Input {
         }
       }
     }, 25);
-
-    $('#gravity-button').on('click', (event) => {
-      let $this = $(event.target)
-      this.game.gravity = $this.prop('checked') ? gravityValue : 0;
-    });
-
-    $('#lights-button').on('click', (event) => {
-      let $this = $(event.target)
-      this.game.lightsOn = $this.prop('checked')
-    });
-
-    $('#ghost-button').on('click', (event) => {
-      let $this = $(event.target)
-      this.game.ghostMode = $this.prop('checked')
-    });
-
-    $('.filename-listelement').on('click', (event) => {      
-      const $this = $(event.target)
-      const filename = $this.attr('data-filename')
-      const ext = $this.attr('data-ext')
-      console.log(filename, ext)
-      $('#file-input').val(filename).attr('data-ext', ext)
-    });
-
-    $('#closeBtn').on('click', () => {
-      const modal = bootstrap.Modal.getInstance(document.getElementById('topLayer'))
-      if (modal) modal.hide()
-
-      this.game.play = true
-      this.game.currentState = 'game'
-      this.game.showHideOptions('game')
-    });
   }
 
   checkMousePositionOptions(event) {
@@ -174,15 +242,23 @@ export default class Input {
   async gameControls() {
     // mouse right button off
     $(document).on("contextmenu", function(event) {
-      event.preventDefault()// console.log("Jobb klikk letiltva!")
+      event.preventDefault(); event.stopPropagation(); // console.log("Jobb klikk letiltva!")
     });
 
     // MOUSE INVENTORY BUTTON
     $(document).on('mousedown', e => {
 
+      // RIGHT MOUSE CLICK
+      if (e.button == 2) {
+        e.preventDefault(); e.stopPropagation();
+        if (this.game.inventory.readArray.readType !== null) return;
+        this.getActualCursor()
+        this.changeGameOrInventory()
+      }
+
       // MOUSE ACTION: USE
       if (e.button == 0 && this.game.currentState == 'game' && $(e.target).attr('id') == 'use-selector') {
-        e.preventDefault(); e.stopPropagation();        
+        e.preventDefault(); e.stopPropagation();
         this.useSelectorChange()
         return;
       }
@@ -196,18 +272,9 @@ export default class Input {
 
       // CLOSE TEXT BUTTON            
       if (e.button == 0 && this.game.currentState == 'game' && ( $(e.target).attr('id') == 'text-box-close-button' || $(e.target).closest('#text-box').length )) {
-        console.log($(e.target).attr('id'))
         e.preventDefault(); e.stopPropagation();
         $("#text-box").hide()
         return
-      }
-
-      // RIGHT MOUSE CLICK
-      if (e.button == 2) {
-        e.preventDefault(); e.stopPropagation();
-        if (this.game.inventory.readArray.readType !== null) return;
-        this.getActualCursor()
-        this.changeGameOrInventory()
       }
     })
 
@@ -319,6 +386,21 @@ export default class Input {
         console.log('this.game.loadedLights:')
         console.log(this.game.loadedLights)
       }
+
+      if (e.key == 'o') {
+        console.log('---')
+        console.log(this.game.config)
+        console.log(this.game.loadedTextures)
+        console.log(this.game.loadedSounds)
+    
+        console.log(this.game.beingsList)
+        console.log(this.game.heandsList)
+        console.log(this.game.objectsList)
+        console.log('-!-')
+        console.log(this.game.renderer.info)
+        console.log('-!-')
+      }
+
       //---
 
       // GAME KEYS
@@ -358,22 +440,18 @@ export default class Input {
           this.game.camera.getWorldQuaternion(camQuat)          
           const euler = new THREE.Euler().setFromQuaternion(camQuat, 'YXZ') // X → pitch (fel–le nézés)
 
+          // AUTO MOVE PLAYER HEAND CENTER
           if (THREE.MathUtils.radToDeg(euler.x) < 25 && THREE.MathUtils.radToDeg(euler.x) > -30) {
-
-            console.log(THREE.MathUtils.radToDeg(euler.x))
-
             this.game.playerMouse.selectedHeand = 1
             this.game.playerMouse.mouseMaxPitch = 25
             this.game.playerMouse.mouseMinPitch = -30
           } else {
-            console.log('Wrong!!!')
-
+            // console.log('Wrong!!!')
             this.game.autoMovePlayerData = {
               ...this.game.autoMovePlayerData,
               mode: 'y-center',
               weapon: 1,
             }
-
           }
         }
 
@@ -397,6 +475,61 @@ export default class Input {
           this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
         }
 
+        if(e.key =='5') {
+          e.preventDefault(); e.stopPropagation();
+          console.log('-----')
+          console.log('-----')
+          console.log(this.game.timers) 
+        }
+
+        if(e.key =='6') {
+          e.preventDefault(); e.stopPropagation();
+          // console.log(this.game.renderer.info)
+          console.log('6.')
+
+          this.game.forceClearAllTimers()
+
+          // DELETE ALL PLAYING SOUNDS
+          this.game.sound.removeAllPlayedAudio()
+
+          // DELETE ALL MESHS
+          this.game.deleteAllObjectInScene(this.game.scene)
+          this.game.deleteAllObjectInScene(this.game.heandScene)
+
+          this.game.loadedLights = []
+          this.game.loadedBeings = []
+          this.game.loadedHeands = [] // fények miatt újra kell tölteni
+          this.game.loadedMeshs = []
+
+          // inventory datas
+          this.game.playerObjects = this.game.playerObjectsDefault
+          console.log(this.game.playerObjects)
+
+          this.game.mapLoading = false
+
+          // this.game.currentState = 'menu'
+          // this.game.showHideOptions(this.game.currentState)
+        }
+
+        if(e.key =='8') {
+          e.preventDefault(); e.stopPropagation();
+          $("#loading-container").toggle()
+        }
+
+        if(e.key =='9') {
+          e.preventDefault(); e.stopPropagation();
+          $("#loading-container").toggle()
+
+          console.log(this.game.renderer.info)
+ 
+          this.game.graphics.resetScene()
+          
+          // $("#loading-console").html('')
+
+          this.game.currentState = 'menu'
+          this.game.showHideOptions(this.game.currentState)
+        }
+
         if(e.key =='Enter') {
           e.preventDefault(); e.stopPropagation();
           this.changeGameOrInventory()
@@ -411,20 +544,8 @@ export default class Input {
 
         // USE MOUSE MODE
         if (e.key == 'e' || e.key == 'E') {
-
-          // SOUND TEST
-          if (this.musicSound && this.musicSound.isPlaying) {
-            console.log('MUSIC STOP')
-            this.musicSound.stop()
-            this.musicSound = null
-          } else {
-            console.log('MUSIC PLAY')
-            this.musicSound = this.game.sound.play('music2', true, 0.3)
-          }
-
           e.preventDefault(); e.stopPropagation();
           this.useSelectorChange()
-
           return
         }
 
@@ -654,20 +775,14 @@ export default class Input {
 
   useSelectorChange() {
     this.game.playerMouse.mode = 'use'
-
     this.removeAllCursorClass()
     $("html").addClass('cursor-use-off')
-
-    console.log(this.game.playerMouse.mode)
   }
 
   lookSelectorChange() {
     this.game.playerMouse.mode = 'look'
-
     this.removeAllCursorClass()
     $("html").addClass('cursor-look-off')
-
-    console.log(this.game.playerMouse.mode)
   }
 
   // --
@@ -1006,7 +1121,7 @@ export default class Input {
           }
 
           // IF USE MODE
-          if (this.game.playerMouse.mode == 'use') this.game.gameplay.checkActions('click', action, distance);
+          if (this.game.playerMouse.mode == 'use' && this.game.currentState == 'game') this.game.gameplay.checkActions('click', action, distance);
 
         }
       }

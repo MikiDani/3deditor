@@ -1154,6 +1154,10 @@ $cell-size: 30px;
     cursor: pointer;
 }
 
+.bg-color-back {
+    background-color: #add6ad !important;
+}
+
 .menu-back-empty {
     color: gray !important;
     background-color: #cecece;
@@ -2558,6 +2562,14 @@ display: block;
     border: 2px solid green;
 }
 
+.bg-success {
+    background-color: green !important;
+}
+
+.bg-danger {
+    background-color: red !important;
+}
+
 .select-point {
     display: flex;
     justify-content: center;
@@ -2591,4 +2603,10 @@ display: block;
     padding-left: 5px;
     padding-right: 5px;
     margin-bottom: 10px;
+}
+
+.data-grid-value:hover {
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: underline;
 }

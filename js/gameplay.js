@@ -35,6 +35,10 @@ export default class Gameplay {
     this.game.renderer.autoClear = false
     this.game.renderer.clearDepth()
 
+    // remove previous heand object (DO NOT CLEAR SCENE)
+    const old = this.game.heandScene.children.find(o => o.isGroup)
+    if (old) this.game.heandScene.remove(old)
+
     this.game.heandScene.add(selectedHeand)
     await this.game.renderer.render(this.game.heandScene, this.game.camera)
 
@@ -597,7 +601,7 @@ export default class Gameplay {
         const raycaster = new THREE.Raycaster()
         raycaster.set(cameraPos, direction)
         const intersects = raycaster.intersectObjects(children, true)
-    
+
         if (intersects.length > 0) {
           // NO CLICK ACTIONS CHECK
           this.checkActions('noclick', action, intersects[0].distance)
@@ -626,8 +630,7 @@ export default class Gameplay {
     } 
 
     // CHECK USER CLICK TYPE
-    if (type == 'click') {
-
+    if (type == 'click' && this.game.currentState == 'game') {
       // EXCEPTION MESSAGES
       const objId = this.game.playerMouse.selectedObject?.objId
       const actionId = actions[1].id
@@ -642,16 +645,16 @@ export default class Gameplay {
           return;
         }
       }
-      // CHECK OBJECTS
+      // CHECK OBJECTS      
       if (actions[1].conditions.success) {
-        // TASK COMPLETTED // this.makeActionObjectsMessageElement({type: 'actionmessage', actionText: actions[1].conditions.success_text})
+        // TASK COMPLETTED 
+        // this.makeActionObjectsMessageElement({type: 'actionmessage', actionText: actions[1].conditions.success_text})
       } else if (actions[1].conditions.issetobjects.length === 0 && this.game.playerMouse.selectedObject !== null) {
         // OBJECT IS IN HAND, BUT ACTION DOESN’T HAVE ISSETOBJECT ARRAY
         this.makeActionObjectsMessageElement({type: 'cantuse', cantUseObject: this.game.playerMouse.selectedObject.name}) 
         return;
       } else if (actions[1].conditions.issetobjects.length > 0 && !this.game.playerMouse.selectedObject) {
         // ACTION HAVE ISSETOBJECT DOESN’T HAVE IN HEAND
-
         const objects = actions[1].conditions.issetobjects.map(x => [this.game.objectsList[x].name, actions[1].conditions.usedobjects.includes(x)])
         let listElements = this.makeActionObjectsMessageElement({type: 'list', objects: objects})
 
@@ -739,14 +742,13 @@ export default class Gameplay {
                     }
                   }
                 } else {
-                  const soundsMemory = this.game.sound.soundsMemory.find(obj => obj.id == soundId)
-                  if (soundsMemory) {
-                    console.log(soundsMemory)
-                    await this.game.sound.play(soundsMemory.id, null, true, actions[0])
+                  const loadedSounds = this.game.loadedSounds.find(obj => obj.id == soundId)
+                  if (loadedSounds) {
+                    // console.log(loadedSounds)
+                    await this.game.sound.play(loadedSounds.id, null, true, actions[0])
                   }
                 }
               })();
-
             }
           }
 
@@ -758,7 +760,12 @@ export default class Gameplay {
               this.game.inventory.inventoryMenu.reloadInventory = true
             }
             // REMOVE THREE OBJECT
-            this.game.removeObjectOfMap(actions[0])
+            actions[0].visible = false
+            let mapData = this.game.map.data.find(data => data.name == actions[0].name)
+            if (mapData) {
+              mapData.pickuped = true
+            }
+            this.game.removeObjectOfMap(this.game.scene, actions[0])
           }
 
           // LIGHT FX
@@ -766,7 +773,7 @@ export default class Gameplay {
             for (const fx of event.lightfx) {
               let light = this.game.loadedLights[parseInt(fx[0])]?.[1] != null ? this.game.loadedLights[parseInt(fx[0])][1] : null;
               let fxData = this.game.config.lightfx.find(fxpc => fxpc.id == parseInt(fx[1]))
-              if (light, fxData) this.lightFx(light, fxData);
+              if (light && fxData) this.lightFx(light, fxData);
             }
           }
   
@@ -809,10 +816,7 @@ export default class Gameplay {
   makeActionObjectsMessageElement({type: type, objects: objects, cantUseObject: cantUseObject, useObject: useObject, actionText, listElements: listElements}) {
     const removeCursor = () => {
       // REMOVE SELECTED OBJECT AND CURSOR
-      this.game.playerMouse.selectedObject = null
-
-      console.log(this.game.playerMouse)
-      
+      this.game.playerMouse.selectedObject = null     
 
       $('#cursor-text-box').hide().html('')
       this.game.input.getActualCursor()
@@ -847,6 +851,10 @@ export default class Gameplay {
     }
   }
 
+  // SCENE FX
+
+  //** ACTION FXS */
+
   // LIGHT FX
   lightFx(light, data) {
     switch(data.id) {
@@ -857,7 +865,7 @@ export default class Gameplay {
           const randomColor = new THREE.Color(Math.random(), Math.random(), Math.random());
           light.color = randomColor;
         }, data.time)
-
+    
         this.refreshHeandLights()
       break
       case 1:

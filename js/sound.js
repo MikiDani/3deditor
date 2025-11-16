@@ -4,19 +4,16 @@ export default class Sound {
   constructor(game) {
     this.game = game
 
-    this.listener = new THREE.AudioListener()
-    this.game.camera.add(this.listener)
-
+    this.listener = this.game.listener
     this.audioLoader = new THREE.AudioLoader()
-    this.soundsMemory = []  // ide kerülnek a betöltött AudioBuffer-ek   
   }
 
-  async init() {
-    const promises = this.game.config.sounds.map(async (sound) => {
+  async loadSounds() {
+    for (const sound of this.game.config.sounds) {
       const url = `sounds/${sound.name}.mp3`
       try {
         const buffer = await this.audioLoader.loadAsync(url)
-        this.soundsMemory.push ({
+        this.game.loadedSounds.push ({
           buffer: buffer,
           id: sound.id,
           volume: sound.volume,
@@ -25,28 +22,26 @@ export default class Sound {
           setMaxDistance: sound.setMaxDistance,
           setRolloffFactor: sound.setRolloffFactor,
         })
+        this.game.addConsoleRow(`id: ${sound.id}. ${sound.name}.mp3 loaded, `, 'div', false, true)
 
-        console.log(`+ ${sound.name} loaded. id: ${sound.id} `)
       } catch (err) {
-        console.log(`- ERROR: (${sound.name}.mp3):`, err)
+        this.game.addConsoleRow(`id: ${sound.id}. ${sound.name}.mp3 ERROR!`, 'div', false, false)
         this.game.loadingError = true
+        return;
       }
-    })
-    await Promise.all(promises)
+    }
   }
 
-  async play(soundsMemoryId, soundDataOptions = null, use3D = false, meshGroup = null) {
-    const soundData  = this.soundsMemory.find(sound => sound.id == soundsMemoryId);
+  async play(soundId, soundDataOptions = null, use3D = false, meshGroup = null) {
+    const soundData = this.game.loadedSounds.find(sound => sound.id == soundId);
     if (!soundData) {
-      console.warn(`Not find sound! ID: "${soundsMemoryId}"`);
+      console.warn(`Not find sound! ID: "${soundId}"`);
       return;
     }
 
     let phantom = null
 
-    const sound = use3D
-      ? new THREE.PositionalAudio(this.listener)
-      : new THREE.Audio(this.listener);
+    const sound = use3D ? new THREE.PositionalAudio(this.listener) : new THREE.Audio(this.listener);
   
     sound.setBuffer(soundData.buffer)
     sound.setLoop(soundData.loop)
@@ -71,18 +66,16 @@ export default class Sound {
 
       this.game.scene.add(phantom)
 
-      // HELPER // 
-      /*
-      const debugSphere = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), new THREE.MeshBasicMaterial({ color: '#ffff00' }));
-      debugSphere.position.copy(position); this.game.scene.add(debugSphere);
-      */
+      // SOUND POSITION HELPER //
+      //?? const debugSphere = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), new THREE.MeshBasicMaterial({ color: '#ffff00' }));
+      //?? debugSphere.position.copy(position); this.game.scene.add(debugSphere);
 
-      // --- Automatikus törlés ---
+      // AUTO DELETE
       const removeAll = () => {
         if (phantom.parent) phantom.parent.remove(phantom)
-        // if (debugSphere.parent) debugSphere.parent.remove(debugSphere)  // HELPER
+        //?? if (debugSphere.parent) debugSphere.parent.remove(debugSphere)  // HELPER
         sound.disconnect()
-        console.log(`Sound removed: ${soundsMemoryId}`)
+        // console.log(`Sound removed: ${soundId}`)
       };
 
       sound.onEnded = removeAll;
@@ -103,11 +96,56 @@ export default class Sound {
       if ('setRolloffFactor' in soundDataOptions) sound.setRolloffFactor(soundDataOptions.setRolloffFactor)
     }
 
-    // --- Lejátszás ---
+    // --- PLAY ---
     requestAnimationFrame(() => {
       sound.play(0.05);
     });
 
+    // ADD PLAYEDSOUNDS ARRAY
+    (phantom) ? this.game.activePlayedSounds.push(phantom) : this.game.activePlayedSounds.push(sound);
+
     return phantom ?? null;
+  }
+
+  removeAllPlayedAudio() {
+    if (this.game.scene) this.stopAndDisconnectAllAudio(this.game.scene)
+    if (this.game.activePlayedSounds?.length) this.game.activePlayedSounds = []
+
+    this.game.camera.remove(this.game.listener)
+    this.game.listener.context.close()
+
+    const NewCtx = new (window.AudioContext)()
+    THREE.AudioContext.getContext = () => NewCtx
+    THREE.AudioContext.context = NewCtx
+
+    this.game.listener = new THREE.AudioListener()
+    this.game.camera.add(this.game.listener)
+    this.game.sound.listener = this.game.listener
+  }
+
+  stopAndDisconnectAllAudio(scene) {
+    scene.traverse(obj => {
+      if (obj.isAudio) {
+        if (obj.source) {
+          obj.source.stop(0)
+          obj.source.disconnect()
+          obj.source = null
+        }
+
+        if (obj.panner && obj.panner.disconnect) {
+          obj.panner.disconnect()
+          obj.panner = null
+        }
+
+        if (obj.gain && obj.gain.disconnect) {
+          obj.gain.disconnect()
+          obj.gain = null
+        }
+        obj.stop?.()
+        obj.disconnect?.()
+        obj.isPlaying = false
+        obj.autoplay = false
+      }
+    })
   }
 }

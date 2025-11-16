@@ -8,7 +8,7 @@ export default class Graphics {
     this.init()
   }
 
-  init() {
+  async init() {
     this.game.canvas = document.getElementById('game-canvas')
     this.game.renderer = new THREE.WebGLRenderer({ canvas: this.game.canvas })
     this.game.renderer.domElement.style.imageRendering = 'pixelated'
@@ -16,6 +16,13 @@ export default class Graphics {
     this.game.scene = new THREE.Scene()
     this.game.heandScene = new THREE.Scene()
 
+    this.reloadScreen()
+
+    //---
+    this.game.graphicsLoading = true
+  }
+
+  reloadScreen() {
     // console.log(this.checkGPU())
     if (this.checkGPU()) {
       // HIGH
@@ -28,26 +35,42 @@ export default class Graphics {
       console.log('Low')
       this.scX = window.innerWidth / 7
       this.scY = window.innerHeight / 7
-      this.far = 5
+      this.far = 10
     }
+
+    this.game.camera = new THREE.PerspectiveCamera(60, this.scX / this.scY, 0.1, this.far)
 
     this.game.renderer.setSize(this.scX, this.scY, false)
     this.game.renderer.setPixelRatio(1)
 
+    const savePos = this.game.camera ? this.game.camera.position.clone() : null
+    const saveRot = this.game.camera ? this.game.camera.rotation.clone() : null
+
     this.game.camera = new THREE.PerspectiveCamera(60, this.scX / this.scY, 0.1, this.far)
-    this.game.listener = new THREE.AudioListener()
+
+    savePos ? this.game.camera.position.set(savePos.x, savePos.y, savePos.z) : this.game.camera.position.set(0, 0, 0);
+    if (saveRot) this.game.camera.rotation.set(saveRot.x, saveRot.y, saveRot.z);
+    
+    if (!this.game.listener) this.game.listener = new THREE.AudioListener();
     this.game.camera.add(this.game.listener)
 
     this.game.pitchObject = new THREE.Object3D()
     this.game.pitchObject.add(this.game.camera)
 
-    this.game.player = new THREE.Object3D()
-    this.game.player.position.set(0, 0, 0)
-    this.game.player.add(this.game.pitchObject)
-    this.game.scene.add(this.game.player)
+    const savePlayerPos = this.game.player ? this.game.player.position.clone() : null
+    const savePlayerRot = this.game.player ? this.game.player.rotation.clone() : null
 
-    //---
-    this.game.graphicsLoading = true
+    this.game.player = new THREE.Object3D()
+
+    savePlayerPos
+    ? this.game.player.position.set(savePlayerPos.x, savePlayerPos.y, savePlayerPos.z)
+    : this.game.player.position.set(0, 0, 0);
+    if (savePlayerRot) this.game.player.rotation.set(savePlayerRot.x, savePlayerRot.y, savePlayerRot.z);
+
+    this.game.player.add(this.game.pitchObject)
+    this.game.player.updateMatrixWorld(true)
+
+    this.game.scene.add(this.game.player)
   }
 
   checkGPU() {

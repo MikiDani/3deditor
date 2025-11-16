@@ -1,17 +1,92 @@
 @font-face {
   font-family: "Hand";
   src: url("./fonts/hand.ttf") format("truetype");
+  font-display: block;
 }
 @font-face {
   font-family: "Carlito";
   src: url("./fonts/carlito.ttf") format("truetype");
+  font-display: block;
 }
 @font-face {
   font-family: "Absolute";
   src: url("./fonts/absolute.ttf") format("truetype");
+  font-display: block;
 }
+#preload-images {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  background-image: url("../img/inventory/click-selector.png"), url("../img/inventory/mouse-selector.png"), url("/img/cursors/cursor-default.png"), url("/img/cursors/cursor-use-on.png"), url("/img/cursors/cursor-use-off.png"), url("/img/cursors/cursor-get-on.png"), url("/img/cursors/cursor-get-off.png"), url("/img/cursors/cursor-look2-on.png"), url("/img/cursors/cursor-look2-off.png"), url("../img/inventory/text-border.png"), url("../img/inventory/green-dark-bg.png"), url("/img/check-mark.png"), url("/img/error-mark.png"), url("../img/inventory/close-button.png"), url("../img/inventory/use-selector.png"), url("../img/inventory/look-selector.png"), url("../img/inventory/inventory-read-bg.png"), url("../img/inventory/note-bg.png"), url("../img/inventory/arrow2-off.png"), url("../img/inventory/arrow2-on.png"), url("../img/inventory/book-bg.png"), url("../img/inventory/inventory-bg.png"), url("../img/inventory/inventory-logo.png"), url("../img/inventory/arrow-off.png"), url("../img/inventory/arrow-on.png"), url("../img/inventory/line.png");
+}
+
+.d-block {
+  display: block;
+}
+
+.d-inline {
+  display: inline !important;
+}
+
+.d-inline-block {
+  display: inline-block !important;
+}
+
+.d-flex {
+  display: flex;
+}
+
+.flex-row {
+  flex-direction: row;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.justify-content-center {
+  justify-content: center;
+}
+
+.justify-content-between {
+  justify-content: space-between;
+}
+
+.justify-content-end {
+  justify-content: end;
+}
+
+.justify-content-start {
+  justify-content: start;
+}
+
+.align-items-center {
+  align-items: center;
+}
+
+.align-items-start {
+  align-items: start;
+}
+
+.align-items-end {
+  align-items: end;
+}
+
 .text-white {
   color: white !important;
+}
+
+.text-ok {
+  color: white !important;
+}
+
+.text-green {
+  color: green !important;
+}
+
+.text-error {
+  color: red !important;
 }
 
 .text-yellow-light {
@@ -49,7 +124,7 @@ html, body {
   height: 100%;
   margin: 0 !important;
   padding: 0 !important;
-  background: black;
+  background: black !important;
   -webkit-user-select: none;
      -moz-user-select: none;
           user-select: none;
@@ -138,6 +213,44 @@ a:hover, button:hover, input:hover, textarea:hover {
   width: 100vw;
   height: 100vh;
   background-color: black;
+}
+
+#loading-container {
+  padding: 10px;
+  overflow-y: auto;
+  height: 100vh;
+}
+
+#console-container {
+  position: relative !important;
+}
+
+#loading-console {
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+#console-reset {
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  display: block;
+  background-color: deepskyblue;
+  font-size: 10px;
+  padding: 2px 2px 2px 2px;
+}
+
+.bg-secondary {
+  background-color: #ea8708 !important;
+}
+
+.w-100 {
+  width: 100% !important;
+}
+
+.w-50 {
+  width: 50% !important;
 }
 
 #text-box-container {
@@ -260,6 +373,7 @@ a:hover, button:hover, input:hover, textarea:hover {
 #note-container {
   position: fixed;
   width: 100vw;
+  max-width: 1920px !important;
   height: 100vh;
   display: flex;
   justify-content: center;
@@ -367,6 +481,7 @@ a:hover, button:hover, input:hover, textarea:hover {
 #book-container {
   position: fixed;
   width: 100vw;
+  max-width: 1920px !important;
   height: 100vh;
   display: flex;
   justify-content: center;
@@ -566,8 +681,10 @@ a:hover, button:hover, input:hover, textarea:hover {
 #inventory-container {
   position: fixed;
   top: 0;
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   width: 100vw;
+  max-width: 1920px !important;
   height: 100vh;
   background-image: url("../img/inventory/inventory-bg.png");
   background-size: 100% 100%;

@@ -72,6 +72,8 @@ export class Graphics {
   }
 
   resetCordinates() {
+    console.log(this.playerPos)
+    
     this.vLookDir = new Vec3D(0, 0, -1)
     this.vCamera = new Vec3D(this.playerPos.x, this.playerPos.y, this.playerPos.z)
     this.fYaw = this.playerPos.fYaw

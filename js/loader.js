@@ -10,34 +10,151 @@ export default class Loader {
   }
 
   async generalLoader(logOn) {
+    // LOAD DEFAULT DATA TO MEMORY
     try {
-      await this.loadTextures()
-      if (logOn) console.log(this.game.loadedTextures)        
-    } catch (e) { this.game.loadingError = true; return; }
+      this.game.addConsoleRow('+++ config json +++', 'div', true, true)
 
-    try {
       const response = await fetch('config.json')
       this.game.config = await response.json()
     } catch (e) { this.game.loadingError = true; return; }
+    if (logOn) console.log(this.game.config);
 
-    // FINISH LOADING
-    this.game.generalLoading = true
+    //ADD ACTIONS CLICK CHECKS
+    this.game.input.actionsClicksCheck()
+
+    // PACKS
+    try {
+      this.game.addConsoleRow('+++ beings list +++', 'div', true, true)
+
+      const response2 = await this.fetchData({ ajax: true, getbeings: true })
+      if (response2.files) {
+        for(const file of response2.files) {
+          const response3 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension, beingsdir: '_beings' });
+          if (response3?.data && response3?.structure) {
+            this.game.beingsList[file.name] = {
+              'data': this.game.deepCopy(response3.data),
+              'structure': this.game.deepCopy(response3.structure),
+              'animations': this.game.deepCopy(response3.animations),
+            }
+          }
+        }
+      }
+    } catch (e) { this.game.loadingError = true; return; }
+    if (logOn) console.log('BEINGS LIST: ', this.game.beingsList);
+
+    this.game.heandsList[0] = false;
+    try {
+      this.game.addConsoleRow('+++ heands list +++', 'div', true, true)
+
+      const response4 = await this.fetchData({ ajax: true, getheands: true })
+      if (response4.files) {
+        for (const file of response4.files) {
+          const response5 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension, objectdir: '_heands' });
+          if (response5?.data && response5?.structure) {
+            let exp = file.name.split('_')
+
+            this.game.heandsList[exp[0]] = {
+              'id': exp[0],
+              'name': exp[1],
+              'filename': file.name,
+              'ratio': response5.ratio ?? 1,
+              'speed': 25,
+              'data': this.game.deepCopy(response5.data),
+              'structure': this.game.deepCopy(response5.structure),
+              'animations': this.game.deepCopy(response5.animations),
+            }
+            // IF HAVE LIGHTS (lamp, lighter)
+            if (response5.lights) this.game.heandsList[exp[0]].lights = this.game.deepCopy(response5.lights);
+          }
+        }
+      }
+    } catch (e) { this.game.loadingError = true; return; }
+    if (logOn) console.log('HANDLE LIST: ', this.game.heandsList);
+
+    try {
+      this.game.addConsoleRow('+++ objects list +++', 'div', true, true)
+
+      const response3 = await this.fetchData({ ajax: true, getobjects: true })
+      if (response3.files) {
+        for (const file of response3.files) {          
+          const response4 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension, objectdir: '_objects' });
+          if (response4?.data && response4?.structure) {            
+            let exp = file.name.split('_')
+
+            this.game.objectsList[exp[0]] = {
+              'id': exp[0],
+              'name': exp[1],
+              'filename': file.name,
+              'ratio': response4.ratio ?? 1,
+              'text': response4.text,
+              'read': response4.read ? (response4.read === 'false' ? false : response4.read) : false,
+              'eat': response4.eat ? (response4.eat === 'false' ? false : parseInt(response4.eat)) : false,
+              'data': this.game.deepCopy(response4.data),
+              'structure': this.game.deepCopy(response4.structure),
+            }
+
+            this.game.addConsoleRow(`Added Object: ${this.game.objectsList[exp[0]].id}. ${this.game.objectsList[exp[0]].name}, `, 'div', false, true)
+          }
+        }
+      }
+    } catch (e) { this.game.loadingError = true; return; }
+    if (logOn) console.log('OBJECTLIST: ', this.game.objectsList);
+
+    // MATERIAL
+    try {
+      this.game.addConsoleRow('+++ loading textures +++', 'div', true, true)
+
+      await this.loadTextures()
+    } catch (e) { this.game.loadingError = true; return; }    
+    if (logOn) console.log('TEXTURES: ', this.game.loadedTextures);
+
+    try {
+      this.game.addConsoleRow('+++ loading sounds +++', 'div', true, true)
+
+      await this.game.sound.loadSounds()
+    } catch (e) { this.game.loadingError = true; return; }
+    if (logOn) console.log('SOUNDS: ', this.game.loadedSounds);
+
+    this.game.addConsoleRow('--- -------------- ---', 'div', true, true)
+    this.game.addConsoleRow('--- -------------- ---', 'div', true, true)
+
     this.game.$loading.hide()
+    // --
+    this.game.generalLoading = true
   }
 
   async loadTextures() {
-    await this.loadTexturesLinks()
-
-    console.log(this.texturesLinks)
+    await this.loadTexturesLinks()    
 
     for (const [name, path] of Object.entries(this.texturesLinks)) {
       // console.log(name, path)
-      let texturePaths = Object.values(this.texturesLinks[name])
-      if (texturePaths.length > 0) {
-        const loadData = await this.createSpritesheetTexture(name, texturePaths, 500)
-        this.game.loadedTextures[name] = loadData
+      if (this.game.loadedTextures[name]) {
+        // IF THE TEXTURE IS LOADED
+        console.log('LOADED! : ', this.game.loadedTextures[name])
+        continue;
       }
-    }    
+
+      let texturePaths = Object.values(this.texturesLinks[name])
+
+      if (texturePaths.length > 0) {
+        const loadData = await this.createSpritesheetTexture(texturePaths, 500)        
+        if (loadData[0]) {
+          this.game.loadedTextures[name] = loadData[1]
+          const text = `${name}.png loaded!, `
+          this.game.addConsoleRow(text, 'div', false, true)
+        } else {
+          const text = `${name}.png ERROR!`
+          this.game.addConsoleRow(text, 'div', false, false)
+          this.game.loadingError = true;
+          return;  
+        }
+      } else {
+        const text = `${name}.png ERROR!`
+        this.game.loadingError = true;
+        this.game.addConsoleRow(text, 'div', false, false)
+        return;
+      }
+    }
   }
 
   async loadTexturesLinks() {
@@ -53,7 +170,7 @@ export default class Loader {
   }
 
   // Spritesheet generálása több képből és animált textúra létrehozása
-  async createSpritesheetTexture(name, imagePaths, interval = 100) {    // !! KÉP ANIMÁCIÓ IDŐ az iterval
+  async createSpritesheetTexture(imagePaths, interval = 100) {    // !! KÉP ANIMÁCIÓ IDŐ az iterval
     const loader = new THREE.ImageLoader()
     const tilesHoriz = imagePaths.length
     const images = []
@@ -68,6 +185,7 @@ export default class Loader {
         images.push(img)
       } catch (e) {
         console.error(`Hiba a kép betöltésekor: ${e.message}`);
+        return [false]
       }
     }
 
@@ -104,46 +222,80 @@ export default class Loader {
       }, interval);
     }
 
-    return texture;
+    return [true, texture];
   }
 
-  async mapLoader() {
-    const filename = $("#file-input").val()
-    const ext = $("#file-input").attr('data-ext')
+  // MAP LOADER
+  async mapLoader(filename, ext) {
+    console.log(filename, ext)
 
-    const response = await this.fetchData({ ajax: true, load: true, filename: filename, ext: ext })
+    const savedgamesdir = (ext == 'stuc') ? '__saved_games__' : null;
+
+    this.game.map = this.game.mapVariableReset()
+    this.game.map.map_filename = filename
+    this.game.map.map_ext = ext
+
+    const startTime = Date.now()
+    this.game.addConsoleRow('--- loading map datas start ---', 'div', true, true)
+
+    const response = await this.fetchData({ ajax: true, load: true, filename: filename, ext: ext, savedgamesdir: savedgamesdir })
+    console.log(response)
+    
     if (response?.data && response?.structure) {
+      // console.log('LOAD MAPDATA:', response)
+
+      // PLAYER
+      this.game.map.player = this.game.deepCopy(response.player)
+      if (response.playerObjects != null) this.game.playerObjects = response.playerObjects;
+      if (response.playerMouse != null) this.game.playerMouse = response.playerMouse;
+      // MAP
       this.game.map.data = this.game.deepCopy(response.data[0], true)
       this.game.map.structure = this.game.deepCopy(response.structure, true)
+      // LIGHTS
       this.game.map.lights = this.game.deepCopy(response.lights)
+      // BEINGS
       this.game.map.beings = this.game.deepCopy(response.beings)
+      // ACTIONS
       this.game.map.actions = this.game.deepCopy(response.actions)
-      this.game.map.player = this.game.deepCopy(response.player)
+      let loadType = null
+      if (response.actionelements != null) {
+        loadType = 'loadgame'
+        this.game.map.actionelements = response.actionelements;
+      } else {
+        loadType = 'newgame'
+        this.game.map.actionelements = [];
+      }
 
-      this.game.player.position.x = this.game.map.player.x
-      this.game.player.position.y = this.game.map.player.y
-
-      this.game.player.position.z = -this.game.map.player.z / 7 + 1
-      // this.game.player.position.z = -this.game.map.player.z / 7 + 3  // !!!
-      // console.log(this.game.player.position.z)
-
-      this.game.player.rotation.y -= this.game.map.player.fYaw
-      this.game.pitchObject.rotation.x -= -this.game.map.player.fXaw
+      // PLAYER POSITION
+      this.game.player.position.set(this.game.map.player.x, this.game.map.player.y, this.game.map.player.z)
+      this.game.player.rotation.y = this.game.map.player.fYaw
+      this.game.pitchObject.rotation.x = this.game.map.player.fXaw
+      this.game.camera.position.set(0, 0, 0)
+      this.game.camera.updateMatrixWorld(true)
+      //--
 
       if (false) {
         console.log('----')
+        console.log(this.game.map.player)
         console.log(this.game.map.data)
         console.log(this.game.map.structure)
-        console.log(this.game.map.player)
         console.log(this.game.map.lights)
         console.log(this.game.map.beings)
         console.log(this.game.map.actions)
         console.log('----')
       }
 
-      // LOAD MAP MESHS
+
+      console.log('---')
+      console.log(this.game.map.data)
+
+      // LOAD MAP MESHS (DATA)
       for (let mesh of this.game.map.data) {
         const meshGroup = new THREE.Group()
+
+        // GIVE MESH DATA TO MESHGROUP
+        if (mesh.pickuped) meshGroup.pickuped = mesh.pickuped
+
         for (let tri of mesh.tris) {
           const geometry = new THREE.BufferGeometry()
           const vertices = new Float32Array([
@@ -166,9 +318,12 @@ export default class Loader {
           let triTransparent = tri?.transparent ? true : false;
           let triNormal = tri?.normal ? 'FrontSide' : 'DoubleSide';
 
+          const texture = this.game.loadedTextures[tri.texture.name]
+          if (texture?.needsUpdate) texture.needsUpdate = false;
+
           const materialType = (this.game.lightsOn) ? 'MeshLambertMaterial' : 'MeshBasicMaterial';
           const material = new THREE[materialType]({
-            map: this.game.loadedTextures[tri.texture.name],  // TEXTURA ÚJ MEGOLDÁS
+            map: texture,                                     // TEXTURA ÚJ MEGOLDÁS
             side: THREE[triNormal],                           // side: THREE.FrontSide, THREE.DoubleSide
             transparent: triTransparent,                      // Fontos a false, mert a tru nagyon lassítja!
             opacity: 1,
@@ -186,9 +341,10 @@ export default class Loader {
           this.game.boundingBoxes.push(box)
 
           // YELLOW BOX-HELPER
-          if (mesh.name == 'radio' && false) {
+          if (false) {
             const helper = new THREE.Box3Helper(box, new THREE.Color('#ffff00'));
             this.game.scene.add(helper);
+            if (mesh.name == 'KULCS-1') {}
           }
         }
 
@@ -197,48 +353,64 @@ export default class Loader {
         if (mesh.name) meshGroup.name = mesh.name;  // IF HAVE MESH NAME
         if (mesh.text) meshGroup.text = mesh.text;  // IF HAVE MESH INFO TEXT ADD
         
-        this.game.scene.add(meshGroup)
+        // IF ADD SCENE        
+        if (!meshGroup.pickuped) this.game.scene.add(meshGroup);
 
         // SOUND POSITION SAVE
         meshGroup.updateMatrixWorld(true)
         meshGroup.box = new THREE.Box3().setFromObject(meshGroup)
         meshGroup.center = new THREE.Vector3()
         meshGroup.box.getCenter(meshGroup.center)
-
         meshGroup.center.applyMatrix4(meshGroup.matrixWorld)
 
         this.game.loadedMeshs[mesh.id] = meshGroup
 
-        // LOAD ACTIONS OF MESH
-        if (mesh?.actions && mesh.actions.length > 0) {
-          // console.log('Van AKCIÓJA: ', mesh.name)
-          for (const action of mesh.actions) {
-            let actionData = this.game.map.actions.find(obj => obj.id == action)
-            if (actionData) {
-              actionData.meshname = mesh.name
-              this.game.map.actionelements.push([meshGroup, actionData])
+        // LOAD ACTIONS OF MESH        
+        if (loadType == 'newgame') {
+          // LOAD NEW MAP LOAD
+          if (mesh?.actions && mesh.actions.length > 0) {
+            // console.log('Van AKCIÓJA: ', mesh.name)
+            for (const actionId of mesh.actions) {
+              const thisAction = this.game.map.actions.find(obj => obj.id == actionId)
+              if (thisAction) {
+                thisAction.meshname = mesh.name
+                this.game.map.actionelements.push([meshGroup, thisAction])
+              }
             }
+            this.game.addConsoleRow(`Add Mesh: ${mesh.id}. ${mesh.name}, `, 'div', false, true)
           }
+          console.log(this.game.map.actionelements)
         }
       }
 
-      //ADD ACTIONS CLICK CHECKS
-      this.game.input.actionsClicksCheck()
+      if (loadType == 'loadgame') {
+        // LOAD GAME
+        const loadedMeshsData = Object.values(this.game.loadedMeshs)
+        this.game.map.actionelements.forEach(action => {
+          // console.log(action[0]); console.log(action[1]);
+          const meshGroup = loadedMeshsData.find(mesh => mesh.name === action[0])
+          if (meshGroup) {
+            action[0] = meshGroup;
+            this.game.addConsoleRow(`Add Mesh: ${meshGroup.id}. ${meshGroup.name}, `, 'div', false, true)
+          }
+        });
+      }
 
       // LIGHTS LOADING
       if (this.game.lightsOn) {
+        this.game.addConsoleRow('--- loading Lights ---', 'div', true, true)
+
         if (this.game.map?.lights && this.game.map.lights.length > 0) {
           for (const light of this.game.map.lights) {
             //console.log('light.visible: ', light.visible)
             if (light.visible) {
               // console.log(light.color); console.log(light.editcolor); console.log(light.intensity); console.log(light.distance); console.log(light.type);
-              console.log(light.color)
               let lightColor = new THREE.Color(`#${light.color}`)
 
               let pointLight
               if (light.type == 'point') pointLight = new THREE.PointLight(lightColor, light.intensity, light.distance * 5);    
               else if (light.type == 'direction') pointLight = new THREE.DirectionalLight(lightColor, light.intensity);
-          
+
               if (pointLight) {
                 pointLight.position.set(light.p.x, light.p.y, light.p.z)
                 // PRIMARY LIGHT
@@ -248,99 +420,71 @@ export default class Loader {
                 this.game.heandScene.add(handLight)
 
                 this.game.loadedLights[light.id] = [light.name, pointLight]
+
+                this.game.addConsoleRow(`Added Light: ${light.id}. ${light.name}, `, 'div', false, true)
               }
             }
           }
           // MINIMUM AMBIENT LIGHT
           if (false) {  // !!!
-            const ambient = new THREE.AmbientLight('#ffffff', 0.0)  // 0.05
+            const ambient = new THREE.AmbientLight('#ffffff', 0.2)  // 0.05
             this.game.scene.add(ambient)
           }
         }
 
       } else {
-        console.log('AMBIENT ALAP FÉNY')
+        this.game.addConsoleRow('--- Add ambient light !!! ---', 'div', true, true)
         const ambient = new THREE.AmbientLight('#ffffff', 1)
         this.game.scene.add(ambient)
       }
 
-      // BEINGS DATA LOADING
-      const response2 = await this.fetchData({ ajax: true, getbeings: true })
-      if (response2.files) {
-        for(const file of response2.files) {
-          const response3 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension, beingsdir: '_beings' });
-          if (response3?.data && response3?.structure) {
-            this.game.beingsList[file.name] = {
-              'data': this.game.deepCopy(response3.data),
-              'structure': this.game.deepCopy(response3.structure),
-              'animations': this.game.deepCopy(response3.animations),
+      // FIRST ADD BEINGS
+      if (this.game.map.beings) {
+        this.game.addConsoleRow('--- Add Beings ---', 'div', true, true)
+
+        for (const being of this.game.map.beings) {
+          const actualBeingData = this.game.beingsList[being.filename].data[0]
+          if (actualBeingData) {
+            const beingGroup = new THREE.Group()
+
+            beingGroup.beingId = being.id
+            beingGroup.ratio = being.ratio
+            beingGroup.speed = being.speed
+            beingGroup.energy = being.energy
+            beingGroup.damage = being.damage
+            beingGroup.boxlines = being.boxlines
+            beingGroup.angle = being.angle    
+
+            beingGroup.animState = {
+              'type': being.type,
+              'card': 0,
+              'cardframe': 0,
+              'cardsegment': 0,
             }
+
+            this.createTHREEObject(being, beingGroup, actualBeingData, false)
+
+            beingGroup.position.set(being.p.x, being.p.y, being.p.z)
+            beingGroup.rotation.y = THREE.MathUtils.degToRad(beingGroup.angle)
+
+            this.game.scene.add(beingGroup)
+
+            this.game.loadedBeings[being.id] = beingGroup
+            this.game.loadedBeings[being.id].filename = being.filename              
+            this.game.loadedBeings[being.id].lastUpdate = performance.now()
+
+            this.game.addConsoleRow(`Added Being: ${being.id}. ${being.name}`, 'div', false, true)
           }
         }
-        // FIRST ADD BEINGS
-        if (this.game.map.beings) {
-          for (const being of this.game.map.beings) {
-            const actualBeingData = this.game.beingsList[being.filename].data[0]
-            if (actualBeingData) {
-              const beingGroup = new THREE.Group()
-
-              beingGroup.beingId = being.id
-              beingGroup.ratio = being.ratio
-              beingGroup.speed = being.speed
-              beingGroup.energy = being.energy
-              beingGroup.damage = being.damage
-              beingGroup.boxlines = being.boxlines
-              beingGroup.angle = being.angle    
-
-              beingGroup.animState = {
-                'type': being.type,
-                'card': 0,
-                'cardframe': 0,
-                'cardsegment': 0,
-              }
-
-              this.createTHREEObject(being, beingGroup, actualBeingData, false)
-  
-              beingGroup.position.set(being.p.x, being.p.y, being.p.z)
-              beingGroup.rotation.y = THREE.MathUtils.degToRad(beingGroup.angle)
-  
-              this.game.scene.add(beingGroup)
-    
-              this.game.loadedBeings[being.id] = beingGroup
-              this.game.loadedBeings[being.id].filename = being.filename              
-              this.game.loadedBeings[being.id].lastUpdate = performance.now()
-            }
-          }
-          // console.log(this.game.loadedBeings)
-        }
+        // console.log(this.game.loadedBeings)
       }
 
-      // HEANDS DATA LOADING
-      this.game.heandsList[0] = false;
-      const response4 = await this.fetchData({ ajax: true, getheands: true })
-      if (response4.files) {
-        for (const file of response4.files) {          
-          const response5 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension, objectdir: '_heands' });
-          if (response5?.data && response5?.structure) {
-            let exp = file.name.split('_')
+      // FIRST ADD HEANDS
+      if (this.game.heandsList) {
+        this.game.addConsoleRow('--- Add Heands ---', 'div', true, true)
 
-            this.game.heandsList[exp[0]] = {
-              'id': exp[0],
-              'name': exp[1],
-              'filename': file.name,
-              'ratio': response5.ratio ?? 1,
-              'speed': 25,
-              'data': this.game.deepCopy(response5.data),
-              'structure': this.game.deepCopy(response5.structure),
-              'animations': this.game.deepCopy(response5.animations),
-            }
-            // IF HAVE LIGHTS (lamp, lighter)
-            if (response5.lights) this.game.heandsList[exp[0]].lights = this.game.deepCopy(response5.lights);
-          }
-        }
-        // FIRST ADD HEANDS
         for (const heand of this.game.heandsList) {
-          if (heand.id == null) continue;          
+          if (heand.id == null) continue;
 
           const actualHeandData = this.game.heandsList[heand.id].data[0] ? this.game.heandsList[heand.id].data[0] : null;
           if (actualHeandData) {
@@ -376,55 +520,48 @@ export default class Loader {
             }
 
             this.createTHREEObject(heand, heandGroup, actualHeandData, true)
-
             this.game.loadedHeands[heand.id] = heandGroup
+
+            this.game.addConsoleRow(`Added Heand: ${heand.id}. ${heand.name}`, 'div', false, true)
           }
         }
         // console.log(this.game.loadedHeands)
-      }
-
-      // OBJECTS DATA LOADING
-      const response3 = await this.fetchData({ ajax: true, getobjects: true })
-      if (response3.files) {
-        for (const file of response3.files) {          
-          const response4 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension, objectdir: '_objects' });
-          if (response4?.data && response4?.structure) {            
-            let exp = file.name.split('_')
-
-            this.game.objectsList[exp[0]] = {
-              'id': exp[0],
-              'name': exp[1],
-              'filename': file.name,
-              'ratio': response4.ratio ?? 1,
-              'text': response4.text,
-              'read': response4.read
-              ? (response4.read === 'false' ? false : response4.read)
-              : false,
-              'eat': response4.eat
-              ? (response4.eat === 'false' ? false : parseInt(response4.eat))
-              : false,
-              'data': this.game.deepCopy(response4.data),
-              'structure': this.game.deepCopy(response4.structure),
-            }
-          }
-        }
-        // console.log(this.game.objectsList)
-      }
+      }    
 
       // SKY BACKGROUND
-      const loader = new THREE.CubeTextureLoader()
-      loader.setPath('img/skybox/')
-      const texture = loader.load(
-        [ 'px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png' ],
-        () => {
-          texture.magFilter = THREE.NearestFilter
-          texture.minFilter = THREE.NearestFilter
-          texture.generateMipmaps = false
-          texture.needsUpdate = true
-          this.game.scene.background = texture
-        }
-      );
+      if (!this.game.scene.background) {
+        this.game.addConsoleRow('--- Add Skybox ---', 'div', true, true)
 
+        const loader = new THREE.CubeTextureLoader()
+        loader.setPath('img/skybox/')
+
+        const files = ['px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png']
+
+        const texture = await new Promise((resolve, reject) => {
+          loader.load(
+            files,
+            texture => {
+              texture.magFilter = THREE.NearestFilter
+              texture.minFilter = THREE.NearestFilter
+              texture.generateMipmaps = false
+              if (texture?.needsUpdate) texture.needsUpdate = false;
+        
+              this.game.scene.background = texture
+              this.game.addConsoleRow(`Added Sky files: ${files.join(', ')}`, 'div', false, true)
+        
+              resolve(texture)
+            },
+            undefined,
+            error => reject(error)
+          )
+        });
+      }
+
+      // CHECK LOADING TIME
+      const endTime = Date.now()
+      this.game.addConsoleRow(`--- Map loaded: ${(endTime - startTime)} millisecond ---`, 'div', true, true)
+
+      //--
       this.game.mapLoading = true
     }
   }
@@ -454,9 +591,12 @@ export default class Loader {
         let triTransparent = tri?.transparent ? true : false;
         let triNormal = tri?.normal ? 'FrontSide' : 'DoubleSide';
 
+        const texture = this.game.loadedTextures[tri.texture.name]
+        if (texture?.needsUpdate) texture.needsUpdate = false;
+
         const materialType = this.game.lightsOn ? 'MeshLambertMaterial' : 'MeshBasicMaterial'
         const material = new THREE[materialType]({
-          map: this.game.loadedTextures[tri.texture.name],
+          map: texture,
           side: THREE[triNormal], // side: THREE.FrontSide, THREE.DoubleSide
           opacity: 1,
           transparent: triTransparent,
@@ -464,21 +604,158 @@ export default class Loader {
         })
 
         const triangleMesh = new THREE.Mesh(geometry, material)
-
-        //!! FIRST
-        if (first) {
-          // material.depthTest = false
-          // triangleMesh.renderOrder = 10_000
-
-          // material.depthWrite = false;  // ne írjon a z-bufferbe
-          // material.renderOrder = 999999; // mindig utolsónak rajzolódjon
-        }
-
         meshGroup.add(triangleMesh)
       }
-
       group.add(meshGroup)
     }
+  }
+
+  async loadSavedgamesList() {
+    const response = await this.fetchData({ ajax: true, getsavegameslist: true, dirsstructure: '__saved_games__' })
+    if (response?.files) {
+      console.log(response)
+      $("#savegame-list").html('')
+      let list = ``
+      response.files.forEach(files => {
+        console.log(files)
+        list += `<div class="savegame-listelement w-100 text-dark cursor-pointer" data-filename="${files.name}" data-ext="${files.extension}">${files.name}.${files.extension}</div>`
+      });
+
+      $("#savegame-list").html(list)
+
+    } else throw('Savegames list didn\'t load.');
+  }
+
+  async saveGame() {
+    if (this.game.filename && this.game.ext) {
+
+      const save_filename = Date.now()
+      const save_ext = 'stuc';
+
+      const savePlayerData = {
+        x: this.game.player.position.x,
+        y: this.game.player.position.y,
+        z: this.game.player.position.z,
+        fYaw: this.game.player.rotation.y,
+        fXaw: this.game.player.rotation.x,
+      }
+
+      console.log('---')
+      console.log(this.game.loadedLights)
+      console.log('---')
+      console.log(this.game.map.lights)
+      console.log('---')
+
+      let convertLights = []
+
+      for (const [id, light] of Object.entries(this.game.loadedLights)) {
+
+        console.log(light)
+      
+        convertLights.push({
+          id: light[1].id,
+          name: light[0],
+          type: 'point',
+          color: light[1].color.getHexString(),
+          distance: light[1].distance,
+          intensity: light[1].intensity,
+          decay: light[1].decay,
+          visible: light[1].visible,
+          p: {
+            x: light[1].position.x,
+            y: light[1].position.y,
+            z: light[1].position.z,
+            w: 1
+          }
+        })
+      }
+
+      console.log('---')
+      console.log(convertLights)
+      console.log('---')
+
+      const saveMapData = {
+        player: savePlayerData,
+        data: [this.game.map.data],
+        structure: this.game.map.structure,
+        lights: convertLights,
+        beings: this.game.map.beings,
+        actions: this.game.map.actions,
+        actionelements: this.cleanActionElements(this.game.map.actionelements),
+
+        playerObjects: this.game.playerObjects,
+        playerMouse: this.game.playerMouse,
+      }
+
+      console.log(saveMapData)
+
+      const saveMapDataJSON = JSON.stringify(saveMapData)
+
+      const responseSave = await this.fetchData({ ajax: true, savegame: true, save_filename: save_filename, save_ext: save_ext, mapdata: saveMapDataJSON });
+      console.log(responseSave);
+
+      if (responseSave?.success) {
+        $("#savegame-message").html(`<div class="text-center text-success">${responseSave?.success}</div>`)
+        setTimeout(() => {$("#savegame-message").html('')}, 4000);
+        return true;
+      } else {
+        $("#savegame-message").html(`<span class="text-center text-danger">${responseSave?.error}</span>`)
+        setTimeout(() => {$("#savegame-message").html('')}, 4000);
+        return false;
+      }
+    }
+  }
+
+  loadGame() {
+    this.game.map.player = JSON.parse(saveMapData.player)
+    this.game.map.data = JSON.parse(saveMapData.data)
+    this.game.map.structure = JSON.parse(saveMapData.structure)
+    this.game.map.lights = JSON.parse(saveMapData.lights)
+    this.game.map.actions = JSON.parse(saveMapData.actions)
+
+    // this.game.map.actionelements = this.restoreActionElements(saveMapData.actionelements)
+
+
+    /*
+    restoreActionElements(cleanArray) {
+      return cleanArray.map(elem => {
+        const meshGroup = this.game.loadedMeshs[elem.meshId]
+        return [ meshGroup, elem ]
+      })
+    }
+    */
+  }
+
+  cleanActionElements(actionelements) {
+    return actionelements.map(([group, action]) => {
+      //console.log(group)
+      return [group.name, 
+        {
+        id: action.id,
+        name: action.name,
+        conditions: {
+          click: action.conditions.click,
+          distance_far: action.conditions.distance_far,
+          distance_near: action.conditions.distance_near,
+          issetobjects: [...action.conditions.issetobjects],
+          failed_text: action.conditions.failed_text,
+          success_text: action.conditions.success_text,
+          success: action.conditions.success,
+          usedobjects: action.conditions.usedobjects ? [...action.conditions.usedobjects] : []
+        },
+        events: action.events.map(event => ({
+          id: event.id,
+          name: event.name,
+          timer: event.timer,
+          autoswitch: event.autoswitch,
+          interval: [...event.interval],
+          playsounds: [...event.playsounds],
+          addobjects: [...event.addobjects],
+          lightfx: event.lightfx ? event.lightfx.map(x => [...x]) : [],
+          moveactions: event.moveactions ? event.moveactions.map(x => [...x]) : []
+        }))
+      }]
+    })
   }
 
   // ---

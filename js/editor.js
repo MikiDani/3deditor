@@ -26,21 +26,23 @@ class ViewWindow {
 }
 
 class AnimAction {
-  static instanceCount = 0
-  static eventIdCounter = 0
-  constructor() {
-    AnimAction.instanceCount++
-    this.id = AnimAction.instanceCount
-    this.name = `Animation Action-${AnimAction.instanceCount}`
+  static instanceCount = 0;
+  static eventIdCounter = 0;
+
+  constructor(newId = null) {
+    AnimAction.instanceCount = (AnimAction.instanceCount || 0) + 1;
+    this.id = newId ?? AnimAction.instanceCount;
+    this.name = `Animation Action-${this.id}`;
     this.conditions = {
-      click: true,            // null, 'click', 'dclick'
-      distance_far: null,     // float
-      distance_near: null,    // float
-      issetobjects: [],       // array
-      success_text: '',       // string
-      failed_text: '',        // string
-    }
-    this.events = []
+      click: true,
+      distance_far: null,
+      distance_near: null,
+      issetobjects: [],
+      failed_text: '',
+      success_text: '',
+      success: false,
+    };
+    this.events = [];
   }
 
   addNewEvent() {
@@ -238,7 +240,7 @@ class Editor {
       this.map.type = 'object'
       if (this.map.actions) delete this.map.actions;
       if (this.map.objects) delete this.map.objects;
-      // if (this.map.lights) delete this.map.lights;   // !!!!!!
+      // if (this.map.lights) delete this.map.lights; // LAMP, LIGHTER
 
       if (!this.map.animations) this.map.animations = [];
       if (!this.map.ratio) this.map.ratio = 1;
@@ -273,12 +275,21 @@ class Editor {
     // FIRST LOAD
     if (true) {
       await this.loadMapData()
+
+      console.log(this.map)
+      
+
       if (consolePrint) {
         console.log('LOADING MAP DATAS:')
         console.log(this.map.aid)
         console.log(this.map.data[this.map.aid])
         console.log(this.map.structure)
         console.log(this.map.player)
+
+        // COMPENSATION
+        this.map.player.z = this.map.player.z + 5
+        this.map.player.fYaw = -this.map.player.fYaw
+
         if (this.map.actions) console.log(this.map.actions)
         if (this.map.lights) console.log(this.map.lights)
         if (this.map.animations) console.log(this.map.animations)
@@ -336,6 +347,9 @@ class Editor {
           </div>
           <div class="side-row">
               <span>Grid:</span><button type="button" class="grid-buttons" data-name="${name}" value="true">ON</button>
+          </div>
+          <div class="side-row">
+              <span class="w-100 text-center text-mini data-grid-value" data-name="${name}"></span>
           </div>
         </div>
       </div>`;
@@ -817,9 +831,9 @@ class Editor {
                 ${this.optionElementMaker([{id:'auto', name:'auto'},{id:'mousedown', name:'mousedown'},{id:'dblclick', name:'dblclick'}], animAction.conditions.click)}
               </select>
               <span title="The character must be at least this close for the event to activate.">Distance Near:</span>
-              <input type="number" step="0.01" name="distance-near" value="${animAction.conditions.distance_near ? animAction.conditions.distance_near : ''}" data-action-id="${animAction.id}" class="mx-3">
+              <input type="number" step="0.01" name="distance-near" value="${animAction.conditions.distance_near ? animAction.conditions.distance_near : '0.1'}" data-action-id="${animAction.id}" class="mx-3">
               <span title="The character must be at least this far away for the event to be activated.">Distance Far:</span>
-              <input type="number" step="0.01" name="distance-far" value="${animAction.conditions.distance_far ? animAction.conditions.distance_far : ''}" data-action-id="${animAction.id}" class="mx-3">
+              <input type="number" step="0.01" name="distance-far" value="${animAction.conditions.distance_far ? animAction.conditions.distance_far : '1'}" data-action-id="${animAction.id}" class="mx-3">
             </div>
             <div class="d-flex justify-content-start align-items-center">
               <div class='max-width-1'>
@@ -982,6 +996,11 @@ class Editor {
     <div id="gameaction-container">`
 
     this.map.actions.forEach(animAction => {
+      if (parseInt(AnimAction.getEventIdCounter()) < parseInt(animAction.id)) {        
+        AnimAction.setEventIdCounter(parseInt(animAction.id))
+        console.log('UJ: ', AnimAction.getEventIdCounter())
+      }
+
       elements += this.gameActionsElementMaker(animAction)
     });
 
@@ -1943,10 +1962,17 @@ class Editor {
     });
 
     // ADD ANIMACTION
-    $(document).on('click', "#modal-add-action", function() {
-      clone.map.actions.push(new AnimAction())
-
-      let element = clone.gameActionsElementMaker(clone.map.actions[clone.map.actions.length-1])
+    $(document).on('click', "#modal-add-action", () => {
+      const maxId = Math.max(0, ...this.map.actions.map(a => a.id || 0))
+      AnimAction.setInstanceCount(maxId)
+    
+      const newAction = new AnimAction()
+      this.map.actions.push(newAction)
+    
+      console.log('NEW ID:', newAction.id)
+      console.log('NAME:', newAction.name)
+    
+      let element = this.gameActionsElementMaker(newAction)
       $("#gameaction-container").append(element)
     });
 
@@ -2709,7 +2735,14 @@ class Editor {
 
           // if (clone.map.type == 'object') delete clone.map.player;  // !!! Mintha nem menne
 
-          let saveMapData = JSON.stringify(clone.map)
+          let cloneMap = structuredClone(clone.map)
+
+          console.log(cloneMap.player)
+
+          cloneMap.player.z = cloneMap.player.z - 5 //?? compensation
+          cloneMap.player.fYaw = -cloneMap.player.fYaw
+
+          let saveMapData = JSON.stringify(cloneMap)
 
           const responseSave = await clone.fetchData({ ajax: true, save: true, filename, ext: ext, mapdata: saveMapData }); // console.log('response:'); console.log(responseSave);
           if (responseSave?.success) {
@@ -3149,8 +3182,13 @@ class Editor {
 
           $('body').addClass('cursor-crosshair')
 
+          // POINT TOLERANCE : )
           if (clone.mouse.selectedTri) {
-            let findedPoint = clone.mouse.selectedTri.p.find(point => point[view.vX] == pos.vx && point[view.vY] == pos.vy)
+            let tolerance = 0.01
+            let findedPoint = clone.mouse.selectedTri.p.find(point =>
+              Math.abs(point[view.vX] - pos.vx) <= tolerance &&
+              Math.abs(point[view.vY] - pos.vy) <= tolerance
+            )
             if (findedPoint) clone.mouse.moveTriPoint = findedPoint
           }
         }
@@ -3461,10 +3499,34 @@ class Editor {
       } else alert('Not selected Mesh!')
     });
 
-    $(document).on('click', '.size-number-box', function () {
+    $(document).on('click', '.size-number-box', function() {
       let mode = $(this).attr('data-mode')
       let number = $(this).attr('data-number')
       $(`input[name='move-size'][data-mode='${mode}']`).val(number)
+      console.log('wrwerwer', number)      
+    });
+
+    // WORLD GRID UNIT
+    $(document).on('click', '.data-grid-value', function() {
+      let worldUnit = $(this).attr('data-worldunit')
+      $(`input[name='move-size'][data-mode='mesh']`).val(worldUnit)
+      $(`input[name='move-size'][data-mode='rectangle']`).val(worldUnit)
+    });
+
+    // GET WORLD GRID UNIT
+    $(document).on('click', '.get-grid-size', function() {
+      let mode = $(this).attr('data-mode')
+      let halfSize = $(this).attr('data-half-size') === 'true';
+
+      if (clone.selectedView) {
+        $(this).addClass('bg-success')
+        let worldUnit = parseFloat($(`span.data-grid-value[data-name='${clone.selectedView}']`).attr('data-worldunit'))
+        $(`input[name='move-size'][data-mode='${mode}']`).val(halfSize ? worldUnit / 2 : worldUnit)
+      } else $(this).addClass('bg-danger');
+
+      setTimeout(() => {
+        $(this).removeClass('bg-success').removeClass('bg-danger')
+      }, 200);
     });
 
     $(document).on('click', '#clipboard-button', () => {
@@ -3568,8 +3630,8 @@ class Editor {
 
           let transformData = {
             type: type,
-            movesize: moveSize,
-            anglesize: angleSize,
+            movesize: parseFloat(moveSize),
+            anglesize:  parseFloat(angleSize),
             axisx: clone.views[clone.selectedView].vX,
             axisy: clone.views[clone.selectedView].vY,
             directionx: directionX,
@@ -3591,6 +3653,11 @@ class Editor {
       if (mode == 'rectangle') {
         //
       }
+    });
+
+    // BACK
+    $(".grid-item.backtrigger").on('click', function () {
+      $(".menu-text-border.menu-back").trigger('click')
     });
 
     $("select[name='line-color']").on('input', function () {
@@ -5651,6 +5718,12 @@ class Editor {
       // --
 
       const space = (view.ratio / view.frequent < 1) ? 1 : view.ratio / view.frequent
+
+      const worldUnit = (view.ratio / view.frequent < 1)
+      ? (1 / view.ratio)          // 1px clamp eset
+      : (1 / view.frequent)       // normál eset
+
+      $(`.data-grid-value[data-name='${view.name}']`).attr('data-space', space).attr('data-worldunit', worldUnit).html(`${worldUnit.toFixed(5)}`);
 
       // DRAW GRID
       if (view.showGrid) {

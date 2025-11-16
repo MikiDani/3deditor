@@ -56,6 +56,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
     exit;
 }
 
+// GET SAVEGAME FILES
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['getsavegameslist'])) {
+
+    if (isset($_POST['dirsstructure'])) $directory = $directory . $_POST['dirsstructure'];
+
+    $files = [];
+    $files = get_files($directory);
+    usort($files, function ($a, $b) {
+        return strnatcmp($a['name'], $b['name']);
+    });
+
+    echo json_encode(['files' => $files, 'dir' => $directory]);
+    exit;
+}
+
 // GET OBJECTS
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['getobjects'])) {
 
@@ -323,6 +338,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
     }
 }
 
+// SAVE GAME
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['savegame']) && isset($_POST['save_filename']) && isset($_POST['save_ext'])) {
+
+    $filename = basename($_POST['save_filename']);
+    $filename = clear_filename($filename);
+
+    $ext = basename($_POST['save_ext']);
+    $ext = mb_strtolower($ext);
+
+    $map_data = json_decode($_POST['mapdata'], true);
+
+    if ($map_data == null) {
+        echo json_encode(['error' => 'Error in JSON data!']);
+        exit;
+    }
+
+    // TÖMÖRÍTETT
+    if (file_put_contents($directory. DIRECTORY_SEPARATOR . '__saved_games__' . DIRECTORY_SEPARATOR . $filename . '.' . $ext, gzencode(json_encode($map_data), 9))) {
+        echo json_encode(['success' => 'Saving success!']);
+    } else {
+        echo json_encode(['error' => 'Save error!']);
+    }
+    exit;
+}
+
 // LOAD
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POST['load']) && isset($_POST['filename']) && isset($_POST['ext'])) {
 
@@ -349,6 +389,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
         $heandsdir = $_POST['heandsdir'];
         $directory = $directory . DIRECTORY_SEPARATOR . $heandsdir;
     }
+
+    if (isset($_POST['savedgamesdir']) && $_POST['savedgamesdir'] !== '')
+    {
+        $savedgamesdir = $_POST['savedgamesdir'];
+        $directory = $directory . DIRECTORY_SEPARATOR . $savedgamesdir;
+    }
+
+    // echo json_encode(['directory' => $directory]);
+    // exit;
 
     if (file_exists($directory . DIRECTORY_SEPARATOR . $filename . '.' . $ext)) {
         $compressed_data = file_get_contents($directory . DIRECTORY_SEPARATOR . $filename . '.' . $ext);

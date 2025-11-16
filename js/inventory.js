@@ -68,12 +68,11 @@ export default class Inventory {
 
       // 3D OBJECT REFRESH ROTATE
       if (this.selectedObject) {
-        // console.log(this.selectedObject)
         $(".delta-time-inventory").html(deltaTime.toFixed(1))       
 
         // ROTATE OBJECT
         if (this.game.loadedObjects[this.selectedObject.id]) {
-          this.game.loadedObjects[this.selectedObject.id].rotation.y += 0.01
+          this.game.loadedObjects[this.selectedObject.id].rotation.y += 0.01          
           this.game.loadedObjects[this.selectedObject.id].visible = true
         }
 
@@ -156,7 +155,8 @@ export default class Inventory {
         for (let i = 0; i < listElements.length; i++) {
           let objId = listElements[i]
           let objectData = await this.getInventorySelecteObjectData(objId)
-          objectData.objId =  objId // ADD this.game.loadedObjects ID
+
+          objectData.objId = objId // ADD this.game.loadedObjects ID
 
           let element = $("#inventory-item-text-container .item-text-container"); element.eq(i).html(objectData.name);
           if (i == this.inventoryMenu.inventoryPosition) {
@@ -223,6 +223,10 @@ export default class Inventory {
       })
 
       // FIRST OBJECT SELECTED
+
+      console.log(this.game.playerObjects)
+      
+
       this.selectedObject = await this.getInventorySelecteObjectData(this.game.playerObjects[0])
       this.firstLoadedAllObjects = true
     }

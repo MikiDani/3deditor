@@ -1133,6 +1133,10 @@ button[class="3d-buttons"] {
   cursor: pointer;
 }
 
+.bg-color-back {
+  background-color: #add6ad !important;
+}
+
 .menu-back-empty {
   color: gray !important;
   background-color: #cecece;
@@ -2499,6 +2503,14 @@ li:hover {
   border: 2px solid green;
 }
 
+.bg-success {
+  background-color: green !important;
+}
+
+.bg-danger {
+  background-color: red !important;
+}
+
 .select-point {
   display: flex;
   justify-content: center;
@@ -2533,4 +2545,10 @@ li:hover {
   padding-left: 5px;
   padding-right: 5px;
   margin-bottom: 10px;
+}
+
+.data-grid-value:hover {
+  font-weight: bold;
+  cursor: pointer;
+  text-decoration: underline;
 }/*# sourceMappingURL=editor.css.map */
