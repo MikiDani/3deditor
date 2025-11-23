@@ -354,6 +354,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
         exit;
     }
 
+    $allfiles = array_diff(scandir($directory . DIRECTORY_SEPARATOR . '__saved_games__'), ['.', '..']);
+    if (count($allfiles) > 9)
+    {
+        echo json_encode(['error' => 'Too many save files in directory!']);
+        exit;
+    }
+
     // TÖMÖRÍTETT
     if (file_put_contents($directory. DIRECTORY_SEPARATOR . '__saved_games__' . DIRECTORY_SEPARATOR . $filename . '.' . $ext, gzencode(json_encode($map_data), 9))) {
         echo json_encode(['success' => 'Saving success!']);
@@ -418,6 +425,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
 
     $ext = basename($_POST['ext']);
     $ext = mb_strtolower($ext);
+
+    if (isset($_POST['savedgamesdir']) && $_POST['savedgamesdir'] !== '')
+    {
+        $savedgamesdir = $_POST['savedgamesdir'];
+        $directory = $directory . DIRECTORY_SEPARATOR . $savedgamesdir;
+    }
 
     if (file_exists($directory . DIRECTORY_SEPARATOR . $filename . '.' . $ext)) {
         if (file_exists($directory . DIRECTORY_SEPARATOR . $filename . '.' . $ext)) {

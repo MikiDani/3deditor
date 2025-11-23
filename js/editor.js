@@ -1776,13 +1776,29 @@ class Editor {
     $("input[name='being-angle']").val(selectedBeingData.angle); $("input[name='being-color']").val(selectedBeingData.color); $("input[name='being-intensity']").val(selectedBeingData.intensity); $("input[name='being-distance']").val(selectedBeingData.distance); $("select[name='being-edit-color']").val(selectedBeingData.editcolor); $("input[name='being-ratio']").val(selectedBeingData.ratio); $("input[name='being-speed']").val(selectedBeingData.speed); $("input[name='being-energy']").val(selectedBeingData.energy); $("input[name='being-damage']").val(selectedBeingData.damage);
   }
 
+  objectNameAndTextInfo() {    
+    if (this.mouse.selectedMeshId !== null) {
+      $("#selected-mesh-name-container").show()
+      $("#selected-mesh-text-container").show()
+    } else {
+      $("#selected-mesh-name-container").hide().val('')
+      $("#selected-mesh-text-container").hide().val('')
+    }
+  }
+
   initInputs() {
     var clone = this
+
+    // SHOW / HIDE OBJECTNAME + TEXT
+    $(document).on('click', () =>{
+      this.objectNameAndTextInfo()
+    });
 
     // mouse right button off
     $(document).on("contextmenu", function(event) {
       event.preventDefault()// console.log("Jobb klikk letiltva!")
     });
+
 
     $(document).on('keydown', (event) => {
       if (!$(':focus').is('input, textarea')) {
@@ -2732,15 +2748,18 @@ class Editor {
         const responseIsset = await clone.fetchData({ ajax: true, issetfile: true, filename, ext: ext }); // console.log(responseIsset)
         if (responseIsset[0]) save = (confirm(`File is isset: ${filename} Are you seure ovverrite?`)) ? true : false;
         if (save) {
-
-          // if (clone.map.type == 'object') delete clone.map.player;  // !!! Mintha nem menne
-
           let cloneMap = structuredClone(clone.map)
+          
+          if (clone.map.type == 'object') delete cloneMap.player;
 
-          console.log(cloneMap.player)
+          if (cloneMap.player) {
+            cloneMap.player.z = cloneMap.player.z - 5 // compensation
+            cloneMap.player.fYaw = -cloneMap.player.fYaw
+          }
 
-          cloneMap.player.z = cloneMap.player.z - 5 //?? compensation
-          cloneMap.player.fYaw = -cloneMap.player.fYaw
+          if (cloneMap.lights.length == 0) delete cloneMap.lights;
+
+          // cloneMap.lights.forEach(light => { light.distance = light.distance });
 
           let saveMapData = JSON.stringify(cloneMap)
 
@@ -3503,7 +3522,6 @@ class Editor {
       let mode = $(this).attr('data-mode')
       let number = $(this).attr('data-number')
       $(`input[name='move-size'][data-mode='${mode}']`).val(number)
-      console.log('wrwerwer', number)      
     });
 
     // WORLD GRID UNIT
@@ -4003,7 +4021,7 @@ class Editor {
 
     // ADD NEW ROOT OBJECT
     $(document).on('click', '#object-add-new', function() {
-      let addNewMesh = new Mesh('New Group', null)
+      let addNewMesh = new Mesh('NEW GROUP', null)
       clone.map.data[clone.map.aid].push(addNewMesh)
       clone.map.structure.push({id: addNewMesh.id, visible: true, status: true, child: []})
       clone.mouse.selectedMeshId = addNewMesh.id
@@ -4162,7 +4180,7 @@ class Editor {
         clone.mouse.selectedLightId = selectedLightId
         clone.mouse.selectedLightData = selectedLightData
         // reset selected datas
-        clone.mouse.selectedMeshId = 0
+        clone.mouse.selectedMeshId = null
         clone.mouse.selectedTri = {}
 
         clone.mouse.selectedBeingId = null
@@ -4341,7 +4359,7 @@ class Editor {
         $('.list-light-selected').removeClass('list-light-selected')
 
         // reset selected datas
-        clone.mouse.selectedMeshId = 0
+        clone.mouse.selectedMeshId = null
         clone.mouse.selectedTri = {}
         // modifed selected class
         $('#being-list ul li').each(function () {$(this).removeClass('list-being-selected')});
@@ -4757,6 +4775,8 @@ class Editor {
           parentMeshStructure.child.push({id: addNewMesh.id, status: 1, visible: 1, child: []})
         }
         clone.mouse.selectedMeshId = addNewMesh.id
+
+        clone.objectNameAndTextInfo()
       }
       clone.refreshObjectList()
       clone.fullRefreshCanvasGraphics()
@@ -5356,6 +5376,8 @@ class Editor {
       // new Mesh selecting
       $(document).find(`li[data-id='${selectedMesh.id}'].mesh-name`).addClass('list-mesh-selected')
 
+      selectedMesh.name = selectedMesh.name.toUpperCase()
+
       $("#selected-mesh-name").val(selectedMesh.name)
       $("#selected-mesh-name").attr('data-id', selectedMesh.id)
 
@@ -5672,6 +5694,9 @@ class Editor {
 
   // REFRESH GRAPHICS
   async fullRefreshCanvasGraphics() {
+
+    this.objectNameAndTextInfo()
+
     this.refreshToolbar()
     this.refresViewSize() // full screen or not
     if (this.views) {
@@ -5866,7 +5891,7 @@ class Editor {
               let orY = view.posY + light.p[view.vY] * view.ratio
               view.ctx.fillStyle = `#${light.color}`
               let distance = (light.distance * view.ratio) / 10
-              let intensity = light.intensity / 10
+              let intensity = light.intensity / 2
   
               // FILL
               let rgba = light.editcolor.replace("rgb", "rgba").replace(")", `, ${intensity})`);

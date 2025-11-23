@@ -39,10 +39,8 @@ export default class Input {
 
     // ADD EVENT LISTENERS
 
-    // CLOSE BUTTON
+    // RELOAD SCREEN
     $(window).on('resize', () => {
-      console.log('RELOAD SCREEN')
-      
       this.game.graphics.reloadScreen()
     });
 
@@ -86,12 +84,20 @@ export default class Input {
       this.game.filename = filename
       this.game.ext = ext
 
-      console.log(this.game.filename)
-      console.log(this.game.ext)
-
-      console.log(filename, ext)
-
       $('#file-input').val(filename).attr('data-ext', ext)
+    });
+
+    $(document).on('click', '.filename-listelement, .del-save-button', async (event) => {
+      const $this = $(event.target).prev()
+      const filename = $this.attr('data-filename')
+      const ext = $this.attr('data-ext')
+
+      const responseDelete = await this.game.loader.fetchData({ ajax: true, delete: true, filename: filename, ext: ext, savedgamesdir: '__saved_games__' });
+      if (responseDelete.success) $("#savegame-message").html(`<div class="text-center text-success">${responseDelete.success}</div>`);
+      else $("#savegame-message").html(`<div class="text-center text-danger">${responseDelete.error}</div>`);
+
+      setTimeout(() => {$("#savegame-message").html('')}, 4000);
+      this.game.loader.loadSavedgamesList()
     });
 
     $('#closeBtn').on('click', () => {
@@ -105,7 +111,6 @@ export default class Input {
 
     $('#savegame-button').on('click', async () => {
       if (this.game.mapLoading) {
-        console.log('save...');
         const request = await this.game.loader.saveGame()
         // RELOAD SAVED GAMES FILE LIST
         if (request) await this.game.loader.loadSavedgamesList()
@@ -372,7 +377,7 @@ export default class Input {
         console.log(this.game.map.player.x)
         console.log(this.game.map.player.y)
         console.log(this.game.map.player.z)
-    
+
         console.log(this.game.map.player.fYaw)
         console.log(this.game.map.player.fXaw)
         console.log('---')
@@ -473,6 +478,8 @@ export default class Input {
           this.game.playerMouse.selectedHeand = 3
           this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
           this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
+
+          this.game.sound.play(18)
         }
 
         if(e.key =='5') {
@@ -654,7 +661,6 @@ export default class Input {
     }
     
     // BACK GAME
-    console.log('BACK GAME')
     this.removeUsedObject()
     this.game.play = true
     this.game.currentState = 'game'
@@ -667,7 +673,6 @@ export default class Input {
   changeGameOrInventory() {
     if (this.game.currentState == 'game') {
       // GO INVENTORY
-      console.log('INVENTORY')
       if (document.pointerLockElement === this.game.canvas) document.exitPointerLock();
       this.setDefaultCursor()
       this.game.play = false
@@ -676,7 +681,6 @@ export default class Input {
 
     } else if (this.game.currentState == 'inventory') {
       // BACK GAME
-      console.log('BACK GAME')
       this.removeUsedObject()
       this.game.play = true
       this.game.currentState = 'game'
@@ -897,12 +901,11 @@ export default class Input {
   changeMouseLock() {
     $('#mouseorkey-selector').removeClass('key-selector-pic').removeClass('mouse-selector-pic')
     if (document.pointerLockElement === this.game.canvas) {
-      console.log('PointerLock kikapcsolás...')
+      // console.log('PointerLock OFF...')
       document.exitPointerLock()
       $('#mouseorkey-selector').addClass('key-selector-pic')
     } else {
-      console.log('PointerLock bekapcsolás...')
-      
+      // console.log('PointerLock ON...')
       this.game.canvas.requestPointerLock()
       $('#mouseorkey-selector').addClass('mouse-selector-pic')
     }

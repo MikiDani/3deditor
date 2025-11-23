@@ -29,7 +29,7 @@ export default class Gameplay {
     await this.game.renderer.render(this.game.scene, this.game.camera)
 
     // RENDER HEAND
-    let selectedHeand = this.game.loadedHeands[this.game.playerMouse.selectedHeand]
+    let selectedHeand = this.game.loadedHeands[this.game.playerMouse.selectedHeand]    
     if (!selectedHeand) return;
 
     this.game.renderer.autoClear = false
@@ -313,7 +313,7 @@ export default class Gameplay {
               heandGroup.lightsAdded = true; // ONLY ONE
             }
 
-            if (heandGroup.lightsGroup) {
+            if (heandGroup.lightsGroup) {              
               const originalCamPos = new THREE.Vector3()
               this.game.camera.getWorldPosition(originalCamPos)
 
@@ -323,11 +323,13 @@ export default class Gameplay {
               heandGroup.lightsGroup.position.copy(originalCamPos)
               heandGroup.lightsGroup.quaternion.copy(originalCamQuat)
 
-              heandGroup.heandindex.forEach((index, i) => {
-                const localOffset = new THREE.Vector3(-0.15, i * 0.1, i * -0.1)
-                this.game.loadedLights[index][1].position.copy(originalCamPos).add(localOffset)
-                this.game.loadedLights[index][1].quaternion.copy(originalCamQuat)
-              })
+              if (heandGroup.heandindex) {
+                heandGroup.heandindex.forEach((index, i) => {
+                  const localOffset = new THREE.Vector3(-0.15, i * 0.1, i * -0.1)
+                  this.game.loadedLights[index][1].position.copy(originalCamPos).add(localOffset)
+                  this.game.loadedLights[index][1].quaternion.copy(originalCamQuat)
+                })
+              }
             }
             this.refreshHeandLights()
 
@@ -635,12 +637,9 @@ export default class Gameplay {
       const objId = this.game.playerMouse.selectedObject?.objId
       const actionId = actions[1].id
       if (objId != null && actionId != null) {
-        console.log('objId: ', objId)
-        console.log('actionId: ', actionId)
-
+        // console.log('objId: ', objId); console.log('actionId: ', actionId);
         const found = this.game.config.actionmessages.find(item => item.object_id === objId && item.action_id === actionId)
         if (found) {
-          console.log(found)
           this.makeActionObjectsMessageElement({type: 'actionmessage', actionText: found.message})
           return;
         }
@@ -707,13 +706,10 @@ export default class Gameplay {
         event.timeout = setTimeout(async() => {
           // EVENT CHECKS
           // ---
-
           // SOUND FX
           if (event.playsounds.length > 0) {
             for (const soundId of event.playsounds) {
-              // console.log(actions[0])
-
-              // NOCLICK SOUND PLAYING ONLY ONE TIME
+              // NO CLICK SOUND PLAYING ONLY ONE TIME
               (async () => {
                 if (type == 'noclick') {
                   if (!actions[0].endFunction) {
@@ -772,19 +768,17 @@ export default class Gameplay {
           if (event.lightfx.length > 0) {
             for (const fx of event.lightfx) {
               let light = this.game.loadedLights[parseInt(fx[0])]?.[1] != null ? this.game.loadedLights[parseInt(fx[0])][1] : null;
-              let fxData = this.game.config.lightfx.find(fxpc => fxpc.id == parseInt(fx[1]))
-              if (light && fxData) this.lightFx(light, fxData);
+              let fxData = this.game.config.lightfx.find(lfx => lfx.id == parseInt(fx[1]))
+              if (light && fxData) this.lightFx(event.id, light, fxData);
             }
           }
   
           // MOVE FX
           if (event.moveactions.length > 0) {
             for (const fx of event.moveactions) {
-              // console.log(fx[0])
-              // console.log(fx[1])
               let mesh = this.game.loadedMeshs[parseInt(fx[0])]        
               let fxData = this.game.config.movefx.find(fxpc => fxpc.id == parseInt(fx[1]))
-              if (mesh && fxData) this.moveFx(mesh, fxData);
+              if (mesh && fxData) this.moveFx(event.id, mesh, fxData);
             }
           }
 
@@ -856,7 +850,7 @@ export default class Gameplay {
   //** ACTION FXS */
 
   // LIGHT FX
-  lightFx(light, data) {
+  lightFx(eventId, light, data) {
     switch(data.id) {
       case 0:
         // RANDOM COLOR 100ms
@@ -865,27 +859,32 @@ export default class Gameplay {
           const randomColor = new THREE.Color(Math.random(), Math.random(), Math.random());
           light.color = randomColor;
         }, data.time)
-    
+
         this.refreshHeandLights()
       break
       case 1:
-        // TURN OFF LIGHT / ON
-        if (!(light instanceof THREE.PointLight)) return;
-        if (data.save_color == null) data.save_color = light.color;
-        if (data.save_distance == null) data.save_distance = light.distance;
-        if (data.save_intensity == null) data.save_intensity = light.intensity;
+        // TURN OFF LIGHT / ON        
+        if (data[eventId] == null) {
+          data[eventId] = {}
+          data[eventId].state = data.state
+        }
 
-        if (data.state) {
-          const darkColor = new THREE.Color(0, 0, 0)
-          light.color = darkColor;
+        if (data[eventId].state) {
+          // console.log('OFF', eventId)
+          data[eventId].save_color = light.color.getHexString()
+          data[eventId].save_distance = light.distance
+          data[eventId].save_intensity = light.intensity
+          // BLACK
+          light.color = new THREE.Color(0, 0, 0)
           light.distance = 0
           light.intensity = 0
         } else {
-          light.color = data.save_color
-          light.distance = data.save_distance
-          light.intensity = data.save_intensity
+          // console.log('ON', eventId)
+          light.color = new THREE.Color(`#${data[eventId].save_color}`)
+          light.distance = data[eventId].save_distance
+          light.intensity = data[eventId].save_intensity
         }
-        data.state = !data.state
+        data[eventId].state = !data[eventId].state
 
         this.refreshHeandLights()
       break
@@ -893,18 +892,21 @@ export default class Gameplay {
   }
 
   // MOVE FX
-  moveFx(mesh, data) {
+  moveFx(eventId, mesh, data) {    
     switch(data.id) {
       case 0:
         // FRIDGE
-        if (!mesh.openConfig) {
-          mesh.openConfig = {
+        if (!data[eventId]) {
+          data[eventId] = []
+          data[eventId] = {
+            meshId: mesh.objId,
+            meshName: mesh.name,
             state: false,
             min: 0,
             max: 90,
             value: 0,
             waiting: 10,
-            valueadd: null,
+            valueAdd: null,
             addedStep: 0.025,
             addedValue: null,
             offsetTypeX: 'min',
@@ -912,19 +914,22 @@ export default class Gameplay {
             offsetTypeZ: 'max',
           }
         }
-        this.openFx(mesh)
+        this.openFx(data[eventId], mesh)
         break
 
       case 1:
         // DOOR + open
-        if (!mesh.openConfig) {
-          mesh.openConfig = {
+        if (!data[eventId]) {
+          data[eventId] = []
+          data[eventId] = {
+            meshId: mesh.objId,
+            meshName: mesh.name,
             state: false,
             min: 0,
             max: 90,
             value: 0,
             waiting: 10,
-            valueadd: null,
+            valueAdd: null,
             addedStep: 0.025,
             addedValue: null,
             offsetTypeX: 'min',
@@ -932,19 +937,22 @@ export default class Gameplay {
             offsetTypeZ: 'min',
           }
         }
-        this.openFx(mesh)
+        this.openFx(data[eventId], mesh)
       break
 
       case 2:
         // DOOR - open
-        if (!mesh.openConfig) {
-          mesh.openConfig = {
+        if (!data[eventId]) {
+          data[eventId] = []
+          data[eventId] = {
+            meshId: mesh.objId,
+            meshName: mesh.name,
             state: false,
             min: 0,
             max: 90,
             value: 0,
             waiting: 10,
-            valueadd: null,
+            valueAdd: null,
             addedStep: -0.025,
             addedValue: null,
             offsetTypeX: 'max',
@@ -952,20 +960,24 @@ export default class Gameplay {
             offsetTypeZ: 'min',
           }
         }
-        this.openFx(mesh)
+        this.openFx(data[eventId], mesh)
       break
 
       case 3:
         // SWITCH TEXTURE CHANGE
-        // console.log(mesh, data)
-        data.state = data.state == data.texture_on ? data.texture_off : data.texture_on;
-
-        mesh.traverse(obj => {
-          if (obj.isMesh && obj.material && obj.material.map) {            
-            obj.material.map = this.game.loadedTextures[data.state]
-            obj.material.needsUpdate = true
+        if (!data[eventId]) {
+          data[eventId] = []
+          data[eventId] = {
+            "id": 3,
+            "name": structuredClone(Object.values(this.game.config.movefx).find(fx => fx.id == 3).name),
+            "state": "switch-on",
+            "texture_on": "switch-on",
+            "texture_off": "switch-off",
           }
-        })
+        }
+        
+        data[eventId].state = data[eventId].state ==  data[eventId].texture_on ? data[eventId].texture_off : data[eventId].texture_on;
+        this.refreshPicture(mesh, data[eventId])
       break
 
       case 4:
@@ -974,7 +986,7 @@ export default class Gameplay {
 
         if (mesh.radioSwitch == "off") {
           // OFF->ON
-          this.game.sound.play(7, { volume: 0.5 }, true, mesh).then(phantom => {
+          this.game.sound.play(17 /* UFO */, { volume: 0.5 }, true, mesh).then(phantom => {
             if (!phantom) return; // console.log(phantom)
 
             mesh.playSound = phantom;
@@ -999,113 +1011,149 @@ export default class Gameplay {
       break;
       case 5:
         // PICTURE TEXTURE CHANGE
-        // console.log(mesh, data)
-        data.state = data.state == data.texture_on ? data.texture_off : data.texture_on;
-
-        mesh.traverse(obj => {
-          if (obj.isMesh && obj.material && obj.material.map) {            
-            obj.material.map = this.game.loadedTextures[data.state]
-            obj.material.needsUpdate = true
+        if (!data[eventId]) {
+          data[eventId] = []
+          data[eventId] = {
+            "id": 5,
+            "name": structuredClone(Object.values(this.game.config.movefx).find(fx => fx.id == 5).name),
+            "state": "switch-on",
+            "texture_on": "picture-2",
+            "texture_off": "picture-3"
           }
-        })
+        }
+        data[eventId].state = data[eventId].state ==  data[eventId].texture_on ? data[eventId].texture_off : data[eventId].texture_on;
+        this.refreshPicture(mesh, data[eventId])
       break
       case 6:
         // MICRO HAMSTER TEXTURE CHANGE
-        // console.log(mesh, data)
-        data.state = data.state == data.texture_on ? data.texture_off : data.texture_on;
-
-        mesh.traverse(obj => {
-          if (obj.isMesh && obj.material && obj.material.map) {            
-            obj.material.map = this.game.loadedTextures[data.state]
-            obj.material.needsUpdate = true
+        if (!data[eventId]) {
+          data[eventId] = []
+          data[eventId] = {
+            "id": 6,
+            "name": structuredClone(Object.values(this.game.config.movefx).find(fx => fx.id == 6).name),
+            "state": "switch-on",
+            "texture_on": "microhamster-on",
+            "texture_off": "microhamster-off"
           }
-        })
+        }
+        data[eventId].state = data[eventId].state ==  data[eventId].texture_on ? data[eventId].texture_off : data[eventId].texture_on;
+        this.refreshPicture(mesh, data[eventId])
       break
     }
   }
 
-  openFx(mesh) {
-    mesh.openConfig.addedValue = mesh.openConfig.state ? -mesh.openConfig.addedStep : mesh.openConfig.addedStep; // ÉRTÉKE
-    mesh.openConfig.valueAdd = mesh.openConfig.state ? -1 : 1; // COUNT-JA
-
-    if (!mesh?.timeInterval) {
-      // FIRST OFFSET OPTIONS
-      if (!mesh.containerOffset) {
-        console.log(mesh.openConfig.offsetTypeX, mesh.openConfig.offsetTypeY, mesh.openConfig.offsetTypeZ)
-        this.game.removeBoundingBoxOfMap(mesh) // ORIGINAL BOUNDINGBOX DELETE
-        const box = new THREE.Box3().setFromObject(mesh)
-        const offset = new THREE.Vector3(box[mesh.openConfig.offsetTypeX].x, box[mesh.openConfig.offsetTypeY].y, box[mesh.openConfig.offsetTypeZ].z)
-        mesh.containerOffset = offset.clone()
-        mesh.position.sub(offset)
-        mesh.container = new THREE.Group()
-        mesh.container.position.copy(mesh.containerOffset)
-        mesh.container.add(mesh)
+  refreshPicture(mesh, data) {
+    mesh.traverse(obj => {
+      if (obj.isMesh && obj.material && obj.material.map) {
+        obj.material.map = this.game.loadedTextures[data.state]
+        obj.material.needsUpdate = true
       }
+    })
+  }
 
-      // CHECK CRESH
+  openFx(data, mesh) {
+    if (!mesh.container) this.refreshOpenFxState(data, mesh);
+
+    data.addedValue = data.state ? -data.addedStep : data.addedStep; // ÉRTÉKE
+    data.valueAdd = data.state ? -1 : 1; // COUNT-JA
+
+    if (!data?.timeInterval) {
+      // CHECK CRASH
       const clone = mesh.container.clone(true)
-      clone.rotation.y += mesh.openConfig.addedValue
+      clone.rotation.y += data.addedValue
       const futureBox = new THREE.Box3().setFromObject(clone)
       const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
 
       if (futureBox.intersectsBox(playerBox)) {
-        clearInterval(mesh.timeInterval)  // talan mashogy
-        mesh.timeInterval = null          // talan mashogy
+        clearInterval(data.timeInterval)  // talan mashogy
+        data.timeInterval = null          // talan mashogy
         return;
       }
-
-      this.game.scene.add(mesh.container)
-
-      mesh.timeInterval = setInterval(() => {
+      
+      data.timeInterval = setInterval(() => {
         // TEST NEXT MOVE
         const now = performance.now()
-        if (mesh.lastUpdate === undefined) mesh.lastUpdate = now - (mesh.openConfig.waiting * 2);
+        if (mesh.lastUpdate === undefined) mesh.lastUpdate = now - (data.waiting * 2);
 
-        if (now - mesh.lastUpdate >= mesh.openConfig.waiting) {
+        if (now - mesh.lastUpdate >= data.waiting) {
           mesh.lastUpdate = now          
-          const tempRotation = mesh.container.rotation.y + mesh.openConfig.addedValue
+          const tempRotation = mesh.container.rotation.y + data.addedValue
           const clone = mesh.container.clone(true)
           clone.rotation.y = tempRotation
           const testBox = new THREE.Box3().setFromObject(clone)
           const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
           if (testBox.intersectsBox(playerBox)) {
-            clearInterval(mesh.timeInterval)  // talan mashogy
-            mesh.timeInterval = null          // talan mashogy
+            clearInterval(data.timeInterval)  // talan mashogy
+            data.timeInterval = null          // talan mashogy
             return;
           }
 
           // MOVE AND REFRESH
           mesh.container.rotation.y = tempRotation
-          mesh.openConfig.value += mesh.openConfig.valueAdd
+          data.value += data.valueAdd
+
+          // BOUNDING BOX FRISSÍTÉS A CONTAINERHEZ
+          this.game.refreshBoundingBoxOfMapContainer(mesh)
 
           // CLAMP VALUE
-          mesh.openConfig.value = Math.max(
-            mesh.openConfig.min,
-            Math.min(mesh.openConfig.max, mesh.openConfig.value)
-          )
+          data.value = Math.max(data.min, Math.min(data.max, data.value)) // clamping
 
-          // REFRESH BOUNDING BOX FRISSÍTÉS
-          const updatedBox = new THREE.Box3().setFromObject(mesh.container)
-          const index = this.game.boundingBoxes.findIndex(box => box === mesh._boundingBox)
-          if (index !== -1) this.game.boundingBoxes[index] = updatedBox;
-          else this.game.boundingBoxes.push(updatedBox);
-          mesh._boundingBox = updatedBox
-
-          // console.log(mesh.openConfig.value)  // !!!
-
-          if (mesh.openConfig.value == mesh.openConfig.max - 1 || mesh.openConfig.value < mesh.openConfig.min + 1) {
+          if (data.value == data.max - 1 || data.value < data.min + 1) {
             console.log('STOP!');
-            mesh.openConfig.state = !mesh.openConfig.state
-            clearInterval(mesh.timeInterval);
-            mesh.timeInterval = null;
+            data.state = !data.state
+            clearInterval(data.timeInterval);
+            data.timeInterval = null;
           }
         }
       }, 5);
     } else {
       // IF NEW CLICK
-      mesh.openConfig.state = !mesh.openConfig.state
-      mesh.openConfig.addedValue = mesh.openConfig.state ? -mesh.openConfig.addedStep : mesh.openConfig.addedStep;
-      mesh.openConfig.valueAdd = mesh.openConfig.state ? -1 : 1;
+      console.log('new click!')
+      clearInterval(data.timeInterval);
+      data.timeInterval = null;
+      /*
+      data.state = !data.state
+      data.addedValue = data.state ? -data.addedStep : data.addedStep;
+      data.valueAdd = data.state ? -1 : 1;
+      */
     }
   }
+
+  refreshOpenFxState(data, mesh) {
+    if (!mesh.containerOffset) {      
+      this.game.removeBoundingBoxOfMap(mesh)
+
+      const box = new THREE.Box3().setFromObject(mesh)
+      const offset = new THREE.Vector3(box[data.offsetTypeX].x, box[data.offsetTypeY].y, box[data.offsetTypeZ].z)
+
+      mesh.containerOffset = offset.clone()
+      mesh.position.sub(offset)
+
+      const container = new THREE.Group()
+      container.position.copy(mesh.containerOffset)
+      mesh.container = container
+
+      // OPEN DOOR
+      if (data.state == true) {
+        container.rotation.y = data.addedValue * data.value
+      }
+
+      container.add(mesh)
+      this.game.scene.add(container)
+
+      this.game.refreshBoundingBoxOfMapContainer(mesh)
+
+      // DOORS HELPER
+      if (false) {
+        const helper = new THREE.Box3Helper(
+          new THREE.Box3().setFromObject(container),
+          new THREE.Color('#ffff00')
+        )
+        this.game.scene.add(helper)
+      }
+    }
+  
+    return mesh
+  }
+
 }

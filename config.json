@@ -2,7 +2,7 @@
   "heands": [
     {
       "id": 1,
-      "xDistance": -0.25,
+      "xDistance": -0.2,
       "yDistance": -0.025,
       "zDistance": 0.35,
       "yRatio": 12,
@@ -18,10 +18,10 @@
     },
     {
       "id": 3,
-      "xDistance": -0.7,
-      "yDistance": -0.5,
-      "zDistance": 1.3,
-      "yRatio": 20,
+      "xDistance": -0.3,
+      "yDistance": -0.2,
+      "zDistance": 0.6,
+      "yRatio": 140,
       "tilt": false
     }
   ],
@@ -40,10 +40,7 @@
     },
     {
       "id": 3,
-      "name": "Switch 1.",
-      "state": "switch-on",
-      "texture_on": "switch-on",
-      "texture_off": "switch-off"
+      "name": "Switch 1."
     },
     {
       "id": 4,
@@ -52,17 +49,11 @@
     },
     {
       "id": 5,
-      "name": "Picture Change",
-      "state": "switch-on",
-      "texture_on": "picture-2",
-      "texture_off": "picture-3"
+      "name": "Picture Change"
     },
     {
       "id": 6,
-      "name": "Micro Hamster Change",
-      "state": "switch-on",
-      "texture_on": "microhamster-on",
-      "texture_off": "microhamster-off"
+      "name": "Micro Hamster Change"
     }
   ],
   "lightfx": [
@@ -220,6 +211,24 @@
       "name": "music4",
       "volume": 1,
       "loop": true,
+      "setRefDistance": 0.5,
+      "setMaxDistance": 1,
+      "setRolloffFactor": 5
+    },
+    {
+      "id": 17,
+      "name": "music3",
+      "volume": 1,
+      "loop": true,
+      "setRefDistance": 0.5,
+      "setMaxDistance": 1,
+      "setRolloffFactor": 5
+    },
+    {
+      "id": 18,
+      "name": "cough1",
+      "volume": 1,
+      "loop": false,
       "setRefDistance": 0.5,
       "setMaxDistance": 1,
       "setRolloffFactor": 5

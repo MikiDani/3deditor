@@ -229,7 +229,14 @@ export default class Loader {
   async mapLoader(filename, ext) {
     console.log(filename, ext)
 
-    const savedgamesdir = (ext == 'stuc') ? '__saved_games__' : null;
+    let loadType = null
+    let savedgamesdir = null
+    if (ext == 'stuc') {
+      loadType = 'loadgame'
+      savedgamesdir = '__saved_games__'
+    } else {
+      loadType = 'newgame'
+    }
 
     this.game.map = this.game.mapVariableReset()
     this.game.map.map_filename = filename
@@ -239,11 +246,11 @@ export default class Loader {
     this.game.addConsoleRow('--- loading map datas start ---', 'div', true, true)
 
     const response = await this.fetchData({ ajax: true, load: true, filename: filename, ext: ext, savedgamesdir: savedgamesdir })
-    console.log(response)
-    
     if (response?.data && response?.structure) {
       // console.log('LOAD MAPDATA:', response)
 
+      // CONFIG
+      if (response.config != null) this.game.config = response.config
       // PLAYER
       this.game.map.player = this.game.deepCopy(response.player)
       if (response.playerObjects != null) this.game.playerObjects = response.playerObjects;
@@ -257,14 +264,9 @@ export default class Loader {
       this.game.map.beings = this.game.deepCopy(response.beings)
       // ACTIONS
       this.game.map.actions = this.game.deepCopy(response.actions)
-      let loadType = null
-      if (response.actionelements != null) {
-        loadType = 'loadgame'
-        this.game.map.actionelements = response.actionelements;
-      } else {
-        loadType = 'newgame'
-        this.game.map.actionelements = [];
-      }
+
+      // this.game.map.actionelements = []
+      // if (response.actionelements != null) this.game.map.actionelements = response.actionelements;
 
       // PLAYER POSITION
       this.game.player.position.set(this.game.map.player.x, this.game.map.player.y, this.game.map.player.z)
@@ -272,29 +274,16 @@ export default class Loader {
       this.game.pitchObject.rotation.x = this.game.map.player.fXaw
       this.game.camera.position.set(0, 0, 0)
       this.game.camera.updateMatrixWorld(true)
-      //--
-
-      if (false) {
-        console.log('----')
-        console.log(this.game.map.player)
-        console.log(this.game.map.data)
-        console.log(this.game.map.structure)
-        console.log(this.game.map.lights)
-        console.log(this.game.map.beings)
-        console.log(this.game.map.actions)
-        console.log('----')
-      }
-
-
-      console.log('---')
-      console.log(this.game.map.data)
 
       // LOAD MAP MESHS (DATA)
       for (let mesh of this.game.map.data) {
-        const meshGroup = new THREE.Group()
+        let meshGroup = new THREE.Group() //(i) START MESHGROUP
 
-        // GIVE MESH DATA TO MESHGROUP
-        if (mesh.pickuped) meshGroup.pickuped = mesh.pickuped
+        // GIVE MESH DATA TO MESHGROUP        
+        if (mesh.id) meshGroup.objId = mesh.id;                 // IF HAVE MESH ID
+        if (mesh.name) meshGroup.name = mesh.name;              // IF HAVE MESH NAME
+        if (mesh.text) meshGroup.text = mesh.text;              // IF HAVE MESH INFO TEXT ADD
+        if (mesh.pickuped) meshGroup.pickuped = mesh.pickuped   // IF HAVE PICKUPED
 
         for (let tri of mesh.tris) {
           const geometry = new THREE.BufferGeometry()
@@ -338,22 +327,22 @@ export default class Loader {
           box.min.add(triangleMesh.position)
           box.max.add(triangleMesh.position)
 
-          this.game.boundingBoxes.push(box)
+          this.game.boundingBoxes.push(box); // ADD BOUNDING BOX !!!
 
           // YELLOW BOX-HELPER
           if (false) {
-            const helper = new THREE.Box3Helper(box, new THREE.Color('#ffff00'));
-            this.game.scene.add(helper);
-            if (mesh.name == 'KULCS-1') {}
+            if (mesh.name == 'HUTO-AJTO') {
+              console.log(mesh.id)
+              console.log(mesh.name)
+              const helper = new THREE.Box3Helper(box, new THREE.Color('#ffff00'));
+              this.game.scene.add(helper);
+            }
           }
         }
 
         meshGroup.box = new THREE.Box3().setFromObject(meshGroup)
 
-        if (mesh.name) meshGroup.name = mesh.name;  // IF HAVE MESH NAME
-        if (mesh.text) meshGroup.text = mesh.text;  // IF HAVE MESH INFO TEXT ADD
-        
-        // IF ADD SCENE        
+        // IF ADD SCENE
         if (!meshGroup.pickuped) this.game.scene.add(meshGroup);
 
         // SOUND POSITION SAVE
@@ -363,37 +352,22 @@ export default class Loader {
         meshGroup.box.getCenter(meshGroup.center)
         meshGroup.center.applyMatrix4(meshGroup.matrixWorld)
 
-        this.game.loadedMeshs[mesh.id] = meshGroup
+        this.game.loadedMeshs[mesh.id] = meshGroup  //(i) ADD loadedMeshs[mesh.id] !!!
 
-        // LOAD ACTIONS OF MESH        
-        if (loadType == 'newgame') {
-          // LOAD NEW MAP LOAD
-          if (mesh?.actions && mesh.actions.length > 0) {
-            // console.log('Van AKCIÓJA: ', mesh.name)
-            for (const actionId of mesh.actions) {
-              const thisAction = this.game.map.actions.find(obj => obj.id == actionId)
-              if (thisAction) {
-                thisAction.meshname = mesh.name
-                this.game.map.actionelements.push([meshGroup, thisAction])
-              }
+        // LOAD ACTIONS OF MESH
+        if (mesh?.actions && mesh.actions.length > 0) {
+          // console.log('Van AKCIÓJA: ', mesh.name)
+          for (const actionId of mesh.actions) {
+            const thisAction = this.game.map.actions.find(action => action.id == actionId)
+            if (thisAction) {
+              if (loadType == 'loadgame') meshGroup = this.checkmoveFx(thisAction, meshGroup);
+
+              thisAction.meshname = mesh.name
+              this.game.map.actionelements.push([meshGroup, thisAction])
             }
-            this.game.addConsoleRow(`Add Mesh: ${mesh.id}. ${mesh.name}, `, 'div', false, true)
           }
-          console.log(this.game.map.actionelements)
+          this.game.addConsoleRow(`Add Mesh: ${mesh.id}. ${mesh.name}, `, 'div', false, true)
         }
-      }
-
-      if (loadType == 'loadgame') {
-        // LOAD GAME
-        const loadedMeshsData = Object.values(this.game.loadedMeshs)
-        this.game.map.actionelements.forEach(action => {
-          // console.log(action[0]); console.log(action[1]);
-          const meshGroup = loadedMeshsData.find(mesh => mesh.name === action[0])
-          if (meshGroup) {
-            action[0] = meshGroup;
-            this.game.addConsoleRow(`Add Mesh: ${meshGroup.id}. ${meshGroup.name}, `, 'div', false, true)
-          }
-        });
       }
 
       // LIGHTS LOADING
@@ -408,8 +382,10 @@ export default class Loader {
               let lightColor = new THREE.Color(`#${light.color}`)
 
               let pointLight
-              if (light.type == 'point') pointLight = new THREE.PointLight(lightColor, light.intensity, light.distance * 5);    
+              if (light.type == 'point') pointLight = new THREE.PointLight(lightColor, light.intensity, light.distance);    
               else if (light.type == 'direction') pointLight = new THREE.DirectionalLight(lightColor, light.intensity);
+
+              light.decay = light.decay ?? 2
 
               if (pointLight) {
                 pointLight.position.set(light.p.x, light.p.y, light.p.z)
@@ -509,7 +485,7 @@ export default class Loader {
             if (heand.lights) {
               heandGroup.lights = []
               heand.lights.map(light => {
-                light.decay = light.decay ?? 1
+                light.decay = light.decay ?? 2
                 const newLight = new THREE.PointLight(`#${light.color}`, light.intensity, light.distance, light.decay)
                 newLight.name = light.name
                 newLight.position.set(light.p.x, light.p.y, light.p.z)
@@ -566,6 +542,33 @@ export default class Loader {
     }
   }
 
+  checkmoveFx(thisAction, meshGroup) {
+    // OPENFX POSITION REFRESH
+    for(let value of Object.values(this.game.config.movefx)) {
+      if (value.id == 0 || value.id == 1 || value.id == 2 ) {
+        // OPEN FX
+        for(let [eventId, oldData] of Object.entries(value)) {
+          if (eventId == 'id' || eventId == 'name') continue;
+          for(let event of thisAction.events) {
+            if (event.id == eventId) {
+              meshGroup = this.game.gameplay.refreshOpenFxState(oldData, meshGroup)
+            }
+          }
+        }
+      } else if (value.id == 3 || value.id == 5 || value.id == 6) {
+        // SWITCH 1. # Picture Change. # Micro Hamster Change
+        for(let [eventId, oldData] of Object.entries(value)) {
+          if (eventId == 'id' || eventId == 'name') continue;
+          for(let event of thisAction.events) {
+            if (event.id == eventId) this.game.gameplay.refreshPicture(meshGroup, oldData);
+          }
+        }
+      }
+    }
+
+    return meshGroup;
+  }
+
   createTHREEObject(object, group, actualData, first = false) {
     for (let mesh of actualData) {      
       const meshGroup = new THREE.Group()
@@ -613,12 +616,10 @@ export default class Loader {
   async loadSavedgamesList() {
     const response = await this.fetchData({ ajax: true, getsavegameslist: true, dirsstructure: '__saved_games__' })
     if (response?.files) {
-      console.log(response)
       $("#savegame-list").html('')
       let list = ``
       response.files.forEach(files => {
-        console.log(files)
-        list += `<div class="savegame-listelement w-100 text-dark cursor-pointer" data-filename="${files.name}" data-ext="${files.extension}">${files.name}.${files.extension}</div>`
+        list += `<div class="d-inline-flex align-items-center gap-2 mb-2"><span class="savegame-listelement text-dark cursor-pointer px-2 py-1" data-filename="${files.name}" data-ext="${files.extension}">${files.name}.${files.extension}</span><span class="del-save-button cursor-pointer rounded-circle bg-danger text-white d-flex justify-content-center align-items-center p-1">&#x2716;</span></div>`;
       });
 
       $("#savegame-list").html(list)
@@ -636,24 +637,15 @@ export default class Loader {
         x: this.game.player.position.x,
         y: this.game.player.position.y,
         z: this.game.player.position.z,
-        fYaw: this.game.player.rotation.y,
-        fXaw: this.game.player.rotation.x,
+        fYaw: this.game.player.rotation._y,
+        fXaw: this.game.pitchObject.rotation._x,
       }
 
-      console.log('---')
-      console.log(this.game.loadedLights)
-      console.log('---')
-      console.log(this.game.map.lights)
-      console.log('---')
-
+      // GET LIGHTS DATA
       let convertLights = []
-
-      for (const [id, light] of Object.entries(this.game.loadedLights)) {
-
-        console.log(light)
-      
+      for (const [id, light] of Object.entries(this.game.loadedLights)) {      
         convertLights.push({
-          id: light[1].id,
+          id: id,
           name: light[0],
           type: 'point',
           color: light[1].color.getHexString(),
@@ -670,30 +662,22 @@ export default class Loader {
         })
       }
 
-      console.log('---')
-      console.log(convertLights)
-      console.log('---')
-
+      // TO PREPARE SAVE DATA
       const saveMapData = {
+        config: this.game.config,
         player: savePlayerData,
         data: [this.game.map.data],
         structure: this.game.map.structure,
         lights: convertLights,
         beings: this.game.map.beings,
         actions: this.game.map.actions,
-        actionelements: this.cleanActionElements(this.game.map.actionelements),
-
         playerObjects: this.game.playerObjects,
         playerMouse: this.game.playerMouse,
       }
 
-      console.log(saveMapData)
-
       const saveMapDataJSON = JSON.stringify(saveMapData)
 
       const responseSave = await this.fetchData({ ajax: true, savegame: true, save_filename: save_filename, save_ext: save_ext, mapdata: saveMapDataJSON });
-      console.log(responseSave);
-
       if (responseSave?.success) {
         $("#savegame-message").html(`<div class="text-center text-success">${responseSave?.success}</div>`)
         setTimeout(() => {$("#savegame-message").html('')}, 4000);
@@ -712,50 +696,6 @@ export default class Loader {
     this.game.map.structure = JSON.parse(saveMapData.structure)
     this.game.map.lights = JSON.parse(saveMapData.lights)
     this.game.map.actions = JSON.parse(saveMapData.actions)
-
-    // this.game.map.actionelements = this.restoreActionElements(saveMapData.actionelements)
-
-
-    /*
-    restoreActionElements(cleanArray) {
-      return cleanArray.map(elem => {
-        const meshGroup = this.game.loadedMeshs[elem.meshId]
-        return [ meshGroup, elem ]
-      })
-    }
-    */
-  }
-
-  cleanActionElements(actionelements) {
-    return actionelements.map(([group, action]) => {
-      //console.log(group)
-      return [group.name, 
-        {
-        id: action.id,
-        name: action.name,
-        conditions: {
-          click: action.conditions.click,
-          distance_far: action.conditions.distance_far,
-          distance_near: action.conditions.distance_near,
-          issetobjects: [...action.conditions.issetobjects],
-          failed_text: action.conditions.failed_text,
-          success_text: action.conditions.success_text,
-          success: action.conditions.success,
-          usedobjects: action.conditions.usedobjects ? [...action.conditions.usedobjects] : []
-        },
-        events: action.events.map(event => ({
-          id: event.id,
-          name: event.name,
-          timer: event.timer,
-          autoswitch: event.autoswitch,
-          interval: [...event.interval],
-          playsounds: [...event.playsounds],
-          addobjects: [...event.addobjects],
-          lightfx: event.lightfx ? event.lightfx.map(x => [...x]) : [],
-          moveactions: event.moveactions ? event.moveactions.map(x => [...x]) : []
-        }))
-      }]
-    })
   }
 
   // ---

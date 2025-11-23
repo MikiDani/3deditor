@@ -189,7 +189,7 @@ export class Matrix4x4 {
 
 export class Light {
     static instanceCount = 1;
-    constructor(name = 'noname', x, y, z, type = 'point', color = '0xffddaa', intensity = 0.5, distance = 5) {
+    constructor(name = 'noname', x, y, z, type = 'point', color = '0xffddaa', intensity = 0.5, distance = 5 * 5) {
         // type = THREE.AmbientLight, THREE.PointLight, THREE.DirectionalLight
         Light.instanceCount++
         this.id = Light.instanceCount

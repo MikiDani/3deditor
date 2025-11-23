@@ -55,7 +55,7 @@ export default class Game {
     this.activePlayedSounds = []
     
     // inventory datas
-    this.playerObjectsDefault = [0,1,2,3]
+    this.playerObjectsDefault = [7,0,1,2,3]
     // this.playerObjects = [4,5,6,7,0,1,2,3,3,4,5,6,7,0,1,2,3]
     this.playerObjects = this.playerObjectsDefault
 
@@ -144,14 +144,13 @@ export default class Game {
     this.raycaster = new THREE.Raycaster()
     this.mouse = new THREE.Vector2()
 
-    console.log('---------LOOP---------')
     this.loop()
   }
 
   async loop(timestamp = 0) {
     // FIRST LOAD OF MAP | MAPLOADED + ANIMATED START
     if (this.currentState == 'game' && !this.mapLoading) {
-      console.log('---RELOAD MAP---')
+      // console.log('--- RELOAD MAP ---')
 
       this.$loading.show()
       await this.loader.mapLoader(this.filename, this.ext) // LOADING MAP
@@ -159,7 +158,7 @@ export default class Game {
       if (!this.inventory.firstLoadedAllObjects) await this.inventory.firstLoadAllObjects(); // LOADING INVENTORY
       this.$loading.hide()
 
-      // PLAY MUSIC //!! ideglenes
+      // PLAY MUSIC
       this.music = $("#music-button").prop("checked")
      if (this.music) this.sound.play(16, {volume: 0.2, loop: true})
     }
@@ -227,7 +226,7 @@ export default class Game {
     return data;
   }
 
-  findMeshById(data, meshId) {  // !! NOT USED
+  findMeshById(data, meshId) {
     if (!Array.isArray(data)) return null;
 
     for (let mesh of data) {
@@ -290,15 +289,12 @@ export default class Game {
                   <div id="filelist-container" class="w-50 mb-3" style="display: grid; grid-template-columns:repeat(3, 1fr);gap:5px;"></div>
                   
                   <div id="load-save-container" class="w-50 mb-3" style="display: grid; grid-template-columns:repeat(3, 1fr);gap:5px;">
-                    <div id="savegame-list" class="text-center">
-                    </div>
                     <div class="w-100 bg-pink d-flex flex-column justify-content-center align-items-center">
-                      <button id="savegame-button" class="btn btn-sm btn-danger mb-3">Save<button>
-                      <button id="loadgame-button" class="btn btn-sm btn-success mb-3">Load<button>
-                      <div id="savegame-message" class="text-center w-100">
-                        message
-                      </div>
+                      <button id="savegame-button" class="btn btn-sm btn-danger mb-3">Save</button>
+                      <button id="loadgame-button" class="btn btn-sm btn-success mb-3">Load</button>
+                      <div id="savegame-message" class="text-center w-100">message</div>
                     </div>
+                    <div id="savegame-list" class="d-flex flex-column justify-content-start align-items-center"></div>
                   </div>
 
                   <div class="text-center">
@@ -365,7 +361,7 @@ export default class Game {
         <div id="arrow-down"></div>
         <div id="inventory-selected-item-container">
           <div id="object-use" data-mode="use" class="item-selected-text-container">USE OBJECT</div>
-          <div id="object-eat" data-mode="eat" class="item-selected-text-container">EAT OBJECT</div>
+          <div id="object-eat" data-mode="eat" class="item-selected-text-container">EAT or DRINK OBJECT</div>
           <div id="object-read" data-mode="read" class="item-selected-text-container">READ CONTENT</div>
         </div>
 
@@ -423,51 +419,57 @@ export default class Game {
   }
 
   removeObjectOfMap(scene, threeObject) {
-    // DELETE SCENE
-    console.log(threeObject.id + ' name: ' + threeObject.id)
+    if (threeObject._boundingBox) {
+      this.boundingBoxes = this.boundingBoxes.filter(box => box !== threeObject._boundingBox)
+      threeObject._boundingBox = null
+    }
+
+    if (threeObject.container && threeObject.container._boundingBox) {
+      this.boundingBoxes = this.boundingBoxes.filter(box => box !== threeObject.container._boundingBox)
+      threeObject.container._boundingBox = null
+    }
+  
+    threeObject.traverse(obj => {
+      if (obj.geometry && obj.geometry.boundingBox) {
+        const childBox = obj.geometry.boundingBox.clone()
+  
+        const pos = new THREE.Vector3()
+        obj.getWorldPosition(pos)
+  
+        childBox.min.add(pos)
+        childBox.max.add(pos)
+  
+        this.boundingBoxes = this.boundingBoxes.filter(box => !box.equals(childBox))
+      }
+    })
 
     scene.remove(threeObject)
-
-    // DELETE ACTIONELEMENTS
+  
     this.map.actionelements = this.map.actionelements.filter(
       ([group, _]) => group !== threeObject
     )
 
-    // DELETE BOUNDING BOXES
-    this.boundingBoxes = this.boundingBoxes.filter(box => {
-      if (!threeObject.children) return true
-      for (const child of threeObject.children) {
-        if (child.geometry?.boundingBox) {
-          const childBox = child.geometry.boundingBox.clone()
-          childBox.min.add(child.position)
-          childBox.max.add(child.position)
-          if (box.equals(childBox)) return false
-        }
-      }
-      return true
-    })
-
-    // DELETE BOX HELPERS
     if (this.boxHelp && scene.children.length > 0) {
       scene.children = scene.children.filter(obj => {
         return !(obj.type === 'LineSegments' && obj.material.color?.getHex() === 0xffff00)
       })
     }
-
-    // DELETE LOADED MESHES
+  
     for (const [id, meshGroup] of Object.entries(this.loadedMeshs)) {
       if (meshGroup === threeObject) {
         delete this.loadedMeshs[id]
         break
       }
     }
-
-    // CLEAR GEOMETRY & MATERIALS
+  
     threeObject.traverse(obj => {
       if (obj.geometry) obj.geometry.dispose()
       if (obj.material) {
-        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose())
-        else obj.material.dispose() // DELETE DATA GPU BUFFER
+        if (Array.isArray(obj.material)) {
+          obj.material.forEach(m => m.dispose())
+        } else {
+          obj.material.dispose()
+        }
       }
     })
   }
@@ -490,17 +492,58 @@ export default class Game {
     }
   }
 
-  removeBoundingBoxOfMap(threeObject) {    
-    // DELETE BOUNDINGBOXES
-    threeObject.children.forEach(child => {
-      if (child.geometry?.boundingBox) {
-        const box = child.geometry.boundingBox.clone()
-        box.min.add(child.position); box.max.add(child.position);
-        this.boundingBoxes = this.boundingBoxes.filter(existingBox =>
-          !existingBox.equals(box)
-        )
+removeBoundingBoxOfMap(mesh) {
+  if (mesh._boundingBox) {
+    this.boundingBoxes = this.boundingBoxes.filter(box => box !== mesh._boundingBox)
+    mesh._boundingBox = null
+  }
+
+  if (mesh.container && mesh.container._boundingBox) {
+    this.boundingBoxes = this.boundingBoxes.filter(box => box !== mesh.container._boundingBox)
+    mesh.container._boundingBox = null
+  }
+
+  this.boundingBoxes = this.boundingBoxes.filter(box => {
+    const testBox = new THREE.Box3().setFromObject(mesh)
+    return !box.equals(testBox)
+  })
+
+  mesh.traverse(obj => {
+    if (obj.geometry && obj.geometry.boundingBox) {
+      const childBox = obj.geometry.boundingBox.clone()
+      const pos = new THREE.Vector3()
+      obj.getWorldPosition(pos)
+      childBox.min.add(pos)
+      childBox.max.add(pos)
+
+      this.boundingBoxes = this.boundingBoxes.filter(box => !box.equals(childBox))
       }
     })
+  }
+
+  refreshBoundingBoxOfMap(mesh) {
+    const updatedBox = new THREE.Box3().setFromObject(mesh.container)
+    const index = this.boundingBoxes.findIndex(box => box === mesh._boundingBox)
+    if (index !== -1) this.boundingBoxes[index] = updatedBox;
+    else this.boundingBoxes.push(updatedBox);
+    mesh._boundingBox = updatedBox
+  }
+
+  refreshBoundingBoxOfMapContainer(mesh) {
+    if (!mesh.container) return
+  
+    const updatedBox = new THREE.Box3().setFromObject(mesh.container)
+  
+    // előző box kiszedése
+    if (mesh._boundingBox) {
+      this.boundingBoxes = this.boundingBoxes.filter(box => box !== mesh._boundingBox)
+    }
+  
+    // új box berakása
+    this.boundingBoxes.push(updatedBox)
+  
+    // mentés
+    mesh._boundingBox = updatedBox
   }
 
   forceClearAllTimers() {
