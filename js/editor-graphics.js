@@ -72,12 +72,32 @@ export class Graphics {
   }
 
   resetCordinates() {
-    console.log(this.playerPos)
     
+    if (this.playerPos == null) {
+      this.playerPos = {
+        x: 0,
+        y: 0,
+        z: 5,
+        fYaw: 0,
+        fXaw: 0,
+      }
+    }
+    console.log(this.playerPos)
+
     this.vLookDir = new Vec3D(0, 0, -1)
-    this.vCamera = new Vec3D(this.playerPos.x, this.playerPos.y, this.playerPos.z)
-    this.fYaw = this.playerPos.fYaw
-    this.fXaw = this.playerPos.fXaw
+
+
+    if (this.map.player) {
+      // MAP MODE
+      this.vCamera = new Vec3D(this.playerPos.x, this.playerPos.y, this.playerPos.z)
+      this.fYaw = this.playerPos.fYaw
+      this.fXaw = this.playerPos.fXaw
+    } else {
+      // OBJECT MODE
+      this.vCamera = new Vec3D(0, 0, 6)
+      this.fYaw = 6.28
+      this.fXaw = 0
+    }
   }
 
   angleToRandian(angle) {

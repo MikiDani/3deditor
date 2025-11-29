@@ -123,11 +123,23 @@ export default class Loader {
     this.game.generalLoading = true
   }
 
-  async loadTextures() {
-    await this.loadTexturesLinks()    
+  async loadTexturesLinks() {
+    const response = await this.fetchData({ ajax: true, gettexturestructure: true })
+    if (response?.structure) {
+      for (const key in response.structure) {
+        let keys = Object.keys(response.structure[key]);
+        for (let key2 of keys) {
+          this.texturesLinks[key2] = response.structure[key][key2]
+        }
+      }
+    } else throw('Textures didn\'t load.');
+  }
 
-    for (const [name, path] of Object.entries(this.texturesLinks)) {
-      // console.log(name, path)
+  async loadTextures() {
+    await this.loadTexturesLinks()
+
+    for (const name of Object.keys(this.texturesLinks)) {
+      // console.log(name)
       if (this.game.loadedTextures[name]) {
         // IF THE TEXTURE IS LOADED
         console.log('LOADED! : ', this.game.loadedTextures[name])
@@ -135,11 +147,16 @@ export default class Loader {
       }
 
       let texturePaths = Object.values(this.texturesLinks[name])
-
       if (texturePaths.length > 0) {
-        const loadData = await this.createSpritesheetTexture(texturePaths, 500)        
+        // CHECK ISSET TIME FILE: data.ms
+        const textureIntervalTime = this.game.config['animationtextures'][name]?.intervalTime ?? 500
+        const textureplayingState = this.game.config['animationtextures'][name]?.playingState ?? true
+
+        const loadData = await this.createSpritesheetTexture(texturePaths, textureIntervalTime, textureplayingState)
         if (loadData[0]) {
           this.game.loadedTextures[name] = loadData[1]
+          this.game.loadedTextures[name].name = name
+
           const text = `${name}.png loaded!, `
           this.game.addConsoleRow(text, 'div', false, true)
         } else {
@@ -157,20 +174,8 @@ export default class Loader {
     }
   }
 
-  async loadTexturesLinks() {
-    const response = await this.fetchData({ ajax: true, gettexturestructure: true })
-    if (response?.structure) {
-      for (const key in response.structure) {
-        let keys = Object.keys(response.structure[key]);
-        for (let key2 of keys) {
-          this.texturesLinks[key2] = response.structure[key][key2]
-        }
-      }
-    } else throw('Textures didn\'t load.');
-  }
-
   // Spritesheet generálása több képből és animált textúra létrehozása
-  async createSpritesheetTexture(imagePaths, interval = 100) {    // !! KÉP ANIMÁCIÓ IDŐ az iterval
+  async createSpritesheetTexture(imagePaths, intervalTime = 500, textureplayingState = true) {
     const loader = new THREE.ImageLoader()
     const tilesHoriz = imagePaths.length
     const images = []
@@ -179,12 +184,12 @@ export default class Loader {
       try {
         const thisPath = path + '.png'
         const img = await new Promise((resolve, reject) => {
-          loader.load( thisPath, resolve, undefined, () => reject(new Error(`Nem sikerült betölteni: ${thisPath}`))
+          loader.load( thisPath, resolve, undefined, () => reject(new Error(`Load error: ${thisPath}`))
           );
         });
         images.push(img)
       } catch (e) {
-        console.error(`Hiba a kép betöltésekor: ${e.message}`);
+        console.error(`Load error: ${e.message}`);
         return [false]
       }
     }
@@ -208,30 +213,37 @@ export default class Loader {
     texture.generateMipmaps = false
     texture.wrapS = THREE.RepeatWrapping
     texture.wrapT = THREE.RepeatWrapping
+    texture.tilesHoriz = imagePaths.length
     texture.repeat.set(1 / tilesHoriz, 1)
     texture.offset.set(0, 0)
-
-    let currentTile = 0;
-    const tileCount = images.length;
-
-    if (tileCount > 1) {
-      setInterval(() => {
-        currentTile = (currentTile + 1) % tileCount;
-        texture.offset.x = currentTile / tilesHoriz;
-        texture.needsUpdate = true;
-      }, interval);
-    }
+    texture.imagesLength = images.length
+    texture.intervalTime = intervalTime
+    texture.playingState = textureplayingState
 
     return [true, texture];
   }
 
+  startTextureMoveing(texture) {
+    let currentTile = 0
+    if (texture.imagesLength > 1) {      
+      if (texture.interval == null) {
+        texture.interval = setInterval(() => {
+          currentTile = (currentTile + 1) % texture.imagesLength;
+          texture.offset.x = currentTile / texture.tilesHoriz;
+          texture.needsUpdate = true;
+        }, texture.intervalTime);
+      }
+    }
+  }
+
   // MAP LOADER
   async mapLoader(filename, ext) {
-    console.log(filename, ext)
+    // console.log(filename, ext)
 
     let loadType = null
     let savedgamesdir = null
-    if (ext == 'stuc') {
+
+    if (ext == 'stuc' || ext == 'local') {
       loadType = 'loadgame'
       savedgamesdir = '__saved_games__'
     } else {
@@ -245,7 +257,15 @@ export default class Loader {
     const startTime = Date.now()
     this.game.addConsoleRow('--- loading map datas start ---', 'div', true, true)
 
-    const response = await this.fetchData({ ajax: true, load: true, filename: filename, ext: ext, savedgamesdir: savedgamesdir })
+    let response
+    if (ext == 'stuc' || ext == 'mtuc') {
+      response = await this.fetchData({ ajax: true, load: true, filename: filename, ext: ext, savedgamesdir: savedgamesdir })
+    } else if (ext == 'local') {
+      response = localStorage.getItem(filename)
+    
+      response = JSON.parse(response)
+    }
+    
     if (response?.data && response?.structure) {
       // console.log('LOAD MAPDATA:', response)
 
@@ -268,10 +288,17 @@ export default class Loader {
       // this.game.map.actionelements = []
       // if (response.actionelements != null) this.game.map.actionelements = response.actionelements;
 
-      // PLAYER POSITION
-      this.game.player.position.set(this.game.map.player.x, this.game.map.player.y, this.game.map.player.z)
-      this.game.player.rotation.y = this.game.map.player.fYaw
-      this.game.pitchObject.rotation.x = this.game.map.player.fXaw
+      // PLAYER POSITION      
+      if (this.game.player.x !== 'undefined' && this.game.player.y !== 'undefined' && this.game.player.z !== 'undefined') {
+        this.game.player.position.set(this.game.map.player.x, this.game.map.player.y, this.game.map.player.z)
+        this.game.player.rotation.y = this.game.map.player.fYaw
+        this.game.pitchObject.rotation.x = this.game.map.player.fXaw
+      } else {
+        this.game.player.position.set(0, 0, 0)
+        this.game.player.rotation.y = 0
+        this.game.pitchObject.rotation.x = 0
+      }
+
       this.game.camera.position.set(0, 0, 0)
       this.game.camera.updateMatrixWorld(true)
 
@@ -307,7 +334,12 @@ export default class Loader {
           let triTransparent = tri?.transparent ? true : false;
           let triNormal = tri?.normal ? 'FrontSide' : 'DoubleSide';
 
+          // SELECTED TEXTURE
           const texture = this.game.loadedTextures[tri.texture.name]
+
+          // IF LOAD GAME PLAYINGSTATE
+          if (loadType == 'loadgame') texture.playingState = this.game.config['animationtextures'][tri.texture.name]?.playingState ?? true            
+
           if (texture?.needsUpdate) texture.needsUpdate = false;
 
           const materialType = (this.game.lightsOn) ? 'MeshLambertMaterial' : 'MeshBasicMaterial';
@@ -318,6 +350,8 @@ export default class Loader {
             opacity: 1,
             alphaTest: 0.1,
           });
+
+          meshGroup.texture = texture
 
           const triangleMesh = new THREE.Mesh(geometry, material)
           meshGroup.add(triangleMesh)
@@ -338,6 +372,11 @@ export default class Loader {
               this.game.scene.add(helper);
             }
           }
+        }
+
+        // RESTART ANIM TEXTURES
+        for (const texture of Object.values(this.game.loadedTextures)) {
+          if (texture.playingState) this.startTextureMoveing(texture);
         }
 
         meshGroup.box = new THREE.Box3().setFromObject(meshGroup)
@@ -402,7 +441,7 @@ export default class Loader {
             }
           }
           // MINIMUM AMBIENT LIGHT
-          if (false) {  // !!!
+          if (false) {
             const ambient = new THREE.AmbientLight('#ffffff', 0.2)  // 0.05
             this.game.scene.add(ambient)
           }
@@ -613,21 +652,33 @@ export default class Loader {
     }
   }
 
-  async loadSavedgamesList() {
-    const response = await this.fetchData({ ajax: true, getsavegameslist: true, dirsstructure: '__saved_games__' })
-    if (response?.files) {
-      $("#savegame-list").html('')
+  async loadSavedgamesList(mode) {
+    if (mode == 'file') {      
+      const response = await this.fetchData({ ajax: true, getsavegameslist: true, dirsstructure: '__saved_games__' })
+      if (response?.files) {
+        $("#savegame-list").html('')
+        let list = ``
+        response.files.forEach(files => {
+          list += `<div class="d-inline-flex align-items-center gap-2 mb-2"><span class="savegame-listelement text-dark cursor-pointer px-2 py-1" data-filename="${files.name}" data-ext="${files.extension}">${files.name}.${files.extension}</span><span class="del-save-button cursor-pointer rounded-circle bg-danger text-white d-flex justify-content-center align-items-center p-1">&#x2716;</span></div>`
+        })
+        $("#savegame-list").html(list)
+  
+      } else throw('Savegames list didn\'t load.')
+
+    } else if (mode == 'local') {
+      $("#local-savegame-list").html('')
       let list = ``
-      response.files.forEach(files => {
-        list += `<div class="d-inline-flex align-items-center gap-2 mb-2"><span class="savegame-listelement text-dark cursor-pointer px-2 py-1" data-filename="${files.name}" data-ext="${files.extension}">${files.name}.${files.extension}</span><span class="del-save-button cursor-pointer rounded-circle bg-danger text-white d-flex justify-content-center align-items-center p-1">&#x2716;</span></div>`;
-      });
-
-      $("#savegame-list").html(list)
-
-    } else throw('Savegames list didn\'t load.');
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (!key.startsWith('save_')) continue
+        list += `<div class="d-inline-flex align-items-center gap-2 mb-2"><span class="savegame-listelement text-dark cursor-pointer px-2 py-1" data-filename="${key}" data-ext="local">${key}</span><span class="del-save-button cursor-pointer rounded-circle bg-danger text-white d-flex justify-content-center align-items-center p-1">&#x2716;</span></div>`
+      }
+  
+      $("#local-savegame-list").html(list)
+    }
   }
 
-  async saveGame() {
+  async saveGame(mode) {
     if (this.game.filename && this.game.ext) {
 
       const save_filename = Date.now()
@@ -640,6 +691,9 @@ export default class Loader {
         fYaw: this.game.player.rotation._y,
         fXaw: this.game.pitchObject.rotation._x,
       }
+
+      // IF HAME REMOVE HEAND LIGHT IS SCENE
+      this.game.gameplay.removeHeandLight()
 
       // GET LIGHTS DATA
       let convertLights = []
@@ -677,15 +731,27 @@ export default class Loader {
 
       const saveMapDataJSON = JSON.stringify(saveMapData)
 
-      const responseSave = await this.fetchData({ ajax: true, savegame: true, save_filename: save_filename, save_ext: save_ext, mapdata: saveMapDataJSON });
-      if (responseSave?.success) {
-        $("#savegame-message").html(`<div class="text-center text-success">${responseSave?.success}</div>`)
-        setTimeout(() => {$("#savegame-message").html('')}, 4000);
-        return true;
-      } else {
-        $("#savegame-message").html(`<span class="text-center text-danger">${responseSave?.error}</span>`)
-        setTimeout(() => {$("#savegame-message").html('')}, 4000);
-        return false;
+      if (mode == 'file') {
+        // FILE SAVE
+        const responseSave = await this.fetchData({ ajax: true, savegame: true, save_filename: save_filename, save_ext: save_ext, mapdata: saveMapDataJSON });
+        if (responseSave?.success) {
+          $("#savegame-message").html(`<div class="text-center text-success">${responseSave?.success}</div>`)
+          setTimeout(() => {$("#savegame-message").html('')}, 4000);
+          return true;
+        } else {
+          $("#savegame-message").html(`<span class="text-center text-danger">${responseSave?.error}</span>`)
+          setTimeout(() => {$("#savegame-message").html('')}, 4000);
+          return false;
+        }
+      } else if (mode == 'local') {
+        // LOCAL SAVE
+        let saveName = 'save_' + Date.now()
+        this.game.ext = 'local'
+        localStorage.setItem(saveName, JSON.stringify(saveMapData))
+
+        $("#local-savegame-message").html(`<div class="text-center text-success">${saveName}</div>`)
+          setTimeout(() => {$("#local-savegame-message").html('')}, 4000);
+          return true;
       }
     }
   }

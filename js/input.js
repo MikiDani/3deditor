@@ -76,7 +76,7 @@ export default class Input {
       this.game.ghostMode = $this.prop('checked')
     });
 
-    $(document).on('click', '.filename-listelement, .savegame-listelement', (event) => {
+    $(document).on('click', '.filename-listelement, .savegame-listelement, .local-savegame-listelement', (event) => {
       const $this = $(event.target)
       const filename = $this.attr('data-filename')
       const ext = $this.attr('data-ext')
@@ -97,7 +97,7 @@ export default class Input {
       else $("#savegame-message").html(`<div class="text-center text-danger">${responseDelete.error}</div>`);
 
       setTimeout(() => {$("#savegame-message").html('')}, 4000);
-      this.game.loader.loadSavedgamesList()
+      this.game.loader.loadSavedgamesList('file')
     });
 
     $('#closeBtn').on('click', () => {
@@ -111,9 +111,9 @@ export default class Input {
 
     $('#savegame-button').on('click', async () => {
       if (this.game.mapLoading) {
-        const request = await this.game.loader.saveGame()
+        const request = await this.game.loader.saveGame('file')
         // RELOAD SAVED GAMES FILE LIST
-        if (request) await this.game.loader.loadSavedgamesList()
+        if (request) await this.game.loader.loadSavedgamesList('file')
       } else {
         console.log('Error: not loaded map!');
         $("#savegame-message").html(`<div class="text-center text-danger">Not loaded map!</div>`)
@@ -122,9 +122,25 @@ export default class Input {
       }
     });
 
-    $('#loadgame-button').on('click', async () => {
-      if (this.game.filename && this.game.ext && this.game.ext == 'stuc') {
-        console.log('Loading saved game...');
+    $('#local-savegame-button').on('click', async () => {
+      if (this.game.mapLoading) {
+
+        console.log('ITTTTT')
+
+        const request = await this.game.loader.saveGame('local')
+        // RELOAD SAVED GAMES FILE LIST
+        if (request) await this.game.loader.loadSavedgamesList('local')
+      } else {
+        console.log('Error: not loaded map!');
+        $("#local-savegame-message").html(`<div class="text-center text-danger">Not loaded map!</div>`)
+        setTimeout(() => {$("#local-savegame-message").html('')}, 4000);
+        return false;
+      }
+    });
+
+    $('#loadgame-button, #local-loadgame-button').on('click', async () => {
+      if (this.game.filename && this.game.ext && (this.game.ext == 'stuc' || this.game.ext == 'local')) {
+        // console.log('Loading saved game...');
 
         this.game.forceClearAllTimers()
 
@@ -142,7 +158,7 @@ export default class Input {
 
         // inventory datas
         this.game.playerObjects = this.game.playerObjectsDefault
-        console.log(this.game.playerObjects)
+        // console.log(this.game.playerObjects)
 
         this.game.mapLoading = false
 
@@ -479,7 +495,7 @@ export default class Input {
           this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
           this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
 
-          this.game.sound.play(18)
+          this.game.sound.play(18, {volume: 0.2})
         }
 
         if(e.key =='5') {

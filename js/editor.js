@@ -284,11 +284,13 @@ class Editor {
         console.log(this.map.aid)
         console.log(this.map.data[this.map.aid])
         console.log(this.map.structure)
-        console.log(this.map.player)
+        console.log(this.map?.player)
 
         // COMPENSATION
-        this.map.player.z = this.map.player.z + 5
-        this.map.player.fYaw = -this.map.player.fYaw
+        if (this.map.player) {
+          this.map.player.z = this.map.player.z + 5
+          this.map.player.fYaw = -this.map.player.fYaw
+        }
 
         if (this.map.actions) console.log(this.map.actions)
         if (this.map.lights) console.log(this.map.lights)
@@ -661,9 +663,10 @@ class Editor {
   async loadMapData() {
     // DEFAULT MAP
     let filename = 'maniac'; let ext = 'mtuc';
-
+    
     // DEFAULT OBJECT
     // let filename = 'zombi'; let ext = 'otuc';
+    // let filename = 'clock-1'; let ext = 'otuc';
 
     $("#modal-ext").val(ext)
     this.mapVariableReset(ext)
@@ -1530,7 +1533,7 @@ class Editor {
 
   refreshPlayerPos(type) {
     // REDRESH HTML INPUTS
-    if (type == 'refresh') {
+    if (this.graph.playerPos && type == 'refresh') {
       // console.log(this.graph.playerPos.x); console.log(this.graph.playerPos.y); console.log(this.graph.playerPos.z);
       // console.log(this.graph.playerPos.fYaw); console.log(this.graph.playerPos.fXaw);
       $("#menu-top input[name='player-x']").val(this.graph.playerPos.x)
@@ -1541,7 +1544,7 @@ class Editor {
     }
 
     // REFRESH MAP PLAYER DATA
-    if (type == 'modify') {
+    if (this.graph.playerPos && type == 'modify') {
       this.graph.playerPos.x = parseFloat($("#menu-top input[name='player-x']").val())
       this.graph.playerPos.y = parseFloat($("#menu-top input[name='player-y']").val())
       this.graph.playerPos.z = parseFloat($("#menu-top input[name='player-z']").val())
@@ -2757,7 +2760,7 @@ class Editor {
             cloneMap.player.fYaw = -cloneMap.player.fYaw
           }
 
-          if (cloneMap.lights.length == 0) delete cloneMap.lights;
+          if (cloneMap.lights && Array.isArray(cloneMap.lights) && cloneMap.lights.length == 0) delete cloneMap.lights;
 
           // cloneMap.lights.forEach(light => { light.distance = light.distance });
 
@@ -2833,6 +2836,14 @@ class Editor {
               if (mesh.parent_id === null) {
                 mesh.parent_id = selectedMapData.id
               }
+
+              if (mesh.tris) {
+                mesh.tris.forEach(tri => {
+                  tri.id = Date.now().toString().slice(-5) + '-' + Math.floor(Math.random() * 99999)
+                  tri.name = tri.name + '-' + Math.floor(Math.random() * 9)
+                  if (tri.locket) delete tri.locket;
+                });
+              }
             })
 
             clone.map.data[clone.map.aid].push(...importData)
@@ -2858,7 +2869,7 @@ class Editor {
       if (mode == 'textures' && filename) {
         if (clone.textureDir.length == 2) {
           // UPLOAD FILE
-          let newFileName = `${clone.listElelmentsLength}_${clone.textureDir[clone.textureDir.length - 1]}.png`;                    
+          let newFileName = `${clone.listElelmentsLength}_${clone.textureDir[clone.textureDir.length - 1]}.png`;
           if ($('#modal-file').prop('files').length > 0) {
             const file = $('#modal-file').prop('files')[0];
             if (file) {
@@ -3438,19 +3449,21 @@ class Editor {
 
       // SAVE SCREEN-CANVAS PLAYER POSITION
       $(document).on('click', "#save-player-position", () => {
-        this.map.player.fXaw = parseFloat(this.graph.fXaw.toFixed(2))
-        this.map.player.fYaw = parseFloat(this.graph.fYaw.toFixed(2))
-        this.map.player.x = parseFloat(this.graph.vCamera.x.toFixed(2))
-        this.map.player.y = parseFloat(this.graph.vCamera.y.toFixed(2))
-        this.map.player.z = parseFloat(this.graph.vCamera.z.toFixed(2))
-
-        $("input[name='player-x']").val(this.map.player.x)
-        $("input[name='player-y']").val(this.map.player.y)
-        $("input[name='player-z']").val(this.map.player.z)
-        $("input[name='player-fXaw']").val(this.map.player.fXaw)
-        $("input[name='player-fYaw']").val(this.map.player.fYaw)
-
-        this.fullRefreshCanvasGraphics()
+        if (this.map.player) {
+          this.map.player.fXaw = parseFloat(this.graph.fXaw.toFixed(2))
+          this.map.player.fYaw = parseFloat(this.graph.fYaw.toFixed(2))
+          this.map.player.x = parseFloat(this.graph.vCamera.x.toFixed(2))
+          this.map.player.y = parseFloat(this.graph.vCamera.y.toFixed(2))
+          this.map.player.z = parseFloat(this.graph.vCamera.z.toFixed(2))
+  
+          $("input[name='player-x']").val(this.map.player.x)
+          $("input[name='player-y']").val(this.map.player.y)
+          $("input[name='player-z']").val(this.map.player.z)
+          $("input[name='player-fXaw']").val(this.map.player.fXaw)
+          $("input[name='player-fYaw']").val(this.map.player.fYaw)
+  
+          this.fullRefreshCanvasGraphics()
+        }
       });
 
       // reset views clicks

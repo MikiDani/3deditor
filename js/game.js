@@ -55,7 +55,7 @@ export default class Game {
     this.activePlayedSounds = []
     
     // inventory datas
-    this.playerObjectsDefault = [7,0,1,2,3]
+    this.playerObjectsDefault = [4,7,0,1,2,3]
     // this.playerObjects = [4,5,6,7,0,1,2,3,3,4,5,6,7,0,1,2,3]
     this.playerObjects = this.playerObjectsDefault
 
@@ -136,7 +136,8 @@ export default class Game {
     if (!this.inputsLoading) await this.input.gameControls();
 
     // LOAD SAVE GAMES LIST
-    await this.loader.loadSavedgamesList()
+    await this.loader.loadSavedgamesList('file')
+    await this.loader.loadSavedgamesList('local')
 
     // LOADING SUCCESS
     $("#loading-text").addClass('text-green').html('Load success!')
@@ -286,6 +287,7 @@ export default class Game {
                   <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body text-center row">
+                  <h5>FILSE SAVE</h5>
                   <div id="filelist-container" class="w-50 mb-3" style="display: grid; grid-template-columns:repeat(3, 1fr);gap:5px;"></div>
                   
                   <div id="load-save-container" class="w-50 mb-3" style="display: grid; grid-template-columns:repeat(3, 1fr);gap:5px;">
@@ -294,8 +296,17 @@ export default class Game {
                       <button id="loadgame-button" class="btn btn-sm btn-success mb-3">Load</button>
                       <div id="savegame-message" class="text-center w-100">message</div>
                     </div>
-                    <div id="savegame-list" class="d-flex flex-column justify-content-start align-items-center"></div>
+                    <div id="savegame-list" class="d-flex flex-column justify-content-start align-items-center"></div>  
                   </div>
+
+                  <h5>STORAGE SAVE</h5>
+                  
+                  <div class="w-100 bg-pink d-flex flex-column justify-content-center align-items-center">
+                    <button id="local-savegame-button" class="btn btn-sm btn-danger mb-3">Save</button>
+                    <button id="local-loadgame-button" class="btn btn-sm btn-success mb-3">Load</button>
+                    <div id="local-savegame-message" class="text-center w-100">message</div>
+                  </div>
+                  <div id="local-savegame-list" class="d-flex flex-column justify-content-start align-items-center"></div>
 
                   <div class="text-center">
                     <input id="file-input" type="text" class="w-50" name="filename" value="maniac" data-ext="mtuc">
@@ -551,6 +562,10 @@ removeBoundingBoxOfMap(mesh) {
     let highestIntervalId = setInterval(() => {}, 0)
     for (let i = 0; i <= highestTimeoutId; i++) clearTimeout(i);
     for (let i = 0; i <= highestIntervalId; i++) clearInterval(i);
+    // RESET ANIM IMAGES INTERVALS
+    for (const texture of Object.values(this.loadedTextures)) {
+      if (texture.interval) delete texture.interval;
+    }
     // RESTART MOUSE CHECK INTERVAL
     this.input.checkLookingInterval()
   }

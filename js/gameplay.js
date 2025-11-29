@@ -79,14 +79,11 @@ export default class Gameplay {
     this.game.heandScene.traverse(obj => {
       if (obj.isLight) lightsToRemove.push(obj)
     })
-    lightsToRemove.forEach(light => this.game.heandScene.remove(light))
-  
-    // console.log(this.game.loadedLights)
+    lightsToRemove.forEach(light => this.game.heandScene.remove(light))    
 
     // új fények hozzáadása
     this.game.loadedLights.map(element => {
       const light = element[1]
-  
       const newLight = new THREE.PointLight(
         light.color.clone ? light.color.clone() : light.color,
         light.intensity,
@@ -99,6 +96,12 @@ export default class Gameplay {
   
       this.game.heandScene.add(newLight)
     })
+  }
+
+  lightVibration(amplitude, durationMs) {
+    const t = (Date.now() % durationMs) / durationMs
+    const angle = t * 2 * Math.PI
+    return Math.sin(angle) * (amplitude / 2)
   }
 
   async updateBeings() {    
@@ -187,6 +190,9 @@ export default class Gameplay {
 
       beingGroup.updateMatrixWorld(true)
       beingGroup.box.setFromObject(beingGroup)
+
+      // beingGroup.box.expandByScalar(0.2)  //?? Bounding box nagyítás ha kell
+      // beingGroup.box.min.x -= 0.2; beingGroup.box.max.x += 0.2; beingGroup.box.min.z -= 0.2; beingGroup.box.max.z += 0.2;
     }
   }
 
@@ -288,6 +294,7 @@ export default class Gameplay {
               if (heandGroup.lights) {
                 if (!heandGroup.lightsGroup) {
                   heandGroup.lightsGroup = new THREE.Group()
+                  // ADD THE LAMP LIGHT TO MAP
                   this.game.scene.add(heandGroup.lightsGroup)
                 }
                 heandGroup.lights.forEach(light => {
@@ -297,7 +304,6 @@ export default class Gameplay {
                 })
               } else {
                 // RESET
-                console.log('reset')
                 if (heandGroup.heandindex) {
                   heandGroup.heandindex.forEach(index => {
                     delete this.game.loadedLights[index]
@@ -312,7 +318,7 @@ export default class Gameplay {
 
               heandGroup.lightsAdded = true; // ONLY ONE
             }
-
+            
             if (heandGroup.lightsGroup) {              
               const originalCamPos = new THREE.Vector3()
               this.game.camera.getWorldPosition(originalCamPos)
@@ -328,6 +334,8 @@ export default class Gameplay {
                   const localOffset = new THREE.Vector3(-0.15, i * 0.1, i * -0.1)
                   this.game.loadedLights[index][1].position.copy(originalCamPos).add(localOffset)
                   this.game.loadedLights[index][1].quaternion.copy(originalCamQuat)
+                  // LIGHT VIBRATION
+                  this.game.loadedLights[index][1].intensity += this.lightVibration(0.025, 2500)
                 })
               }
             }
@@ -351,6 +359,7 @@ export default class Gameplay {
       });
       actHeand.heandindex = []
     }
+    // LIFGT REMOVE THE MAP
     if (actHeand && actHeand.lightsGroup) {
       this.game.scene.remove(actHeand.lightsGroup)
       actHeand.lightsGroup = null
@@ -447,7 +456,7 @@ export default class Gameplay {
     switch (beingGroup.animState.type) {
       case('MOVE'):
         switch (beingGroup.filename) {
-          case('zombi-t!X'):  //!!  ne mozogjon ideiglenesen a Zombi
+          case('zombi-t'):
             this.rotateAndMoveInPlayer(beingGroup, true, true) // rotate, move
             break;
           case('bat'):
@@ -491,7 +500,7 @@ export default class Gameplay {
     if (moveOn) {
       // CHECK DISTANCE
       const distanceToPlayer = beingGroup.position.distanceTo(this.game.player.position)
-      if (distanceToPlayer <= 0.8) {
+      if (distanceToPlayer <= 1) {
         return;
       }
 
@@ -504,7 +513,8 @@ export default class Gameplay {
       tempGroup.updateMatrixWorld(true)
 
       // CHECK CRASH
-      const testBox = new THREE.Box3().setFromObject(tempGroup)
+      let testBox = new THREE.Box3().setFromObject(tempGroup)
+
       const collision = this.checkCrash(testBox, beingGroup.beingId)
       if (!collision) {
         beingGroup.position.add(moveStep)
@@ -515,7 +525,7 @@ export default class Gameplay {
           beingGroup.position.clone().add(moveStep).add(new THREE.Vector3(0, stepHeight, 0))
         )
         tempGroup2.updateMatrixWorld(true)
-
+        
         const testBox2 = new THREE.Box3().setFromObject(tempGroup2)
         const collision2 = this.checkCrash(testBox2, beingGroup.beingId)
         if (!collision2) {
@@ -963,23 +973,6 @@ export default class Gameplay {
         this.openFx(data[eventId], mesh)
       break
 
-      case 3:
-        // SWITCH TEXTURE CHANGE
-        if (!data[eventId]) {
-          data[eventId] = []
-          data[eventId] = {
-            "id": 3,
-            "name": structuredClone(Object.values(this.game.config.movefx).find(fx => fx.id == 3).name),
-            "state": "switch-on",
-            "texture_on": "switch-on",
-            "texture_off": "switch-off",
-          }
-        }
-        
-        data[eventId].state = data[eventId].state ==  data[eventId].texture_on ? data[eventId].texture_off : data[eventId].texture_on;
-        this.refreshPicture(mesh, data[eventId])
-      break
-
       case 4:
         // RADIO ON / OFF
         if (!mesh.radioSwitch) mesh.radioSwitch = data.state;
@@ -1009,37 +1002,50 @@ export default class Gameplay {
           mesh.radioSwitch = "off";
         }
       break;
+      case 3:
+        // SWITCH TEXTURE CHANGE
+        this.textureOnOf(mesh, data, eventId, 'switch-on', 'switch-off')
+      break
       case 5:
         // PICTURE TEXTURE CHANGE
-        if (!data[eventId]) {
-          data[eventId] = []
-          data[eventId] = {
-            "id": 5,
-            "name": structuredClone(Object.values(this.game.config.movefx).find(fx => fx.id == 5).name),
-            "state": "switch-on",
-            "texture_on": "picture-2",
-            "texture_off": "picture-3"
-          }
-        }
-        data[eventId].state = data[eventId].state ==  data[eventId].texture_on ? data[eventId].texture_off : data[eventId].texture_on;
-        this.refreshPicture(mesh, data[eventId])
+        this.textureOnOf(mesh, data, eventId, 'picture-2', 'picture-3')
       break
       case 6:
         // MICRO HAMSTER TEXTURE CHANGE
-        if (!data[eventId]) {
-          data[eventId] = []
-          data[eventId] = {
-            "id": 6,
-            "name": structuredClone(Object.values(this.game.config.movefx).find(fx => fx.id == 6).name),
-            "state": "switch-on",
-            "texture_on": "microhamster-on",
-            "texture_off": "microhamster-off"
+        this.textureOnOf(mesh, data, eventId, 'microhamster-on', 'microhamster-off')
+      break
+      case 7:
+        // STOP/START ANIMATED TEXTURE        
+        mesh.texture.playingState = !mesh.texture.playingState
+        // SAVE LOADING FILES
+        this.game.config['animationtextures'][mesh.texture.name].playingState = mesh.texture.playingState
+
+        if (mesh.texture.playingState) {
+          if (!mesh.texture.interval) {
+            // REPLAY
+            this.game.loader.startTextureMoveing(mesh.texture)
           }
+        } else {
+          // STOP
+          clearInterval(mesh.texture.interval)
+          mesh.texture.interval = null
         }
-        data[eventId].state = data[eventId].state ==  data[eventId].texture_on ? data[eventId].texture_off : data[eventId].texture_on;
-        this.refreshPicture(mesh, data[eventId])
       break
     }
+  }
+
+  textureOnOf(mesh, data, eventId, texture_on, texture_off) {
+    if (!data[eventId]) {
+      data[eventId] = []
+      data[eventId] = {
+        "state": "switch-on",
+        "texture_on": texture_on,
+        "texture_off": texture_off,
+      }
+    }
+    data[eventId].state = data[eventId].state == data[eventId].texture_on ? data[eventId].texture_off : data[eventId].texture_on;
+    // console.log(data[eventId].state)
+    this.refreshPicture(mesh, data[eventId])
   }
 
   refreshPicture(mesh, data) {
@@ -1069,7 +1075,7 @@ export default class Gameplay {
         data.timeInterval = null          // talan mashogy
         return;
       }
-      
+
       data.timeInterval = setInterval(() => {
         // TEST NEXT MOVE
         const now = performance.now()
@@ -1099,7 +1105,7 @@ export default class Gameplay {
           data.value = Math.max(data.min, Math.min(data.max, data.value)) // clamping
 
           if (data.value == data.max - 1 || data.value < data.min + 1) {
-            console.log('STOP!');
+            // console.log('STOP!');
             data.state = !data.state
             clearInterval(data.timeInterval);
             data.timeInterval = null;
@@ -1108,7 +1114,6 @@ export default class Gameplay {
       }, 5);
     } else {
       // IF NEW CLICK
-      console.log('new click!')
       clearInterval(data.timeInterval);
       data.timeInterval = null;
       /*

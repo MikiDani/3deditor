@@ -223,10 +223,6 @@ export default class Inventory {
       })
 
       // FIRST OBJECT SELECTED
-
-      console.log(this.game.playerObjects)
-      
-
       this.selectedObject = await this.getInventorySelecteObjectData(this.game.playerObjects[0])
       this.firstLoadedAllObjects = true
     }
