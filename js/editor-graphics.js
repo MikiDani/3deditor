@@ -77,12 +77,11 @@ export class Graphics {
       this.playerPos = {
         x: 0,
         y: 0,
-        z: 5,
+        z: 1,
         fYaw: 0,
         fXaw: 0,
       }
     }
-    console.log(this.playerPos)
 
     this.vLookDir = new Vec3D(0, 0, -1)
 
@@ -888,6 +887,7 @@ export class Graphics {
     // console.log(texture.name)
     
     // console.log(texture.name)
+
 
     let selectedTexture = (texture.name) ?
       this.text.pic[texture.name][picIndex] ? this.text.pic[texture.name][picIndex] : this.text.pic['notexture'][0]

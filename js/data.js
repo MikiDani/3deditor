@@ -116,10 +116,8 @@ export class Textures {
     removeAllAnimTextureTimer() {
         for (let name in this.animTimer) {
             clearInterval(this.animTimer[name].interval)
-            // console.log(`AnimTimer '${name}' törölve.`)
         }
         this.animTimer = {}
-        // console.log('Minden animTimer törölve.'); console.log(this.animTimer)
         // for (let i = 1; i < 1000; i++) { clearInterval(i); }  // FORCE
     }
 }
@@ -178,6 +176,38 @@ export class Mesh {
 
     static getInstanceCount() {
         return Mesh.instanceCount;
+    }
+
+    static getMeshBoundingBox(mesh) {
+        const box = {
+            x: {
+                min: Infinity,
+                max: -Infinity,
+            },
+            y: {
+                min: Infinity,
+                max: -Infinity,
+            },
+            z: {
+                min: Infinity,
+                max: -Infinity,
+            },
+        }
+
+        mesh.tris.forEach(tri => {
+            tri.p.forEach(pt => {
+                if (pt.x < box.x.min) box.x.min = pt.x
+                if (pt.x > box.x.max) box.x.max = pt.x
+
+                if (pt.y < box.y.min) box.y.min = pt.y
+                if (pt.y > box.y.max) box.y.max = pt.y
+
+                if (pt.z < box.z.min) box.z.min = pt.z
+                if (pt.z > box.z.max) box.z.max = pt.z
+            })
+        })
+
+        return box
     }
 }
 

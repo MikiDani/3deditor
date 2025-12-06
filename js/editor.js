@@ -257,7 +257,7 @@ class Editor {
   }
 
   async init() {
-    let consolePrint = true  // !!!
+    let consolePrint = false  // !!!
 
     let response = await fetch('config.json')
     this.gamedata = await response.json()
@@ -275,9 +275,6 @@ class Editor {
     // FIRST LOAD
     if (true) {
       await this.loadMapData()
-
-      console.log(this.map)
-      
 
       if (consolePrint) {
         console.log('LOADING MAP DATAS:')
@@ -365,6 +362,9 @@ class Editor {
     this.fullRefreshCanvasGraphics()
     this.refreshAnimationsList()
     this.realtimeOptions(this.graph.options3D.realtime)
+
+    // DELETE GHOST MESH
+    // this.map.data[0] = this.map.data[0].filter(mesh => mesh.id != 130)    
   }
 
   async buildTexturesList(obj) {
@@ -662,7 +662,7 @@ class Editor {
 
   async loadMapData() {
     // DEFAULT MAP
-    let filename = 'maniac'; let ext = 'mtuc';
+    let filename = 'cottage-1'; let ext = 'mtuc';
     
     // DEFAULT OBJECT
     // let filename = 'zombi'; let ext = 'otuc';
@@ -1021,7 +1021,6 @@ class Editor {
       let copy = {};
       for (let key in data) {
         if (data.hasOwnProperty(key)) {
-          // copy[key] = key == 'visible' ? 1 : this.deepCopy(data[key]);  // Mindenképpen jelenjen meg elmestéstöl függetlenül
           copy[key] = this.deepCopy(data[key])
         }
       }
@@ -1041,6 +1040,33 @@ class Editor {
       };
       return newNode;
     });
+  }
+
+  recursiveColorChange(mapDataSelected, lineColor) {
+    mapDataSelected.lineColor = lineColor
+    const thisStructure = this.findMeshById(this.map.structure, mapDataSelected.id)
+    if (thisStructure.child) {
+      thisStructure.child.forEach(mesh => {
+        let mapDataSelected = this.map.data[this.map.aid].find(element => element.id == mesh.id)
+        this.recursiveColorChange(mapDataSelected, lineColor)
+      });
+    }
+  }
+
+  recursiveVisibleChange(thisMeshElementStructure, visibleValue) {    
+    thisMeshElementStructure.visible = visibleValue
+
+    const menuElement = $('#object-list').find(`li[data-id='${thisMeshElementStructure.id}']`).find('span.menu-icon.eye')
+    menuElement.removeClass('eye-up eye-down')
+
+    visibleValue ? menuElement.addClass('eye-up') : menuElement.addClass('eye-down');
+
+    // RECURSIVE
+    if (thisMeshElementStructure.child && thisMeshElementStructure.child.length > 0) {
+      thisMeshElementStructure.child.forEach(elementStructure => {
+        this.recursiveVisibleChange(elementStructure, visibleValue)
+      });
+    }
   }
 
   cloneStructure(originalNode, newParentId = null) {
@@ -1452,9 +1478,14 @@ class Editor {
   }
 
   recursiveMenu(item) {
+    // console.log('structure: ', item) // !!
+    
     const meshData = this.map.data[this.map.aid].find(element => element.id == item.id)
     if (meshData) {
+      // console.log('data: ', meshData); // !!
+
       let itemData = this.findMeshById(this.map.structure, meshData.id)
+      // OPEN CLOSE MENU LIST ELEMENT
       let showMesh
       if (meshData.parent_id != null) {
         let parentData = this.findMeshById(this.map.structure, meshData.parent_id)
@@ -1467,7 +1498,8 @@ class Editor {
         // FIRST ELEMENT
         showMesh = 'block';
       }
-      
+
+      // EYE VISIBLE
       let classTriangle = itemData.status ? 'triangle-up' : 'triangle-down';
       let classEye = itemData.visible ? 'eye-up' : 'eye-down';
 
@@ -1481,8 +1513,8 @@ class Editor {
           $("#object-add-new").show()
           element += `<span class="menu-icon menu-icon-pos-1 plus" title="Add group"></span>
           <span class="menu-icon menu-icon-pos-2 duplicate" title="Duplicaded group"></span>
-          <span class="menu-icon menu-icon-pos-3 up" data-type="prev" title="Move up-brother"></span>
           <span class="menu-icon menu-icon-pos-4 down" data-type="next" title="Move down-brother"></span>
+          <span class="menu-icon menu-icon-pos-3 up" data-type="prev" title="Move up-brother"></span>
           <span class="menu-icon menu-icon-pos-5 back" title="Move back-parent"></span>
           <span class="menu-icon menu-icon-pos-6 back-blend-in" title="Blend in to parent"></span>
           <span class="menu-icon menu-icon-pos-7 clipboard" title="Cut group to clipboard"></span>
@@ -1807,13 +1839,14 @@ class Editor {
       if (!$(':focus').is('input, textarea')) {
         if (event.key == '1') $(".toolbar-icon[data-mode='move']").trigger('click');
         if (event.key == '2') $(".toolbar-icon[data-mode='origo']").trigger('click');
-        if (event.key == '3')
+        if (event.key == '3') $(".toolbar-icon[data-mode='grebs']").trigger('click');
+        if (event.key == '4')
           if (clone.mouse?.selectedTri && Object.keys(clone.mouse.selectedTri).length > 0) $(".toolbar-icon[data-mode='point']").trigger('click');
           else { $(".toolbar-icon[data-mode='point']").addClass('bg-red-p'); setTimeout(() => { $(".toolbar-icon[data-mode='point']").removeClass('bg-red-p')}, 100) }
-        if (event.key == '4')
+        if (event.key == '5')
           if (clone.mouse?.selectedMeshId) $("#add-new-tri").trigger('click');
           else { $("#add-new-tri").addClass('bg-red-p'); setTimeout(() => { $("#add-new-tri").removeClass('bg-red-p')}, 100) }
-        if (event.key == '5')
+        if (event.key == '6')
           if (clone.mouse?.selectedMeshId) $("#add-new-rec").trigger('click');
           else { $("#add-new-rec").addClass('bg-red-p'); setTimeout(() => { $("#add-new-rec").removeClass('bg-red-p')}, 100) }
  
@@ -2674,12 +2707,11 @@ class Editor {
     // DIR DUBBLE CLICK
     $(document).on('dblclick', "#modal-content .list-element", async function() {
       let mode = $(this).attr('data-mode')
-
-      if (mode=='textures') {
+      if (mode == 'textures') {
         $('#modal-input').val('')
         let filename = $(this).attr('data-filename')
         clone.textureDir.push(filename)
-        await clone.textureFunction(mode)  
+        await clone.textureFunction(mode)
       }
     });
 
@@ -3077,6 +3109,11 @@ class Editor {
         clone.mouse.modePoint = null;
         return;
       }
+      if (mode == 'grebs') {
+        clone.mouse.mode = 'grebs'
+        clone.mouse.modePoint = null;
+        return;
+      }
       clone.mouse.mode = mode
       if (mode=='point' && (clone.mouse.selectedTri == null || Object.keys(clone.mouse.selectedTri).length == 0)) {
         clone.mouse.mode = 'move'
@@ -3221,6 +3258,32 @@ class Editor {
             )
             if (findedPoint) clone.mouse.moveTriPoint = findedPoint
           }
+        }
+
+         ///////////////////
+        // GREBS MESH
+        if (clone.mouse.mode == 'grebs') {
+          event.stopPropagation()
+          // SELECTED VIEW
+          clone.selectedView = name
+
+          let view = clone.views[name]
+          const rect = this.getBoundingClientRect()
+          let pos = clone.getMousePosition(clone, event, rect, name)
+
+          clone.map.data[clone.map.aid].forEach(mesh => {
+            const thisStructure = clone.findMeshById(clone.map.structure, mesh.id)
+            if (thisStructure.visible === 1) {
+              const boundingBox = Mesh.getMeshBoundingBox(mesh)            
+              if (pos.vx > boundingBox[view.vX].min && pos.vx < boundingBox[view.vX].max &&
+                  pos.vy > boundingBox[view.vY].min && pos.vy < boundingBox[view.vY].max)
+              {
+                $(document).find("#object-list").find(`li[data-id='${mesh.id}']`).trigger('click')
+              }
+            }
+          });
+
+          clone.fullRefreshCanvasGraphics()
         }
 
         ///////////////////
@@ -3471,7 +3534,7 @@ class Editor {
         let name = $(this).attr('data-name')
         if (name == 'screen-canvas') return;
         // only axis canvas
-        clone.views[name].posX = 0; clone.views[name].posY = 0;
+        clone.views[name].posX = 320; clone.views[name].posY = 210;
         clone.fullRefreshCanvasGraphics()
       });
     });
@@ -3575,7 +3638,12 @@ class Editor {
         if (Array.isArray(this.clipboardMemory.meshs) && this.clipboardMemory.meshs.length > 0) {
           this.clipboardMemory.meshs.forEach(mesh => {
             // structure
-            let newMesh = {id: mesh.id, child: []}
+            let newMesh = {
+              id: mesh.id,
+              status: 1,
+              visible: true,
+              child: []
+            }
             mapStructureSelected.child.push(newMesh)
             // mapdata
             mesh.parent_id = mapDataSelected.id
@@ -3692,10 +3760,13 @@ class Editor {
     });
 
     $("select[name='line-color']").on('input', function () {
-      if(clone.mouse.selectedMeshId) {       
+      if (clone.mouse.selectedMeshId) {
         let mapDataSelected = clone.map.data[clone.map.aid].find(element => element.id == clone.mouse.selectedMeshId)
-        mapDataSelected.lineColor = $(this).val()
-        clone.fullRefreshCanvasGraphics()
+        if (mapDataSelected) {
+          const lineColor = $(this).val()
+          clone.recursiveColorChange(mapDataSelected, lineColor)
+          clone.fullRefreshCanvasGraphics()
+        }
       }
     });
 
@@ -3906,8 +3977,13 @@ class Editor {
 
     $(`select[name='lock-normal']`).on('input', function () {
       if (typeof clone.mouse.selectedTri.id !== 'undefined' && typeof clone.mouse.selectedLock.id !== 'undefined') {
-        clone.mouse.selectedTri.normal = $(this).val()
-        clone.mouse.selectedLock.normal = $(this).val()
+
+        let value = $(this).val() === 'true' ? true : false;
+
+        console.log(value)  // !!!
+
+        clone.mouse.selectedTri.normal = value
+        clone.mouse.selectedLock.normal = value
         clone.fullRefreshCanvasGraphics()
       }
     });
@@ -4526,13 +4602,11 @@ class Editor {
       event.stopPropagation()
         let id = Number($(this).closest('li').attr('data-id'))        
         if (id) {
-          let thisMeshStructure = clone.findMeshById(clone.map.structure, id)
-          if (thisMeshStructure.visible) {
-            thisMeshStructure.visible = 0
-            $(this).removeClass('eye-up').addClass('eye-down')
-          } else {
-            $(this).removeClass('eye-down').addClass('eye-up')
-            thisMeshStructure.visible = 1
+          let thisMeshElementStructure = clone.findMeshById(clone.map.structure, id)
+          if (thisMeshElementStructure) {          
+            const newVisible = thisMeshElementStructure.visible === 0 ? 1 : 0;
+            clone.recursiveVisibleChange(thisMeshElementStructure, newVisible)
+            // $("#object-list").find(`[data-id='${id}']`).css('border', '1px solid red')
           }
           clone.fullRefreshCanvasGraphics()
         }
@@ -4599,8 +4673,14 @@ class Editor {
 
             clone.refreshLocketDatas(clone.mouse.selectedTri, clone.mouse.selectedLock)
 
+            const value = clone.mouse.selectedTri.normal === true || clone.mouse.selectedTri.normal === 'true' ? 'true' : 'false';
+            $(`select[name='lock-normal']`).val(value);
+
             $("#selected-tri-container").hide(); $("#selected-locket-container").show();
           } else {
+            const value = clone.mouse.selectedTri.normal === true || clone.mouse.selectedTri.normal === 'true' ? 'true' : 'false';
+            $(`select[name='tri-normal']`).val(value);            
+
             $("#selected-locket-container").hide(); $("#selected-tri-container").show();
           }
 
@@ -5473,15 +5553,16 @@ class Editor {
   }
 
   recursiveDrawMeshs(mesh, view, color, lineWidth) {
-    let meshData = this.map.data[this.map.aid].find(mapMesh => mapMesh.id == mesh.id)
-
+    let meshData = this.map.data[this.map.aid].find(mapMesh => mapMesh.id === mesh.id)
+    if (meshData == null) return;
+    
     $(`.mesh-name[data-id=${mesh.id}]`).addClass("child-style")
-
-    if (!meshData || !Array.isArray(meshData.tris) || meshData.tris.length === 0) return;
-
-    meshData.tris.forEach(tri => {
-      this.drawViewTriangeAction(view, color, lineWidth, tri.p[0][view.vX], tri.p[0][view.vY], tri.p[1][view.vX], tri.p[1][view.vY], tri.p[2][view.vX], tri.p[2][view.vY])
-    });
+    
+    if (meshData.tris.length > 0 && Array.isArray(meshData.tris)) {
+      meshData.tris.forEach(tri => {
+        this.drawViewTriangeAction(view, color, lineWidth, tri.p[0][view.vX], tri.p[0][view.vY], tri.p[1][view.vX], tri.p[1][view.vY], tri.p[2][view.vX], tri.p[2][view.vY])
+      });
+    }
 
     if (Array.isArray(mesh.child) && mesh.child.length > 0) {
       mesh.child.forEach(child => {
@@ -5793,10 +5874,12 @@ class Editor {
 
         let strucSelected = this.findMeshById(this.map.structure, mesh.id);      
         if (!strucSelected) continue;
-        if (typeof strucSelected.visible == 'undefined') strucSelected.visible = 1;
+
+        if (strucSelected.visible == null) strucSelected.visible = 1;
+        if (strucSelected.visible !== 0 && strucSelected.visible !== 1) strucSelected.visible = 1;
         
         // JUMP MESH WHEN NOT VISIBLE
-        if (!strucSelected.visible) {
+        if (strucSelected.visible == 0) {
           const hiddenIds = this.getAllMeshTreeIds(strucSelected);
 
           while (i + 1 < selectedFrame.length && hiddenIds.includes(selectedFrame[i + 1].id)) { i++; }

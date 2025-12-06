@@ -22,7 +22,7 @@ export default class Game {
 
     this.mapLoading = false
 
-    this.filename = 'maniac'
+    this.filename = 'cottage-1'
     this.ext = 'mtuc'
 
     this.animating = false
@@ -309,7 +309,7 @@ export default class Game {
                   <div id="local-savegame-list" class="d-flex flex-column justify-content-start align-items-center"></div>
 
                   <div class="text-center">
-                    <input id="file-input" type="text" class="w-50" name="filename" value="maniac" data-ext="mtuc">
+                    <input id="file-input" type="text" class="w-50" name="filename" value="cottage-1" data-ext="mtuc">
                   </div>
                   <div class="my-2">
                       <input type="checkbox" id="music-button">

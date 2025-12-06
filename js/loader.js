@@ -365,7 +365,7 @@ export default class Loader {
 
           // YELLOW BOX-HELPER
           if (false) {
-            if (mesh.name == 'HUTO-AJTO') {
+            if (mesh.name == '' || true) {
               console.log(mesh.id)
               console.log(mesh.name)
               const helper = new THREE.Box3Helper(box, new THREE.Color('#ffff00'));
@@ -440,11 +440,11 @@ export default class Loader {
               }
             }
           }
-          // MINIMUM AMBIENT LIGHT
-          if (false) {
-            const ambient = new THREE.AmbientLight('#ffffff', 0.2)  // 0.05
-            this.game.scene.add(ambient)
-          }
+        }
+        // MINIMUM AMBIENT LIGHT
+        if (true) {
+          const ambient = new THREE.AmbientLight('#ffffff', 0.8)  // 0.05
+          this.game.scene.add(ambient)
         }
 
       } else {
@@ -609,7 +609,10 @@ export default class Loader {
   }
 
   createTHREEObject(object, group, actualData, first = false) {
-    for (let mesh of actualData) {      
+    for (let mesh of actualData) {   
+
+      console.log(mesh)
+
       const meshGroup = new THREE.Group()
 
       for (let tri of mesh.tris) {
@@ -634,6 +637,7 @@ export default class Loader {
         let triNormal = tri?.normal ? 'FrontSide' : 'DoubleSide';
 
         const texture = this.game.loadedTextures[tri.texture.name]
+
         if (texture?.needsUpdate) texture.needsUpdate = false;
 
         const materialType = this.game.lightsOn ? 'MeshLambertMaterial' : 'MeshBasicMaterial'

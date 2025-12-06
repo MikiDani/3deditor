@@ -446,6 +446,10 @@ button[class="3d-buttons"] {
   background-image: url("../img/icons/origo.svg");
 }
 
+.grebs {
+  background-image: url("../img/icons/grebs.svg");
+}
+
 .add-triangle-1 {
   background-image: url("../img/icons/add-triangle-1.svg");
 }

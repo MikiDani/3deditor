@@ -20,7 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
         $structure = [];
         $files = get_files($directory);
         foreach ($files as $row) {
-            if ($row['name'] == '_objects' || $row['name'] == '_beings' || $row['name'] == '_heands') continue;
+            if ($row['name'] == '_objects' || $row['name'] == '_beings' || $row['name'] == '_heands' || $row['name'] == '__saved_games__') continue;
 
             $path = $directory . DIRECTORY_SEPARATOR . $row['name'];
 
@@ -127,7 +127,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['ajax']) && isset($_POS
     $dirs = [];
 
     foreach($allfiles as $key => $name) {
-        if ($name !== '.' && $name !== '..'  && $name !== '_objects' && is_dir($directory . DIRECTORY_SEPARATOR . $name)) {
+        if ($name !== '.' && $name !== '..'
+            && $name !== '_objects' 
+            && $name !== '_beings' 
+            && $name !== '_heands' 
+            && $name !== '__saved_games__' 
+            && is_dir($directory . DIRECTORY_SEPARATOR . $name)) {
             $dirs[] = $name;
         }
     }
