@@ -2,13 +2,13 @@ import { Graphics } from './editor-graphics.js'
 import { Textures, Vec3D, Vec2D, Mesh, Triangle, Light, Being } from './data.js'
 
 class ViewWindow {
-  constructor(name, vX, vY, ratio, frequent, showDots, showGrid) {
+  constructor(name, vX, vY, ratio = 350, frequent = 20, showDots = true, showGrid = true, posX = this.canvas.width / 2, posY = this.canvas.height / 2) {
     this.name = name
     this.vX = vX
     this.vY = vY
     this.canvas = (document.getElementById(this.name)) ? document.getElementById(this.name) : null;
-    this.posX = this.canvas.width / 2
-    this.posY = this.canvas.height / 2
+    this.posX = posX
+    this.posY = posY
     this.ratio = ratio
     this.frequent = frequent
     this.showDots = showDots
@@ -121,24 +121,24 @@ class Editor {
       uvLocketSwitch: false,
       showAllLights: true,
       showAllbeings: true,
+      grebsLast: false,
     }
 
     this.animationPlayState = false;
     this.animationRepeatState = false;
 
+    this.getClipboardMemory()
+
     this.mapMemory = []
     this.textureDir = []
-
-    this.clipboardMemory = {
-      tris: [],
-      meshs: [],
-    }
 
     this.beingsList = []
 
     this.keys = {}
     this.selectedView = null
     this.textureRatio = 1
+    this.textureRatioU = 1
+    this.textureRatioV = 1
     this.origo = new Vec3D(0,0,0)
 
     this.mapVariableReset()
@@ -246,8 +246,6 @@ class Editor {
       if (!this.map.ratio) this.map.ratio = 1;
     }
 
-    console.log(this.map)
-
     this.refreshFrameSelect()
     this.refreshLightsList()
     this.refreshBeingsList()
@@ -257,7 +255,7 @@ class Editor {
   }
 
   async init() {
-    let consolePrint = false  // !!!
+    let consolePrint = false //??
 
     let response = await fetch('config.json')
     this.gamedata = await response.json()
@@ -276,18 +274,18 @@ class Editor {
     if (true) {
       await this.loadMapData()
 
+      // PLAYER POSITION COMPENSATION
+      if (this.map.player) {        
+        this.map.player.z = this.map.player.z + 5
+        this.map.player.fYaw = -this.map.player.fYaw
+      }
+
       if (consolePrint) {
         console.log('LOADING MAP DATAS:')
         console.log(this.map.aid)
         console.log(this.map.data[this.map.aid])
         console.log(this.map.structure)
         console.log(this.map?.player)
-
-        // COMPENSATION
-        if (this.map.player) {
-          this.map.player.z = this.map.player.z + 5
-          this.map.player.fYaw = -this.map.player.fYaw
-        }
 
         if (this.map.actions) console.log(this.map.actions)
         if (this.map.lights) console.log(this.map.lights)
@@ -303,9 +301,9 @@ class Editor {
 
     this.views = {
       // name, vX, vY, ratio, frequent, showDots, showGrid
-      'XYview-canvas': new ViewWindow('XYview-canvas', 'x', 'y', 350, 20, true, true),
-      'XZview-canvas': new ViewWindow('XZview-canvas', 'x', 'z', 350, 20, true, true),
-      'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', 350, 20, true, true),
+      'XYview-canvas': new ViewWindow('XYview-canvas', 'x', 'y', this.editorData?.views?.['XYview-canvas']?.ratio, this.editorData?.views?.['XYview-canvas']?.frequent, this.editorData?.views?.['XYview-canvas']?.showDots, this.editorData?.views?.['XYview-canvas']?.showGrid, this.editorData?.views?.['XYview-canvas']?.posX, this.editorData?.views?.['XYview-canvas']?.posY),
+      'XZview-canvas': new ViewWindow('XZview-canvas', 'x', 'z', this.editorData?.views?.['XZview-canvas']?.ratio, this.editorData?.views?.['XZview-canvas']?.frequent, this.editorData?.views?.['XZview-canvas']?.showDots, this.editorData?.views?.['XZview-canvas']?.showGrid,  this.editorData?.views?.['XZview-canvas']?.posX, this.editorData?.views?.['XZview-canvas']?.posY),
+      'ZYview-canvas': new ViewWindow('ZYview-canvas', 'z', 'y', this.editorData?.views?.['ZYview-canvas']?.ratio, this.editorData?.views?.['ZYview-canvas']?.frequent, this.editorData?.views?.['ZYview-canvas']?.showDots, this.editorData?.views?.['ZYview-canvas']?.showGrid,  this.editorData?.views?.['ZYview-canvas']?.posX, this.editorData?.views?.['ZYview-canvas']?.posY),
     }
 
     // VIEW-SCREEN OPTIONS
@@ -328,18 +326,18 @@ class Editor {
           <div class="side-row">
               <span>Freq.:</span>
               <select name="frequent" data-name="${name}">
-                <option value="20" selected>20</option>
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20" selected>20(d)</option>
                 <option value="40">40</option>
                 <option value="80">80</option>
                 <option value="160">160</option>
-                <option value="320">320</option>
-                <option value="640">640</option>
               </select>
           </div>
         </div>
         <div class="right-side">
           <div class="side-row">
-              <span>Fullscr.:</span><button type="button" name="${name}" class="view-buttons" value="false">OFF</button>
+              <span>Fullscr.:</span><button type="button" class="view-buttons" name="${name}" value="false">OFF</button>
           </div>
           <div class="side-row">
               <span>Dots:</span><button type="button" class="dots-buttons" data-name="${name}" value="true">ON</button>
@@ -355,6 +353,11 @@ class Editor {
       $(`#axis-container`).append(element)
     });
 
+    if (this.editorData.options) {
+      this.refreshLightsShowHideButton()
+      this.refreshBeingsShowHideButton()
+    }
+
     this.saveMapMemory('init')
     this.initInputs()
     this.refreshLightsList()
@@ -362,6 +365,17 @@ class Editor {
     this.fullRefreshCanvasGraphics()
     this.refreshAnimationsList()
     this.realtimeOptions(this.graph.options3D.realtime)
+
+    // MY HELPER
+    if (false) {
+      const chechId = 210
+  
+      let selectedMeshStructure = this.findMeshById(this.map.structure, chechId)
+      let selectedMeshData = this.map.data[this.map.aid].find(mesh => mesh.id == chechId)
+
+      console.log('selectedMeshStructure: ', selectedMeshStructure)
+      console.log('selectedMeshData: ', selectedMeshData)      
+    }
 
     // DELETE GHOST MESH
     // this.map.data[0] = this.map.data[0].filter(mesh => mesh.id != 130)    
@@ -576,6 +590,12 @@ class Editor {
   async loadNewBasicData(response, ext) {
     // COOMON DATA
 
+    // EDITORDATA + OPTIONS LOAD
+    if (response.editordata) {
+      this.editorData = response.editordata;
+      this.options = response.editordata.options
+    }
+
     // MAPDATA
     this.map.data = this.deepCopy(response.data)
     const maxId = Math.max(...this.map.data[this.map.aid].map(obj => obj.id));
@@ -708,6 +728,30 @@ class Editor {
       });
     }
     return elements;
+  }
+
+  refreshLightsShowHideButton() {
+    $(this).removeClass('eye-light-up eye-light-down')
+    if (this.options.showAllLights) {
+      $(this).addClass('eye-light-up')
+      $("#light-list").removeClass('bg-gray-6')
+    } else {
+      $(this).addClass('eye-light-down')
+      $("#light-list").addClass('bg-gray-6')
+    }
+    this.fullRefreshCanvasGraphics()
+  }
+
+  refreshBeingsShowHideButton() {
+    $(this).removeClass('eye-being-up eye-being-down')
+    if (this.options.showAllbeings) {
+      $(this).addClass('eye-being-up')
+      $("#being-list").removeClass('bg-gray-6')
+    } else {
+      $(this).addClass('eye-being-down')
+      $("#being-list").addClass('bg-gray-6')
+    }
+    this.fullRefreshCanvasGraphics()
   }
 
   arrayElementMaker(elementName, animActionId, data, eventId = false) {
@@ -1053,7 +1097,7 @@ class Editor {
     }
   }
 
-  recursiveVisibleChange(thisMeshElementStructure, visibleValue) {    
+  recursiveVisibleChange(thisMeshElementStructure, visibleValue) {
     thisMeshElementStructure.visible = visibleValue
 
     const menuElement = $('#object-list').find(`li[data-id='${thisMeshElementStructure.id}']`).find('span.menu-icon.eye')
@@ -1069,24 +1113,40 @@ class Editor {
     }
   }
 
+  async recursiveVisibleChangeClosest(thisMeshElementStructure) {
+    thisMeshElementStructure.visible = 1
+    thisMeshElementStructure.status = 1
+
+    const menuElement = $('#object-list').find(`li[data-id='${thisMeshElementStructure.id}']`).find('span.menu-icon.eye')
+    menuElement.removeClass('eye-up eye-down').addClass('eye-up')
+
+    // RECURSIVE
+    let thisSelectedMeshData = this.map.data[this.map.aid].find(mesh => mesh.id === thisMeshElementStructure.id)
+    if (thisSelectedMeshData.parent_id != null) {
+      let sendMeshStructure = this.findMeshById(this.map.structure, thisSelectedMeshData.parent_id)     
+      if (sendMeshStructure) this.recursiveVisibleChangeClosest(sendMeshStructure);
+    }
+  }
+
   cloneStructure(originalNode, newParentId = null) {
     const newId = Mesh.getInstanceCount() + 1
     Mesh.setInstanceCount(newId)
   
-    // Mesh adat másolása és új ID beállítása
+    // Mesh data copy and add new id
     const meshData = this.map.data[this.map.aid].find(m => m.id == originalNode.id)
     const meshCopy = this.deepCopy(meshData)
     meshCopy.id = newId
     meshCopy.parent_id = newParentId
     this.clipboardMemory.meshs.push(meshCopy)
-  
-    // Strukturális másolat
+    localStorage.setItem('clipboardMemory',  JSON.stringify(this.clipboardMemory))
+
+    // structure copy
     const structureCopy = {
       ...this.deepCopy(originalNode),
       id: newId,
       child: []
     }
-  
+
     if (Array.isArray(originalNode.child)) {
       for (let child of originalNode.child) {
         const newChild = this.cloneStructure(child, newId)
@@ -1215,11 +1275,12 @@ class Editor {
       let locketId = (selectedTriangle?.locket) ? selectedTriangle.locket : false;
       if (locketId) {
         let locketTriangle = selectedObject.tris.find(triangle => triangle.id == locketId)
-
-        if (selectedTriangle.locket) delete selectedTriangle.locket;
-        if (locketTriangle.locket) delete locketTriangle.locket;
-
-        if (this.mouse?.selectedLock) this.mouse.selectedLock = null;
+        if (locketTriangle) {
+          if (selectedTriangle.locket) delete selectedTriangle.locket;
+          if (locketTriangle.locket) delete locketTriangle.locket;
+  
+          if (this.mouse?.selectedLock) this.mouse.selectedLock = null;
+        }
       }
     }
   }
@@ -1232,7 +1293,7 @@ class Editor {
       });
     } else if (mode == 'save') {
       this.mapMemory.unshift(JSON.parse(JSON.stringify(this.map)))
-      if (this.mapMemory.length > 20) this.mapMemory.splice(20);
+      if (this.mapMemory.length > 30) this.mapMemory.splice(30);
     } else if (mode == 'back') {
       if (this.mapMemory.length > 0) {
         this.mouse.selectedTri = null; this.mouse.selectedLock = null;
@@ -1260,6 +1321,11 @@ class Editor {
     else $(".menu-text-border.menu-back").addClass('menu-back-empty');
   }
 
+  getClipboardMemory() {
+    const storage = localStorage.getItem('clipboardMemory')
+    this.clipboardMemory = storage == null || storage === "undefined" ? { tris: [], meshs: [] } : JSON.parse(storage);
+  }
+
   refreshClipboard() {    
     function isEmptyStructure(obj) {
       return Object.values(obj).every(
@@ -1281,7 +1347,8 @@ class Editor {
 
     // start
     $("#clipboard-content").html('')
-    if (!isEmptyStructure(this.clipboardMemory)) { 
+    this.getClipboardMemory()
+    if (!isEmptyStructure(this.clipboardMemory)) {      
       drawList(this.clipboardMemory, 'tris', 'Triangles:')
       drawList(this.clipboardMemory, 'meshs', 'Meshs:')
       $("#clipboard-container").show()
@@ -1477,13 +1544,9 @@ class Editor {
     : $("#selected-texture-container").hide();
   }
 
-  recursiveMenu(item) {
-    // console.log('structure: ', item) // !!
-    
+  recursiveMenu(item) {    
     const meshData = this.map.data[this.map.aid].find(element => element.id == item.id)
     if (meshData) {
-      // console.log('data: ', meshData); // !!
-
       let itemData = this.findMeshById(this.map.structure, meshData.id)
       // OPEN CLOSE MENU LIST ELEMENT
       let showMesh
@@ -1566,8 +1629,7 @@ class Editor {
   refreshPlayerPos(type) {
     // REDRESH HTML INPUTS
     if (this.graph.playerPos && type == 'refresh') {
-      // console.log(this.graph.playerPos.x); console.log(this.graph.playerPos.y); console.log(this.graph.playerPos.z);
-      // console.log(this.graph.playerPos.fYaw); console.log(this.graph.playerPos.fXaw);
+      // console.log(this.graph.playerPos.x, this.graph.playerPos.y, this.graph.playerPos.z, this.graph.playerPos.fYaw, this.graph.playerPos.fXaw)
       $("#menu-top input[name='player-x']").val(this.graph.playerPos.x)
       $("#menu-top input[name='player-y']").val(this.graph.playerPos.y)
       $("#menu-top input[name='player-z']").val(this.graph.playerPos.z)
@@ -1584,8 +1646,6 @@ class Editor {
       this.graph.playerPos.fXaw = parseFloat($("#menu-top input[name='player-fXaw']").val())
 
       $('#goto-player-position').click()
-
-      // console.log(this.graph.playerPos.x, this.graph.playerPos.y, this.graph.playerPos.z, this.graph.playerPos.fYaw, this.graph.playerPos.fXaw)
     }
   }
 
@@ -1633,13 +1693,15 @@ class Editor {
   }
 
   resetMouseAddTri() {
-    let r = this.textureRatio
+    let rU = this.textureRatioU
+    let rV = this.textureRatioV
+
     this.mouse.addTri = {
       mode: false,
       count: 0,
       cords: [{x:0, y:0, z:0}, {x:0, y:0, z:0}, {x:0, y:0, z:0}],
-      texture1: [{u:0, v:r}, {u:0, v:0}, {u:r, v:0}],
-      texture2: [{u:0, v:r}, {u:r, v:0}, {u:r, v:r}],
+      texture1: [{u:0, v:rV}, {u:0, v:0}, {u:rU, v:0}],
+      texture2: [{u:0, v:rV}, {u:rU, v:0}, {u:rU, v:rV}],
       light: 1,
     }
     // HELP
@@ -1649,13 +1711,15 @@ class Editor {
   }
 
   resetMouseAddRec() {
-    let r = this.textureRatio
+    let rU = this.textureRatioU
+    let rV = this.textureRatioV
+
     this.mouse.addRec = {
       mode: false,
       count: 0,
       cords: [{x:0, y:0, z:0}, {x:0, y:0, z:0}],
-      texture1: [{u:0, v:r}, {u:0, v:0}, {u:r, v:0}],
-      texture2: [{u:0, v:r}, {u:r, v:0}, {u:r, v:r}],
+      texture1: [{u:0, v:rV}, {u:0, v:0}, {u:rU, v:0}],
+      texture2: [{u:0, v:rV}, {u:rU, v:0}, {u:rU, v:rV}],
       light: 1,
     }
     $('#add-new-rec').removeClass('green2')
@@ -1883,7 +1947,22 @@ class Editor {
           console.log(this.map.actions)
         }
 
+        if (event.key == 't') {
+          let container = $('#menu-right'); let target = $('#textures-list');
+          container.animate( { scrollTop: container.scrollTop() + target.offset().top - container.offset().top}, 50)
+        }
+
         if (event.key == 'o') {
+          let container = $('#menu-right'); let target = $('#object-list-head');
+          container.animate( { scrollTop: container.scrollTop() + target.offset().top - container.offset().top}, 50)
+        }
+
+        if (event.key == 'c') {
+          let container = $('#menu-right'); let target = $('#clipboard-container');
+          container.animate( { scrollTop: container.scrollTop() + target.offset().top - container.offset().top}, 50)
+        }
+
+        if (event.key == 'ő') {
           console.log('this.textureDir')
           console.log(this.textureDir)
         }
@@ -2557,6 +2636,7 @@ class Editor {
           clone.mapVariableReset(ext)
 
           clone.clipboardMemory = { tris: [], meshs: [], }
+
           clone.graph.map =  clone.map
           clone.origo = new Vec3D(0,0,0)
           clone.mapMemory = []
@@ -2792,9 +2872,18 @@ class Editor {
             cloneMap.player.fYaw = -cloneMap.player.fYaw
           }
 
-          if (cloneMap.lights && Array.isArray(cloneMap.lights) && cloneMap.lights.length == 0) delete cloneMap.lights;
+          const cloneViews = {}
+          for (const key in clone.views) {
+            const { canvas, ctx, ...rest } = clone.views[key]
+            cloneViews[key] = structuredClone(rest)
+          }
 
-          // cloneMap.lights.forEach(light => { light.distance = light.distance });
+          cloneMap.editordata = {
+            views: cloneViews,
+            options: structuredClone(clone.options)
+          }
+
+          if (cloneMap.lights && Array.isArray(cloneMap.lights) && cloneMap.lights.length == 0) delete cloneMap.lights;
 
           let saveMapData = JSON.stringify(cloneMap)
 
@@ -3123,6 +3212,16 @@ class Editor {
       clone.refreshToolbar()
     });
 
+    $(".toolbar-icon[data-mode='grebs']").on("contextmenu", function(e) {
+      e.preventDefault()
+      $(this).removeClass('grebs grebs-reverse')
+      clone.options.grebsLast = !clone.options.grebsLast
+      clone.options.grebsLast ? $(this).addClass('grebs') : $(this).addClass('grebs-reverse');
+      clone.mouse.mode = 'grebs'
+      clone.mouse.modePoint = null;
+      return;
+    });
+
     // RESET TRIANGLE SIDE
     $("#add-new-tri.toolbar-icon").on('contextmenu', function(event) {
       event.preventDefault()
@@ -3171,10 +3270,13 @@ class Editor {
       $("#object-list").find(`[data-id='${clone.mouse.selectedTri.id}']`).text(clone.mouse.selectedTri.name)
     })
 
-    $("#text-ratio").on('input', function() {
-      if ($(this).val() > 1 && $(this).val() < 101) clone.textureRatio = $(this).val();
-      if ($(this).val() < 1) { $(this).val(1); this.textureRatio = 1 }
-      if ($(this).val() > 100) { $(this).val(100); this.textureRatio = 100 }
+    $("#text-ratio-u").on('input', function() {
+      clone.textureRatioU = parseFloat($(this).val())
+      clone.resetMouseAddTri(); clone.resetMouseAddRec();
+    });
+
+    $("#text-ratio-v").on('input', function() {
+      clone.textureRatioV = parseInt($(this).val())
       clone.resetMouseAddTri(); clone.resetMouseAddRec();
     });
 
@@ -3213,7 +3315,7 @@ class Editor {
 
       ///////////////////////
       // canvas window click
-      $(`#${name}`).on('mousedown', function (event) {
+      $(`#${name}`).on('mousedown', async function (event) {
         if (clone.mouse.mode == 'move') $('body').addClass('cursor-move'); 
 
         clone.selectedView = name
@@ -3271,19 +3373,39 @@ class Editor {
           const rect = this.getBoundingClientRect()
           let pos = clone.getMousePosition(clone, event, rect, name)
 
-          clone.map.data[clone.map.aid].forEach(mesh => {
+          const findedList = []
+
+          for (let mesh of clone.map.data[clone.map.aid]) {
             const thisStructure = clone.findMeshById(clone.map.structure, mesh.id)
             if (thisStructure.visible === 1) {
-              const boundingBox = Mesh.getMeshBoundingBox(mesh)            
+              const boundingBox = Mesh.getMeshBoundingBox(mesh)
               if (pos.vx > boundingBox[view.vX].min && pos.vx < boundingBox[view.vX].max &&
                   pos.vy > boundingBox[view.vY].min && pos.vy < boundingBox[view.vY].max)
               {
-                $(document).find("#object-list").find(`li[data-id='${mesh.id}']`).trigger('click')
+                findedList.push(thisStructure)
+                // break;
               }
             }
-          });
+          }
 
-          clone.fullRefreshCanvasGraphics()
+          // FIST (OR LAST) VISIBLE FINDING
+          const thisStructure = clone.options.grebsLast ? findedList.reverse()[0] : findedList[0];
+          if (thisStructure) {
+            await clone.recursiveVisibleChangeClosest(thisStructure)
+  
+            clone.refreshObjectList()
+            clone.fullRefreshCanvasGraphics()
+            $(document).find("#object-list").find(`li[data-id='${thisStructure.id}']`).trigger('click')
+  
+            const $list = $("#object-list")
+            const $target = $list.find(`li[data-id='${thisStructure.id}']`)
+  
+            $target.trigger('click')
+  
+            $list.animate({
+              scrollTop: $list.scrollTop() + $target.position().top
+            }, 300)
+          }
         }
 
         ///////////////////
@@ -3623,34 +3745,191 @@ class Editor {
       }, 200);
     });
 
-    $(document).on('click', '#clipboard-button', () => {
+    // WORLD GRID MULTI
+    $(document).on('click', '.get-grid-multi', function() {
+      let mode = $(this).attr('data-mode')
+      let size = $(this).attr('data-multi-size')
+
+      if (clone.selectedView) {
+        $(this).addClass('bg-success')
+        let worldUnit = parseFloat($(`span.data-grid-value[data-name='${clone.selectedView}']`).attr('data-worldunit'))
+        $(`input[name='move-size'][data-mode='${mode}']`).val(parseInt(size) * parseFloat(worldUnit))
+      } else $(this).addClass('bg-danger');
+
+      setTimeout(() => {
+        $(this).removeClass('bg-success').removeClass('bg-danger')
+      }, 200);
+    });
+
+    // TEXTURE POSITIONS
+    $(document).on('click', '.texture-positions', function() {
+      let mode = $(this).attr('data-position-mode')
+
+      if (clone.mouse.selectedTri && clone.mouse.selectedLock) {
+        clone.saveMapMemory('save')
+
+        let sTri = clone.mouse.selectedTri
+        let sLock = clone.mouse.selectedLock
+
+        const rU = clone.textureRatioU
+        const rV = clone.textureRatioV
+
+        $(this).addClass('bg-success')
+
+        switch (mode) {
+          case 't1':
+            sTri.t[0].u = 0; sTri.t[0].v = rV; sTri.t[1].u = rU; sTri.t[1].v = rV; sTri.t[2].u = rU; sTri.t[2].v = 0;
+            sLock.t[0].u = 0; sLock.t[0].v = rV; sLock.t[1].u = rU; sLock.t[1].v = 0; sLock.t[2].u = 0; sLock.t[2].v = 0;
+            break;
+          case 't2':
+            sTri.t[0].u = 0; sTri.t[0].v = rV; sTri.t[1].u = rU; sTri.t[1].v = 0; sTri.t[2].u = rU; sTri.t[2].v = rV;
+            sLock.t[0].u = 0; sLock.t[0].v = 0; sLock.t[1].u = rU; sLock.t[1].v = 0; sLock.t[2].u = 0; sLock.t[2].v = rV;
+            break;
+          case 't3':
+            sTri.t[0].u = 0; sTri.t[0].v = 0; sTri.t[1].u = rU; sTri.t[1].v = rV; sTri.t[2].u = rU; sTri.t[2].v = 0;
+            sLock.t[0].u = 0; sLock.t[0].v = rV; sLock.t[1].u = rU; sLock.t[1].v = rV; sLock.t[2].u = 0; sLock.t[2].v = 0;
+            break;
+          case 't4':
+            sTri.t[0].u = 0; sTri.t[0].v = rV; sTri.t[1].u = rU; sTri.t[1].v = 0; sTri.t[2].u = 0; sTri.t[2].v = 0;
+            sLock.t[0].u = 0; sLock.t[0].v = rV; sLock.t[1].u = rU; sLock.t[1].v = rV; sLock.t[2].u = rU; sLock.t[2].v = 0;
+            break;
+            case 't5':
+              sTri.t[0].u = 0;   sTri.t[0].v = 0; sTri.t[1].u = rU;  sTri.t[1].v = 0; sTri.t[2].u = 0;   sTri.t[2].v = rV;
+              sLock.t[0].u = rU; sLock.t[0].v = rV; sLock.t[1].u = 0;  sLock.t[1].v = rV; sLock.t[2].u = rU; sLock.t[2].v = 0;
+            break;
+            case 't6':
+              sTri.t[0].u = rU;  sTri.t[0].v = rV; sTri.t[1].u = 0;   sTri.t[1].v = rV; sTri.t[2].u = rU;  sTri.t[2].v = 0;
+              sLock.t[0].u = 0;  sLock.t[0].v = 0; sLock.t[1].u = rU; sLock.t[1].v = 0; sLock.t[2].u = 0;  sLock.t[2].v = rV;
+            break;
+            case 't7':
+              sTri.t[0].u = 0;   sTri.t[0].v = 0; sTri.t[1].u = rU;  sTri.t[1].v = rV; sTri.t[2].u = 0;   sTri.t[2].v = rV;
+              sLock.t[0].u = rU; sLock.t[0].v = 0; sLock.t[1].u = rU; sLock.t[1].v = rV; sLock.t[2].u = 0;  sLock.t[2].v = 0;
+            break;
+            case 't8':
+              sTri.t[0].u = rU;  sTri.t[0].v = 0; sTri.t[1].u = rU;  sTri.t[1].v = rV; sTri.t[2].u = 0;   sTri.t[2].v = 0;
+              sLock.t[0].u = 0;  sLock.t[0].v = rV; sLock.t[1].u = 0;  sLock.t[1].v = 0; sLock.t[2].u = rU; sLock.t[2].v = rV;
+            break
+          default:
+            console.log(mode)
+          break;
+        }
+
+        clone.fullRefreshCanvasGraphics()
+                
+      } else $(this).addClass('bg-danger');
+
+      setTimeout(() => {
+        $(this).removeClass('bg-success').removeClass('bg-danger')
+      }, 200);
+    });
+
+    // INVERT NORMAL
+    $(document).on('click', '.invert-normal', () => {
+      if (this.mouse.selectedTri && this.mouse.selectedLock) {
+        const thisIs = $(event.currentTarget)
+        this.saveMapMemory('save')
+
+        let t1 = this.mouse.selectedTri.p[1]; let t2 = this.mouse.selectedTri.p[2];
+        this.mouse.selectedTri.p[1] = t2; this.mouse.selectedTri.p[2] = t1;
+
+        let l1 = this.mouse.selectedLock.p[1]; let l2 = this.mouse.selectedLock.p[2];
+        this.mouse.selectedLock.p[1] = l2; this.mouse.selectedLock.p[2] = l1;
+
+        clone.fullRefreshCanvasGraphics()
+
+        thisIs.addClass('bg-success')
+        setTimeout(() => {
+          thisIs.removeClass('bg-success')
+        }, 200);
+      }
+    });
+
+    // MOVE POINTS
+    $(document).on('click', '.move-points', (event) => {
+      if (this.mouse.selectedTri && this.mouse.selectedLock) {
+        const thisIs = $(event.currentTarget)
+        // this.saveMapMemory('save')
+        const mode = thisIs.attr('data-move-mode')
+
+        if (mode == 'triangle') {
+          this.saveMapMemory('save')
+          let save = this.mouse.selectedTri.p[0]
+          this.mouse.selectedTri.p[0] = this.mouse.selectedTri.p[1]
+          this.mouse.selectedTri.p[1] = this.mouse.selectedTri.p[2]
+          this.mouse.selectedTri.p[2] = save
+
+        } else if (mode == 'locket') {
+          this.saveMapMemory('save')
+          let save = this.mouse.selectedLock.p[0]
+          this.mouse.selectedLock.p[0] = this.mouse.selectedLock.p[1]
+          this.mouse.selectedLock.p[1] = this.mouse.selectedLock.p[2]
+          this.mouse.selectedLock.p[2] = save
+        }
+
+        clone.fullRefreshCanvasGraphics()
+
+        thisIs.addClass('bg-success')
+        setTimeout(() => {
+          thisIs.removeClass('bg-success')
+        }, 200);
+      }
+    });
+
+    $(document).on('click', '.clipboard-button', (event) => {
+      const type = $(event.currentTarget).attr('data-type')
+      if (type != 'insert' && type != 'insertdel') return;
+
       if (this.mouse.selectedMeshId) {
+        // FUNCTIONS
+        function newIdWidthTris(mesh) {
+          const copied = mesh.tris.map(tri => {
+            const clone = structuredClone(tri)
+            clone.id = Date.now().toString().slice(-5) + '-' + Math.floor(Math.random() * 99999)
+            return clone
+          })
+          return copied;
+        }
+
         let mapDataSelected = clone.map.data[clone.map.aid].find(element => element.id == this.mouse.selectedMeshId)
         let mapStructureSelected = clone.findMeshById(clone.map.structure, this.mouse.selectedMeshId)       
 
-        if (Array.isArray(this.clipboardMemory.tris) && this.clipboardMemory.tris.length > 0) {
-          this.clipboardMemory.tris.forEach(tri => {
-            mapDataSelected.tris.push(tri)
-          });
-          this.clipboardMemory.tris = []
+        mapStructureSelected.status = 1; mapStructureSelected.visible = true;
+
+        if (Array.isArray(this.clipboardMemory.tris) && this.clipboardMemory.tris.length > 0) {  
+          const copied = newIdWidthTris(this.clipboardMemory)
+          mapDataSelected.tris.push(...copied)
+
+          if (type == 'insertdel') this.clipboardMemory.tris = [];
         }
 
         if (Array.isArray(this.clipboardMemory.meshs) && this.clipboardMemory.meshs.length > 0) {
           this.clipboardMemory.meshs.forEach(mesh => {
-            // structure
+            // NEW ID
+            const newId = Mesh.getInstanceCount() + 1;
+            Mesh.setInstanceCount(newId)
+            // MESH CLONE
+            const meshClone = structuredClone(mesh)
+            // ADD MAPDATA
+            meshClone.id = newId
+            meshClone.parent_id = mapDataSelected.id
+            if (meshClone.tris) meshClone.tris = newIdWidthTris(mesh);
+            this.map.data[this.map.aid].push(meshClone)
+            // ADD STRUCTURE
             let newMesh = {
-              id: mesh.id,
+              id: newId,
               status: 1,
               visible: true,
               child: []
             }
             mapStructureSelected.child.push(newMesh)
-            // mapdata
-            mesh.parent_id = mapDataSelected.id
-            this.map.data[this.map.aid].push(mesh)
           });
-          this.clipboardMemory.meshs = []
+
+          if (type == 'insertdel') {
+            this.clipboardMemory.meshs = []
+          }
         }
+
+        localStorage.setItem('clipboardMemory',  JSON.stringify(this.clipboardMemory))
 
         clone.refreshObjectList()
         clone.fullRefreshCanvasGraphics()
@@ -3661,6 +3940,7 @@ class Editor {
     $(document).on('click', '#clipboard-reset', function () {
       clone.clipboardMemory.meshs = []
       clone.clipboardMemory.tris = []
+      localStorage.setItem('clipboardMemory',  JSON.stringify(this.clipboardMemory))
 
       $("#clipboard-content").html('')
       $("#clipboard-container").hide()
@@ -4247,17 +4527,7 @@ class Editor {
     // SHOW/HIDE ALL LIGHT
     $(document).on('click', '#light-show-hide', function() {      
       clone.options.showAllLights = !clone.options.showAllLights
-
-      $(this).removeClass('eye-light-up eye-light-down')
-      if (clone.options.showAllLights) {
-        $(this).addClass('eye-light-up')
-        $("#light-list").removeClass('bg-gray-6')
-      } else {
-        $(this).addClass('eye-light-down')
-        $("#light-list").addClass('bg-gray-6')
-      }
-
-      clone.fullRefreshCanvasGraphics()
+      clone.refreshLightsShowHideButton()
     });
 
     // SELECT LIGHT
@@ -4421,17 +4691,7 @@ class Editor {
     // SHOW/HIDE ALL being
     $(document).on('click', '#being-show-hide', function() {      
       clone.options.showAllbeings = !clone.options.showAllbeings
-
-      $(this).removeClass('eye-being-up eye-being-down')
-      if (clone.options.showAllbeings) {
-        $(this).addClass('eye-being-up')
-        $("#being-list").removeClass('bg-gray-6')
-      } else {
-        $(this).addClass('eye-being-down')
-        $("#being-list").addClass('bg-gray-6')
-      }
-
-      clone.fullRefreshCanvasGraphics()
+      clone.refreshBeingsShowHideButton()
     });
 
     // SELECT being
@@ -4603,7 +4863,7 @@ class Editor {
         let id = Number($(this).closest('li').attr('data-id'))        
         if (id) {
           let thisMeshElementStructure = clone.findMeshById(clone.map.structure, id)
-          if (thisMeshElementStructure) {          
+          if (thisMeshElementStructure) {
             const newVisible = thisMeshElementStructure.visible === 0 ? 1 : 0;
             clone.recursiveVisibleChange(thisMeshElementStructure, newVisible)
             // $("#object-list").find(`[data-id='${id}']`).css('border', '1px solid red')
@@ -4728,7 +4988,7 @@ class Editor {
     });
 
     // CLIPBOARD 
-    $(document).on('click', ".clipboard", function(event) {      
+    $(document).on('click', ".clipboard", function(event) {      /// 4921
       event.stopPropagation()
       clone.saveMapMemory('save')
 
@@ -4738,6 +4998,8 @@ class Editor {
       if (selectedObject) {
         clone.deleteLocketBrothers(triId) // delete locket brother
         clone.clipboardMemory.tris.push(selectedObject.tris.filter(triangle => triangle.id == triId)[0]) // copy clipboard
+        localStorage.setItem('clipboardMemory', JSON.stringify(clone.clipboardMemory))
+
         selectedObject.tris = selectedObject.tris.filter(triangle => triangle.id != triId) // delete triangle
       }
       clone.mouse.selectedTri = null
@@ -4762,12 +5024,12 @@ class Editor {
         delete cloneTri.locket
 
         clone.clipboardMemory.tris.push(cloneTri) // copy clipboard
+        localStorage.setItem('clipboardMemory', JSON.stringify(clone.clipboardMemory))
       }
       clone.mouse.selectedTri = null
 
       clone.refreshObjectList()
       clone.fullRefreshCanvasGraphics()
-
     });
 
     // DUPLICATE
@@ -4787,24 +5049,20 @@ class Editor {
           newMesh.name = 'duplicated-' + newMesh.id;
           newMesh.lineColor = 'orange';
           newMesh.tris = [];
-      
-          let addNum = $("input[name='move-size'][data-mode='mesh']").val() ? parseFloat($("input[name='move-size'][data-mode='mesh']").val()) : 0.5;
-
-          addNum = 0    // !!!!
 
           let getDatas = mapData.find(mesh => mesh.id == dupicatedStructure.id);
       
           getDatas.tris.forEach(tri => {
             let cloneTri = clone.deepCopy(tri);
             newMesh.tris.push(new Triangle(
-              new Vec3D(cloneTri.p[0].x + addNum, cloneTri.p[0].y + addNum, cloneTri.p[0].z + addNum),
-              new Vec3D(cloneTri.p[1].x + addNum, cloneTri.p[1].y + addNum, cloneTri.p[1].z + addNum),
-              new Vec3D(cloneTri.p[2].x + addNum, cloneTri.p[2].y + addNum, cloneTri.p[2].z + addNum),
+              new Vec3D(cloneTri.p[0].x, cloneTri.p[0].y, cloneTri.p[0].z),
+              new Vec3D(cloneTri.p[1].x, cloneTri.p[1].y, cloneTri.p[1].z),
+              new Vec3D(cloneTri.p[2].x, cloneTri.p[2].y, cloneTri.p[2].z),
               cloneTri.t[0], cloneTri.t[1], cloneTri.t[2],
               cloneTri.texture, cloneTri.rgba, cloneTri.normal, null
             ));
           });
-      
+
           // ADD NEW ID-S
           let lastIdNumber = Mesh.getInstanceCount();
           let idMapping = {};
@@ -5107,6 +5365,9 @@ class Editor {
           let mapdataRow = clone.map.data[clone.map.aid].find(mesh => mesh.id == meshId)
           
           clone.clipboardMemory.meshs.push(mapdataRow)
+
+          localStorage.setItem('clipboardMemory', JSON.stringify(clone.clipboardMemory))
+
           // delete structure
           clone.deleteMeshParent(clone.map.structure, meshId)
           // delete data
@@ -5153,6 +5414,7 @@ class Editor {
         });
 
         clone.clipboardMemory.meshs.push(meshCopy)
+        localStorage.setItem('clipboardMemory', JSON.stringify(clone.clipboardMemory))
 
         // STRUCTURE
         let newStructureNode = {
@@ -5196,6 +5458,7 @@ class Editor {
         meshCopy.id = newId
         meshCopy.parent_id = null
         clone.clipboardMemory.meshs.push(meshCopy)
+        localStorage.setItem('clipboardMemory', JSON.stringify(clone.clipboardMemory))
 
         // STRUCTURE
         let newStructureNode = {

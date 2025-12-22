@@ -72,7 +72,7 @@
                 </div>
                 <div>
                     <span class="text-small">extension: </span>
-                    <select id="modal-ext" data-type="short" class="fw-bold ms-2 me-2">
+                    <select id="modal-ext" data-type="medium" class="fw-bold ms-2 me-2">
                         <option value="mtuc" selected>.mtuc - map</option>
                         <option value="otuc">.otuc - object</option>
                     </select>
@@ -95,22 +95,17 @@
                 <div class="toolbar-icon move" data-mode="move" title="Moving view screens. (hand)"></div>
                 <div class="toolbar-icon origo" data-mode="origo" title="Moving the origo point."></div>
                 <div class="toolbar-icon grebs" data-mode="grebs" title="Grabs the Mesh on the screen."></div>
-                <div class="toolbar-icon point" data-mode="point" title="Moving the points of a triangle."></div>
-
                 <div class="toolbar-line"></div>
-
+                <div class="toolbar-icon point" data-mode="point" title="Moving the points of a triangle."></div>
                 <div id="add-new-tri" data-mode="exception" class="toolbar-icon add-triangle-1 line-left" title="Add a new triangle. There are two ways. Right click resets the state."></div>
                 <div id="add-new-rec" data-mode="exception" class="toolbar-icon add-rectangle" title="Add a new rectangle."></div>
+                <div class="toolbar-line"></div>
                 <div class="toolbar-icon"></div>
                 <!--
                 <div class="toolbar-icon d-flex justify-content-end align-items-end">
                     <button type="button" name="addid" class="me-2">+ID</button>
                 </div>
                 -->
-                <div class="p-0 m-0 d-flex flex-column justify-content-start align-items-center">
-                    <span style="font-size: 13px;">Text. ratio:</span>
-                    <input type="number" id="text-ratio" value="1" class="text-end">
-                </div>
             </div>
         </div>
     </div>
@@ -134,7 +129,8 @@
                     <!-- javascript -->
                 </div>
                 <div id="clipboard-reset">✖</div>
-                <button id="clipboard-button" type="button" class="hover-pointer">Insert</button>
+                <button type="button" class="clipboard-button hover-pointer" data-type="insert">Insert</button>
+                <button type="button" class="clipboard-button hover-pointer" data-type="insertdel">Insert and delete</button>
             </div>
 
             <!-- ANIMATIONS -->
@@ -417,10 +413,10 @@
                             <div class="number-container">
                                 <button class="get-grid-size d-inline-block text-mini" data-half-size="false" data-mode="mesh">GRID</button>
                                 <button class="get-grid-size d-inline-block text-mini" data-half-size="true" data-mode="mesh">GR/2</button>
+                                <button class="get-grid-multi d-inline-block text-mini" data-multi-size="2" data-mode="mesh">GR*2</button>
+                                <button class="get-grid-multi d-inline-block text-mini" data-multi-size="4" data-mode="mesh">GR*4</button>
                                 <div class="size-number-box" data-mode="mesh" data-number="0.001">0.001</div>
-                                <div class="size-number-box" data-mode="mesh" data-number="0.005">0.005</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="0.01">0.01</div>
-                                <div class="size-number-box" data-mode="mesh" data-number="0.05">0.05</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="0.1">0.1</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="0.5">0.5</div>
                             </div>
@@ -450,7 +446,7 @@
                             </div>
                             <div class="side-row mt-1">
                                 <span>line-color:</span>
-                                <select name="line-color" data-type="short">
+                                <select name="line-color" data-type="medium">
                                     <option value="red">red</option>
                                     <option value="green">green</option>
                                     <option value="blue">blue</option>
@@ -460,6 +456,36 @@
                                     <option value="purple">purple</option>
                                     <option value="lime">lime</option>
                                     <option value="gray">gray</option>
+                                    <option value="#2E8B57">SeaGreen</option>
+                                    <option value="#FFF5EE">SeaShell</option>
+                                    <option value="#A0522D">Sienna</option>
+                                    <option value="#FFFAFA">Snow</option>
+                                    <option value="#00FF7F">SpringGreen</option>
+                                    <option value="#D2B48C">Tan</option>
+                                    <option value="#008080">Teal</option>
+                                    <option value="#D8BFD8">Thistle</option>
+                                    <option value="#FF6347">Tomato</option>
+                                    <option value="#40E0D0">Turquoise</option>
+                                    <option value="#EE82EE">Violet</option>
+                                    <option value="#F5DEB3">Wheat</option>
+                                    <option value="#FFFF00">Yellow</option>
+                                    <option value="#9ACD32">YellowGreen</option>
+                                    <option value="#F5FFFA">MintCream</option>
+                                    <option value="#FFE4E1">MistyRose</option>
+                                    <option value="#FFE4B5">Moccasin</option>
+                                    <option value="#FFDEAD">NavajoWhite</option>
+                                    <option value="#FDF5E6">OldLace</option>
+                                    <option value="#808000">Olive</option>
+                                    <option value="#6B8E23">OliveDrab</option>
+                                    <option value="#FFA500">Orange</option>
+                                    <option value="#FF4500">OrangeRed</option>
+                                    <option value="#DA70D6">Orchid</option>
+                                    <option value="#EEE8AA">PaleGoldenRod</option>
+                                    <option value="#98FB98">PaleGreen</option>
+                                    <option value="#AFEEEE">PaleTurquoise</option>
+                                    <option value="#DB7093">PaleVioletRed</option>
+                                    <option value="#FFEFD5">PapayaWhip</option>
+                                    <option value="#FFDAB9">PeachPuff</option>
                                 </select>
                             </div>
                         </div>
@@ -623,8 +649,34 @@
                 </div>
                 <div id="object-add-tri" class="box-1">
                     <div class="right-screen-options">
-                        <div class="left-side">
+                        <div class="left-side mb-2">
                             <div class="side-row">
+                                <div class="m-0 d-flex flex-column justify-content-start align-items-center ps-5">
+                                    <span style="font-size: 13px;">U ratio:</span>
+                                    <input type="number" id="text-ratio-u" value="1" min="0" max="30" step="0.1" class="text-end">
+                                </div>
+                                <div class="m-0 d-flex flex-column justify-content-start align-items-center pe-5 me-5">
+                                    <span style="font-size: 13px;">V ratio:</span>
+                                    <input type="number" id="text-ratio-v" value="1" min="0" max="30" step="0.1" class="text-end">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="right-side">
+                            <div class="side-row">
+                                <div class="texture-positions grid-item w-30" data-position-mode="t1">T-1</div>
+                                <div class="texture-positions grid-item w-30" data-position-mode="t2">T-2</div>
+                                <div class="texture-positions grid-item w-30" data-position-mode="t3">T-3</div>
+                                <div class="texture-positions grid-item w-30" data-position-mode="t4">T-4</div>
+                            </div>
+                            <div class="side-row">
+                                <div class="texture-positions grid-item w-30" data-position-mode="t5">T-5</div>
+                                <div class="texture-positions grid-item w-30" data-position-mode="t6">T-6</div>
+                                <div class="texture-positions grid-item w-30" data-position-mode="t7">T-7</div>
+                                <div class="texture-positions grid-item w-30" data-position-mode="t8">T-8</div>
+                            </div>
+                        </div>
+                        <div class="left-side mb-2">
+                            <div class="side-row mt-5">
                                 <span>Normal: </span>
                                 <select name="lock-normal" data-type="short" class="me-3">
                                     <option value="false">Off</option>
@@ -633,17 +685,37 @@
                             </div>
                         </div>
                         <div class="right-side">
-                            <div class="side-row">
+                            <div class="side-row mt-3">
+                                <div class="invert-normal grid-item w-100">Invert Normal</div>
                             </div>
                         </div>
-                        <div class="side-row">
+
+                        <div class="side-row mt-2">
+                            <div class="left-side mb-2">
+                                <div class="side-row">
+                                    <div class="d-flex flex-column justify-content-center align-items-center w-50">
+                                        <span class="move-points grid-item text-small w-95" data-move-mode="triangle" title="Tri Move Points">Tri M.P.</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="right-side mb-2">
+                                <div class="side-row">
+                                    <div class="d-flex flex-column justify-content-center align-items-center w-50">
+                                        <span class="move-points grid-item text-mini w-95" data-move-mode="locket" title="Lock Move Points">Lock M.P.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="side-row mt-2">
                             <div class="number-container">
                                 <button class="get-grid-size d-inline-block text-mini" data-half-size="false" data-mode="rectangle">GRID</button>
                                 <button class="get-grid-size d-inline-block text-mini" data-half-size="true" data-mode="rectangle">GR/2</button>
+                                <button class="get-grid-multi d-inline-block text-mini" data-multi-size="2" data-mode="rectangle">GR*2</button>
+                                <button class="get-grid-multi d-inline-block text-mini" data-multi-size="4" data-mode="rectangle">GR*4</button>
                                 <div class="size-number-box" data-mode="rectangle" data-number="0.001">0.001</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="0.005">0.005</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="0.01">0.01</div>
-                                <div class="size-number-box" data-mode="rectangle" data-number="0.05">0.05</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="0.1">0.1</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="0.5">0.5</div>
                             </div>

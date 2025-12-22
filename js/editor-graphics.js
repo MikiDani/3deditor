@@ -30,7 +30,7 @@ export class Graphics {
     this.GAMEWIDTH = 800; this.GAMEHEIGHT = 480; this.RATIO = 1;
     // this.GAMEWIDTH = 1024; this.GAMEHEIGHT = 768; this.RATIO = 1;
     // this.GAMEWIDTH = 320; this.GAMEHEIGHT = 180; this.RATIO = 3;
-    
+
     // this.GAMEWIDTH = 640; this.GAMEHEIGHT = 480; this.RATIO = 0.5;
     // this.GAMEWIDTH = 640; this.GAMEHEIGHT = 360; this.RATIO = 0.5;
 

@@ -70,7 +70,7 @@ export default class Gameplay {
         break;
       }
     }
-    //console.log(this.game.autoMovePlayerData)
+    // console.log(this.game.autoMovePlayerData)
   }
 
   async refreshHeandLights() {
@@ -537,7 +537,9 @@ export default class Gameplay {
 
   checkCrash(testBox, ignoreBeingId = null) {
     // PLAYER CHECK HIT
-    const half = this.game.playerBoundingBox.clone(); // Vector3 (0.3, 1, 0.3)
+    const half = this.game.playerBoundingBox.clone();
+    half.y = 1   
+
     const playerCenter = this.game.player.position.clone();
     const playerBox = new THREE.Box3(
       playerCenter.clone().sub(half),
@@ -590,8 +592,8 @@ export default class Gameplay {
     }
   }
 
-  async startActions() {
-    this.game.map.actionelements.forEach(action => {
+  async startActions() {    
+    this.game.map.actionelements.forEach(action => {      
       // ALL AUTO ACTIONS
       if (action[1].conditions.click == 'auto') {
         const meshGroup = action[0]
@@ -936,7 +938,7 @@ export default class Gameplay {
             meshName: mesh.name,
             state: false,
             min: 0,
-            max: 90,
+            max: 68,
             value: 0,
             waiting: 10,
             valueAdd: null,

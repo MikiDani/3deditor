@@ -55,11 +55,9 @@ export default class Game {
     this.activePlayedSounds = []
     
     // inventory datas
-    this.playerObjectsDefault = [4,7,0,1,2,3]
-    // this.playerObjects = [4,5,6,7,0,1,2,3,3,4,5,6,7,0,1,2,3]
+    this.playerObjectsDefault = [1]
     this.playerObjects = this.playerObjectsDefault
-
-    this.playerProtectedObjects = [7]
+    this.playerProtectedObjects = []
 
     this.$loading = {}
     this.$menu = {}
@@ -257,6 +255,9 @@ export default class Game {
 
   addConsoleRow(text, element, uppercase = false, color) {
     color = color ? 'text-ok' : 'text-error'
+
+    $("#loading-console").html('') // !!
+
     $("#loading-console").append(`<${element} class="${color}">${uppercase ? text.toUpperCase() : text}</${element}>`).scrollTop($("#loading-console")[0].scrollHeight)
   }
 

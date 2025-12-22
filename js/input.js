@@ -843,14 +843,11 @@ export default class Input {
     })
   }
 
-  willCollide(testPos) {    
+  willCollide(testPos) {
     const cameraBox = new THREE.Box3().setFromCenterAndSize(testPos, this.game.playerBoundingBox);
 
     // Statikus objektumok
     let collides = this.game.boundingBoxes.some(box => box.intersectsBox(cameraBox));
-
-    // Dinamikus objektumok
-    // collides ||= this.game.dynamicBoundingBoxes.some(entry => entry.box.intersectsBox(cameraBox));  // !!
 
     return collides;
   }

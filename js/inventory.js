@@ -155,6 +155,7 @@ export default class Inventory {
         for (let i = 0; i < listElements.length; i++) {
           let objId = listElements[i]
           let objectData = await this.getInventorySelecteObjectData(objId)
+          if (objectData == null) return;
 
           objectData.objId = objId // ADD this.game.loadedObjects ID
 

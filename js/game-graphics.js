@@ -26,15 +26,15 @@ export default class Graphics {
     // console.log(this.checkGPU())
     if (this.checkGPU()) {
       // HIGH
-      // console.log('High')
-      this.scX = window.innerWidth / 2
-      this.scY = window.innerHeight / 2
-      this.far = 10
+      console.log('High')
+      this.scX = window.innerWidth / 1
+      this.scY = window.innerHeight / 1
+      this.far = 30
     } else {
       // LOW
-      // console.log('Low')
-      this.scX = window.innerWidth / 7
-      this.scY = window.innerHeight / 7
+      console.log('Low')
+      this.scX = window.innerWidth / 2
+      this.scY = window.innerHeight / 2
       this.far = 10
     }
 

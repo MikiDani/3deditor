@@ -342,6 +342,13 @@ select[data-type=short] {
   padding-left: 1px;
 }
 
+select[data-type=medium] {
+  width: 68px;
+  border-radius: 7px 7px 7px 7px;
+  border: 0;
+  padding-left: 1px;
+}
+
 select[data-type=long] {
   width: 117px;
   border-radius: 7px 7px 7px 7px;
@@ -448,6 +455,10 @@ button[class="3d-buttons"] {
 
 .grebs {
   background-image: url("../img/icons/grebs.svg");
+}
+
+.grebs-reverse {
+  background-image: url("../img/icons/grebs-reverse.svg");
 }
 
 .add-triangle-1 {
@@ -931,6 +942,10 @@ button[class="3d-buttons"] {
 
 .w-90 {
   width: 90% !important;
+}
+
+.w-95 {
+  width: 95% !important;
 }
 
 .w-70 {

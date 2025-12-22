@@ -443,7 +443,7 @@ export default class Loader {
         }
         // MINIMUM AMBIENT LIGHT
         if (true) {
-          const ambient = new THREE.AmbientLight('#ffffff', 0.8)  // 0.05
+          const ambient = new THREE.AmbientLight('#ffffff', 0.6)  // 0.05
           this.game.scene.add(ambient)
         }
 
@@ -610,8 +610,6 @@ export default class Loader {
 
   createTHREEObject(object, group, actualData, first = false) {
     for (let mesh of actualData) {   
-
-      console.log(mesh)
 
       const meshGroup = new THREE.Group()
 
