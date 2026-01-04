@@ -15,6 +15,15 @@ export default class Input {
     this.lastEventMouse
     this.chechLookInterval = null
 
+    // TURN OFF BROWSER ZOOM
+    $(document).on("keydown", function(e) {
+      if (e.ctrlKey && (e.key === "+" || e.key === "-" || e.key === "0")) e.preventDefault();
+    })
+    document.addEventListener("wheel", function(e) {
+      if (e.ctrlKey) e.preventDefault();
+    }, { passive: false })
+    // ---
+
     this.ideiglenesMenuInputs() // ! Ideiglenes
   }
 
@@ -55,6 +64,20 @@ export default class Input {
 
     $("#console-reset").on('click', () => {
       $("#loading-console").html('')
+      $("#loading-console-last").html('')
+    });
+
+    $("#console-button1").on('click', (event) => {
+      let state = parseInt($(event.currentTarget).attr('data-state'))
+      if (state) {
+        $(event.currentTarget).attr('data-state', 0).text('ALL ROW')
+        $("#loading-console").hide()
+        $("#loading-console-last").show()
+      } else {
+        $(event.currentTarget).attr('data-state', 1).text('ONE LINE')
+        $("#loading-console").show()
+        $("#loading-console-last").hide()
+      }
     });
 
     // CHECK CURSOR POINT AND CLICK INTERVAL
@@ -63,7 +86,7 @@ export default class Input {
 
     $('#gravity-button').on('click', (event) => {
       let $this = $(event.target)
-      this.game.gravity = $this.prop('checked') ? gravityValue : 0;
+      this.game.gravity = $this.prop('checked') ? this.game.gravityValue : 0;
     });
 
     $('#lights-button').on('click', (event) => {
@@ -124,8 +147,6 @@ export default class Input {
 
     $('#local-savegame-button').on('click', async () => {
       if (this.game.mapLoading) {
-
-        console.log('ITTTTT')
 
         const request = await this.game.loader.saveGame('local')
         // RELOAD SAVED GAMES FILE LIST
@@ -844,12 +865,17 @@ export default class Input {
   }
 
   willCollide(testPos) {
-    const cameraBox = new THREE.Box3().setFromCenterAndSize(testPos, this.game.playerBoundingBox);
+    const size = this.game.playerBoundingBox.clone()
 
-    // Statikus objektumok
-    let collides = this.game.boundingBoxes.some(box => box.intersectsBox(cameraBox));
+    // HEAD AND JUMP CORRECTION
+    const center = testPos.clone()
+    center.y += (this.game.playerYModify - size.y / 2)
 
-    return collides;
+    const cameraBox = new THREE.Box3().setFromCenterAndSize(center, size)
+
+    return this.game.boundingBoxes.some(box =>
+      box.intersectsBox(cameraBox)
+    )
   }
 
   testMove(offset, allowStep = false) {
@@ -1042,8 +1068,8 @@ export default class Input {
 
     if (this.game.jumpState.isJumping) {
       const elapsed = performance.now() - this.game.jumpState.startTime;
-      const t = Math.min(elapsed / this.game.jumpState.duration, 1)
-      const newY = THREE.MathUtils.lerp(this.game.jumpState.startY, this.game.jumpState.targetY, t)
+      const maxJumpHeight = Math.min(elapsed / this.game.jumpState.duration, 1)
+      const newY = THREE.MathUtils.lerp(this.game.jumpState.startY, this.game.jumpState.targetY, maxJumpHeight)
 
       const jumpOffset = new THREE.Vector3(0, newY - this.game.player.position.y, 0)
       const testPos = this.game.player.position.clone().add(jumpOffset)
@@ -1054,10 +1080,10 @@ export default class Input {
         this.game.jumpState.isJumping = false
       }
 
-      if (t >= 1) this.game.jumpState.isJumping = false
+      if (maxJumpHeight >= 0.5) this.game.jumpState.isJumping = false
     }
 
-    // ----- GRAVITÁCIÓ -----
+    // ----- GRAVITY -----
     if (!this.game.jumpState.isJumping) {
 
       const gravityOffset = (this.game.gravity)

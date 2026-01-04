@@ -22,7 +22,7 @@ export default class Game {
 
     this.mapLoading = false
 
-    this.filename = 'cottage-1'
+    this.filename = 'test-map-1'
     this.ext = 'mtuc'
 
     this.animating = false
@@ -90,9 +90,8 @@ export default class Game {
 
     // ---
     this.boundingBoxes = []
-    this.playerBoundingBox = new THREE.Vector3(0.4, 1, 0.4)
-
-    this.renderInterval = 20  // 20
+    this.playerBoundingBox = new THREE.Vector3(0.4, 0.6, 0.4)
+    this.playerYModify = -0.02
 
     // HELP 
     this.ghostMode = false
@@ -159,7 +158,7 @@ export default class Game {
 
       // PLAY MUSIC
       this.music = $("#music-button").prop("checked")
-     if (this.music) this.sound.play(16, {volume: 0.2, loop: true})
+     if (this.music) this.sound.play(1, {volume: 0.2, loop: true})
     }
 
     // REAL LOOP
@@ -254,11 +253,11 @@ export default class Game {
   }
 
   addConsoleRow(text, element, uppercase = false, color) {
-    color = color ? 'text-ok' : 'text-error'
-
-    $("#loading-console").html('') // !!
-
-    $("#loading-console").append(`<${element} class="${color}">${uppercase ? text.toUpperCase() : text}</${element}>`).scrollTop($("#loading-console")[0].scrollHeight)
+    color = color ? 'text-ok' : 'text-error';
+    // ALL LINE
+    $("#loading-console").append(`<${element} class="${color}">${uppercase ? text.toUpperCase() : text}</${element}>`).scrollTop($("#loading-console")[0].scrollHeight);
+    // LAST LINE
+    $("#loading-console-last").html('').append(`<${element} class="${color}">${uppercase ? text.toUpperCase() : text}</${element}>`)
   }
 
   async buildHtmlElements() {
@@ -268,8 +267,10 @@ export default class Game {
         <div class="full-size d-flex flex-column justify-content-center align-items-center">
           <div id="console-container" class="d-flex flex-column justify-content-center align-items-center bg-dark w-50">
             <div id="loading-text">Loading...</div>
-            <div id="loading-console"></div>
+            <div id="loading-console" style="display:none;"></div>
+            <div id="loading-console-last"></div>
             <div id="console-reset">RESET</div>
+            <div id="console-button1" data-state="0">ONE LINE</div>
             </div>
           </div>
       </div>`)
@@ -310,7 +311,7 @@ export default class Game {
                   <div id="local-savegame-list" class="d-flex flex-column justify-content-start align-items-center"></div>
 
                   <div class="text-center">
-                    <input id="file-input" type="text" class="w-50" name="filename" value="cottage-1" data-ext="mtuc">
+                    <input id="file-input" type="text" class="w-50" name="filename" value="${this.filename}" data-ext="${this.ext}">
                   </div>
                   <div class="my-2">
                       <input type="checkbox" id="music-button">
@@ -569,6 +570,26 @@ removeBoundingBoxOfMap(mesh) {
     }
     // RESTART MOUSE CHECK INTERVAL
     this.input.checkLookingInterval()
+  }
+
+  boxFromDataRow(dataRow, ratio = 1) {
+    const box = new THREE.Box3()
+  
+    dataRow.forEach(mesh => {
+      if (!mesh.tris) return
+  
+      mesh.tris.forEach(tri => {
+        tri.p.forEach(pt => {
+          box.expandByPoint(new THREE.Vector3(
+            pt.x * ratio,
+            pt.y * ratio,
+            pt.z * ratio
+          ))
+        })
+      })
+    })
+  
+    return box
   }
 }
 

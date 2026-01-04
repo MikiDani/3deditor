@@ -154,7 +154,7 @@ export class Triangle {
 
 export class Mesh {
     static instanceCount = 1;
-    constructor(name = 'noname', parent_id = null, type = null) {
+    constructor(name = 'noname', parent_id = null, type = null, transparent = null) {
         this.name = name
         Mesh.instanceCount++
 
@@ -166,6 +166,8 @@ export class Mesh {
         this.tris = []
         this.lineColor = 'yellow'
         this.actions = []
+
+        this.transparent = transparent
 
         // console.log('staticMash count: ', Mesh.instanceCount)
     }

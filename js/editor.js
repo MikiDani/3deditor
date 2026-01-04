@@ -122,6 +122,7 @@ class Editor {
       showAllLights: true,
       showAllbeings: true,
       grebsLast: false,
+      origo: new Vec3D(0,0,0),
     }
 
     this.animationPlayState = false;
@@ -139,7 +140,6 @@ class Editor {
     this.textureRatio = 1
     this.textureRatioU = 1
     this.textureRatioV = 1
-    this.origo = new Vec3D(0,0,0)
 
     this.mapVariableReset()
     this.mouseVariableReset()
@@ -682,7 +682,7 @@ class Editor {
 
   async loadMapData() {
     // DEFAULT MAP
-    let filename = 'cottage-1'; let ext = 'mtuc';
+    let filename = 'test-map-1'; let ext = 'mtuc';
     
     // DEFAULT OBJECT
     // let filename = 'zombi'; let ext = 'otuc';
@@ -719,13 +719,17 @@ class Editor {
     }
   }
 
-  optionElementMaker(data, value, first = null) {
+  optionElementMaker(data, value, first = null, filter = null) {
     let elements = first ? `<option value=''>${first}</option>` : '';
     if (data) {
-      elements += data.map(row => {
-        let selected = (row.id == value) ? 'selected' : null;
-        return `<option value="${row.id}" ${selected}>#${row.id}. | ${row.name}</option>`;
-      });
+      for (let row of data) {
+        if (filter && row.name.toLowerCase().includes(filter.toLowerCase())) continue;
+        if (filter && row.name.toLowerCase().includes(filter.toUpperCase())) continue;
+
+        let selected = (row.id == value) ? 'selected' : '';
+
+        elements += `<option value="${row.id}" ${selected}>#${row.id}. | ${row.name}</option>`;
+      }
     }
     return elements;
   }
@@ -989,7 +993,7 @@ class Editor {
               <div class='d-inline-block pe-1 text-center'>
                 <span class="d-inline-block width-100px" title="Select Mesh.">Mesh:</span>
                 <select data-type="long" name="moveactions-mash" data-action-id="${animAction.id}" data-event-id="${event.id}" class="mx-3">
-                  ${this.optionElementMaker(this.map.data[this.map.aid], null, 'select Mesh…')}
+                  ${this.optionElementMaker(this.map.data[this.map.aid], null, 'select Mesh…', 'duplicated')}
                 </select>
               </div>
               <div class='d-inline-block ps-1 mt-2 text-center'>
@@ -1898,7 +1902,6 @@ class Editor {
       event.preventDefault()// console.log("Jobb klikk letiltva!")
     });
 
-
     $(document).on('keydown', (event) => {
       if (!$(':focus').is('input, textarea')) {
         if (event.key == '1') $(".toolbar-icon[data-mode='move']").trigger('click');
@@ -1914,6 +1917,10 @@ class Editor {
           if (clone.mouse?.selectedMeshId) $("#add-new-rec").trigger('click');
           else { $("#add-new-rec").addClass('bg-red-p'); setTimeout(() => { $("#add-new-rec").removeClass('bg-red-p')}, 100) }
  
+        if (event.key == 'F5') $(".reset-center-button[data-name='XYview-canvas']").trigger('click');
+        if (event.key == 'F6') $(".reset-center-button[data-name='XZview-canvas']").trigger('click');
+        if (event.key == 'F7') $(".reset-center-button[data-name='ZYview-canvas']").trigger('click');
+
         if (event.key == 'i') {
           console.log('this.map:')
           console.log(this.map)
@@ -2638,7 +2645,7 @@ class Editor {
           clone.clipboardMemory = { tris: [], meshs: [], }
 
           clone.graph.map =  clone.map
-          clone.origo = new Vec3D(0,0,0)
+          clone.options.origo = new Vec3D(0,0,0)
           clone.mapMemory = []
           clone.textureDir = []
 
@@ -3449,8 +3456,8 @@ class Editor {
           const rect = this.getBoundingClientRect()
           let pos = clone.getMousePosition(clone, event, rect, name)
 
-          clone.origo[view.vX] = pos.vx
-          clone.origo[view.vY] = pos.vy
+          clone.options.origo[view.vX] = pos.vx
+          clone.options.origo[view.vY] = pos.vy
 
           clone.fullRefreshCanvasGraphics();
         }
@@ -3656,7 +3663,14 @@ class Editor {
         let name = $(this).attr('data-name')
         if (name == 'screen-canvas') return;
         // only axis canvas
-        clone.views[name].posX = 320; clone.views[name].posY = 210;
+        // clone.views[name].posX = 320; clone.views[name].posY = 210;
+
+        const view = clone.views[name]
+        const canvas = view.canvas
+
+        view.posX = (canvas.width / 2) - clone.options.origo[view.vX] * view.ratio
+        view.posY = (canvas.height / 2) - clone.options.origo[view.vY] * view.ratio
+
         clone.fullRefreshCanvasGraphics()
       });
     });
@@ -4045,6 +4059,17 @@ class Editor {
         if (mapDataSelected) {
           const lineColor = $(this).val()
           clone.recursiveColorChange(mapDataSelected, lineColor)
+          clone.fullRefreshCanvasGraphics()
+        }
+      }
+    });
+
+    $("select[name='mesh-pervious']").on('input', function () {
+      if (clone.mouse.selectedMeshId) {
+        let mapDataSelected = clone.map.data[clone.map.aid].find(element => element.id == clone.mouse.selectedMeshId)
+        if (mapDataSelected) {
+          const perviousValue = $(this).val()
+          mapDataSelected.pervious = perviousValue === 'true' ? true : false;
           clone.fullRefreshCanvasGraphics()
         }
       }
@@ -5402,16 +5427,26 @@ class Editor {
         let meshData = clone.map.data[clone.map.aid].find(m => m.id == getMeshStructure.id)
         let meshCopy = clone.deepCopy(meshData)
 
+        meshCopy.name += `-${newId}`
+
+        let newTris = []
+        meshCopy.tris.forEach(tri => {
+          const t = clone.deepCopy(tri)
+          newTris.push(new Triangle(
+            new Vec3D(t.p[0].x, t.p[0].y, t.p[0].z),
+            new Vec3D(t.p[1].x, t.p[1].y, t.p[1].z),
+            new Vec3D(t.p[2].x, t.p[2].y, t.p[2].z),
+            t.t[0], t.t[1], t.t[2],
+            t.texture,
+            t.rgba,
+            t.normal,
+            null
+          ))
+        })
+        meshCopy.tris = newTris
+
         meshCopy.id = newId
         meshCopy.parent_id = null
-
-        let count = 0
-        meshCopy.tris.forEach(tri => {          
-          tri.id = `${Date.now().toString().slice(-8)}-${count}`;
-          tri.name = tri.name + '-' + count;
-          tri.locket = 0;
-          count++;          
-        });
 
         clone.clipboardMemory.meshs.push(meshCopy)
         localStorage.setItem('clipboardMemory', JSON.stringify(clone.clipboardMemory))
@@ -5579,7 +5614,7 @@ class Editor {
         // CENTER POINT
         let mPos = this.graph.calculateGroupAveragePosition(groupMeshList)
 
-        let matTranslateToOrigin = this.graph.matrix_MakeTranslation(-mPos.x + this.origo.x, -mPos.y + this.origo.y, -mPos.z + this.origo.z)
+        let matTranslateToOrigin = this.graph.matrix_MakeTranslation(-mPos.x + this.options.origo.x, -mPos.y + this.options.origo.y, -mPos.z + this.options.origo.z)
 
         let matRotate = null;
         if (this.selectedView == 'XYview-canvas') matRotate = this.graph.matrix_MakeRotationX(angleValue)
@@ -5720,8 +5755,13 @@ class Editor {
       this.refreshLightListOff()
 
       this.mouse.selectedMeshId = selectedMesh.id
+
       // line color setting
       $(`select[name='line-color'] option[value='${selectedMesh.lineColor}']`).prop('selected', true)
+
+      // pervious setting
+      $(`select[name='mesh-pervious'] option[value='${selectedMesh.pervious ? 'true' : 'false'}']`).prop('selected', true)
+
       // discard selected triange
       $('#object-list').find('.delete').remove()
       $('#object-list').find('.mesh-name').removeClass('child-style') // mesh child seledted class remove
@@ -5729,6 +5769,7 @@ class Editor {
       $("#object-list").find('.list-triangle-locket').removeClass('list-triangle-locket')
       $("#object-list").find('.list-mesh-selected').removeClass('list-mesh-selected')
       $("#selected-tri-container").hide()
+
       // new Mesh selecting
       $(document).find(`li[data-id='${selectedMesh.id}'].mesh-name`).addClass('list-mesh-selected')
 
@@ -5936,25 +5977,25 @@ class Editor {
 
       if (this.keys['ArrowUp'] || this.keys['KeyW']) {
         // console.log('move up')
-        this.views[this.selectedView].posY -= 5
+        this.views[this.selectedView].posY -= 25
         this.drawView(this.selectedView)
       }
 
       if (this.keys['ArrowDown'] || this.keys['KeyS']) {
-        this.views[this.selectedView].posY += 5
+        this.views[this.selectedView].posY += 25
         // console.log('move down')
         this.drawView(this.selectedView)
       }
 
       if (this.keys['ArrowLeft'] || this.keys['KeyA']) {
         // console.log('move left')
-        this.views[this.selectedView].posX -= 5
+        this.views[this.selectedView].posX -= 25
         this.drawView(this.selectedView)
       }
 
       if (this.keys['ArrowRight'] || this.keys['KeyD']) {
         // console.log('move right')
-        this.views[this.selectedView].posX += 5
+        this.views[this.selectedView].posX += 25
         this.drawView(this.selectedView)
       }
 
@@ -6235,9 +6276,12 @@ class Editor {
       view.ctx.fillStyle = 'green';
       view.ctx.beginPath(); view.ctx.arc(view.posX, view.posY, 3, 0, 2 * Math.PI); view.ctx.fill();
 
+      // IF NOT HAVE ORIGO IN OLD MAPS CREATE
+      if (!this.options.origo) this.options.origo = new Vec3D(0,0,0);
+
       // POS OWN ORIGO
-      let orX = view.posX + this.origo[view.vX] * view.ratio
-      let orY = view.posY + this.origo[view.vY] * view.ratio
+      let orX = view.posX + this.options.origo[view.vX] * view.ratio
+      let orY = view.posY + this.options.origo[view.vY] * view.ratio
       view.ctx.fillStyle = 'red';
       view.ctx.beginPath(); view.ctx.arc(orX, orY, 4, 0, 2 * Math.PI); view.ctx.fill();
 

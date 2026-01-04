@@ -888,9 +888,8 @@ export class Graphics {
     
     // console.log(texture.name)
 
-
-    let selectedTexture = (texture.name) ?
-      this.text.pic[texture.name][picIndex] ? this.text.pic[texture.name][picIndex] : this.text.pic['notexture'][0]
+    let selectedTexture = texture.name && this.text.pic?.[texture.name]?.[picIndex]
+      ? this.text.pic[texture.name][picIndex]
       : this.text.pic['notexture'][0];
 
     // texture

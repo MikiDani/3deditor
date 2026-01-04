@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { OBB } from 'three/examples/jsm/math/OBB.js'
 
 export default class Graphics {
   constructor(game) {
@@ -26,16 +27,18 @@ export default class Graphics {
     // console.log(this.checkGPU())
     if (this.checkGPU()) {
       // HIGH
-      console.log('High')
+      // console.log('High graphics')
+      this.game.renderInterval = 20
       this.scX = window.innerWidth / 1
       this.scY = window.innerHeight / 1
       this.far = 30
     } else {
       // LOW
-      console.log('Low')
-      this.scX = window.innerWidth / 2
-      this.scY = window.innerHeight / 2
-      this.far = 10
+      // console.log('Low graphics')
+      this.game.renderInterval = 30
+      this.scX = window.innerWidth / 5
+      this.scY = window.innerHeight / 5
+      this.far = 7
     }
 
     this.game.camera = new THREE.PerspectiveCamera(60, this.scX / this.scY, 0.1, this.far)

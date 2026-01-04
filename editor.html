@@ -444,50 +444,6 @@
                             <div class="side-row mt-1">
                                 <span>Angle°</span><input type="number" name="angle-size" data-mode="mesh" min="0" max="360" step="1" value="45">
                             </div>
-                            <div class="side-row mt-1">
-                                <span>line-color:</span>
-                                <select name="line-color" data-type="medium">
-                                    <option value="red">red</option>
-                                    <option value="green">green</option>
-                                    <option value="blue">blue</option>
-                                    <option value="lightblue">light blue</option>
-                                    <option value="orange">orange</option>
-                                    <option value="yellow">yellow</option>
-                                    <option value="purple">purple</option>
-                                    <option value="lime">lime</option>
-                                    <option value="gray">gray</option>
-                                    <option value="#2E8B57">SeaGreen</option>
-                                    <option value="#FFF5EE">SeaShell</option>
-                                    <option value="#A0522D">Sienna</option>
-                                    <option value="#FFFAFA">Snow</option>
-                                    <option value="#00FF7F">SpringGreen</option>
-                                    <option value="#D2B48C">Tan</option>
-                                    <option value="#008080">Teal</option>
-                                    <option value="#D8BFD8">Thistle</option>
-                                    <option value="#FF6347">Tomato</option>
-                                    <option value="#40E0D0">Turquoise</option>
-                                    <option value="#EE82EE">Violet</option>
-                                    <option value="#F5DEB3">Wheat</option>
-                                    <option value="#FFFF00">Yellow</option>
-                                    <option value="#9ACD32">YellowGreen</option>
-                                    <option value="#F5FFFA">MintCream</option>
-                                    <option value="#FFE4E1">MistyRose</option>
-                                    <option value="#FFE4B5">Moccasin</option>
-                                    <option value="#FFDEAD">NavajoWhite</option>
-                                    <option value="#FDF5E6">OldLace</option>
-                                    <option value="#808000">Olive</option>
-                                    <option value="#6B8E23">OliveDrab</option>
-                                    <option value="#FFA500">Orange</option>
-                                    <option value="#FF4500">OrangeRed</option>
-                                    <option value="#DA70D6">Orchid</option>
-                                    <option value="#EEE8AA">PaleGoldenRod</option>
-                                    <option value="#98FB98">PaleGreen</option>
-                                    <option value="#AFEEEE">PaleTurquoise</option>
-                                    <option value="#DB7093">PaleVioletRed</option>
-                                    <option value="#FFEFD5">PapayaWhip</option>
-                                    <option value="#FFDAB9">PeachPuff</option>
-                                </select>
-                            </div>
                         </div>
                         <div class="right-side mt-3">
                             <div class="grid-container-rotate">
@@ -498,6 +454,63 @@
                         <div class="grid-container-mirror mt-3">
                             <div class="grid-item arrow w-50" data-mode="mesh" data-axis="x" data-type="mirror">X ⇆</div>
                             <div class="grid-item arrow w-50" data-mode="mesh" data-axis="y" data-type="mirror">Y ⇵</div>
+                        </div>
+                        <div class="side-row mt-2">
+                            <div class="left-side">
+                                <div class="side-row mt-1">
+                                    <span class="text-small">Line color:</span>
+                                    <select name="line-color" data-type="medium">
+                                        <option value="red">red</option>
+                                        <option value="green">green</option>
+                                        <option value="blue">blue</option>
+                                        <option value="lightblue">light blue</option>
+                                        <option value="orange">orange</option>
+                                        <option value="yellow">yellow</option>
+                                        <option value="purple">purple</option>
+                                        <option value="lime">lime</option>
+                                        <option value="gray">gray</option>
+                                        <option value="#2E8B57">SeaGreen</option>
+                                        <option value="#FFF5EE">SeaShell</option>
+                                        <option value="#A0522D">Sienna</option>
+                                        <option value="#FFFAFA">Snow</option>
+                                        <option value="#00FF7F">SpringGreen</option>
+                                        <option value="#D2B48C">Tan</option>
+                                        <option value="#008080">Teal</option>
+                                        <option value="#D8BFD8">Thistle</option>
+                                        <option value="#FF6347">Tomato</option>
+                                        <option value="#40E0D0">Turquoise</option>
+                                        <option value="#EE82EE">Violet</option>
+                                        <option value="#F5DEB3">Wheat</option>
+                                        <option value="#FFFF00">Yellow</option>
+                                        <option value="#9ACD32">YellowGreen</option>
+                                        <option value="#F5FFFA">MintCream</option>
+                                        <option value="#FFE4E1">MistyRose</option>
+                                        <option value="#FFE4B5">Moccasin</option>
+                                        <option value="#FFDEAD">NavajoWhite</option>
+                                        <option value="#FDF5E6">OldLace</option>
+                                        <option value="#808000">Olive</option>
+                                        <option value="#6B8E23">OliveDrab</option>
+                                        <option value="#FFA500">Orange</option>
+                                        <option value="#FF4500">OrangeRed</option>
+                                        <option value="#DA70D6">Orchid</option>
+                                        <option value="#EEE8AA">PaleGoldenRod</option>
+                                        <option value="#98FB98">PaleGreen</option>
+                                        <option value="#AFEEEE">PaleTurquoise</option>
+                                        <option value="#DB7093">PaleVioletRed</option>
+                                        <option value="#FFEFD5">PapayaWhip</option>
+                                        <option value="#FFDAB9">PeachPuff</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="right-side">
+                                <div class="side-row mt-1">
+                                    <span class="text-small">Pervious:</span>
+                                    <select name="mesh-pervious" data-type="short">
+                                        <option value="false">Off</option>
+                                        <option value="true">On</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -307,10 +307,18 @@ export default class Loader {
         let meshGroup = new THREE.Group() //(i) START MESHGROUP
 
         // GIVE MESH DATA TO MESHGROUP        
-        if (mesh.id) meshGroup.objId = mesh.id;                 // IF HAVE MESH ID
-        if (mesh.name) meshGroup.name = mesh.name;              // IF HAVE MESH NAME
-        if (mesh.text) meshGroup.text = mesh.text;              // IF HAVE MESH INFO TEXT ADD
-        if (mesh.pickuped) meshGroup.pickuped = mesh.pickuped   // IF HAVE PICKUPED
+        if (mesh.id) meshGroup.objId = mesh.id;                          // IF HAVE MESH ID
+        if (mesh.name) meshGroup.name = mesh.name;                       // IF HAVE MESH NAME
+        if (mesh.text) meshGroup.text = mesh.text;                       // IF HAVE MESH INFO TEXT ADD
+        if (mesh.pickuped) meshGroup.pickuped = mesh.pickuped            // IF HAVE PICKUPED
+        if (mesh.pervious) meshGroup.pervious = mesh.pervious            // IF HAVE PERVIOUS
+
+        if (mesh.pervious) {
+          console.log('VAN ÁTHATOLHATÓSÁG !! : )')
+          console.log(mesh.name)
+          console.log(mesh.pervious)
+          console.log('---')
+        }
 
         for (let tri of mesh.tris) {
           const geometry = new THREE.BufferGeometry()
@@ -361,7 +369,7 @@ export default class Loader {
           box.min.add(triangleMesh.position)
           box.max.add(triangleMesh.position)
 
-          this.game.boundingBoxes.push(box); // ADD BOUNDING BOX !!!
+          if (!mesh.pervious) this.game.boundingBoxes.push(box); // ADD BOUNDING BOX !!!
 
           // YELLOW BOX-HELPER
           if (false) {
@@ -476,6 +484,40 @@ export default class Loader {
               'cardframe': 0,
               'cardsegment': 0,
             }
+
+            //-- Largest bounding box
+            let largestBox = null
+            let largestVolume = 0
+
+            this.game.beingsList[being.filename].data.forEach(dataRow => {
+              const box = this.game.boxFromDataRow(dataRow, being.ratio)
+
+              const size = new THREE.Vector3()
+              box.getSize(size)
+              const volume = size.x * size.y * size.z
+
+              if (volume > largestVolume) {
+                largestVolume = volume
+                largestBox = box.clone()
+              }
+            })
+
+            // --- BOUNDINGBOX RATIO OPTIONS
+            if (largestBox) {
+              const center = new THREE.Vector3()
+              const size = new THREE.Vector3()
+
+              largestBox.getCenter(center)
+              largestBox.getSize(size)
+
+              size.multiplyScalar(0.4)
+
+              largestBox.setFromCenterAndSize(center, size)
+              
+              this.game.beingsList[being.filename].largestBoundingBox = largestBox
+            }
+
+            //--
 
             this.createTHREEObject(being, beingGroup, actualBeingData, false)
 

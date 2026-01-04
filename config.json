@@ -32,31 +32,39 @@
     },
     {
       "id": 1,
-      "name": "Open-2 (door1) x:min y:min z:min"
+      "name": "Open-2 (doorA) PULL x:min y:min z:min"
     },
     {
       "id": 2,
-      "name": "Open-3 (door2) x:min y:min z:min"
+      "name": "Open-3 (doorA) PUSH x:min y:max z:max"
     },
     {
       "id": 3,
-      "name": "Switch 1."
+      "name": "Open-4 (doorB) PULL 90 deg x:min y:max z:min"
     },
     {
       "id": 4,
+      "name": "Open-5 (doorB) PUSH 90 deg x:max y:min z:min"
+    },
+    {
+      "id": 10,
+      "name": "Switch 1."
+    },
+    {
+      "id": 20,
       "name": "Radio ON/OFF",
       "state": "off"
     },
     {
-      "id": 5,
+      "id": 30,
       "name": "Picture Change"
     },
     {
-      "id": 6,
+      "id": 40,
       "name": "Micro Hamster Change"
     },
     {
-      "id": 7,
+      "id": 50,
       "name": "Stop/Start animated texture"
     }
   ],
@@ -79,163 +87,117 @@
       "name": "music1",
       "volume": 1,
       "loop": true,
-      "setRefDistance": 0.5,
-      "setMaxDistance": 1,
-      "setRolloffFactor": 5
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
     },
     {
       "id": 2,
-      "name": "music2",
-      "volume": 1,
-      "loop": true,
-      "setRefDistance": 0.5,
-      "setMaxDistance": 1,
-      "setRolloffFactor": 5
-    },
-    {
-      "id": 3,
-      "name": "speed",
-      "volume": 1,
-      "loop": false,
-      "setRefDistance": 0.5,
-      "setMaxDistance": 1,
-      "setRolloffFactor": 5
-    },
-    {
-      "id": 4,
-      "name": "eat",
-      "volume": 1,
-      "loop": false,
-      "setRefDistance": 0.5,
-      "setMaxDistance": 1,
-      "setRolloffFactor": 5
-    },
-    {
-      "id": 5,
-      "name": "door",
-      "volume": 1,
-      "loop": false,
-      "setRefDistance": 0.5,
-      "setMaxDistance": 1,
-      "setRolloffFactor": 5
-    },
-    {
-      "id": 6,
-      "name": "coin",
+      "name": "open1",
       "volume": 1,
       "loop": false,
       "setRefDistance": 1,
-      "setMaxDistance": 1,
-      "setRolloffFactor": 5
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
     },
     {
-      "id": 7,
-      "name": "music2",
+      "id": 3,
+      "name": "open2",
       "volume": 1,
-      "loop": true,
-      "setRefDistance": 0.5,
-      "setMaxDistance": 1,
-      "setRolloffFactor": 5
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
     },
-
     {
-      "id": 8,
+      "id": 4,
+      "name": "open3",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 5,
+      "name": "open4",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 6,
       "name": "close1",
       "volume": 1,
       "loop": false,
-      "setRefDistance": 0.5,
+      "setRefDistance": 1,
       "setMaxDistance": 2,
-      "setRolloffFactor": 5
+      "setRolloffFactor": 3
     },
     {
-      "id": 9,
+      "id": 7,
       "name": "close2",
       "volume": 1,
       "loop": false,
-      "setRefDistance": 0.5,
-      "setMaxDistance": 1,
-      "setRolloffFactor": 5
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
     },
     {
-      "id": 10,
+      "id": 8,
       "name": "switch1",
       "volume": 1,
       "loop": false,
-      "setRefDistance": 0.5,
-      "setMaxDistance": 1,
-      "setRolloffFactor": 5
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
     },
     {
-      "id": 11,
+      "id": 9,
       "name": "switch2",
       "volume": 1,
       "loop": false,
-      "setRefDistance": 0.5,
-      "setMaxDistance": 1,
-      "setRolloffFactor": 5
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
     },
     {
-      "id": 12,
-      "name": "chainsaw1",
+      "id": 100,
+      "name": "bet-attack1",
       "volume": 1,
       "loop": false,
-      "setRefDistance": 0.5,
-      "setMaxDistance": 0.8,
-      "setRolloffFactor": 1
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
     },
     {
-      "id": 13,
-      "name": "chainsaw2",
+      "id": 101,
+      "name": "bet-attack2",
       "volume": 1,
       "loop": false,
-      "setRefDistance": 0.5,
-      "setMaxDistance": 1,
-      "setRolloffFactor": 5
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
     },
     {
-      "id": 14,
-      "name": "microwave",
+      "id": 102,
+      "name": "bet-attack3",
       "volume": 1,
       "loop": false,
-      "setRefDistance": 0.5,
-      "setMaxDistance": 1.5,
-      "setRolloffFactor": 0.5
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
     },
     {
-      "id": 15,
-      "name": "hamster",
+      "id": 103,
+      "name": "bet-die1",
       "volume": 1,
       "loop": false,
-      "setRefDistance": 0.5,
-      "setMaxDistance": 1.5,
-      "setRolloffFactor": 0.5
-    },
-    {
-      "id": 16,
-      "name": "music4",
-      "volume": 1,
-      "loop": true,
-      "setRefDistance": 0.5,
-      "setMaxDistance": 1,
-      "setRolloffFactor": 5
-    },
-    {
-      "id": 17,
-      "name": "music3",
-      "volume": 1,
-      "loop": true,
-      "setRefDistance": 0.5,
-      "setMaxDistance": 1,
-      "setRolloffFactor": 5
-    },
-    {
-      "id": 18,
-      "name": "cough1",
-      "volume": 1,
-      "loop": false,
-      "setRefDistance": 0.5,
-      "setMaxDistance": 1,
-      "setRolloffFactor": 5
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
     }
   ],
   "actionmessages": [
