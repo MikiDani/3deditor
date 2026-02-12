@@ -22,7 +22,8 @@ export default class Game {
 
     this.mapLoading = false
 
-    this.filename = 'test-map-1'
+    // this.filename = 'cottage-1'
+    this.filename = 'cottage-1'
     this.ext = 'mtuc'
 
     this.animating = false

@@ -122,7 +122,13 @@ export default class Gameplay {
           const actualFrameData = this.game.deepCopy(this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.cardframe])
           const nextFrameData = this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.nextFrameIndex]
 
+          
           if (!actualFrameData || !nextFrameData) return;
+
+          if (beingGroup.filename == 'candle-holder-11') {
+            console.log(beingGroup.filename)
+            console.log(actualFrameData)
+          }
 
           let actualFrameDataDifference = actualFrameData.map(mesh => ({
             id: mesh.id,
@@ -170,7 +176,7 @@ export default class Gameplay {
       this.beingReactions(beingGroup)
 
       // GRAVITY
-      if (beingGroup.filename != 'bat-a') {
+      if (beingGroup.gravity) {
         this.applyGravity(beingGroup, beingId)
       }
 
@@ -182,7 +188,7 @@ export default class Gameplay {
         this.game.boundingBoxes.push(beingGroup.box)
 
         // HELPER
-        if (true) {
+        if (false) {
           beingGroup.helper = new THREE.Box3Helper(beingGroup.box, new THREE.Color('#ffff00'))
           this.game.scene.add(beingGroup.helper)
         }
@@ -456,9 +462,8 @@ export default class Gameplay {
     }
   }
 
-  beingReactions(beingGroup) {
+  beingReactions(beingGroup) {    
     // if (beingGroup.filename == 'bat-a') console.log(beingGroup.animState.type);
-
     switch (beingGroup.animState.type) {
       case('MOVE'):
         switch (beingGroup.filename) {
@@ -468,6 +473,10 @@ export default class Gameplay {
           case('bat-a'):
             this.rotateAndMoveInPlayer(beingGroup, true, true, true) // rotate, moveX, moveY
             break;
+          case('ghost-1'):
+            // ATTACK GHOST
+            this.rotateAndMoveInPlayer(beingGroup, true, true, false) // rotate, moveX, moveY
+          break;
         }
       break;
       case('ATTACK'):
@@ -478,155 +487,168 @@ export default class Gameplay {
           case('bat-a'):
             // ATTACK BAT
             this.rotateAndMoveInPlayer(beingGroup, true, false, true) // rotate, moveX, moveY
-            break;
+          break;
+          case('ghost-1'):
+            // ATTACK GHOST
+            console.log('ATTACK GHOST!!!')
+            
+            this.rotateAndMoveInPlayer(beingGroup, true, false, false) // rotate, moveX, moveY
+          break;
         }
       break;
     }
   }
 
   rotateAndMoveInPlayer(beingGroup, rotateOn, moveOn, moveOnY) {
-    const playerPos = this.game.player.position.clone()
-    const beingPos = beingGroup.position.clone()
-    // const dirToPlayer = playerPos.clone().sub(beingPos).normalize()
-    const dirToPlayer = playerPos.clone().add(new THREE.Vector3(0, -0.1, 0)/* PLAYER BODY CENTER */).sub(beingPos).normalize()
-
+    // PLAYER CENTER (world)
+    const playerCenter = new THREE.Vector3()
+    this.game.player.getWorldPosition(playerCenter)
+  
+    // BEING CENTER (world)
+    const beingBox = new THREE.Box3().setFromObject(beingGroup)
+    const beingCenter = new THREE.Vector3()
+    beingBox.getCenter(beingCenter)
+  
+    // --- DIRECTION VECTORS ---
+    const dirFull = playerCenter.clone().sub(beingCenter) // new row
+    const dirFlat = dirFull.clone() // new row
+    dirFlat.y = 0 // new row
+  
+    if (dirFlat.lengthSq() > 0) dirFlat.normalize() // new row
+    if (dirFull.lengthSq() > 0) dirFull.normalize() // new row
+  
     // ROTATE SECTION
-    if (rotateOn) {  
-      const targetAngle = Math.atan2(dirToPlayer.x, dirToPlayer.z)
+    if (rotateOn) {
+      const targetAngle = Math.atan2(dirFlat.x, dirFlat.z) // new row
       const currentAngle = beingGroup.rotation.y
   
       let angleDiff = targetAngle - currentAngle
-      angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
+      angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff))
   
       if (Math.abs(angleDiff) > THREE.MathUtils.degToRad(1)) {
         const step = THREE.MathUtils.degToRad(3)
-        if (angleDiff > 0) beingGroup.rotation.y += step; else beingGroup.rotation.y -= step;
-      } else beingGroup.rotation.y = targetAngle;
+        const nextAngle = currentAngle + (angleDiff > 0 ? step : -step)
+  
+        const originalAngle = beingGroup.rotation.y
+  
+        beingGroup.rotation.y = nextAngle
+        beingGroup.updateMatrixWorld(true)
+  
+        const testBox = new THREE.Box3().setFromObject(beingGroup)
+        const collision = this.checkCrash(testBox, beingGroup.beingId, true)
+  
+        if (collision) {
+          beingGroup.rotation.y = originalAngle
+          beingGroup.updateMatrixWorld(true)
+        }
+      }
     }
-
-    // CHECK DISTANCE    
-    const distanceToPlayer = beingGroup.position.distanceTo(this.game.player.position)
-
-    // console.log(distanceToPlayer)
-
+  
+    // CHECK DISTANCE (CENTER TO CENTER)
+    const distanceToPlayer = beingCenter.distanceTo(playerCenter) // new row
+  
     // BACK TYPE TO MOVE
-    if (beingGroup.animState.type == 'ATTACK' && distanceToPlayer >= 0.6) { //(i)
+    if (beingGroup.animState.type == 'ATTACK' && distanceToPlayer >= 0.8) {
       beingGroup.animState = {
-        'type': 'MOVE',
-        'card': 0,
-        'cardframe': 0,
-        'cardsegment': 0,
+        type: 'MOVE',
+        card: 0,
+        cardframe: 0,
+        cardsegment: 0,
       }
-      // return;
     }
-
+  
     // BACK TYPE TO ATTACK
-    if (beingGroup.animState.type == 'MOVE' && distanceToPlayer <= 0.4) { //(i)
+    if (beingGroup.animState.type == 'MOVE' && distanceToPlayer <= 0.6) {
       beingGroup.animState = {
-        'type': 'ATTACK',
-        'card': 0,
-        'cardframe': 0,
-        'cardsegment': 0,
+        type: 'ATTACK',
+        card: 0,
+        cardframe: 0,
+        cardsegment: 0,
       }
-      // return;
     }
+  
+    // MOVE SECTION
+    if (moveOn) {
+      const moveDir = moveOnY ? dirFull : dirFlat // new row
+      const moveStep = moveDir.clone().multiplyScalar(beingGroup.speed / 1000) // new row
 
-    if (beingGroup.animState.type == 'ATTACK') {
+      if (distanceToPlayer <= 0.3) {
+        beingGroup.position.add(
+          new THREE.Vector3(-moveStep.x, 0, -moveStep.z)
+        )
+        return
+      }
 
-      if (!beingGroup.attackSoundPlaying) {
-        beingGroup.attackSoundPlaying = true
-        const playSoundId = 100 + Math.floor(Math.random() * 3)
-        console.log(playSoundId)
+      const tempGroup = beingGroup.clone()
+      tempGroup.position.copy(
+        beingGroup.position.clone()
+          .add(moveStep)
+          .add(new THREE.Vector3(0, this.game.gravityValue, 0))
+      )
+      tempGroup.updateMatrixWorld(true)
 
-        if (playSoundId == 100 && false) {  // DIE LEKEZEÉLSE MÉG KELL
-          beingGroup.animState = {
-            'type': 'DIE',
-            'card': 0,
-            'cardframe': 0,
-            'cardsegment': 0,
+      const testBox = new THREE.Box3().setFromObject(tempGroup)
+      const collision = this.checkCrash(testBox, beingGroup.beingId, true)
+
+      if (!collision) {
+        beingGroup.position.add(moveStep)
+      } else {
+        let moved = false
+
+        // X axis slide
+        if (moveStep.x !== 0) {
+          const stepX = new THREE.Vector3(moveStep.x * 4, 0, 0)
+          const tempX = beingGroup.clone()
+          tempX.position.copy(
+            beingGroup.position.clone()
+              .add(stepX)
+              .add(new THREE.Vector3(0, this.game.gravityValue, 0))
+          )
+          tempX.updateMatrixWorld(true)
+
+          const boxX = new THREE.Box3().setFromObject(tempX)
+          if (!this.checkCrash(boxX, beingGroup.beingId, true)) {
+            beingGroup.position.add(stepX)
+            moved = true
           }
         }
 
-        this.game.sound.play(playSoundId, { loop: false }, true, beingGroup).then(phantom => {
-          if (!phantom) {
-            beingGroup.attackSoundPlaying = false
-            return
+        // Z axis slide
+        if (moveStep.z !== 0) {
+          const stepZ = new THREE.Vector3(0, 0, moveStep.z * 4)
+          const tempZ = beingGroup.clone()
+          tempZ.position.copy(
+            beingGroup.position.clone()
+              .add(stepZ)
+              .add(new THREE.Vector3(0, this.game.gravityValue, 0))
+          )
+          tempZ.updateMatrixWorld(true)
+
+          const boxZ = new THREE.Box3().setFromObject(tempZ)
+          if (!this.checkCrash(boxZ, beingGroup.beingId, true)) {
+            beingGroup.position.add(stepZ)
+            moved = true
           }
+        }
 
-          // REFRESH POSITION
-          const worldPos = new THREE.Vector3()
-          beingGroup.getWorldPosition(worldPos)
-          phantom.position.copy(worldPos)
-          phantom.updateMatrixWorld(true)
-
-          beingGroup.attackSoundPhantom = phantom
-
-          const audio = phantom.children[0]
-          if (audio) {
-            audio.onEnded = () => {
-              beingGroup.attackSoundPlaying = false
-              beingGroup.attackSoundPhantom = null
-            }
-          }
-        })
-      }    
-    }
-
-    // MOVE SECTION
-    if (moveOn) {
-      if (distanceToPlayer <= 0.3) {
-
-        console.log('ITT')
-        
-        // NEGATIV MOVE
-        beingGroup.position.add(new THREE.Vector3(-moveStep.x, moveStep.y, -moveStep.z))
-
-        return; //(i)
-      } 
-
-      if (dirToPlayer.lengthSq() > 0) dirToPlayer.normalize();
-      const moveStep = dirToPlayer.clone().multiplyScalar(beingGroup.speed / 1000)
-
-      // CHECK MOVE Y (BET FLYING)
-      moveOnY ? moveStep.y *= 3 : moveStep.y = 0;
-
-      /*
-      if (beingGroup.attackSoundPlaying == false) {
-        // NEGATIV MOVE
-        beingGroup.position.add(new THREE.Vector3(-moveStep.x, moveStep.y, -moveStep.z))
-        return;
-      }
-      */
-
-      const tempGroup = beingGroup.clone()
-      tempGroup.position.copy(beingGroup.position.clone().add(moveStep).add(new THREE.Vector3(0, this.game.gravityValue, 0)))
-      tempGroup.updateMatrixWorld(true)
-
-      // CHECK CRASH
-      let testBox = new THREE.Box3().setFromObject(tempGroup)
-
-      const collision = this.checkCrash(testBox, beingGroup.beingId, true)
-      if (!collision) {
-        // NO CRASH
-        beingGroup.position.add(moveStep)
-      } else {
-
-        if (!moveOnY) {
-          // STAIRS STEP CHECK (not flying beings)
+        if (!moved && !moveOnY) {
           const stepHeight = this.game.stepHeight
           const tempGroup2 = tempGroup.clone()
           tempGroup2.position.copy(
-            beingGroup.position.clone().add(moveStep).add(new THREE.Vector3(0, stepHeight, 0))
+            beingGroup.position.clone()
+              .add(moveStep)
+              .add(new THREE.Vector3(0, stepHeight, 0))
           )
           tempGroup2.updateMatrixWorld(true)
-          
+
           const testBox2 = new THREE.Box3().setFromObject(tempGroup2)
           const collision2 = this.checkCrash(testBox2, beingGroup.beingId)
-          if (!collision2) beingGroup.position.add(moveStep).y += stepHeight;
+          if (!collision2) beingGroup.position.add(moveStep).y += stepHeight
         }
       }
     }
   }
+  
 
   checkCrash(testBox, ignoreBeingId = null, ignorePlayer = false) {
     // PLAYER CHECK HIT
@@ -1021,7 +1043,7 @@ export default class Gameplay {
             offsetTypeZ: 'max',
           }
         }
-        this.openFx(data[eventId], mesh)
+        this.openFx(data[eventId], mesh, 'y')
         break
 
       case 1:
@@ -1044,7 +1066,7 @@ export default class Gameplay {
             offsetTypeZ: 'min',
           }
         }
-        this.openFx(data[eventId], mesh)
+        this.openFx(data[eventId], mesh, 'y')
       break
 
       case 2:
@@ -1067,7 +1089,7 @@ export default class Gameplay {
             offsetTypeZ: 'max',
           }
         }
-        this.openFx(data[eventId], mesh)
+        this.openFx(data[eventId], mesh, 'y')
       break
 
       case 3:
@@ -1089,7 +1111,7 @@ export default class Gameplay {
             offsetTypeZ: 'min',
           }
         }
-        this.openFx(data[eventId], mesh)
+        this.openFx(data[eventId], mesh, 'y')
       break
 
       case 4:
@@ -1111,10 +1133,38 @@ export default class Gameplay {
             offsetTypeZ: 'min',
           }
         }
-        this.openFx(data[eventId], mesh)
+        this.openFx(data[eventId], mesh, 'y')
       break
 
+      case 5:
+        // Open-6 (floor-door) x: y: z:
+        if (!data[eventId]) {
+          data[eventId] = {
+            meshId: mesh.objId,
+            meshName: mesh.name,
+            state: false,
+            min: 0,
+            max: 64,
+            value: 0,
+            waiting: 10,
+            valueAdd: null,
+            addedStep: 0.025,
+            addedValue: null,
+            offsetTypeX: 'min',
+            offsetTypeY: 'max',
+            offsetTypeZ: 'min',
+            // offsetTypeX: 'max',
+            // offsetTypeY: 'min',
+            // offsetTypeZ: 'min',
+          }
+        }
+        this.openFx(data[eventId], mesh, 'z')
+      break
       case 10:
+        // SWITCH TEXTURE CHANGE
+        this.textureOnOf(mesh, data, eventId, 'switch-1-on', 'switch-1-off')
+      break
+      case 20:
         // RADIO ON / OFF
         if (!mesh.radioSwitch) mesh.radioSwitch = data.state;
 
@@ -1143,20 +1193,16 @@ export default class Gameplay {
           mesh.radioSwitch = "off";
         }
       break;
-      case 10:
-        // SWITCH TEXTURE CHANGE
-        this.textureOnOf(mesh, data, eventId, 'switch-on', 'switch-off')
-      break
-      case 20:
+      case 30:
         // PICTURE TEXTURE CHANGE
         this.textureOnOf(mesh, data, eventId, 'picture-2', 'picture-3')
       break
-      case 30:
+      case 40:
         // MICRO HAMSTER TEXTURE CHANGE
         this.textureOnOf(mesh, data, eventId, 'microhamster-on', 'microhamster-off')
       break
-      case 40:
-        // STOP/START ANIMATED TEXTURE        
+      case 50:
+        // STOP/START ANIMATED TEXTURE
         mesh.texture.playingState = !mesh.texture.playingState
         // SAVE LOADING FILES
         this.game.config['animationtextures'][mesh.texture.name].playingState = mesh.texture.playingState
@@ -1198,7 +1244,7 @@ export default class Gameplay {
     })
   }
 
-  openFx(data, mesh) {
+  openFx(data, mesh, axis) {
     if (!mesh.container) this.refreshOpenFxState(data, mesh);
 
     data.addedValue = data.state ? -data.addedStep : data.addedStep; // ÉRTÉKE
@@ -1207,7 +1253,7 @@ export default class Gameplay {
     if (!data?.timeInterval) {
       // CHECK CRASH
       const clone = mesh.container.clone(true)
-      clone.rotation.y += data.addedValue
+      clone.rotation[axis] += data.addedValue
       const futureBox = new THREE.Box3().setFromObject(clone)
       const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
 
@@ -1224,9 +1270,9 @@ export default class Gameplay {
 
         if (now - mesh.lastUpdate >= data.waiting) {
           mesh.lastUpdate = now          
-          const tempRotation = mesh.container.rotation.y + data.addedValue
+          const tempRotation = mesh.container.rotation[axis] + data.addedValue
           const clone = mesh.container.clone(true)
-          clone.rotation.y = tempRotation
+          clone.rotation[axis] = tempRotation
           const testBox = new THREE.Box3().setFromObject(clone)
           const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
           if (testBox.intersectsBox(playerBox)) {
@@ -1236,7 +1282,7 @@ export default class Gameplay {
           }
 
           // MOVE AND REFRESH
-          mesh.container.rotation.y = tempRotation
+          mesh.container.rotation[axis] = tempRotation
           data.value += data.valueAdd
 
           // BOUNDING BOX FRISSÍTÉS A CONTAINERHEZ

@@ -47,6 +47,10 @@
       "name": "Open-5 (doorB) PUSH 90 deg x:max y:min z:min"
     },
     {
+      "id": 5,
+      "name": "Open-6 (floor-door) x: y: z:"
+    },
+    {
       "id": 10,
       "name": "Switch 1."
     },
@@ -193,6 +197,15 @@
     {
       "id": 103,
       "name": "bet-die1",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 18,
+      "name": "cough1",
       "volume": 1,
       "loop": false,
       "setRefDistance": 1,
@@ -359,6 +372,10 @@
     },
     "top-engine": {
       "intervalTime": 1000,
+      "playingState": true
+    },
+    "ghost1-move": {
+      "intervalTime": 100,
       "playingState": true
     }
   }

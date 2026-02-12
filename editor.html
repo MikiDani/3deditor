@@ -81,14 +81,15 @@
             <div class="menu-icons-between-container w-100">
                 <div class="menu-text-border modal-button text-center w-100" data-mode="new">NEW</div>
                 <div class="menu-text-border modal-button text-center w-100" data-mode="load">LOAD</div>
-                <div class="menu-text-border modal-button text-center w-100" data-mode="save">SAVE</div>
+                <div class="menu-text-border modal-button text-center w-100" data-mode="fastsave">SAVE</div>
+                <div class="menu-text-border modal-button text-center w-100" data-mode="save">SAVE AS</div>
                 <div class="menu-text-border modal-button text-center w-100" data-mode="import">IMPORT</div>
-                <div class="menu-text-border modal-button text-center w-100" data-mode="info">INFO</div>
             </div>
             <div class="menu-icons-between-container w-100">
                 <div class="menu-text-border menu-back text-center w-100" title="Step back.">BACK</div>
                 <div class="menu-text-border modal-button text-center w-100" data-mode="gameactions">ACTIONS</div>
                 <div class="menu-text-border modal-button text-center w-100" data-mode="textures">TEXTURES</div>
+                <div class="menu-text-border modal-button text-center w-100" data-mode="info">INFO</div>
                 <div class="menu-text-border text-center w-100" onclick="logout()" title="Step back.">EXIT</div>
             </div>
             <div class="menu-icons-center-container">
@@ -321,6 +322,15 @@
                                     <option value="rgba(128, 128, 128, 0.2)">gray</option>
                                 </select>
                             </div>
+
+                            <div class="side-row">
+                                <span class="w-50 text-start text-small">Gravity:</span>
+                                <select name="being-gravity" data-name="gravity" class="w-50">
+                                    <option value="1">true</option>
+                                    <option value="0">false</option>
+                                </select>
+                            </div>
+
                             <div class="side-row">
                                 <span class="w-70">pX: </span><input class="w-30" type="number" name="being-p-X" data-name="x" data-middle="p" min="-10000" max="10000" step="0.1" value="0">
                             </div>
@@ -415,6 +425,7 @@
                                 <button class="get-grid-size d-inline-block text-mini" data-half-size="true" data-mode="mesh">GR/2</button>
                                 <button class="get-grid-multi d-inline-block text-mini" data-multi-size="2" data-mode="mesh">GR*2</button>
                                 <button class="get-grid-multi d-inline-block text-mini" data-multi-size="4" data-mode="mesh">GR*4</button>
+                                <button class="get-grid-multi d-inline-block text-mini" data-multi-size="10" data-mode="mesh">GR*10</button>
                                 <div class="size-number-box" data-mode="mesh" data-number="0.001">0.001</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="0.01">0.01</div>
                                 <div class="size-number-box" data-mode="mesh" data-number="0.1">0.1</div>
@@ -726,6 +737,7 @@
                                 <button class="get-grid-size d-inline-block text-mini" data-half-size="true" data-mode="rectangle">GR/2</button>
                                 <button class="get-grid-multi d-inline-block text-mini" data-multi-size="2" data-mode="rectangle">GR*2</button>
                                 <button class="get-grid-multi d-inline-block text-mini" data-multi-size="4" data-mode="rectangle">GR*4</button>
+                                <button class="get-grid-multi d-inline-block text-mini" data-multi-size="10" data-mode="rectangle">GR*10</button>
                                 <div class="size-number-box" data-mode="rectangle" data-number="0.001">0.001</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="0.005">0.005</div>
                                 <div class="size-number-box" data-mode="rectangle" data-number="0.01">0.01</div>

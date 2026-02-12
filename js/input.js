@@ -869,6 +869,7 @@ export default class Input {
 
     // HEAD AND JUMP CORRECTION
     const center = testPos.clone()
+    
     center.y += (this.game.playerYModify - size.y / 2)
 
     const cameraBox = new THREE.Box3().setFromCenterAndSize(center, size)

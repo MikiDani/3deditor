@@ -1,3 +1,4 @@
+import { vLoading } from 'element-plus'
 import $, { map } from 'jquery'
 import * as THREE from 'three'
 
@@ -35,6 +36,7 @@ export default class Loader {
               'data': this.game.deepCopy(response3.data),
               'structure': this.game.deepCopy(response3.structure),
               'animations': this.game.deepCopy(response3.animations),
+              'lights': this.game.deepCopy(response3.lights),
             }
           }
         }
@@ -313,12 +315,14 @@ export default class Loader {
         if (mesh.pickuped) meshGroup.pickuped = mesh.pickuped            // IF HAVE PICKUPED
         if (mesh.pervious) meshGroup.pervious = mesh.pervious            // IF HAVE PERVIOUS
 
+        /*
         if (mesh.pervious) {
           console.log('VAN ÁTHATOLHATÓSÁG !! : )')
           console.log(mesh.name)
           console.log(mesh.pervious)
           console.log('---')
         }
+        */
 
         for (let tri of mesh.tris) {
           const geometry = new THREE.BufferGeometry()
@@ -430,11 +434,15 @@ export default class Loader {
 
               let pointLight
               if (light.type == 'point') pointLight = new THREE.PointLight(lightColor, light.intensity, light.distance);    
-              else if (light.type == 'direction') pointLight = new THREE.DirectionalLight(lightColor, light.intensity);
-
-              light.decay = light.decay ?? 2
+              else if (light.type == 'direction') {
+                pointLight = new THREE.DirectionalLight(lightColor, light.intensity)
+                // hova süssön, csak teszt
+                pointLight.target.position.set(light.t?.x ?? 1, light.t?.y ?? 1,light.t?.z ?? 0)
+              }
 
               if (pointLight) {
+                light.decay = light.decay ?? 2
+
                 pointLight.position.set(light.p.x, light.p.y, light.p.z)
                 // PRIMARY LIGHT
                 this.game.scene.add(pointLight)
@@ -451,7 +459,7 @@ export default class Loader {
         }
         // MINIMUM AMBIENT LIGHT
         if (true) {
-          const ambient = new THREE.AmbientLight('#ffffff', 0.6)  // 0.05
+          const ambient = new THREE.AmbientLight('#ffffff', 0.004)  // 0.05
           this.game.scene.add(ambient)
         }
 
@@ -468,6 +476,9 @@ export default class Loader {
         for (const being of this.game.map.beings) {
           const actualBeingData = this.game.beingsList[being.filename].data[0]
           if (actualBeingData) {
+
+            if (!being.visible) continue;
+
             const beingGroup = new THREE.Group()
 
             beingGroup.beingId = being.id
@@ -476,7 +487,9 @@ export default class Loader {
             beingGroup.energy = being.energy
             beingGroup.damage = being.damage
             beingGroup.boxlines = being.boxlines
-            beingGroup.angle = being.angle    
+            beingGroup.angle = being.angle
+            beingGroup.gravity = being.gravity == "1" ? true : false;
+            beingGroup.lights = this.game.beingsList[being.filename].lights
 
             beingGroup.animState = {
               'type': being.type,
@@ -494,7 +507,9 @@ export default class Loader {
 
               const size = new THREE.Vector3()
               box.getSize(size)
-              const volume = size.x * size.y * size.z
+              if (size.z === 0) size.z = 0.01; if (size.x === 0) size.x = 0.01; if (size.y === 0) size.y = 0.01;
+
+              const volume = size.x * size.y * size.z             
 
               if (volume > largestVolume) {
                 largestVolume = volume
@@ -509,11 +524,12 @@ export default class Loader {
 
               largestBox.getCenter(center)
               largestBox.getSize(size)
+              if (size.z === 0) size.z = 0.01; if (size.x === 0) size.x = 0.01; if (size.y === 0) size.y = 0.01;
 
-              size.multiplyScalar(0.4)
+              size.multiplyScalar(0.5)
 
               largestBox.setFromCenterAndSize(center, size)
-              
+
               this.game.beingsList[being.filename].largestBoundingBox = largestBox
             }
 
@@ -529,6 +545,27 @@ export default class Loader {
             this.game.loadedBeings[being.id] = beingGroup
             this.game.loadedBeings[being.id].filename = being.filename              
             this.game.loadedBeings[being.id].lastUpdate = performance.now()
+
+            // LOAD BEING LIGHTS
+            if (beingGroup.lights) {
+              beingGroup.lights.forEach(light => {
+                // POS
+                const offset = new THREE.Vector3(light.p?.x ?? 0, light.p?.y ?? 0, light.p?.z ?? 0)
+                offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), beingGroup.rotation.y)
+
+                const worldPos = new THREE.Vector3()
+                beingGroup.getWorldPosition(worldPos)
+                //
+                light.decay = light.decay ?? 2
+                const beingLight = new THREE.PointLight(`#${light.color}`, light.intensity, light.distance, light.decay)
+                beingLight.position.copy(worldPos).add(offset)
+
+                this.game.loadedLights[light.id] = [light.name, beingLight]
+
+                this.game.scene.add(beingLight)
+                // beingGroup.add(beingLight)
+              });
+            }
 
             this.game.addConsoleRow(`Added Being: ${being.id}. ${being.name}`, 'div', false, true)
           }
