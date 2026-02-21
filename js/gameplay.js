@@ -20,9 +20,9 @@ export default class Gameplay {
 
     this.game.sound.listener.position.copy(this.game.camera.position)
 
-    await this.updateBeings()
+    await this.updateBeings(deltaTime)
 
-    await this.updateHeand()
+    await this.updateHeand(deltaTime)
 
     await this.startActions()
 
@@ -105,70 +105,71 @@ export default class Gameplay {
     return Math.sin(angle) * (amplitude / 2)
   }
 
-  async updateBeings() {    
+  async updateBeings(deltaTime) {    
     for (let [id, beingGroup] of Object.entries(this.game.loadedBeings)) {
       const beingId = Number(id)
       const beingModell = this.game.beingsList[beingGroup.filename]
 
       // ANIMATION
-      const now = performance.now()
-      if (now - beingGroup.lastUpdate >= Number(beingGroup.speed)) {
-        beingGroup.lastUpdate = now
+      beingGroup.animTime += deltaTime
+
+      if (beingGroup.animTime >= Number(beingGroup.speed)) {
+        beingGroup.animTime = 0
         // console.log(beingGroup.id, beingGroup.filename, beingGroup.beingId, beingGroup.ratio, beingGroup.speed, beingGroup.energy, beingGroup.damage)
         if (beingGroup.animState.type != 'none') {
           beingGroup.animState = this.stepAnimState(beingGroup.animState, beingModell.animations)
-          // console.log('card: ' + beingGroup.animState.card + '| cardframe: ' + beingGroup.animState.cardframe + '| cardsegment: ' + beingGroup.animState.cardsegment)
+
+          if (beingGroup.filename == 'ghost-1') { // !!!
+            /*
+            console.log(beingGroup.animState.type)
+            
+            console.log('card: ' + beingGroup.animState.card + '| cardframe: ' + beingGroup.animState.cardframe + '| cardsegment: ' + beingGroup.animState.cardsegment)
+            */
+          }
 
           const actualFrameData = this.game.deepCopy(this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.cardframe])
           const nextFrameData = this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.nextFrameIndex]
 
-          
-          if (!actualFrameData || !nextFrameData) return;
-
-          if (beingGroup.filename == 'candle-holder-11') {
-            console.log(beingGroup.filename)
-            console.log(actualFrameData)
-          }
-
-          let actualFrameDataDifference = actualFrameData.map(mesh => ({
-            id: mesh.id,
-            tris: mesh.tris.map(tri => ({
-              id: tri.id,
-              p: tri.p.map(pt => ({
-                x: Number(pt.x),
-                y: Number(pt.y),
-                z: Number(pt.z),
+          if (actualFrameData && nextFrameData) {
+            let actualFrameDataDifference = actualFrameData.map(mesh => ({
+              id: mesh.id,
+              tris: mesh.tris.map(tri => ({
+                id: tri.id,
+                p: tri.p.map(pt => ({
+                  x: Number(pt.x),
+                  y: Number(pt.y),
+                  z: Number(pt.z),
+                }))
               }))
             }))
-          }))
-
-          actualFrameDataDifference = await this.calcInterpolated(actualFrameDataDifference, nextFrameData, beingGroup.animState.segmentlength)
-
-          let interpolatedFrame
-          if (beingGroup.animState.cardsegment > 0) {
-            interpolatedFrame = this.game.deepCopy(actualFrameData)
-
-            if (beingGroup.animState.cardsegment != 0) {
-              for (let row of interpolatedFrame) {
-                if (row?.tris) {
-                  for (let tri of row.tris) {
-                    let tri2 = actualFrameDataDifference
-                      .flatMap(obj => obj.tris)
-                      .find(triangle => triangle.id == tri.id);
-                    if (tri2) {
-                      for (let n = 0; n < 3; n++) {
-                        tri.p[n].x = tri.p[n].x - (tri2.p[n].x * beingGroup.animState.cardsegment)
-                        tri.p[n].y = tri.p[n].y - (tri2.p[n].y * beingGroup.animState.cardsegment)
-                        tri.p[n].z = tri.p[n].z - (tri2.p[n].z * beingGroup.animState.cardsegment)
-                      }       
+  
+            actualFrameDataDifference = this.calcInterpolated(actualFrameDataDifference, nextFrameData, beingGroup.animState.segmentlength)
+  
+            let interpolatedFrame
+            if (beingGroup.animState.cardsegment > 0) {
+              interpolatedFrame = this.game.deepCopy(actualFrameData)
+  
+              if (beingGroup.animState.cardsegment != 0) {
+                for (let row of interpolatedFrame) {
+                  if (row?.tris) {
+                    for (let tri of row.tris) {
+                      let tri2 = actualFrameDataDifference
+                        .flatMap(obj => obj.tris)
+                        .find(triangle => triangle.id == tri.id);
+                      if (tri2) {
+                        for (let n = 0; n < 3; n++) {
+                          tri.p[n].x = tri.p[n].x - (tri2.p[n].x * beingGroup.animState.cardsegment)
+                          tri.p[n].y = tri.p[n].y - (tri2.p[n].y * beingGroup.animState.cardsegment)
+                          tri.p[n].z = tri.p[n].z - (tri2.p[n].z * beingGroup.animState.cardsegment)
+                        }       
+                      }
                     }
                   }
                 }
               }
-            }              
-          } else interpolatedFrame = actualFrameData
-
-          this.syncTrianglesPositions(beingGroup, interpolatedFrame)
+              this.syncTrianglesPositions(beingGroup, interpolatedFrame)
+            }
+          }
         }
       }
 
@@ -188,7 +189,7 @@ export default class Gameplay {
         this.game.boundingBoxes.push(beingGroup.box)
 
         // HELPER
-        if (false) {
+        if (false) { // !!!!!!!!!
           beingGroup.helper = new THREE.Box3Helper(beingGroup.box, new THREE.Color('#ffff00'))
           this.game.scene.add(beingGroup.helper)
         }
@@ -207,7 +208,7 @@ export default class Gameplay {
     }
   }
 
-  async updateHeand() {
+  async updateHeand(deltaTime) {
     // console.log(this.game.heandsList)
     for (let [id, heandGroup] of Object.entries(this.game.loadedHeands)) {
       // SELECTED HEAND
@@ -215,18 +216,23 @@ export default class Gameplay {
         heandGroup.visible = true
 
         const heandModell = this.game.heandsList[heandGroup.heandId]
-        if (heandModell) {
+        if (!heandModell) continue;
 
-          // ANIMATION
-          const now = performance.now()
-          if (now - heandGroup.lastUpdate >= Number(heandGroup.speed)) {
-            heandGroup.lastUpdate = now
-            if (heandGroup.animState.type != 'none') {
-              heandGroup.animState = this.stepAnimState(heandGroup.animState, heandModell.animations)  
-              const actualFrameData = this.game.deepCopy(heandModell?.data?.[heandGroup.animState.cardframe])
-              const nextFrameData = heandModell?.data?.[heandGroup.animState.nextFrameIndex]
-              if (!actualFrameData || !nextFrameData) return;
+        // INIT
+        if (typeof heandGroup.animTime != 'number') heandGroup.animTime = 0;
 
+        // ANIMATION TIMER
+        heandGroup.animTime += deltaTime
+
+        if (heandGroup.animTime >=  Number(heandGroup.speed)) {
+          heandGroup.animTime = 0
+
+          if (heandGroup.animState.type != 'none') {
+            heandGroup.animState = this.stepAnimState(heandGroup.animState, heandModell.animations)  
+            const actualFrameData = this.game.deepCopy(heandModell?.data?.[heandGroup.animState.cardframe])
+            const nextFrameData = heandModell?.data?.[heandGroup.animState.nextFrameIndex]
+
+            if (actualFrameData && nextFrameData) {
               let actualFrameDataDifference = actualFrameData.map(mesh => ({
                 id: mesh.id,
                 tris: mesh.tris.map(tri => ({
@@ -238,12 +244,12 @@ export default class Gameplay {
                   }))
                 }))
               }))
-              actualFrameDataDifference = await this.calcInterpolated(actualFrameDataDifference, nextFrameData, heandGroup.animState.segmentlength)
-
+              actualFrameDataDifference = this.calcInterpolated(actualFrameDataDifference, nextFrameData, heandGroup.animState.segmentlength)
+  
               let interpolatedFrame
               if (heandGroup.animState.cardsegment > 0) {
                 interpolatedFrame = this.game.deepCopy(actualFrameData)
-
+  
                 if (heandGroup.animState.cardsegment != 0) {
                   for (let row of interpolatedFrame) {
                     if (row?.tris) {
@@ -263,98 +269,98 @@ export default class Gameplay {
                   }
                 }
               } else interpolatedFrame = actualFrameData
-
+  
               this.syncTrianglesPositions(heandGroup, interpolatedFrame)
             }
           }
+        }
 
-          // végleges box újraszámolása
-          if (!heandGroup.box) heandGroup.box = new THREE.Box3()
-          
-          // CAMERA WORLD ROTATION (yaw + pitch)
-          const camQuat = new THREE.Quaternion()
-          this.game.camera.getWorldQuaternion(camQuat)
-          
-          // CAMERA WORLD POSITION
-          const camPos = new THREE.Vector3()
-          this.game.camera.getWorldPosition(camPos)
+        // végleges box újraszámolása
+        if (!heandGroup.box) heandGroup.box = new THREE.Box3()
+        
+        // CAMERA WORLD ROTATION (yaw + pitch)
+        const camQuat = new THREE.Quaternion()
+        this.game.camera.getWorldQuaternion(camQuat)
+        
+        // CAMERA WORLD POSITION
+        const camPos = new THREE.Vector3()
+        this.game.camera.getWorldPosition(camPos)
 
-          const heandConfig = this.game.config.heands.find(heand=> heand.id == this.game.playerMouse.selectedHeand)
-          if (heandConfig) {
-            // MOD UP/DOWN LOOK HEAD POSITION            
-            const yModifyToXaw = ((this.game.pitchObject.rotation._x + 1) / heandConfig.yRatio) * -1
+        const heandConfig = this.game.config.heands.find(heand=> heand.id == this.game.playerMouse.selectedHeand)
+        if (heandConfig) {
+          // MOD UP/DOWN LOOK HEAD POSITION            
+          const yModifyToXaw = ((this.game.pitchObject.rotation._x + 1) / heandConfig.yRatio) * -1
 
-            const localOffset = new THREE.Vector3(heandConfig.xDistance, heandConfig.yDistance + yModifyToXaw, -heandConfig.zDistance)
-            const worldPos = camPos.clone().add(localOffset.clone().applyQuaternion(camQuat))
+          const localOffset = new THREE.Vector3(heandConfig.xDistance, heandConfig.yDistance + yModifyToXaw, -heandConfig.zDistance)
+          const worldPos = camPos.clone().add(localOffset.clone().applyQuaternion(camQuat))
 
-            // HEAND POSITION
-            heandGroup.position.copy(worldPos)
+          // HEAND POSITION
+          heandGroup.position.copy(worldPos)
 
-            // FIX Y
-            if (heandConfig.tilt) {
-              // y tengelyen ne vegye át a forgást
-              const camEuler = new THREE.Euler().setFromQuaternion(camQuat, 'YXZ')  // változás
-              const yawOnlyQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, camEuler.y, 0, 'YXZ'))  // változás
-              heandGroup.quaternion.copy(yawOnlyQuat)  // változás
-            } else {
-              heandGroup.quaternion.copy(camQuat)
-            }
-
-            // IF HAVE LIGHT          
-            if (!heandGroup.lightsAdded) {
-              if (heandGroup.lights) {
-                if (!heandGroup.lightsGroup) {
-                  heandGroup.lightsGroup = new THREE.Group()
-                  // ADD THE LAMP LIGHT TO MAP
-                  this.game.scene.add(heandGroup.lightsGroup)
-                }
-                heandGroup.lights.forEach(light => {
-                  heandGroup.heandindex = heandGroup.heandindex ?? []
-                  heandGroup.lightsGroup.add(light)
-                  heandGroup.heandindex.push(this.game.loadedLights.push([heandModell.filename, light.clone()]) - 1)
-                })
-              } else {
-                // RESET
-                if (heandGroup.heandindex) {
-                  heandGroup.heandindex.forEach(index => {
-                    delete this.game.loadedLights[index]
-                  });
-                }
-                if (heandGroup.lightsGroup) {
-                  this.game.scene.remove(heandGroup.lightsGroup)
-                  heandGroup.lightsGroup = null
-                  heandGroup.lightsAdded = false
-                }
-              }
-
-              heandGroup.lightsAdded = true; // ONLY ONE
-            }
-            
-            if (heandGroup.lightsGroup) {              
-              const originalCamPos = new THREE.Vector3()
-              this.game.camera.getWorldPosition(originalCamPos)
-
-              const originalCamQuat = new THREE.Quaternion()
-              this.game.camera.getWorldQuaternion(originalCamQuat)
-
-              heandGroup.lightsGroup.position.copy(originalCamPos)
-              heandGroup.lightsGroup.quaternion.copy(originalCamQuat)
-
-              if (heandGroup.heandindex) {
-                heandGroup.heandindex.forEach((index, i) => {
-                  const localOffset = new THREE.Vector3(-0.15, i * 0.1, i * -0.1)
-                  this.game.loadedLights[index][1].position.copy(originalCamPos).add(localOffset)
-                  this.game.loadedLights[index][1].quaternion.copy(originalCamQuat)
-                  // LIGHT VIBRATION
-                  this.game.loadedLights[index][1].intensity += this.lightVibration(0.025, 2500)
-                })
-              }
-            }
-            this.refreshHeandLights()
-
-            heandGroup.updateMatrixWorld(true)
-            heandGroup.box.setFromObject(heandGroup)
+          // FIX Y
+          if (heandConfig.tilt) {
+            // y tengelyen ne vegye át a forgást
+            const camEuler = new THREE.Euler().setFromQuaternion(camQuat, 'YXZ')  // változás
+            const yawOnlyQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, camEuler.y, 0, 'YXZ'))  // változás
+            heandGroup.quaternion.copy(yawOnlyQuat)  // változás
+          } else {
+            heandGroup.quaternion.copy(camQuat)
           }
+
+          // IF HAVE LIGHT          
+          if (!heandGroup.lightsAdded) {
+            if (heandGroup.lights) {
+              if (!heandGroup.lightsGroup) {
+                heandGroup.lightsGroup = new THREE.Group()
+                // ADD THE LAMP LIGHT TO MAP
+                this.game.scene.add(heandGroup.lightsGroup)
+              }
+              heandGroup.lights.forEach(light => {
+                heandGroup.heandindex = heandGroup.heandindex ?? []
+                heandGroup.lightsGroup.add(light)
+                heandGroup.heandindex.push(this.game.loadedLights.push([heandModell.filename, light.clone()]) - 1)
+              })
+            } else {
+              // RESET
+              if (heandGroup.heandindex) {
+                heandGroup.heandindex.forEach(index => {
+                  delete this.game.loadedLights[index]
+                });
+              }
+              if (heandGroup.lightsGroup) {
+                this.game.scene.remove(heandGroup.lightsGroup)
+                heandGroup.lightsGroup = null
+                heandGroup.lightsAdded = false
+              }
+            }
+
+            heandGroup.lightsAdded = true; // ONLY ONE
+          }
+          
+          if (false || heandGroup.lightsGroup) {
+            const originalCamPos = new THREE.Vector3()
+            this.game.camera.getWorldPosition(originalCamPos)
+
+            const originalCamQuat = new THREE.Quaternion()
+            this.game.camera.getWorldQuaternion(originalCamQuat)
+
+            heandGroup.lightsGroup.position.copy(originalCamPos)
+            heandGroup.lightsGroup.quaternion.copy(originalCamQuat)
+
+            if (heandGroup.heandindex) {
+              heandGroup.heandindex.forEach((index, i) => {
+                const localOffset = new THREE.Vector3(-0.15, i * 0.1, i * -0.1)
+                this.game.loadedLights[index][1].position.copy(originalCamPos).add(localOffset)
+                this.game.loadedLights[index][1].quaternion.copy(originalCamQuat)
+                // LIGHT VIBRATION
+                // this.game.loadedLights[index][1].intensity += this.lightVibration(0.025, 2500) // !!!
+              })
+            }
+          }
+          this.refreshHeandLights()
+
+          heandGroup.updateMatrixWorld(true)
+          heandGroup.box.setFromObject(heandGroup)
         }
       } else {
         heandGroup.visible = false;
@@ -410,7 +416,7 @@ export default class Gameplay {
     }
   }
 
-  async calcInterpolated(actualFrameDataDifference, nextFrameData, segmentlength) {
+  calcInterpolated(actualFrameDataDifference, nextFrameData, segmentlength) {
     for (let row of actualFrameDataDifference) {
       if (row?.tris) {
         for (let tri of row.tris) {
@@ -474,7 +480,6 @@ export default class Gameplay {
             this.rotateAndMoveInPlayer(beingGroup, true, true, true) // rotate, moveX, moveY
             break;
           case('ghost-1'):
-            // ATTACK GHOST
             this.rotateAndMoveInPlayer(beingGroup, true, true, false) // rotate, moveX, moveY
           break;
         }
@@ -1137,7 +1142,7 @@ export default class Gameplay {
       break
 
       case 5:
-        // Open-6 (floor-door) x: y: z:
+        // Open-6 (floor-door) x:min y:max z:min
         if (!data[eventId]) {
           data[eventId] = {
             meshId: mesh.objId,
@@ -1159,6 +1164,28 @@ export default class Gameplay {
           }
         }
         this.openFx(data[eventId], mesh, 'z')
+      break
+
+      case 6:
+        // Open-7 (cheast-box) x: y: z:
+        if (!data[eventId]) {
+          data[eventId] = {
+            meshId: mesh.objId,
+            meshName: mesh.name,
+            state: false,
+            min: 0,
+            max: 64,
+            value: 0,
+            waiting: 10,
+            valueAdd: null,
+            addedStep: 0.025,
+            addedValue: null,
+            offsetTypeX: 'min',
+            offsetTypeY: 'min',
+            offsetTypeZ: 'max',
+          }
+        }
+        this.openFx(data[eventId], mesh, 'x')
       break
       case 10:
         // SWITCH TEXTURE CHANGE
@@ -1198,10 +1225,6 @@ export default class Gameplay {
         this.textureOnOf(mesh, data, eventId, 'picture-2', 'picture-3')
       break
       case 40:
-        // MICRO HAMSTER TEXTURE CHANGE
-        this.textureOnOf(mesh, data, eventId, 'microhamster-on', 'microhamster-off')
-      break
-      case 50:
         // STOP/START ANIMATED TEXTURE
         mesh.texture.playingState = !mesh.texture.playingState
         // SAVE LOADING FILES

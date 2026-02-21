@@ -75,8 +75,6 @@ class AnimAction {
     this.events.push(this.newEvent)
   }
 
-  //--
-
   static findActionById(clone, id) {
     const data = clone.map.actions.find(data => data.id == id);
     return data ? Object.assign(new AnimAction(), data) : null;
@@ -221,9 +219,13 @@ class Editor {
 
   typeShowHide(ext) {
     if (ext == 'mtuc') {
-      $("#animations").hide(); $("#lights").show(); $("#beings").show(); $('.menu-text-border.modal-button[data-mode="gameactions"]').show(); jQuery("#actions").show();
+      $("#animations").hide(); $("#lights").show(); $("#beings").show();
+      $('.menu-text-border.modal-button[data-mode="gameactions"]').show(); $("#actions").show();
+      $("#modal-ext").val("mtuc");
     } else if (ext == 'otuc') {
-      $("#lights").hide(); $("#beings").hide(); $("#animations").show(); $('.menu-text-border.modal-button[data-mode="gameactions"]').hide(); jQuery("#actions").hide();
+      $("#lights").hide(); $("#beings").hide(); $("#animations").show();
+      $('.menu-text-border.modal-button[data-mode="gameactions"]').hide(); $("#actions").hide();
+      $("#modal-ext").val("otuc");
     }
   }
 
@@ -641,11 +643,20 @@ class Editor {
       this.map.actions = this.deepCopy(response.actions)
       if (this.map.actions && Array.isArray(this.map.actions)) {
         AnimAction.setInstanceCount(this.map.actions.length)
-        let countEventsRow = 0;
+        // console.log('setInstanceCount: ', AnimAction.getInstanceCount())
+
+        let maxEventId = 0
         for (let key in this.map.actions) {
-          if (this.map.actions[key].events && Array.isArray(this.map.actions[key].events)) countEventsRow += this.map.actions[key].events.length;
+          const action = this.map.actions[key]
+          if (action.events && Array.isArray(action.events)) {
+            for (const event of action.events) {
+              if (event.id > maxEventId) maxEventId = event.id;
+            }
+          }
         }
-        AnimAction.setEventIdCounter(countEventsRow)
+        AnimAction.setEventIdCounter(maxEventId)
+        // console.log('countEventsRow: ', AnimAction.getEventIdCounter())
+
         this.refreshActionSelect()
       } else this.map.actions = [];
 
@@ -2375,8 +2386,9 @@ class Editor {
     // EVENT 
 
     // ADD EVENT
-    $(document).on('click', ".add-event", function() {
+    $(document).on('click', ".add-event", function(event) {
       let selectedActionId = parseInt($(event.target).attr('data-action-id'))
+
       const animActionRow = AnimAction.findActionById(clone, selectedActionId)
       if (animActionRow) {
         animActionRow.addNewEvent()
@@ -3439,7 +3451,6 @@ class Editor {
 
           clone.mouse.selectedBeingData.p[view.vX] = pos.vx
           clone.mouse.selectedBeingData.p[view.vY] = pos.vy
-
           clone.refreshBeingDataDOM(clone.mouse.selectedBeingData)
           clone.fullRefreshCanvasGraphics()
 
@@ -3674,8 +3685,6 @@ class Editor {
         let name = $(this).attr('data-name')
         if (name == 'screen-canvas') return;
         // only axis canvas
-        // clone.views[name].posX = 320; clone.views[name].posY = 210;
-
         const view = clone.views[name]
         const canvas = view.canvas
 
@@ -4114,9 +4123,6 @@ class Editor {
         let axis = $(this).attr('data-axis')
         let num = $(this).attr('data-num')
 
-        // console.log(type, num, axis)
-        // console.log('OLD data', $(this).data('data-before')); console.log('NEW data', $(this).val());
-        
         if (typeof clone.mouse.selectedTri.id !== 'undefined') {
           clone.saveMapMemory('save')
           if (clone.options.uvLocketSwitch) {
@@ -5387,32 +5393,23 @@ class Editor {
     $(document).on('click', ".menu-icon.clipboard", function(event) {
       event.stopPropagation()
       clone.saveMapMemory('save')
-      
+
       let meshId = $(this).closest('li').attr('data-id')
       clone.mouse.selectedTri = null; clone.mouse.selectedMeshId = null;
       let getMeshStructure = clone.findMeshById(clone.map.structure, meshId)
-
       // find mesh all tree ids
       let clipIds = clone.getAllMeshTreeIds(getMeshStructure)
-      // console.log('clipIds:'); console.log(clipIds)
       if (clipIds) {
-        clipIds.forEach(meshId => {
-          // copy clipboard memory
-          // console.log(meshId); console.log(typeof meshId);
-          
+        clipIds.forEach(meshId => {          
           let mapdataRow = clone.map.data[clone.map.aid].find(mesh => mesh.id == meshId)
-          
           clone.clipboardMemory.meshs.push(mapdataRow)
-
           localStorage.setItem('clipboardMemory', JSON.stringify(clone.clipboardMemory))
-
           // delete structure
           clone.deleteMeshParent(clone.map.structure, meshId)
           // delete data
           let index = clone.map.data[clone.map.aid].findIndex(element => element.id == meshId)
           if (index != -1) clone.map.data[clone.map.aid].splice(index, 1);
         });
-        // console.log(clone.clipboardMemory.meshs)
       }
 
       clone.refreshObjectList()
@@ -5441,6 +5438,9 @@ class Editor {
         let meshCopy = clone.deepCopy(meshData)
 
         meshCopy.name += `-${newId}`
+
+
+        /// !!!!!!!!!!!!!!!!!!!!!!!! HIBA
 
         let newTris = []
         meshCopy.tris.forEach(tri => {
@@ -5503,8 +5503,15 @@ class Editor {
         // DATA
         let meshData = clone.map.data[clone.map.aid].find(m => m.id == getMeshStructure.id)
         let meshCopy = clone.deepCopy(meshData)
+        // new mesh id
         meshCopy.id = newId
         meshCopy.parent_id = null
+        //new tri id
+        meshCopy.tris.forEach(tri => {
+          tri.id = Date.now().toString().slice(-5) + '-' + Math.floor(Math.random() * 99999)
+          tri.locket = null
+        })
+        // add clipboard
         clone.clipboardMemory.meshs.push(meshCopy)
         localStorage.setItem('clipboardMemory', JSON.stringify(clone.clipboardMemory))
 
@@ -5545,7 +5552,7 @@ class Editor {
         // screen-canvas refresh
         this.moveViewInputs(event)
         if (document.waitTime) return;
-        document.waitTime = setTimeout(() => { document.waitTime = null }, 20)
+        document.waitTime = setTimeout(() => { document.waitTime = null }, 5)        
         this.refreshScreen();
       }
       // ALLOWED BUTTONS

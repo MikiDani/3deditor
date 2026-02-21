@@ -66,12 +66,21 @@ export default class Game {
     this.$inventory = {}
     this.currentState = 'menu'
 
-    this.moveSpeed = 0.015,
+    this.move = {
+      push: false,
+      key: '',
+      speed: 0,
+      add: 0.0005,
+      max: 0.015,   // 15
+      sub: 0.95,    // 95
+      cameraUp: {},
+      playerRotationY: {}
+    }
+
     this.currentGravity = -0.05,
     this.gravityValue = 0.05,
 
     this.stepHeight = 0.2
-
 
     this.mouseMaxPitchDefault = 80
     this.mouseMinPitchDefault = -80
@@ -164,22 +173,31 @@ export default class Game {
 
     // REAL LOOP
     requestAnimationFrame((timestamp) => this.loop(timestamp))
+
     if (!this.lastRenderTime) this.lastRenderTime = timestamp
-    const delta = timestamp - this.lastRenderTime
+  
+    let delta = timestamp - this.lastRenderTime
 
     switch (this.currentState) {
       case 'menu':
         this.menu.update(delta)
+        this.lastRenderTime = timestamp
         break
+    
       case 'game':
         if (delta >= this.renderInterval) {
-
-          if (this.mapLoading) await this.gameplay.update(delta)
-          this.lastRenderTime = timestamp
+          const deltaTime = delta
+    
+          if (this.mapLoading)
+            await this.gameplay.update(deltaTime)
+    
+          this.lastRenderTime = timestamp - (delta % this.renderInterval)
         }
         break
+    
       case 'inventory':
         this.inventory.update(delta)
+        this.lastRenderTime = timestamp
         break
     }
   }
@@ -592,6 +610,53 @@ removeBoundingBoxOfMap(mesh) {
   
     return box
   }
+
+  playStartupSoundsBeings(mesh) {
+    if (!mesh) return
+    if (!this.config['autoplaysounds']) return
+    if (!mesh.filename) return
+  
+    const soundData = this.config['autoplaysounds'][mesh.filename]
+    if (!soundData) return
+
+    console.log(mesh.filename)
+
+    mesh.updateMatrixWorld(true)
+  
+    const box = new THREE.Box3().setFromObject(mesh)
+    const center = new THREE.Vector3()
+    box.getCenter(center)
+  
+    this.sound.play(soundData.soundid, { volume: soundData.volume }, soundData.loop, mesh).then(phantom => {
+      if (!phantom) return
+
+      phantom.position.copy(center)
+
+      const audio = phantom.children[0]
+  
+      if (audio) {
+        if (soundData.setRefDistance != null) audio.setRefDistance(soundData.setRefDistance)
+        if (soundData.setMaxDistance != null) audio.setMaxDistance(soundData.setMaxDistance)
+        if (soundData.setRolloffFactor != null) audio.setRolloffFactor(soundData.setRolloffFactor)
+      }
+  
+      mesh.playSound = phantom
+      mesh.playSound.audio = audio
+  
+      // HELPER
+      if (false && !mesh.soundHelper) {
+        const geometry = new THREE.SphereGeometry(0.05, 12, 12)
+        const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
+        const helper = new THREE.Mesh(geometry, material)
+  
+        helper.position.copy(center)
+        this.scene.add(helper)
+  
+        mesh.soundHelper = helper
+      }
+  
+    }).catch(err => console.warn("Sound play error:", err))
+  }  
 }
 
 const game = new Game()

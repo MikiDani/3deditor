@@ -28,16 +28,22 @@ export default class Graphics {
     if (this.checkGPU()) {
       // HIGH
       // console.log('High graphics')
-      this.game.renderInterval = 20
+
+      this.game.targetFPS = 60
+      this.game.renderInterval = 1000 / this.game.targetFPS
+
       this.scX = window.innerWidth / 1
       this.scY = window.innerHeight / 1
-      this.far = 30
+      this.far = 15
     } else {
       // LOW
       // console.log('Low graphics')
-      this.game.renderInterval = 30
-      this.scX = window.innerWidth / 5
-      this.scY = window.innerHeight / 5
+
+      this.game.targetFPS = 20
+      this.game.renderInterval = 1000 / this.game.targetFPS
+
+      this.scX = window.innerWidth / 8
+      this.scY = window.innerHeight / 8
       this.far = 7
     }
 

@@ -315,15 +315,6 @@ export default class Loader {
         if (mesh.pickuped) meshGroup.pickuped = mesh.pickuped            // IF HAVE PICKUPED
         if (mesh.pervious) meshGroup.pervious = mesh.pervious            // IF HAVE PERVIOUS
 
-        /*
-        if (mesh.pervious) {
-          console.log('VAN ÁTHATOLHATÓSÁG !! : )')
-          console.log(mesh.name)
-          console.log(mesh.pervious)
-          console.log('---')
-        }
-        */
-
         for (let tri of mesh.tris) {
           const geometry = new THREE.BufferGeometry()
           const vertices = new Float32Array([
@@ -526,7 +517,7 @@ export default class Loader {
               largestBox.getSize(size)
               if (size.z === 0) size.z = 0.01; if (size.x === 0) size.x = 0.01; if (size.y === 0) size.y = 0.01;
 
-              size.multiplyScalar(0.5)
+              size.multiplyScalar(0.6)
 
               largestBox.setFromCenterAndSize(center, size)
 
@@ -543,8 +534,8 @@ export default class Loader {
             this.game.scene.add(beingGroup)
 
             this.game.loadedBeings[being.id] = beingGroup
-            this.game.loadedBeings[being.id].filename = being.filename              
-            this.game.loadedBeings[being.id].lastUpdate = performance.now()
+            this.game.loadedBeings[being.id].filename = being.filename
+            this.game.loadedBeings[being.id].animTime = 0
 
             // LOAD BEING LIGHTS
             if (beingGroup.lights) {
@@ -563,9 +554,10 @@ export default class Loader {
                 this.game.loadedLights[light.id] = [light.name, beingLight]
 
                 this.game.scene.add(beingLight)
-                // beingGroup.add(beingLight)
               });
             }
+
+            this.game.playStartupSoundsBeings(beingGroup)
 
             this.game.addConsoleRow(`Added Being: ${being.id}. ${being.name}`, 'div', false, true)
           }
@@ -614,7 +606,9 @@ export default class Loader {
             }
 
             this.createTHREEObject(heand, heandGroup, actualHeandData, true)
+
             this.game.loadedHeands[heand.id] = heandGroup
+            this.game.loadedHeands[heand.id].animTime = 0
 
             this.game.addConsoleRow(`Added Heand: ${heand.id}. ${heand.name}`, 'div', false, true)
           }

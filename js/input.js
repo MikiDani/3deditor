@@ -216,6 +216,9 @@ export default class Input {
           const raycaster = new THREE.Raycaster()
           raycaster.setFromCamera(mouse, this.game.camera)
 
+          //-- 1. CHECK FISRT HIT MESH
+          let sceneIntersects = raycaster.intersectObjects(Object.values(this.game.loadedMeshs), true)
+
           let findLook = false;
           let findUse = false;
 
@@ -224,6 +227,10 @@ export default class Input {
             if (!meshGroup || !meshGroup.children) continue;
             const intersects = raycaster.intersectObjects(meshGroup.children, true)
             if (intersects.length > 0) {
+              
+              // 2. CHECK FISRT HIT MESH
+              if (sceneIntersects[0].object.parent.name != intersects[0].object.parent.name) continue;
+
               const intersect = intersects[0]
               const hitPoint = intersect.point;
 
@@ -990,39 +997,52 @@ export default class Input {
     const shift = this.game.keysPressed.has('shift')
     let moved = false;
 
-    const direction = new THREE.Vector3(-Math.sin(this.game.player.rotation.y), 0, -Math.cos(this.game.player.rotation.y)).normalize()   
+    const direction = new THREE.Vector3(-Math.sin(this.game.player.rotation.y), 0, -Math.cos(this.game.player.rotation.y)).normalize()
 
     if (this.game.keysPressed.has('w') || this.game.keysPressed.has('W') || this.game.keysPressed.has('arrowup')) {
+
+      this.speedController(true, 'w')
+      this.game.move.playerRotationY = this.game.player.rotation.y
+
       if (shift) {
         if (!moved) {
           moved = this.game.ghostMode
-          ? this.testMove(new THREE.Vector3(0, this.game.moveSpeed, 0)) // UP
-          : this.testMove(direction.clone().multiplyScalar(this.game.moveSpeed * 2), true);
+          ? this.testMove(new THREE.Vector3(0, this.game.move.speed, 0)) // UP
+          : this.testMove(direction.clone().multiplyScalar(this.game.move.speed * 1.6), true);
         }
       } else {
         if (!moved) {
-          moved = this.testMove(direction.clone().multiplyScalar(this.game.moveSpeed), true)
+          moved = this.testMove(direction.clone().multiplyScalar(this.game.move.speed), true)
         }
       }
     }
 
     if (this.game.keysPressed.has('s') || this.game.keysPressed.has('S') || this.game.keysPressed.has('arrowdown')) {
+
+      this.speedController(true, 's')
+      this.game.move.playerRotationY = this.game.player.rotation.y
+
       if (shift) {
         if (!moved) {
           moved = this.game.ghostMode
-          ? this.testMove(new THREE.Vector3(0, -this.game.moveSpeed, 0)) // DOWN
-          : this.testMove(direction.clone().multiplyScalar(-this.game.moveSpeed * 2));
+          ? this.testMove(new THREE.Vector3(0, -this.game.move.speed, 0)) // DOWN
+          : this.testMove(direction.clone().multiplyScalar(-this.game.move.speed * 1.6));
         }
       } else {
         if (!moved) {
-          moved = this.testMove(direction.clone().multiplyScalar(-this.game.moveSpeed))
+          moved = this.testMove(direction.clone().multiplyScalar(-this.game.move.speed))
         }
       }
     }
 
     if (this.game.keysPressed.has('a') || this.game.keysPressed.has('A') || this.game.keysPressed.has('arrowleft')) {
       if (shift || this.game.isPointerLocked) {
-        const left = new THREE.Vector3().crossVectors(this.game.camera.up, direction).normalize().multiplyScalar(this.game.moveSpeed)
+
+        this.speedController(true, 'a')
+        this.game.move.playerRotationY = this.game.player.rotation.y
+        this.game.move.cameraUp = this.game.camera.up
+
+        const left = new THREE.Vector3().crossVectors(this.game.camera.up, direction).normalize().multiplyScalar(this.game.move.speed)
         moved ||= this.testMove(left);
       } else {
         this.game.player.rotation.y += this.game.rotateSpeed
@@ -1032,13 +1052,21 @@ export default class Input {
 
     if (this.game.keysPressed.has('d') || this.game.keysPressed.has('D') || this.game.keysPressed.has('arrowright')) {
       if (shift || this.game.isPointerLocked) {
-        const right = new THREE.Vector3().crossVectors(direction, this.game.camera.up).normalize().multiplyScalar(this.game.moveSpeed)
+
+        this.speedController(true, 'd')
+        this.game.move.playerRotationY = this.game.player.rotation.y
+        this.game.move.cameraUp = this.game.camera.up
+
+        const right = new THREE.Vector3().crossVectors(direction, this.game.camera.up).normalize().multiplyScalar(this.game.move.speed)
         moved ||= this.testMove(right)
       } else {
         this.game.player.rotation.y -= this.game.rotateSpeed
         moved = true
       }
     }
+
+    if (!this.game.move.push && this.game.move.speed > 0) this.speedController(false);
+    this.game.move.push = false
 
     const pitchLimit = THREE.MathUtils.degToRad(80)
 
@@ -1104,6 +1132,40 @@ export default class Input {
     return moved;
   }
 
+  speedController(push, key) {
+    if (push) {
+      this.game.move.push = true
+      this.game.move.key = key
+
+      if (this.game.move.speed < this.game.move.max) this.game.move.speed += this.game.move.add; //(i)
+      // console.log('ADD: ', this.game.move.speed)
+    } else {      
+      this.game.move.speed *= this.game.move.sub //(i)
+      if (this.game.move.speed < 0.001) {
+        this.game.move.speed = 0
+        this.game.move.key = ''
+      } else {
+        // console.log('SUB: ', this.game.move.speed)
+        const direction = new THREE.Vector3(-Math.sin(this.game.move.playerRotationY), 0, -Math.cos(this.game.move.playerRotationY)).normalize()
+        switch(this.game.move.key) {
+          case 'w':
+            this.testMove(direction.clone().multiplyScalar(this.game.move.speed), true)
+          break
+          case 's':
+            this.testMove(direction.clone().multiplyScalar(-this.game.move.speed));
+          break
+          case 'a':
+           this.testMove(new THREE.Vector3().crossVectors(this.game.move.cameraUp, direction).normalize().multiplyScalar(this.game.move.speed));
+          break
+          case 'd':
+            this.testMove(new THREE.Vector3().crossVectors(direction, this.game.move.cameraUp).normalize().multiplyScalar(this.game.move.speed))
+          break
+        }
+      }
+
+    }
+  }
+
   // CANVAS CLICK
   actionsClicksCheck() {
     let clickTimer
@@ -1139,15 +1201,21 @@ export default class Input {
     const raycaster = new THREE.Raycaster()
     raycaster.setFromCamera(mouse, this.game.camera)
 
+    //-- 1. CHECK FISRT HIT MESH
+    let sceneIntersects = raycaster.intersectObjects(Object.values(this.game.loadedMeshs), true)
+
     for (const action of this.game.map.actionelements) {
       if (action[1].conditions.click == clickType) {
         const intersects = raycaster.intersectObjects(action[0].children, true)
         // IF HAVE CLICK SHOT MESH
-        if (intersects.length > 0) {
-          const intersect = intersects[0]
+        if (intersects.length > 0) {          
+
+          // 2. CHECK FISRT HIT MESH
+          if (sceneIntersects[0].object.parent.name != intersects[0].object.parent.name) continue;
+
           const cameraPos = new THREE.Vector3()
           this.game.camera.getWorldPosition(cameraPos)
-          const hitPoint = intersect.point
+          const hitPoint = intersects[0].point
           const distance = cameraPos.distanceTo(hitPoint)
 
           // IF LOOK MODE AND HAVE TEXT

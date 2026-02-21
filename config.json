@@ -48,7 +48,11 @@
     },
     {
       "id": 5,
-      "name": "Open-6 (floor-door) x: y: z:"
+      "name": "Open-6 (floor-door) x:min y:max z:min"
+    },
+    {
+      "id": 6,
+      "name": "Open-7 (cheast-box) x: y: z:"
     },
     {
       "id": 10,
@@ -65,10 +69,6 @@
     },
     {
       "id": 40,
-      "name": "Micro Hamster Change"
-    },
-    {
-      "id": 50,
       "name": "Stop/Start animated texture"
     }
   ],
@@ -168,6 +168,24 @@
       "setRolloffFactor": 3
     },
     {
+      "id": 10,
+      "name": "clock1",
+      "volume": 1,
+      "loop": true,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 11,
+      "name": "clock-bell",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
       "id": 100,
       "name": "bet-attack1",
       "volume": 1,
@@ -215,11 +233,6 @@
   ],
   "actionmessages": [
     {
-      "object_id": 3,
-      "action_id": 1,
-      "message": "Your idiote! The table dont use on the fridge! : )"
-    },
-    {
       "object_id": 0,
       "action_id": 1,
       "message": "If you cast a spell on the fridge with the magic book, that's funny! : )"
@@ -228,6 +241,11 @@
       "object_id": 1,
       "action_id": 8,
       "message": "To use a bush on the door... Funny :P"
+    },
+    {
+      "object_id": 3,
+      "action_id": 1,
+      "message": "Your idiote! The table dont use on the fridge! : )"
     }
   ],
 
@@ -377,6 +395,24 @@
     "ghost1-move": {
       "intervalTime": 100,
       "playingState": true
+    }
+  },
+  "autoplaysounds": {
+    "clock-1": {
+      "soundid": 10,
+      "loop": true,
+      "volume": 1,
+      "setRefDistance": 0.5,
+      "setMaxDistance": 1,
+      "setRolloffFactor": 7
+    },
+    "CLOTH-TOP": {
+      "soundid": 100,
+      "loop": true,
+      "volume": 1,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
     }
   }
 }
