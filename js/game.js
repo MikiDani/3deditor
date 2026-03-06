@@ -70,9 +70,9 @@ export default class Game {
       push: false,
       key: '',
       speed: 0,
-      add: 0.0005,
-      max: 0.015,   // 15
-      sub: 0.95,    // 95
+      add: 0.001,      // 0005
+      max: 0.025,       // 15
+      sub: 0.9,         // 95
       cameraUp: {},
       playerRotationY: {}
     }
@@ -128,7 +128,7 @@ export default class Game {
     // FIRST MOUSE MODE
     this.playerMouse.mode = 'use'
     this.input.removeAllCursorClass()
-    $('html').addClass('cursor-use')
+    // $('html').addClass('cursor-use')
 
     $('#mouseorkey-selector').addClass('click-selector-pic')
 
@@ -156,6 +156,10 @@ export default class Game {
   }
 
   async loop(timestamp = 0) {
+
+    // const mustWait = 25 //!!!
+    const mustWait = 25
+
     // FIRST LOAD OF MAP | MAPLOADED + ANIMATED START
     if (this.currentState == 'game' && !this.mapLoading) {
       // console.log('--- RELOAD MAP ---')
@@ -177,6 +181,13 @@ export default class Game {
     if (!this.lastRenderTime) this.lastRenderTime = timestamp
   
     let delta = timestamp - this.lastRenderTime
+
+    // --- MINIMUM FRAME LIMIT ---
+    if (delta < mustWait) return;
+
+    // ha túl nagyot ugrik (pl. tab visszajövés),
+    // clampeljük hogy ne robbanjon szét a fizika
+    if (delta > 100) delta = 100;
 
     switch (this.currentState) {
       case 'menu':
@@ -218,7 +229,8 @@ export default class Game {
         y: 0,
         z: 0,
         fYaw: 0,
-        fXaw: 0
+        fXaw: 0,
+        energy: 100,
       }
     }
     return this.map;
@@ -359,6 +371,7 @@ export default class Game {
 
     this.$game = $(`
       <div id="game-container" style="display:none;">
+        <div id="game-blood"></div>
         <canvas id="game-canvas"></canvas>
         <div id="cursor-text-box" style="display:none;"></div>
         <div id="text-box-container">
@@ -366,6 +379,9 @@ export default class Game {
             <button id="text-box-close-button"></button>
             <div id="text-box-text"></div>
           </div>
+        </div>
+        <div id="energy-container">
+          <div class="energy"></div>
         </div>
         <div id="use-selector"></div>
         <div id="look-selector"></div>
@@ -656,7 +672,14 @@ removeBoundingBoxOfMap(mesh) {
       }
   
     }).catch(err => console.warn("Sound play error:", err))
-  }  
+  }
+
+  energyModifyScreen(value) {
+    console.log(this.map.player.energy)
+    this.map.player.energy -= parseFloat(value)
+
+    $("#energy-container .energy").css('width', `${this.map.player.energy}%`)
+  }
 }
 
 const game = new Game()

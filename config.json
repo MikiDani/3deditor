@@ -52,7 +52,11 @@
     },
     {
       "id": 6,
-      "name": "Open-7 (cheast-box) x: y: z:"
+      "name": "Open-7 (cheast-box) x:min y:min z:max"
+    },
+    {
+      "id": 7,
+      "name": "Open-8 (wc-board) x:max y:min z:min"
     },
     {
       "id": 10,
@@ -381,15 +385,11 @@
   ],
   "animationtextures": {
     "water-1": {
-      "intervalTime": 250,
+      "intervalTime": 350,
       "playingState": true
     },
-    "tools-anim":{
-      "intervalTime": 150,
-      "playingState": false
-    },
-    "top-engine": {
-      "intervalTime": 1000,
+    "fridge-top": {
+      "intervalTime": 2000,
       "playingState": true
     },
     "ghost1-move": {
@@ -406,7 +406,7 @@
       "setMaxDistance": 1,
       "setRolloffFactor": 7
     },
-    "CLOTH-TOP": {
+    "xy": {
       "soundid": 100,
       "loop": true,
       "volume": 1,

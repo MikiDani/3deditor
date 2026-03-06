@@ -104,6 +104,8 @@ class AnimAction {
 
 class Editor {
   constructor () {
+    this.inputTimeout
+
     this.map = {}
     this.gamedata = {}
 
@@ -328,13 +330,20 @@ class Editor {
           <div class="side-row">
               <span>Freq.:</span>
               <select name="frequent" data-name="${name}">
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20" selected>20(d)</option>
-                <option value="40">40</option>
-                <option value="80">80</option>
-                <option value="160">160</option>
+                <option value="5" ${this.views[name].frequent == '5' ? 'selected' : ''}>5</option>
+                <option value="10" ${this.views[name].frequent == '10' ? 'selected' : ''}>10</option>
+                <option value="20" ${this.views[name].frequent == '20' ? 'selected' : ''}>20(d)</option>
+                <option value="40" ${this.views[name].frequent == '40' ? 'selected' : ''}>40</option>
+                <option value="80" ${this.views[name].frequent == '80' ? 'selected' : ''}>80</option>
+                <option value="160" ${this.views[name].frequent == '160' ? 'selected' : ''}>160</option>
               </select>
+          </div>
+           <div class="d-flex justify-content-center align-items-start">&nbsp</div>
+           <div class="d-flex justify-content-center align-items-start">
+            <button class="ratio-buttons" data-name="${name}" data-ratio="10">10</button>
+            <button class="ratio-buttons" data-name="${name}" data-ratio="50">50</button>
+            <button class="ratio-buttons" data-name="${name}" data-ratio="250">250</button>
+            <button class="ratio-buttons" data-name="${name}" data-ratio="500">500</button>
           </div>
         </div>
         <div class="right-side">
@@ -348,7 +357,12 @@ class Editor {
               <span>Grid:</span><button type="button" class="grid-buttons" data-name="${name}" value="true">ON</button>
           </div>
           <div class="side-row">
-              <span class="w-100 text-center text-mini data-grid-value" data-name="${name}"></span>
+              <span class="text-start text-mini">Grid value: </span><span class="text-center text-mini data-grid-value" data-name="${name}"></span>
+          </div>
+          <div class="d-flex justify-content-center align-items-start">
+            <button class="ratio-buttons" data-name="${name}" data-ratio="1000">1000</button>
+            <button class="ratio-buttons" data-name="${name}" data-ratio="2500">2500</button>
+            <button class="ratio-buttons" data-name="${name}" data-ratio="5000">5000</button>
           </div>
         </div>
       </div>`;
@@ -1958,9 +1972,9 @@ class Editor {
           if (clone.mouse?.selectedMeshId) $("#add-new-rec").trigger('click');
           else { $("#add-new-rec").addClass('bg-red-p'); setTimeout(() => { $("#add-new-rec").removeClass('bg-red-p')}, 100) }
  
-        if (event.key == 'F5') $(".reset-center-button[data-name='XYview-canvas']").trigger('click');
-        if (event.key == 'F6') $(".reset-center-button[data-name='XZview-canvas']").trigger('click');
-        if (event.key == 'F7') $(".reset-center-button[data-name='ZYview-canvas']").trigger('click');
+        if (event.key == 'F6') $(".reset-center-button[data-name='XYview-canvas']").trigger('click');
+        if (event.key == 'F7') $(".reset-center-button[data-name='XZview-canvas']").trigger('click');
+        if (event.key == 'F8') $(".reset-center-button[data-name='ZYview-canvas']").trigger('click');
 
         if (event.key == 'i') {
           console.log('this.map:')
@@ -2843,8 +2857,14 @@ class Editor {
         let isTextures = mode == 'textures' ? true : false;
         
         let filename = $(this).attr('data-filename')
-        let ext = $(this).attr('data-ext')
-        $("#modal-ext").val(ext)
+
+        let ext = ''
+        if (isTextures) {
+          ext = $("#modal-ext").val()
+        } else {
+          ext = $(this).attr('data-ext')
+          $("#modal-ext").val(ext)
+        }
 
         if (filename && ext) {
           $(this).addClass("list-selected-file")
@@ -3261,24 +3281,31 @@ class Editor {
 
     // MASH NAME MODIFY
     $("#selected-mesh-name").on('input', function() {
-      let selectedMesh = clone.map.data[clone.map.aid].find(mesh => mesh.id == clone.mouse.selectedMeshId)
-      if (selectedMesh) {
-        let value = $(this).val().toUpperCase()
-        selectedMesh.name = value; $(this).val(value);
-        $("#object-list").find(`[data-id='${selectedMesh.id}']`).text(selectedMesh.name)
-        clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
-      }
+      clearTimeout(clone.inputTimeout)
+
+      clone.inputTimeout = setTimeout(() => {
+        let selectedMesh = clone.map.data[clone.map.aid].find(mesh => mesh.id == clone.mouse.selectedMeshId)
+        if (selectedMesh) {
+          let value = $(this).val().toUpperCase()
+          selectedMesh.name = value; $(this).val(value);
+          $("#object-list").find(`[data-id='${selectedMesh.id}']`).text(selectedMesh.name)
+          clone.refreshObjectList(); clone.fullRefreshCanvasGraphics();
+        }        
+      }, 100);
     })
 
     // MASH TEXT MODIFY
     $("#selected-mesh-text").on('input', function() {
-      let selectedMesh = clone.map.data[clone.map.aid].find(mesh => mesh.id == clone.mouse.selectedMeshId)
-      if (selectedMesh) {
-        let value = $(this).val()
-        selectedMesh.text = value
-        $(this).val(value)
-        clone.refreshObjectList();
-      }
+      clearTimeout(clone.inputTimeout)
+      clone.inputTimeout = setTimeout(() => {
+        let selectedMesh = clone.map.data[clone.map.aid].find(mesh => mesh.id == clone.mouse.selectedMeshId)
+        if (selectedMesh) {
+          let value = $(this).val()
+          selectedMesh.text = value
+          $(this).val(value)
+          clone.refreshObjectList();
+        }
+      }, 100);
     })
 
 		$("#selected-animation-name").on('input mousedown', function() {
@@ -3754,6 +3781,16 @@ class Editor {
       let mode = $(this).attr('data-mode')
       let number = $(this).attr('data-number')
       $(`input[name='move-size'][data-mode='${mode}']`).val(number)
+    });
+
+    // RATIO AUTO BUTTON
+    $(document).on('click', '.ratio-buttons', function() {
+      let ratio = $(this).attr('data-ratio')
+      let name = $(this).attr('data-name')
+      if (name && ratio) {
+        $(this).closest('.top-screen-options').find(`input[name='ratio'][data-name='${name}']`).val(ratio).trigger('input')
+        $(this).closest('.top-screen-options').find(`.reset-center-button[data-name='${name}']`).trigger('click')
+      }
     });
 
     // WORLD GRID UNIT
@@ -5543,6 +5580,10 @@ class Editor {
     //////////////////
     document.addEventListener('keydown', (event) => {
       // console.log(this.keys)
+      const active = document.activeElement
+
+      const isFormField = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable)
+      if (isFormField) return;
 
       this.keys[event.code] = true
       this.checkKeyboardInputs(event)

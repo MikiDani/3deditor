@@ -254,6 +254,38 @@ a:hover, button:hover, input:hover, textarea:hover {
     z-index: 10;
 }
 
+#game-blood {
+  pointer-events: none;
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  z-index: 11;
+  background-size: cover;
+  background-image: url("/img/blood/blood2.png");
+  opacity: 0;
+}
+
+#game-blood.play {
+  animation: bloodPulse 1s;
+}
+
+@keyframes bloodPulse {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 .delta-time-menu,
 .delta-time-inventory,
 .delta-time-game {
@@ -271,6 +303,13 @@ a:hover, button:hover, input:hover, textarea:hover {
     width: 100vw;
     height: 100vh;
     background-color: black;
+}
+
+.small-size {
+  position: relative;
+  width: 50vw !important;
+  height: 50vh !important;
+  background-color: black;
 }
 
 #loading-container {
@@ -382,6 +421,30 @@ a:hover, button:hover, input:hover, textarea:hover {
     }
   }
 
+#energy-container {
+  display: block;
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  width: 120px;
+  height: 15px;
+  border: solid 2px gray;
+
+  background-color: red;
+  
+  //aspect-ratio: 1 / 1;
+  //background-image: url('../img/inventory/use-selector.png');
+  //background-size: cover;
+  z-index: 12;
+}
+
+.energy {
+  width: 50%;
+  height: 13px;
+
+  background-color: green !important;
+}
+
 #use-selector {
   display: block;
   position: absolute;
@@ -391,7 +454,7 @@ a:hover, button:hover, input:hover, textarea:hover {
   aspect-ratio: 1 / 1;
   background-image: url('../img/inventory/use-selector.png');
   background-size: cover;
-  z-index: 10;
+  z-index: 12;
   // background-color: deeppink;
   &:hover {
     transform: scale(1.05);
@@ -411,7 +474,7 @@ a:hover, button:hover, input:hover, textarea:hover {
   background-image: url('../img/inventory/look-selector.png');
   background-size: cover;
   // background-color: deepskyblue;
-  z-index: 10;
+  z-index: 12;
   &:hover {
     transform: scale(1.05);
   }
@@ -428,7 +491,7 @@ a:hover, button:hover, input:hover, textarea:hover {
   width: 120px;
   aspect-ratio: 1 / 1;
   background-size: cover;
-  z-index: 10;
+  z-index: 12;
   &:hover {
     transform: scale(1.05);
   }

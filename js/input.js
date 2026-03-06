@@ -613,6 +613,24 @@ export default class Input {
           this.game.currentState = 'inventory'
           this.game.showHideOptions('inventory')
         }
+
+        // BLOOD
+        if ((e.key == 'z' || e.key == 'Z') && this.game.currentState == 'game') {
+          console.log('BLOOD...')
+
+          // ENERGY
+          this.game.energyModifyScreen(1.2)
+
+          // SOUND
+          this.game.sound.play(100, {volume: 1, loop: false})
+
+          const el = $("#game-blood")
+
+          // CSS
+          el.removeClass("play")
+          void el[0].offsetWidth
+          el.addClass("play")
+        }
       }
 
       // INVENTORY KEYS

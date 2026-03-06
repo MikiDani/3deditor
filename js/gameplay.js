@@ -7,12 +7,13 @@ export default class Gameplay {
   }
 
   async update(deltaTime) {
-   $(".delta-time-game").html(deltaTime.toFixed(1))
+    const triCount = this.game.renderer.info.render.triangles
+    $(".delta-time-game").html(`${deltaTime.toFixed(1)} | tris: ${triCount}`)
 
     // GRAVITI RESPONE
     if (this.game.player.position.y < -5) this.game.player.position.y = 5;  // !!
 
-    // REFRESH SOUND POSITION
+    // REFRESH SOUND POSITION   
 
     await this.game.input.updatePlayer()
 
@@ -1004,7 +1005,7 @@ export default class Gameplay {
         }
 
         if (data[eventId].state) {
-          // console.log('OFF', eventId)
+          console.log('OFF', eventId)
           data[eventId].save_color = light.color.getHexString()
           data[eventId].save_distance = light.distance
           data[eventId].save_intensity = light.intensity
@@ -1013,7 +1014,7 @@ export default class Gameplay {
           light.distance = 0
           light.intensity = 0
         } else {
-          // console.log('ON', eventId)
+          console.log('ON', eventId)
           light.color = new THREE.Color(`#${data[eventId].save_color}`)
           light.distance = data[eventId].save_distance
           light.intensity = data[eventId].save_intensity
@@ -1046,9 +1047,10 @@ export default class Gameplay {
             offsetTypeX: 'min',
             offsetTypeY: 'min',
             offsetTypeZ: 'max',
+            axis: 'y',
           }
         }
-        this.openFx(data[eventId], mesh, 'y')
+        this.openFx(data[eventId], mesh)
         break
 
       case 1:
@@ -1069,9 +1071,10 @@ export default class Gameplay {
             offsetTypeX: 'min',
             offsetTypeY: 'min',
             offsetTypeZ: 'min',
+            axis: 'y',
           }
         }
-        this.openFx(data[eventId], mesh, 'y')
+        this.openFx(data[eventId], mesh)
       break
 
       case 2:
@@ -1092,9 +1095,10 @@ export default class Gameplay {
             offsetTypeX: 'min',
             offsetTypeY: 'max',
             offsetTypeZ: 'max',
+            axis: 'y',
           }
         }
-        this.openFx(data[eventId], mesh, 'y')
+        this.openFx(data[eventId], mesh)
       break
 
       case 3:
@@ -1114,9 +1118,10 @@ export default class Gameplay {
             offsetTypeX: 'min',
             offsetTypeY: 'max',
             offsetTypeZ: 'min',
+            axis: 'y',
           }
         }
-        this.openFx(data[eventId], mesh, 'y')
+        this.openFx(data[eventId], mesh)
       break
 
       case 4:
@@ -1136,9 +1141,10 @@ export default class Gameplay {
             offsetTypeX: 'max',
             offsetTypeY: 'min',
             offsetTypeZ: 'min',
+            axis: 'y',
           }
         }
-        this.openFx(data[eventId], mesh, 'y')
+        this.openFx(data[eventId], mesh)
       break
 
       case 5:
@@ -1158,16 +1164,14 @@ export default class Gameplay {
             offsetTypeX: 'min',
             offsetTypeY: 'max',
             offsetTypeZ: 'min',
-            // offsetTypeX: 'max',
-            // offsetTypeY: 'min',
-            // offsetTypeZ: 'min',
+            axis: 'z',
           }
         }
-        this.openFx(data[eventId], mesh, 'z')
+        this.openFx(data[eventId], mesh)
       break
 
       case 6:
-        // Open-7 (cheast-box) x: y: z:
+        // Open-7 (cheast-box) x:min y:min z:max
         if (!data[eventId]) {
           data[eventId] = {
             meshId: mesh.objId,
@@ -1183,10 +1187,35 @@ export default class Gameplay {
             offsetTypeX: 'min',
             offsetTypeY: 'min',
             offsetTypeZ: 'max',
+            axis: 'x',
           }
         }
-        this.openFx(data[eventId], mesh, 'x')
+        this.openFx(data[eventId], mesh)
       break
+
+      case 7:
+        // Open-8 (wc-board) x:max y:min z:min
+        if (!data[eventId]) {
+          data[eventId] = {
+            meshId: mesh.objId,
+            meshName: mesh.name,
+            state: false,
+            min: 0,
+            max: 64,
+            value: 0,
+            waiting: 10,
+            valueAdd: null,
+            addedStep: -0.025,
+            addedValue: null,
+            offsetTypeX: 'max',
+            offsetTypeY: 'min',
+            offsetTypeZ: 'min',
+            axis: 'z',
+          }
+        }
+        this.openFx(data[eventId], mesh)
+      break
+
       case 10:
         // SWITCH TEXTURE CHANGE
         this.textureOnOf(mesh, data, eventId, 'switch-1-on', 'switch-1-off')
@@ -1267,7 +1296,7 @@ export default class Gameplay {
     })
   }
 
-  openFx(data, mesh, axis) {
+  openFx(data, mesh) {
     if (!mesh.container) this.refreshOpenFxState(data, mesh);
 
     data.addedValue = data.state ? -data.addedStep : data.addedStep; // ÉRTÉKE
@@ -1276,7 +1305,7 @@ export default class Gameplay {
     if (!data?.timeInterval) {
       // CHECK CRASH
       const clone = mesh.container.clone(true)
-      clone.rotation[axis] += data.addedValue
+      clone.rotation[data.axis] += data.addedValue
       const futureBox = new THREE.Box3().setFromObject(clone)
       const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
 
@@ -1292,10 +1321,10 @@ export default class Gameplay {
         if (mesh.lastUpdate === undefined) mesh.lastUpdate = now - (data.waiting * 2);
 
         if (now - mesh.lastUpdate >= data.waiting) {
-          mesh.lastUpdate = now          
-          const tempRotation = mesh.container.rotation[axis] + data.addedValue
+          mesh.lastUpdate = now
+          const tempRotation = mesh.container.rotation[data.axis] + data.addedValue
           const clone = mesh.container.clone(true)
-          clone.rotation[axis] = tempRotation
+          clone.rotation[data.axis] = tempRotation
           const testBox = new THREE.Box3().setFromObject(clone)
           const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
           if (testBox.intersectsBox(playerBox)) {
@@ -1305,7 +1334,9 @@ export default class Gameplay {
           }
 
           // MOVE AND REFRESH
-          mesh.container.rotation[axis] = tempRotation
+          mesh.container.rotation[data.axis] = tempRotation
+          mesh.container.updateMatrixWorld(true)   // EZ HIÁNYZIK
+
           data.value += data.valueAdd
 
           // BOUNDING BOX FRISSÍTÉS A CONTAINERHEZ
@@ -1321,7 +1352,7 @@ export default class Gameplay {
             data.timeInterval = null;
           }
         }
-      }, 5);
+      }, 1);
     } else {
       // IF NEW CLICK
       clearInterval(data.timeInterval);
@@ -1350,7 +1381,7 @@ export default class Gameplay {
 
       // OPEN DOOR
       if (data.state == true) {
-        container.rotation.y = data.addedValue * data.value
+        container.rotation[data.axis] = data.addedValue * data.value
       }
 
       container.add(mesh)

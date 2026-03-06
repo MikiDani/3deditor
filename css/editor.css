@@ -354,6 +354,10 @@ select[data-type=long] {
   border-radius: 7px 7px 7px 7px;
   border: 0;
   padding-left: 1px;
+  -webkit-border-radius: 7px 7px 7px 7px;
+  -moz-border-radius: 7px 7px 7px 7px;
+  -ms-border-radius: 7px 7px 7px 7px;
+  -o-border-radius: 7px 7px 7px 7px;
 }
 
 .cursor-pointer:hover {
@@ -367,6 +371,16 @@ button[class=grid-buttons],
 button[class="3d-buttons"] {
   border-radius: 7px 7px 7px 7px;
   border: 0;
+}
+
+button[class=ratio-buttons] {
+  border-radius: 7px 7px 7px 7px;
+  border: 0;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+button[class=ratio-buttons]:hover {
+  background-color: gray !important;
 }
 
 .btn-login {

@@ -275,22 +275,20 @@ export default class Loader {
       if (response.config != null) this.game.config = response.config
       // PLAYER
       this.game.map.player = this.game.deepCopy(response.player)
+      this.game.map.player.energy ??= 100
+
       if (response.playerObjects != null) this.game.playerObjects = response.playerObjects;
       if (response.playerMouse != null) this.game.playerMouse = response.playerMouse;
       // MAP
       this.game.map.data = this.game.deepCopy(response.data[0], true)
-      this.game.map.structure = this.game.deepCopy(response.structure, true)
+      this.game.map.structure = this.game.deepCopy(response.structure, false) // true all visible is true
       // LIGHTS
       this.game.map.lights = this.game.deepCopy(response.lights)
       // BEINGS
       this.game.map.beings = this.game.deepCopy(response.beings)
       // ACTIONS
       this.game.map.actions = this.game.deepCopy(response.actions)
-
-      // this.game.map.actionelements = []
-      // if (response.actionelements != null) this.game.map.actionelements = response.actionelements;
-
-      // PLAYER POSITION      
+      // PLAYER POSITION
       if (this.game.player.x !== 'undefined' && this.game.player.y !== 'undefined' && this.game.player.z !== 'undefined') {
         this.game.player.position.set(this.game.map.player.x, this.game.map.player.y, this.game.map.player.z)
         this.game.player.rotation.y = this.game.map.player.fYaw
@@ -307,6 +305,12 @@ export default class Loader {
       // LOAD MAP MESHS (DATA)
       for (let mesh of this.game.map.data) {
         let meshGroup = new THREE.Group() //(i) START MESHGROUP
+
+        // CHECK VISIBLE
+        let selectedMeshStructure = this.game.findMeshById(this.game.map.structure, mesh.id)
+        console.log(selectedMeshStructure)
+        console.log(selectedMeshStructure.visible)
+        if (selectedMeshStructure.visible != 1) continue;
 
         // GIVE MESH DATA TO MESHGROUP        
         if (mesh.id) meshGroup.objId = mesh.id;                          // IF HAVE MESH ID
@@ -657,7 +661,7 @@ export default class Loader {
   checkmoveFx(thisAction, meshGroup) {
     // OPENFX POSITION REFRESH
     for(let value of Object.values(this.game.config.movefx)) {
-      if (value.id == 0 || value.id == 1 || value.id == 2 ) {
+      if (value.id >= 0 && value.id < 10) {
         // OPEN FX
         for(let [eventId, oldData] of Object.entries(value)) {
           if (eventId == 'id' || eventId == 'name') continue;
@@ -667,7 +671,7 @@ export default class Loader {
             }
           }
         }
-      } else if (value.id == 3 || value.id == 5 || value.id == 6) {
+      } else if (value.id > 9 && value.id < 100) {
         // SWITCH 1. # Picture Change. # Micro Hamster Change
         for(let [eventId, oldData] of Object.entries(value)) {
           if (eventId == 'id' || eventId == 'name') continue;

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { OBB } from 'three/examples/jsm/math/OBB.js'
+import $ from 'jquery';
 
 export default class Graphics {
   constructor(game) {
@@ -19,7 +19,6 @@ export default class Graphics {
 
     this.reloadScreen()
 
-    //---
     this.game.graphicsLoading = true
   }
 
@@ -27,24 +26,27 @@ export default class Graphics {
     // console.log(this.checkGPU())
     if (this.checkGPU()) {
       // HIGH
-      // console.log('High graphics')
-
       this.game.targetFPS = 60
       this.game.renderInterval = 1000 / this.game.targetFPS
 
-      this.scX = window.innerWidth / 1
-      this.scY = window.innerHeight / 1
-      this.far = 15
+      this.scX = window.innerWidth / 2
+      this.scY = window.innerHeight / 2
+      this.far = 13
     } else {
       // LOW
-      // console.log('Low graphics')
 
-      this.game.targetFPS = 20
+      /* //!!!
+      $("#game-container").removeClass('full-size').addClass('small-size')
+      $("#game-canvas").removeClass('full-size').addClass('small-size')
+      */
+
+      this.game.targetFPS = 15
       this.game.renderInterval = 1000 / this.game.targetFPS
 
-      this.scX = window.innerWidth / 8
-      this.scY = window.innerHeight / 8
+      this.scX = window.innerWidth / 10
+      this.scY = window.innerHeight / 10
       this.far = 7
+
     }
 
     this.game.camera = new THREE.PerspectiveCamera(60, this.scX / this.scY, 0.1, this.far)
@@ -85,7 +87,7 @@ export default class Graphics {
   checkGPU() {
     try {
       const gl = this.game.renderer.getContext()
-      if (!gl) return false
+      if (!gl) return false;
 
       const debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
       let vendor = ''
@@ -100,7 +102,7 @@ export default class Graphics {
       }
 
       const fullInfo = (vendor + ' ' + renderer).toLowerCase()
-      
+
       // console.log('GPU info:', vendor, renderer) //?? GRAPHICS CARD INFO
 
       // ha a stringben gyanús szavak vannak, akkor CPU fallback
