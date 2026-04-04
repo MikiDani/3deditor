@@ -59,6 +59,7 @@ class AnimAction {
     //   playsounds: ['ding', 'dong'],       // array
     //   moveactions: [[0, 0],[1, 1]],       // mash id  / movefx id
     //   lightfx: [[1, 0],[1, 1]],           // light id / lightfx id
+    //   beingfx: [[1, 0],[1, 1]],           // being id / beingfx id
     // }
 
     this.newEvent = {
@@ -71,6 +72,7 @@ class AnimAction {
       playsounds: [],                       // array
       moveactions: [],                      // mash id  / movefx id
       lightfx: [],                          // light id / lightfx id
+      beingfx: [],                          // being id / beingfx id
     }
     this.events.push(this.newEvent)
   }
@@ -158,7 +160,7 @@ class Editor {
       startY: 0,
       endX: 0,
       endY: 0,
-      mode: 'move',           // move, point, triangle
+      mode: 'move', // move, point, triangle
       selectedLightId: null,
       selectedLightData: {},
       selectedBeingId: null,
@@ -259,7 +261,8 @@ class Editor {
   }
 
   async init() {
-    let consolePrint = false //??
+    this.startTime = performance.now()
+    let consolePrint = false // print in console
 
     let response = await fetch('config.json')
     this.gamedata = await response.json()
@@ -392,6 +395,10 @@ class Editor {
       console.log('selectedMeshStructure: ', selectedMeshStructure)
       console.log('selectedMeshData: ', selectedMeshData)      
     }
+
+    let now = performance.now()
+
+    console.log('loaded time: ', (now - this.startTime) / 1000);
 
     // DELETE GHOST MESH
     // this.map.data[0] = this.map.data[0].filter(mesh => mesh.id != 130)    
@@ -742,6 +749,7 @@ class Editor {
     // DEFAULT OBJECT
     // let filename = 'zombi'; let ext = 'otuc';
     // let filename = 'clock-1'; let ext = 'otuc';
+    // let filename = 'bat-a-2'; let ext = 'otuc';
 
     $("#modal-ext").val(ext)
     this.mapVariableReset(ext)
@@ -891,7 +899,7 @@ class Editor {
     let elements = ''
     if (moveactions && moveactions.length > 0) {
       moveactions.forEach(arrayData => {
-        if (!Array.isArray(arrayData)) return;       
+        if (!Array.isArray(arrayData)) return;
         let light = this.map.lights.find(data => data.id == arrayData[0])
         let lightfx = this.gamedata.lightfx.find(fx => fx.id == arrayData[1])
         if (light && lightfx) {
@@ -905,6 +913,31 @@ class Editor {
               </div>
             </div>
             <span class="delete-lightfx ms-3" data-element-name="${elementName}" data-action-id="${animActionId}" data-event-id="${eventId}" data-light-id="${light.id}" data-lightfx-id="${lightfx.id}">⊗</span>
+          </div>`;
+        }
+      });
+    }
+    return elements;
+  }
+
+  arrayActionElementEventMaker3(elementName, animActionId, eventId, moveactions) {
+    let elements = ''
+    if (moveactions && moveactions.length > 0) {
+      moveactions.forEach(arrayData => {
+        if (!Array.isArray(arrayData)) return;
+        let being = this.map.beings.find(data => data.id == arrayData[0])
+        let beingfx = this.gamedata.beingfx.find(fx => fx.id == arrayData[1])
+        if (being && beingfx) {
+          elements += `
+          <div class="pos-relative">
+            <div class="list-element inline-block mb-3" data-action-id="${animActionId}" data-event-id="${eventId}" data-being-id="${being.id}" data-beingfx-id="${beingfx.id}">
+              <div class="action-selected-box me-3 text-bold">
+                <span>#${being.id}. ${being.name}</span>
+                <span class="mx-2" title="The Group where the event will be performed.">➞</span>
+                <span>#${beingfx.id}. ${beingfx.name}</span>
+              </div>
+            </div>
+            <span class="delete-beingfx ms-3" data-element-name="${elementName}" data-action-id="${animActionId}" data-event-id="${eventId}" data-being-id="${being.id}" data-beingfx-id="${beingfx.id}">⊗</span>
           </div>`;
         }
       });
@@ -933,9 +966,6 @@ class Editor {
               <span title="The character must be at least this close for the event to activate.">Distance Near:</span>
               <input type="number" step="0.01" name="distance-near" value="${animAction.conditions.distance_near ? animAction.conditions.distance_near : '0.1'}" data-action-id="${animAction.id}" class="mx-3">
               <span title="The character must be at least this far away for the event to be activated.">Distance Far:</span>
-
-              ${animAction.conditions.distance_far}
-
               <input type="number" step="0.01" name="distance-far" value="${animAction.conditions.distance_far ? animAction.conditions.distance_far : '1'}" data-action-id="${animAction.id}" class="mx-3">
             </div>
             <div class="d-flex justify-content-start align-items-center">
@@ -1087,6 +1117,32 @@ class Editor {
             </div>
           </div>
         </div>
+
+        <div class="d-flex justify-content-start align-items-center mt-3">
+          <div class="d-flex justify-content-start align-items-center max-width-3">
+            <div class='max-width-4'>
+              <div class='d-inline-block pe-1 text-center'>
+                <span class="d-inline-block width-100px" title="Select Light.">Being:</span>
+                <select data-type="long" name="being-id" data-action-id="${animAction.id}" data-event-id="${event.id}" class="mx-3">
+                  ${this.optionElementMaker(this.map.beings, null, 'select Being…')}
+                </select>
+              </div>
+              <div class='d-inline-block ps-1 mt-2 text-center'>
+                <span class="d-inline-block width-100px" title="Select Fx.">BeingFx:</span>
+                <select data-type="long" name="being-fx" data-action-id="${animAction.id}" data-event-id="${event.id}" class="mx-3">
+                  ${this.optionElementMaker(this.gamedata.beingfx, null, 'select BeingFx…')}
+                </select>
+              </div>
+            </div>
+            <div class="w-40">
+              <button name="add-beingfx" data-element-name="beingfx" data-action-id="${animAction.id}" data-event-id="${event.id}" class="text-small" title="Add selected being fx.">ADD</button>
+            </div>
+            <div class="action-event-selected-box-container text-start list d-flex flex-wrap text-small" data-action-id="${animAction.id}" data-event-id="${event.id}" data-element-name="beingfx">
+              ${this.arrayActionElementEventMaker3('beingfx', animAction.id, event.id, event.beingfx)}
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>`;
     return elements;
@@ -1324,6 +1380,22 @@ class Editor {
     return returnData;
   }
 
+  makeVisibleData() {
+    let visibleData = {}
+    Object.values(this.map.data[0]).forEach(row => {
+      visibleData[row.id] = {name: row.name, visible: true}
+    });
+    return visibleData;
+  }
+
+  triggerVisible(index) {
+    for(const [id, value] of Object.entries(this.map.animations[index][2])) {
+      const eyeElement = $('#object-list').find(`li[data-id='${id}']`).find('span.menu-icon.eye')
+
+      if (value.visible && eyeElement.hasClass('eye-down') || !value.visible && eyeElement.hasClass('eye-up')) eyeElement.trigger('click');
+    }
+  }
+
   deleteLocketBrothers(triId) {
     let selectedObject = this.map.data[this.map.aid].find(obj => obj.tris.some(triangle => triangle.id == triId));
     let selectedTriangle = selectedObject ? selectedObject.tris.find(triangle => triangle.id == triId) : null;
@@ -1464,7 +1536,6 @@ class Editor {
         // LIST OBJECTS
         let element = `<ul>`;
         this.map.structure.forEach(item => {
-          if (item.visible === 0) return;
           element += this.recursiveMenu(item)
         })
         element += `</ul>`;
@@ -1567,7 +1638,8 @@ class Editor {
       $("input[name='light-p-X']").val(''); $("input[name='light-p-Y']").val(''); $("input[name='light-p-Z']").val('');
       $("input[name='light-color']").val(''); $("input[name='light-intensity']").val(''); $("input[name='light-distance']").val('');
       $("select[name='light-type']").val('');
-      $("select[name='light-edit-color']")[0].selectedIndex = 0;
+      $("select[name='light-edit-color']").prop("selectedIndex", 0);
+      $("select[name='light-active']").prop("selectedIndex", 0);
 
       $('#light-list ul li').each(function () {
         $(this).removeClass('list-light-selected')
@@ -1581,8 +1653,9 @@ class Editor {
     if (!this.mouse.selectedBeingId) {
       $("input[name='selected-being-name']").val('');
       $("input[name='being-p-X']").val(''); $("input[name='being-p-Y']").val(''); $("input[name='being-p-Z']").val('');
-      $("select[name='being-edit-color']")[0].selectedIndex = 0;
-      $("select[name='being-gravity']")[0].selectedIndex = 0;
+      $("select[name='being-edit-color']").prop("selectedIndex", 0);
+      $("select[name='being-gravity']").prop("selectedIndex", 0);
+      $("select[name='being-active']").prop("selectedIndex", 0);
 
       $("input[name='being-angle']").val(''); $("input[name='being-ratio']").val(''); $("select[name='being-speed']").val('');
       $("select[name='being-energy']").val(''); $("select[name='being-damage']").val('');
@@ -1930,7 +2003,7 @@ class Editor {
   refreshBeingDataDOM(selectedBeingData) {
     $("input[name='selected-being-name']").val(selectedBeingData.name)
     $("input[name='being-p-X']").val(selectedBeingData.p.x); $("input[name='being-p-Y']").val(selectedBeingData.p.y); $("input[name='being-p-Z']").val(selectedBeingData.p.z);
-    $("input[name='being-angle']").val(selectedBeingData.angle); $("input[name='being-color']").val(selectedBeingData.color); $("input[name='being-intensity']").val(selectedBeingData.intensity); $("input[name='being-distance']").val(selectedBeingData.distance); $("select[name='being-edit-color']").val(selectedBeingData.editcolor);  $("select[name='being-gravity']").val(selectedBeingData.gravity); $("input[name='being-ratio']").val(selectedBeingData.ratio); $("input[name='being-speed']").val(selectedBeingData.speed); $("input[name='being-energy']").val(selectedBeingData.energy); $("input[name='being-damage']").val(selectedBeingData.damage);
+    $("input[name='being-angle']").val(selectedBeingData.angle); $("input[name='being-color']").val(selectedBeingData.color); $("input[name='being-intensity']").val(selectedBeingData.intensity); $("input[name='being-distance']").val(selectedBeingData.distance); $("select[name='being-edit-color']").val(selectedBeingData.editcolor);  $("select[name='being-gravity']").val(selectedBeingData.gravity); $("input[name='being-ratio']").val(selectedBeingData.ratio); $("input[name='being-speed']").val(selectedBeingData.speed); $("input[name='being-energy']").val(selectedBeingData.energy); $("input[name='being-damage']").val(selectedBeingData.damage);$("select[name='being-active']").val(selectedBeingData.active);
   }
 
   objectNameAndTextInfo() {    
@@ -2583,11 +2656,58 @@ class Editor {
       let lightfxId = parseInt($(event.target).attr('data-lightfx-id'))
       const animActionRow = AnimAction.findActionById(clone, selectedActionId)
       if (animActionRow) {
-        const eventRow = AnimAction.findEventById(animActionRow, selectedEventId)        
+        const eventRow = AnimAction.findEventById(animActionRow, selectedEventId)
+        eventRow[selectedElementName] ??= []
         let index = eventRow[selectedElementName].findIndex( ([x, y]) => x == lightId && y == lightfxId )
         if (index != -1) {
           eventRow[selectedElementName].splice(index, 1)
           $(`.action-event-selected-box-container[data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}'][data-element-name='${selectedElementName}']`).html(this.arrayActionElementEventMaker2(selectedElementName, selectedActionId, selectedEventId, eventRow[selectedElementName]))
+        }
+      }
+    });
+
+    //---
+
+    // ADD MOVE FX BEING
+    $(document).on('mousedown', "button[name='add-beingfx']", (event) => {
+      let selectedElementName = $(event.target).attr('data-element-name')
+      let selectedActionId = parseInt($(event.target).attr('data-action-id'))
+      let selectedEventId = $(event.target).attr('data-event-id')
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) {
+        const eventRow = AnimAction.findEventById(animActionRow, selectedEventId)
+        if (eventRow) {
+          let beingValue = $(`select[name='being-id'][data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}']`).val()
+          let beingfxValue = $(`select[name='being-fx'][data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}']`).val()
+
+          if (beingValue && beingfxValue) {
+            beingValue = parseInt(beingValue)
+            beingfxValue = parseInt(beingfxValue)
+            eventRow[selectedElementName] ??= []
+            let index = eventRow[selectedElementName].findIndex( ([x, y]) => x == beingValue && y == beingfxValue)
+            if (index == -1) {
+              eventRow.beingfx.push([beingValue, beingfxValue])
+              $(`.action-event-selected-box-container[data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}'][data-element-name='${selectedElementName}']`).html(this.arrayActionElementEventMaker3(selectedElementName, selectedActionId, selectedEventId, eventRow[selectedElementName]))
+            }
+          }
+        }
+      }
+    });
+
+    // DELETE MOVE FX BEING
+    $(document).on('mousedown', '.delete-beingfx', (event) => {
+      let selectedElementName = $(event.target).attr('data-element-name')
+      let selectedActionId = parseInt($(event.target).attr('data-action-id'))
+      let selectedEventId = parseInt($(event.target).attr('data-event-id'))
+      let beingId = parseInt($(event.target).attr('data-being-id'))
+      let beingfxId = parseInt($(event.target).attr('data-beingfx-id'))
+      const animActionRow = AnimAction.findActionById(clone, selectedActionId)
+      if (animActionRow) {
+        const eventRow = AnimAction.findEventById(animActionRow, selectedEventId)        
+        let index = eventRow[selectedElementName].findIndex( ([x, y]) => x == beingId && y == beingfxId )
+        if (index != -1) {
+          eventRow[selectedElementName].splice(index, 1)
+          $(`.action-event-selected-box-container[data-action-id='${selectedActionId}'][data-event-id='${selectedEventId}'][data-element-name='${selectedElementName}']`).html(this.arrayActionElementEventMaker3(selectedElementName, selectedActionId, selectedEventId, eventRow[selectedElementName]))
         }
       }
     });
@@ -2769,6 +2889,11 @@ class Editor {
 
         $("#modal-input").hide()
         $("#modal-file").hide()
+
+        // CLOSE ALL ACTION TAB
+        setTimeout(() =>{
+          $("#modal-close-all-action").trigger('click')
+        },50)
 
         return;
       }
@@ -2956,6 +3081,17 @@ class Editor {
         const responseIsset = await clone.fetchData({ ajax: true, issetfile: true, filename, ext: ext }); // console.log(responseIsset)
         if (responseIsset[0]) save = (confirm(`File is isset: ${filename} Are you seure ovverrite?`)) ? true : false;
         if (save) {
+          /*
+          console.log(clone.map.lights)
+
+          clone.map.lights.forEach(light => {
+            console.log(light)
+            console.log(light.active)
+
+            light.active ??= true;
+          });
+          */
+
           let saveMapData = JSON.stringify(clone.getCloneMapData(clone))
 
           const responseSave = await clone.fetchData({ ajax: true, save: true, filename, ext: ext, mapdata: saveMapData }); // console.log('response:'); console.log(responseSave);
@@ -4488,7 +4624,13 @@ class Editor {
     $(document).on('click', '#animation-add-new', () => {
       let length =  Object.keys(this.map.animations).length + 1
       let name = `New-Animation-${length}`
-      this.map.animations.push([name,[]])
+
+      let visibleData = this.makeVisibleData()
+
+      console.log(visibleData)
+      
+      this.map.animations.push([name, [], visibleData])
+
       this.refreshAnimationsList()
     });
 
@@ -4510,10 +4652,17 @@ class Editor {
       if (clone.animationPlayState) clone.animationPlay('stop');
 
       const index = $(this).attr('data-animation-index')
+
+      if (clone.map.animations[index][2] == null) clone.map.animations[index][2] = clone.makeVisibleData()
+
       clone.mouse.selectedAnimationIndex = parseInt(index)
       $("#selected-animation-name").val(clone.map.animations[index][0])
       $("#selected-animation-name").prop('disabled', false)
+
       clone.refreshAnimationsList()
+
+      // TRIGGER VISIBLE
+      clone.triggerVisible(index)
     });
 
     // SELECT FRAME AID
@@ -4641,7 +4790,12 @@ class Editor {
         $("input[name='selected-light-name']").val(selectedLightData.name)
         $("input[name='light-p-X']").val(selectedLightData.p.x); $("input[name='light-p-Y']").val(selectedLightData.p.y); $("input[name='light-p-Z']").val(selectedLightData.p.z);
         $("input[name='light-color']").val(selectedLightData.color); $("input[name='light-intensity']").val(selectedLightData.intensity); $("input[name='light-distance']").val(selectedLightData.distance);
-        $("select[name='light-type']").val(selectedLightData.type); $("select[name='light-edit-color']").val(selectedLightData.editcolor);
+        $("select[name='light-type']").val(selectedLightData.type); $("select[name='light-edit-color']").val(selectedLightData.editcolor); 
+        
+        $("select[name='light-active']").val(selectedLightData.active ? '1' : '0')
+
+        console.log('selectedLightData.type: ', selectedLightData.type)
+        console.log('selectedLightData.active', selectedLightData.active)
 
         // HEXA COLOR
         let bgColor = clone.isValidHex(selectedLightData.color) ? selectedLightData.color : 'ffffff';
@@ -4671,10 +4825,19 @@ class Editor {
     });
 
     // SELECT
-    $(document).on("change", "select[name='light-type'], select[name='light-edit-color']", function() {
+    $(document).on("change", "select[name='light-type'], select[name='light-edit-color'], select[name='light-active']", function() {
       let variableName = $(this).attr('data-name')
-      let value = $(this).val()
+
+      console.log($(this).val())
+      
+      let value = $(this).val() == 1 ? true : false;
+
+      console.log(value)
+      
       clone.mouse.selectedLightData[variableName] = value
+
+      console.log(clone.mouse.selectedLightData[variableName])
+      
     });
 
     // DELETE LIGHT
@@ -4775,6 +4938,13 @@ class Editor {
       clone.refreshBeingsShowHideButton()
     });
 
+    // LET GO being
+    $(document).on('click', '#being-let-go', function() {
+      clone.mouse.selectedBeingId = null
+      clone.mouse.selectedBeingData = null
+      clone.refreshBeingsList()
+    });
+
     // SELECT being
     $(document).on('click', '.being-element', function() {
       let selectedbeingId = parseInt($(this).attr('data-being-id'))
@@ -4842,7 +5012,7 @@ class Editor {
     });
 
     // SELECT
-    $(document).on("change", "select[name='being-type'], select[name='being-edit-color'], select[name='being-gravity']", function() {
+    $(document).on("change", "select[name='being-type'], select[name='being-edit-color'], select[name='being-gravity'], select[name='being-active']", function() {
       let variableName = $(this).attr('data-name')
       let value = $(this).val()
       clone.mouse.selectedBeingData[variableName] = value
@@ -4946,8 +5116,20 @@ class Editor {
           let thisMeshElementStructure = clone.findMeshById(clone.map.structure, id)
           if (thisMeshElementStructure) {
             const newVisible = thisMeshElementStructure.visible === 0 ? 1 : 0;
-            clone.recursiveVisibleChange(thisMeshElementStructure, newVisible)
-            // $("#object-list").find(`[data-id='${id}']`).css('border', '1px solid red')
+            // [2] Only Objects
+            if (clone.map.animations?.[clone.mouse.selectedAnimationIndex]?.[2]) {
+              clone.recursiveVisibleChange(thisMeshElementStructure, newVisible)
+              // $("#object-list").find(`[data-id='${id}']`).css('border', '1px solid red')            
+              // NEW ANIMATED VISIBLE
+              clone.map.animations[clone.mouse.selectedAnimationIndex][2][id].visible = newVisible == 1 ? true : false;
+              // TRIGGER VISIBLE
+              clone.triggerVisible(clone.mouse.selectedAnimationIndex)
+
+              if (clone.map.animations[clone.mouse.selectedAnimationIndex][2] == null) clone.map.animations[clone.mouse.selectedAnimationIndex][2] = clone.makeVisibleData()
+            } else {
+              // SIMPLE
+              clone.recursiveVisibleChange(thisMeshElementStructure, newVisible)
+            }
           }
           clone.fullRefreshCanvasGraphics()
         }

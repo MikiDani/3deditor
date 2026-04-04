@@ -1,4 +1,15 @@
 {
+  "player":
+    {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "fYaw": 0,
+      "fXaw": 0,
+      "energy": 100,
+      "hitdelay": 1000,
+      "nowtime": 0
+    },
   "heands": [
     {
       "id": 1,
@@ -25,6 +36,7 @@
       "tilt": false
     }
   ],
+
   "movefx": [
     {
       "id": 0,
@@ -74,6 +86,14 @@
     {
       "id": 40,
       "name": "Stop/Start animated texture"
+    },
+    {
+      "id": 50,
+      "name": "Player Demage"
+    },
+    {
+      "id": 60,
+      "name": "Delete Mesh of screen"
     }
   ],
   "lightfx": [
@@ -84,12 +104,44 @@
     },
     {
       "id": 1,
-      "name": "Turn OFF / ON",
-      "state": true
+      "name": "Turn OFF / ON"
+    },
+    {
+      "id": 2,
+      "name": "Turn ON"
+    },
+    {
+      "id": 3,
+      "name": "Turn OFF"
+    },
+    {
+      "id": 10,
+      "name": "RED 1. (255, 0, 0)"
+    },
+    {
+      "id": 15,
+      "name": "GREEN 1. (0, 255, 0)"
+    },
+    {
+      "id": 20,
+      "name": "BLUE 1. (0, 0, 255)"
     }
   ],
-
-    "sounds": [
+  "beingfx": [
+    {
+      "id": 0,
+      "name": "Active Being OFF / ON"
+    },
+    {
+      "id": 1,
+      "name": "Active Being ON"
+    },
+    {
+      "id": 2,
+      "name": "Active Being OFF"
+    }
+  ],
+  "sounds": [
     {
       "id": 1,
       "name": "music1",
@@ -226,6 +278,24 @@
       "setRolloffFactor": 3
     },
     {
+      "id": 200,
+      "name": "player-damage1",
+      "volume": 1,
+      "loop": false
+    },
+    {
+      "id": 201,
+      "name": "player-damage2",
+      "volume": 1,
+      "loop": false
+    },
+    {
+      "id": 202,
+      "name": "player-damage3",
+      "volume": 1,
+      "loop": false
+    },
+    {
       "id": 18,
       "name": "cough1",
       "volume": 1,
@@ -235,6 +305,25 @@
       "setRolloffFactor": 3
     }
   ],
+  "autoplaysounds": {
+    "clock-1": {
+      "soundid": 10,
+      "loop": true,
+      "volume": 1,
+      "setRefDistance": 0.5,
+      "setMaxDistance": 1,
+      "setRolloffFactor": 7
+    },
+    "xy": {
+      "soundid": 100,
+      "loop": true,
+      "volume": 1,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    }
+  },
+
   "actionmessages": [
     {
       "object_id": 0,
@@ -383,6 +472,7 @@
       ]
     }
   ],
+
   "animationtextures": {
     "water-1": {
       "intervalTime": 350,
@@ -395,24 +485,27 @@
     "ghost1-move": {
       "intervalTime": 100,
       "playingState": true
+    },
+    "fireplace-anim": {
+      "intervalTime": 120,
+      "playingState": true
     }
   },
-  "autoplaysounds": {
-    "clock-1": {
-      "soundid": 10,
-      "loop": true,
-      "volume": 1,
-      "setRefDistance": 0.5,
-      "setMaxDistance": 1,
-      "setRolloffFactor": 7
+  "beingoptions": {
+    "bat-a": {
+      "backMove": 0.6,
+      "backAttack": 0.5,
+      "beingDistance": 0.3
     },
-    "xy": {
-      "soundid": 100,
-      "loop": true,
-      "volume": 1,
-      "setRefDistance": 1,
-      "setMaxDistance": 2,
-      "setRolloffFactor": 3
+    "zombi-t": {
+      "backMove": 0.8,
+      "backAttack": 0.6,
+      "beingDistance": 0.3
+    },
+    "ghost-1": {
+      "backMove": 0.8,
+      "backAttack": 0.6,
+      "beingDistance": 0.3
     }
   }
 }

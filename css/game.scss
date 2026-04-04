@@ -265,8 +265,8 @@ a:hover, button:hover, input:hover, textarea:hover {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   z-index: 11;
-  background-size: cover;
-  background-image: url("/img/blood/blood2.png");
+  background-size: 100% 100%;
+  background-image: url("/img/blood/blood3.png");
   opacity: 0;
 }
 
@@ -307,8 +307,8 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 .small-size {
   position: relative;
-  width: 50vw !important;
-  height: 50vh !important;
+  width: 25vw !important;
+  height: 25vh !important;
   background-color: black;
 }
 
@@ -432,14 +432,14 @@ a:hover, button:hover, input:hover, textarea:hover {
 
   background-color: red;
   
-  //aspect-ratio: 1 / 1;
-  //background-image: url('../img/inventory/use-selector.png');
-  //background-size: cover;
+  // aspect-ratio: 1 / 1;
+  // background-image: url('../img/inventory/use-selector.png');
+  // background-size: cover;
   z-index: 12;
 }
 
 .energy {
-  width: 50%;
+  width: 100%;
   height: 13px;
 
   background-color: green !important;

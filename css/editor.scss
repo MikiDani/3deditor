@@ -1788,6 +1788,25 @@ li {
     }
 }
 
+.let-go {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin: 2px;
+    color: black;
+    font-size: 12px;
+    line-height: 10px;
+    text-align: center;
+
+    &::before {
+        content: '✋︎';
+    }
+
+    &:hover {
+        color: yellow !important;
+    }
+}
+
 .delete-locket {
     display: inline-block;
     width: 10px;
@@ -2282,7 +2301,8 @@ display: block;
 .delete-arrayrow,
 .delete-event-arrayrow,
 .delete-movefx,
-.delete-lightfx {
+.delete-lightfx,
+.delete-beingfx {
     position: absolute;
     display: flex;
     justify-content: center;

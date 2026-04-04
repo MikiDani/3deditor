@@ -1750,6 +1750,23 @@ li:hover {
   color: yellow !important;
 }
 
+.let-go {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 2px;
+  color: black;
+  font-size: 12px;
+  line-height: 10px;
+  text-align: center;
+}
+.let-go::before {
+  content: "✋︎";
+}
+.let-go:hover {
+  color: yellow !important;
+}
+
 .delete-locket {
   display: inline-block;
   width: 10px;
@@ -2229,7 +2246,8 @@ li:hover {
 .delete-arrayrow,
 .delete-event-arrayrow,
 .delete-movefx,
-.delete-lightfx {
+.delete-lightfx,
+.delete-beingfx {
   position: absolute;
   display: flex;
   justify-content: center;
@@ -2249,7 +2267,8 @@ li:hover {
 .delete-arrayrow:hover,
 .delete-event-arrayrow:hover,
 .delete-movefx:hover,
-.delete-lightfx:hover {
+.delete-lightfx:hover,
+.delete-beingfx:hover {
   transform: scale(1.1);
   cursor: pointer;
   background-color: red;

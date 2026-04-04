@@ -8,25 +8,26 @@ export default class Gameplay {
 
   async update(deltaTime) {
     const triCount = this.game.renderer.info.render.triangles
-    $(".delta-time-game").html(`${deltaTime.toFixed(1)} | tris: ${triCount}`)
+    $(".delta-time-game").html(`${deltaTime.toFixed(0)} | tris: ${triCount}`)
 
     // GRAVITI RESPONE
-    if (this.game.player.position.y < -5) this.game.player.position.y = 5;  // !!
+    if (this.game.player.position.y < -5) this.game.player.position.y = 7;  // !!
 
-    // REFRESH SOUND POSITION   
-
+    // REFRESH SOUND POSITION
     await this.game.input.updatePlayer()
 
-    await this.autoMovePlayer() // LAMP CENTER
-
     this.game.sound.listener.position.copy(this.game.camera.position)
+
+    // LAMP CENTER
+    await this.autoMovePlayer()
 
     await this.updateBeings(deltaTime)
 
     await this.updateHeand(deltaTime)
 
-    await this.startActions()
+    await this.startActions(deltaTime)
 
+    // RENDER SCREEN
     await this.game.renderer.render(this.game.scene, this.game.camera)
 
     // RENDER HEAND
@@ -106,30 +107,49 @@ export default class Gameplay {
     return Math.sin(angle) * (amplitude / 2)
   }
 
+  setVisibleRecursive(node, visible) {
+    if (!node || typeof node !== 'object') return;
+    node.visible = visible
+
+    if (Array.isArray(node.children)) {
+      for (const child of node.children) {
+        this.setVisibleRecursive(child, visible)
+      }
+    }
+  }
+
+  visibleOptionsBeingAnimationState(data) {
+    if (!data.visibleData) return;
+
+    for(const [id, value] of Object.entries(data.visibleData)) {
+      const mesh = data.selectedBeing.children.find(child => child.objId == id)
+      if (mesh) mesh.visible = value.visible;
+    }
+  }
+
   async updateBeings(deltaTime) {    
     for (let [id, beingGroup] of Object.entries(this.game.loadedBeings)) {
+      if (beingGroup.active == false) continue;
+
       const beingId = Number(id)
       const beingModell = this.game.beingsList[beingGroup.filename]
 
       // ANIMATION
       beingGroup.animTime += deltaTime
-
       if (beingGroup.animTime >= Number(beingGroup.speed)) {
         beingGroup.animTime = 0
         // console.log(beingGroup.id, beingGroup.filename, beingGroup.beingId, beingGroup.ratio, beingGroup.speed, beingGroup.energy, beingGroup.damage)
         if (beingGroup.animState.type != 'none') {
           beingGroup.animState = this.stepAnimState(beingGroup.animState, beingModell.animations)
 
-          if (beingGroup.filename == 'ghost-1') { // !!!
-            /*
-            console.log(beingGroup.animState.type)
-            
-            console.log('card: ' + beingGroup.animState.card + '| cardframe: ' + beingGroup.animState.cardframe + '| cardsegment: ' + beingGroup.animState.cardsegment)
-            */
-          }
-
           const actualFrameData = this.game.deepCopy(this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.cardframe])
           const nextFrameData = this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.nextFrameIndex]
+
+          if (beingGroup.filename == 'bat-a') {
+            //console.log('card: ' + beingGroup.animState.card + '| cardframe: ' + beingGroup.animState.cardframe + '| cardsegment: ' + beingGroup.animState.cardsegment)          
+          }
+
+          this.visibleOptionsBeingAnimationState({selectedBeing: this.game.loadedBeings[beingId], frameData: actualFrameData, visibleData: beingGroup.animState.visibledata})
 
           if (actualFrameData && nextFrameData) {
             let actualFrameDataDifference = actualFrameData.map(mesh => ({
@@ -174,7 +194,7 @@ export default class Gameplay {
         }
       }
 
-      // ROTATE + MOVE
+      // ROTATE + MOVE + ATTACK
       this.beingReactions(beingGroup)
 
       // GRAVITY
@@ -190,7 +210,7 @@ export default class Gameplay {
         this.game.boundingBoxes.push(beingGroup.box)
 
         // HELPER
-        if (false) { // !!!!!!!!!
+        if (false) {
           beingGroup.helper = new THREE.Box3Helper(beingGroup.box, new THREE.Color('#ffff00'))
           this.game.scene.add(beingGroup.helper)
         }
@@ -406,14 +426,20 @@ export default class Gameplay {
     const nextCard = isLastCard ? 0 : card + 1
     const nextFrameIndex = parseInt(animationList?.[nextCard]?.[0])
 
+    const cardlength = animation[1].length   
+
+    let visibledata = animation[2] ??= null;
+
     return {
       ...animState,
       maxcard,
       card,
+      cardlength,
       cardframe,
       cardsegment,
       segmentlength,
       nextFrameIndex,
+      visibledata,
     }
   }
 
@@ -475,37 +501,48 @@ export default class Gameplay {
       case('MOVE'):
         switch (beingGroup.filename) {
           case('zombi-t'):
-            this.rotateAndMoveInPlayer(beingGroup, true, true, false) // rotate, moveX, moveY
+            this.rotateAndMoveInPlayer(beingGroup, true, true, this.game.config.beingoptions['zombi-t']) // rotate, moveX, moveY, options
             break;
-          case('bat-a'):
-            this.rotateAndMoveInPlayer(beingGroup, true, true, true) // rotate, moveX, moveY
+          case('bat-a'):            
+            this.rotateAndMoveInPlayer(beingGroup, true, true, true, this.game.config.beingoptions['bat-a'])
             break;
           case('ghost-1'):
-            this.rotateAndMoveInPlayer(beingGroup, true, true, false) // rotate, moveX, moveY
+            this.rotateAndMoveInPlayer(beingGroup, true, true, false, this.game.config.beingoptions['ghost-1'])
           break;
         }
       break;
       case('ATTACK'):
         switch (beingGroup.filename) {
-          case('zombi4'):
+          case('zombi-t'):
             // ATTACK ZOMBIE
             break;
           case('bat-a'):
             // ATTACK BAT
-            this.rotateAndMoveInPlayer(beingGroup, true, false, true) // rotate, moveX, moveY
+            this.rotateAndMoveInPlayer(beingGroup, true, false, true, this.game.config.beingoptions['bat-a'])
           break;
           case('ghost-1'):
             // ATTACK GHOST
             console.log('ATTACK GHOST!!!')
-            
-            this.rotateAndMoveInPlayer(beingGroup, true, false, false) // rotate, moveX, moveY
+            console.log(beingGroup.animState.type)
+            this.rotateAndMoveInPlayer(beingGroup, true, false, false, this.game.config.beingoptions['ghost-1'])
           break;
         }
       break;
     }
   }
 
-  rotateAndMoveInPlayer(beingGroup, rotateOn, moveOn, moveOnY) {
+  rotateAndMoveInPlayer(beingGroup, rotateOn, moveOn, moveOnY, options) {
+    // console.log('energy: ', beingGroup.energy)
+    // console.log('damage: ', beingGroup.damage)
+    // console.log(beingGroup.filename)
+
+    // HIT PLAYER
+    if (beingGroup.filename == 'bat-a' && beingGroup.animState.type == 'ATTACK' && beingGroup.animState.card == beingGroup.animState.cardlength / 2)
+      this.game.modifyPlayerEnergy(beingGroup.damage);
+
+    if (beingGroup.filename == 'ghost-1' && beingGroup.animState.type == 'ATTACK')
+        this.game.modifyPlayerEnergy(beingGroup.damage);
+
     // PLAYER CENTER (world)
     const playerCenter = new THREE.Vector3()
     this.game.player.getWorldPosition(playerCenter)
@@ -549,12 +586,11 @@ export default class Gameplay {
         }
       }
     }
-  
+
     // CHECK DISTANCE (CENTER TO CENTER)
     const distanceToPlayer = beingCenter.distanceTo(playerCenter) // new row
-  
     // BACK TYPE TO MOVE
-    if (beingGroup.animState.type == 'ATTACK' && distanceToPlayer >= 0.8) {
+    if (beingGroup.animState.type == 'ATTACK' && distanceToPlayer >= options.backMove) { //(i) options
       beingGroup.animState = {
         type: 'MOVE',
         card: 0,
@@ -564,7 +600,7 @@ export default class Gameplay {
     }
   
     // BACK TYPE TO ATTACK
-    if (beingGroup.animState.type == 'MOVE' && distanceToPlayer <= 0.6) {
+    if (beingGroup.animState.type == 'MOVE' && distanceToPlayer <= options.backAttack) { //(i) options
       beingGroup.animState = {
         type: 'ATTACK',
         card: 0,
@@ -578,19 +614,13 @@ export default class Gameplay {
       const moveDir = moveOnY ? dirFull : dirFlat // new row
       const moveStep = moveDir.clone().multiplyScalar(beingGroup.speed / 1000) // new row
 
-      if (distanceToPlayer <= 0.3) {
-        beingGroup.position.add(
-          new THREE.Vector3(-moveStep.x, 0, -moveStep.z)
-        )
-        return
+      if (distanceToPlayer <= options.beingDistance) { //(i) options
+        beingGroup.position.add(new THREE.Vector3(-moveStep.x, 0, -moveStep.z))
+        return;
       }
 
       const tempGroup = beingGroup.clone()
-      tempGroup.position.copy(
-        beingGroup.position.clone()
-          .add(moveStep)
-          .add(new THREE.Vector3(0, this.game.gravityValue, 0))
-      )
+      tempGroup.position.copy(beingGroup.position.clone().add(moveStep).add(new THREE.Vector3(0, this.game.gravityValue, 0)))
       tempGroup.updateMatrixWorld(true)
 
       const testBox = new THREE.Box3().setFromObject(tempGroup)
@@ -605,11 +635,7 @@ export default class Gameplay {
         if (moveStep.x !== 0) {
           const stepX = new THREE.Vector3(moveStep.x * 4, 0, 0)
           const tempX = beingGroup.clone()
-          tempX.position.copy(
-            beingGroup.position.clone()
-              .add(stepX)
-              .add(new THREE.Vector3(0, this.game.gravityValue, 0))
-          )
+          tempX.position.copy(beingGroup.position.clone().add(stepX).add(new THREE.Vector3(0, this.game.gravityValue, 0)))
           tempX.updateMatrixWorld(true)
 
           const boxX = new THREE.Box3().setFromObject(tempX)
@@ -623,11 +649,7 @@ export default class Gameplay {
         if (moveStep.z !== 0) {
           const stepZ = new THREE.Vector3(0, 0, moveStep.z * 4)
           const tempZ = beingGroup.clone()
-          tempZ.position.copy(
-            beingGroup.position.clone()
-              .add(stepZ)
-              .add(new THREE.Vector3(0, this.game.gravityValue, 0))
-          )
+          tempZ.position.copy(beingGroup.position.clone().add(stepZ).add(new THREE.Vector3(0, this.game.gravityValue, 0)))
           tempZ.updateMatrixWorld(true)
 
           const boxZ = new THREE.Box3().setFromObject(tempZ)
@@ -640,11 +662,7 @@ export default class Gameplay {
         if (!moved && !moveOnY) {
           const stepHeight = this.game.stepHeight
           const tempGroup2 = tempGroup.clone()
-          tempGroup2.position.copy(
-            beingGroup.position.clone()
-              .add(moveStep)
-              .add(new THREE.Vector3(0, stepHeight, 0))
-          )
+          tempGroup2.position.copy(beingGroup.position.clone().add(moveStep).add(new THREE.Vector3(0, stepHeight, 0)))
           tempGroup2.updateMatrixWorld(true)
 
           const testBox2 = new THREE.Box3().setFromObject(tempGroup2)
@@ -715,7 +733,7 @@ export default class Gameplay {
     }
   }
 
-  async startActions() {    
+  async startActions(deltaTime) {    
     this.game.map.actionelements.forEach(action => {      
       // ALL AUTO ACTIONS
       if (action[1].conditions.click == 'auto') {
@@ -741,13 +759,13 @@ export default class Gameplay {
 
         if (intersects.length > 0) {
           // NO CLICK ACTIONS CHECK
-          this.checkActions('noclick', action, intersects[0].distance)
+          this.checkActions(deltaTime, 'noclick', action, intersects[0].distance)
         }
       }
     });
   }
 
-  async checkActions(type, actions, distance) {
+  async checkActions(deltaTime, type, actions, distance) {
     // MAKE USEDOBJECTS ARRAY
     if (typeof actions[1].conditions.usedobjects === 'undefined') actions[1].conditions.usedobjects = []
 
@@ -899,6 +917,15 @@ export default class Gameplay {
             this.game.removeObjectOfMap(this.game.scene, actions[0])
           }
 
+          // MOVE FX
+          if (event.moveactions.length > 0) {
+            for (const fx of event.moveactions) {
+              let mesh = this.game.loadedMeshs[parseInt(fx[0])]
+              let fxData = this.game.config.movefx.find(fxpc => fxpc.id == parseInt(fx[1]))
+              if (mesh && fxData) this.moveFx(deltaTime, event.id, mesh, fxData);
+            }
+          }
+
           // LIGHT FX
           if (event.lightfx.length > 0) {
             for (const fx of event.lightfx) {
@@ -906,14 +933,14 @@ export default class Gameplay {
               let fxData = this.game.config.lightfx.find(lfx => lfx.id == parseInt(fx[1]))
               if (light && fxData) this.lightFx(event.id, light, fxData);
             }
-          }
-  
-          // MOVE FX
-          if (event.moveactions.length > 0) {
-            for (const fx of event.moveactions) {
-              let mesh = this.game.loadedMeshs[parseInt(fx[0])]        
-              let fxData = this.game.config.movefx.find(fxpc => fxpc.id == parseInt(fx[1]))
-              if (mesh && fxData) this.moveFx(event.id, mesh, fxData);
+          } 
+
+          // BEING FX
+          if (event.beingfx.length > 0) {
+            for (const fx of event.beingfx) {
+              let being = this.game.loadedBeings[parseInt(fx[0])]
+              let fxData = this.game.config.beingfx.find(fxbeing => fxbeing.id == parseInt(fx[1]))
+              if (being && fxData) this.beingFx(deltaTime, event.id, being, fxData);
             }
           }
 
@@ -986,6 +1013,15 @@ export default class Gameplay {
 
   // LIGHT FX
   lightFx(eventId, light, data) {
+
+    function getDefaultLightStates(data, light) {
+      data[eventId] = {}
+      data[eventId].state = light.defaultValues.active
+      data[eventId].save_color = light.defaultValues.color
+      data[eventId].save_distance = light.defaultValues.distance
+      data[eventId].save_intensity = light.defaultValues.intensity
+    }
+
     switch(data.id) {
       case 0:
         // RANDOM COLOR 100ms
@@ -997,29 +1033,99 @@ export default class Gameplay {
 
         this.refreshHeandLights()
       break
+
       case 1:
-        // TURN OFF LIGHT / ON        
-        if (data[eventId] == null) {
-          data[eventId] = {}
-          data[eventId].state = data.state
-        }
+        // TURN OFF LIGHT / ON   
+        if (data[eventId] == null) getDefaultLightStates(data, light);
 
         if (data[eventId].state) {
           console.log('OFF', eventId)
-          data[eventId].save_color = light.color.getHexString()
-          data[eventId].save_distance = light.distance
-          data[eventId].save_intensity = light.intensity
           // BLACK
           light.color = new THREE.Color(0, 0, 0)
           light.distance = 0
           light.intensity = 0
+          light.active = false
+
+          data[eventId].state = false
         } else {
           console.log('ON', eventId)
+
           light.color = new THREE.Color(`#${data[eventId].save_color}`)
           light.distance = data[eventId].save_distance
           light.intensity = data[eventId].save_intensity
+          light.active = true
+
+          data[eventId].state = true
         }
-        data[eventId].state = !data[eventId].state
+
+        // data[eventId].state = !data[eventId].state
+
+        this.refreshHeandLights()
+      break
+
+      case 2:
+        // TURN ON LIGHT
+        if (data[eventId] == null) getDefaultLightStates(data, light);
+
+        data[eventId].state = true
+
+        console.log('ON', eventId)
+        light.color = new THREE.Color(`#${data[eventId].save_color}`)
+        light.distance = data[eventId].save_distance
+        light.intensity = data[eventId].save_intensity
+
+        this.refreshHeandLights()
+      break
+
+      case 3:
+        // TURN OFF LIGHT
+        if (data[eventId] == null) getDefaultLightStates(data, light);
+
+        data[eventId].state = false
+
+        console.log('OFF', eventId)
+        data[eventId].save_color = light.color.getHexString()
+        data[eventId].save_distance = light.distance
+        data[eventId].save_intensity = light.intensity
+        // BLACK
+        light.color = new THREE.Color(0, 0, 0)
+        light.distance = 0
+        light.intensity = 0
+
+        this.refreshHeandLights()
+      break
+
+      case 10:
+        // RED COLOR 1
+        if (!(light instanceof THREE.PointLight)) return;
+        setTimeout(() => {
+          light.color = new THREE.Color(135/255, 15/255, 0);
+          light.distance = 1;
+          light.intensity = 0.2;
+
+          console.log(light)
+          
+        }, data.time)
+
+        // this.refreshHeandLights()
+      break
+
+      case 15:
+        // GREEN COLOR 1
+        if (!(light instanceof THREE.PointLight)) return;
+        setTimeout(() => {
+          light.color = new THREE.Color(0, 255/255, 0);
+        }, data.time)
+
+        this.refreshHeandLights()
+      break
+
+      case 20:
+        // BLUE COLOR 1
+        if (!(light instanceof THREE.PointLight)) return;
+        setTimeout(() => {
+          light.color = new THREE.Color(0, 0, 255/255);
+        }, data.time)
 
         this.refreshHeandLights()
       break
@@ -1027,7 +1133,7 @@ export default class Gameplay {
   }
 
   // MOVE FX
-  moveFx(eventId, mesh, data) {    
+  moveFx(deltaTime, eventId, mesh, data) {    
     switch(data.id) {
       case 0:
         //  Open-1 (fridge) x:min y:min z:max
@@ -1050,7 +1156,7 @@ export default class Gameplay {
             axis: 'y',
           }
         }
-        this.openFx(data[eventId], mesh)
+        this.openFx(deltaTime, data[eventId], mesh)
         break
 
       case 1:
@@ -1074,7 +1180,7 @@ export default class Gameplay {
             axis: 'y',
           }
         }
-        this.openFx(data[eventId], mesh)
+        this.openFx(deltaTime, data[eventId], mesh)
       break
 
       case 2:
@@ -1098,7 +1204,7 @@ export default class Gameplay {
             axis: 'y',
           }
         }
-        this.openFx(data[eventId], mesh)
+        this.openFx(deltaTime, data[eventId], mesh)
       break
 
       case 3:
@@ -1121,7 +1227,7 @@ export default class Gameplay {
             axis: 'y',
           }
         }
-        this.openFx(data[eventId], mesh)
+        this.openFx(deltaTime, data[eventId], mesh)
       break
 
       case 4:
@@ -1144,7 +1250,7 @@ export default class Gameplay {
             axis: 'y',
           }
         }
-        this.openFx(data[eventId], mesh)
+        this.openFx(deltaTime, data[eventId], mesh)
       break
 
       case 5:
@@ -1167,7 +1273,7 @@ export default class Gameplay {
             axis: 'z',
           }
         }
-        this.openFx(data[eventId], mesh)
+        this.openFx(deltaTime, data[eventId], mesh)
       break
 
       case 6:
@@ -1190,7 +1296,7 @@ export default class Gameplay {
             axis: 'x',
           }
         }
-        this.openFx(data[eventId], mesh)
+        this.openFx(deltaTime, data[eventId], mesh)
       break
 
       case 7:
@@ -1213,13 +1319,14 @@ export default class Gameplay {
             axis: 'z',
           }
         }
-        this.openFx(data[eventId], mesh)
+        this.openFx(deltaTime, data[eventId], mesh)
       break
 
       case 10:
         // SWITCH TEXTURE CHANGE
-        this.textureOnOf(mesh, data, eventId, 'switch-1-on', 'switch-1-off')
+        this.textureOnOff(mesh, data, eventId, 'switch-1-on', 'switch-1-off')
       break
+
       case 20:
         // RADIO ON / OFF
         if (!mesh.radioSwitch) mesh.radioSwitch = data.state;
@@ -1248,11 +1355,13 @@ export default class Gameplay {
           }
           mesh.radioSwitch = "off";
         }
-      break;
+      break
+
       case 30:
         // PICTURE TEXTURE CHANGE
-        this.textureOnOf(mesh, data, eventId, 'picture-2', 'picture-3')
+        this.textureOnOff(mesh, data, eventId, 'picture-2', 'picture-3')
       break
+
       case 40:
         // STOP/START ANIMATED TEXTURE
         mesh.texture.playingState = !mesh.texture.playingState
@@ -1270,10 +1379,49 @@ export default class Gameplay {
           mesh.texture.interval = null
         }
       break
+
+      case 50:
+        // PLAYER DEMAGE        
+        if (typeof mesh.waitTimer !== 'number') mesh.waitTimer = 0
+        mesh.waitTimer += deltaTime
+
+        if (mesh.waitTimer >= 250) {
+          mesh.waitTimer = 0
+          this.game.modifyPlayerEnergy(20)
+        }
+      break
+
+      case 60:
+        // Delete Mesh of screen
+        this.game.removeObjectOfMap(this.game.scene, mesh)
+      break
     }
   }
 
-  textureOnOf(mesh, data, eventId, texture_on, texture_off) {
+  // BEING FX
+  beingFx(deltaTime, eventId, being, data) {
+    switch(data.id) {
+      case 0:
+        // Active Being OFF / ON
+        being.active = !being.active
+        this.game.beingActiveOptions(being, being.active)
+      break
+
+      case 1:
+        // Active Being ON
+        being.active = true
+        this.game.beingActiveOptions(being, true)
+      break
+
+      case 2:
+        // Active Being OFF
+        being.active = false
+        this.game.beingActiveOptions(being, false)
+      break
+    }
+  }
+
+  textureOnOff(mesh, data, eventId, texture_on, texture_off) {
     if (!data[eventId]) {
       data[eventId] = []
       data[eventId] = {
@@ -1296,8 +1444,8 @@ export default class Gameplay {
     })
   }
 
-  openFx(data, mesh) {
-    if (!mesh.container) this.refreshOpenFxState(data, mesh);
+  openFx(deltaTime, data, mesh) {
+    if (!mesh.container) this.refreshOpenFxState(deltaTime, data, mesh);
 
     data.addedValue = data.state ? -data.addedStep : data.addedStep; // ÉRTÉKE
     data.valueAdd = data.state ? -1 : 1; // COUNT-JA
@@ -1365,8 +1513,8 @@ export default class Gameplay {
     }
   }
 
-  refreshOpenFxState(data, mesh) {
-    if (!mesh.containerOffset) {      
+  refreshOpenFxState(deltaTime, data, mesh) {
+    if (!mesh.containerOffset) {
       this.game.removeBoundingBoxOfMap(mesh)
 
       const box = new THREE.Box3().setFromObject(mesh)
@@ -1398,8 +1546,6 @@ export default class Gameplay {
         this.game.scene.add(helper)
       }
     }
-  
     return mesh
   }
-
 }

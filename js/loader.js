@@ -264,24 +264,23 @@ export default class Loader {
       response = await this.fetchData({ ajax: true, load: true, filename: filename, ext: ext, savedgamesdir: savedgamesdir })
     } else if (ext == 'local') {
       response = localStorage.getItem(filename)
-    
       response = JSON.parse(response)
     }
-    
+
     if (response?.data && response?.structure) {
       // console.log('LOAD MAPDATA:', response)
 
       // CONFIG
       if (response.config != null) this.game.config = response.config
       // PLAYER
-      this.game.map.player = this.game.deepCopy(response.player)
-      this.game.map.player.energy ??= 100
+      this.game.map.player = {... this.game.config['player'], ...this.game.deepCopy(response.player)}
+      this.game.map.player.nowtime = performance.now()
 
       if (response.playerObjects != null) this.game.playerObjects = response.playerObjects;
       if (response.playerMouse != null) this.game.playerMouse = response.playerMouse;
       // MAP
       this.game.map.data = this.game.deepCopy(response.data[0], true)
-      this.game.map.structure = this.game.deepCopy(response.structure, false) // true all visible is true
+      this.game.map.structure = this.game.deepCopy(response.structure, true) // true all visible is true
       // LIGHTS
       this.game.map.lights = this.game.deepCopy(response.lights)
       // BEINGS
@@ -304,12 +303,10 @@ export default class Loader {
 
       // LOAD MAP MESHS (DATA)
       for (let mesh of this.game.map.data) {
-        let meshGroup = new THREE.Group() //(i) START MESHGROUP
+        let meshGroup = new THREE.Group() // (i) START MESHGROUP
 
         // CHECK VISIBLE
         let selectedMeshStructure = this.game.findMeshById(this.game.map.structure, mesh.id)
-        console.log(selectedMeshStructure)
-        console.log(selectedMeshStructure.visible)
         if (selectedMeshStructure.visible != 1) continue;
 
         // GIVE MESH DATA TO MESHGROUP        
@@ -398,7 +395,7 @@ export default class Loader {
         meshGroup.box.getCenter(meshGroup.center)
         meshGroup.center.applyMatrix4(meshGroup.matrixWorld)
 
-        this.game.loadedMeshs[mesh.id] = meshGroup  //(i) ADD loadedMeshs[mesh.id] !!!
+        this.game.loadedMeshs[mesh.id] = meshGroup  // (i) ADD loadedMeshs[mesh.id] !!!
 
         // LOAD ACTIONS OF MESH
         if (mesh?.actions && mesh.actions.length > 0) {
@@ -425,30 +422,34 @@ export default class Loader {
             //console.log('light.visible: ', light.visible)
             if (light.visible) {
               // console.log(light.color); console.log(light.editcolor); console.log(light.intensity); console.log(light.distance); console.log(light.type);
-              let lightColor = new THREE.Color(`#${light.color}`)
 
-              let pointLight
-              if (light.type == 'point') pointLight = new THREE.PointLight(lightColor, light.intensity, light.distance);    
-              else if (light.type == 'direction') {
-                pointLight = new THREE.DirectionalLight(lightColor, light.intensity)
-                // hova süssön, csak teszt
-                pointLight.target.position.set(light.t?.x ?? 1, light.t?.y ?? 1,light.t?.z ?? 0)
+              // console.log('id: ', light.id, 'name: ', light.name, ' | active: ', light.active)
+
+              let pointLight = light.active
+              ? new THREE.PointLight(new THREE.Color(`#${light.color}`), light.intensity, light.distance)
+              : new THREE.PointLight(new THREE.Color(0, 0, 0), 0, 0)
+
+              pointLight.active = light.active
+
+              pointLight.defaultValues = {
+                'color': light.color,
+                'intensity': light.intensity,
+                'distance': light.distance,
+                'active': light.active,
               }
 
-              if (pointLight) {
-                light.decay = light.decay ?? 2
+              light.decay = light.decay ??= 2
 
-                pointLight.position.set(light.p.x, light.p.y, light.p.z)
-                // PRIMARY LIGHT
-                this.game.scene.add(pointLight)
-                // HAND LIGHT
-                const handLight = pointLight.clone()
-                this.game.heandScene.add(handLight)
+              pointLight.position.set(light.p.x, light.p.y, light.p.z)
+              // PRIMARY LIGHT
+              this.game.scene.add(pointLight)
+              // HAND LIGHT
+              const handLight = pointLight.clone()
+              this.game.heandScene.add(handLight)
 
-                this.game.loadedLights[light.id] = [light.name, pointLight]
+              this.game.loadedLights[light.id] = [light.name, pointLight]
 
-                this.game.addConsoleRow(`Added Light: ${light.id}. ${light.name}, `, 'div', false, true)
-              }
+              this.game.addConsoleRow(`Added Light: ${light.id}. ${light.name}, `, 'div', false, true)
             }
           }
         }
@@ -474,9 +475,10 @@ export default class Loader {
 
             if (!being.visible) continue;
 
-            const beingGroup = new THREE.Group()
+            const beingGroup = new THREE.Group()           
 
             beingGroup.beingId = being.id
+            beingGroup.name = being.name
             beingGroup.ratio = being.ratio
             beingGroup.speed = being.speed
             beingGroup.energy = being.energy
@@ -484,6 +486,7 @@ export default class Loader {
             beingGroup.boxlines = being.boxlines
             beingGroup.angle = being.angle
             beingGroup.gravity = being.gravity == "1" ? true : false;
+            beingGroup.active = being.active == "1" ? true : false;
             beingGroup.lights = this.game.beingsList[being.filename].lights
 
             beingGroup.animState = {
@@ -492,6 +495,8 @@ export default class Loader {
               'cardframe': 0,
               'cardsegment': 0,
             }
+
+            console.log(being.filename)
 
             //-- Largest bounding box
             let largestBox = null
@@ -561,7 +566,8 @@ export default class Loader {
               });
             }
 
-            this.game.playStartupSoundsBeings(beingGroup)
+            // TURN ON / OFF BEING
+            this.game.beingActiveOptions(beingGroup, beingGroup.active)
 
             this.game.addConsoleRow(`Added Being: ${being.id}. ${being.name}`, 'div', false, true)
           }
@@ -686,8 +692,7 @@ export default class Loader {
   }
 
   createTHREEObject(object, group, actualData, first = false) {
-    for (let mesh of actualData) {   
-
+    for (let mesh of actualData) {
       const meshGroup = new THREE.Group()
 
       for (let tri of mesh.tris) {
@@ -727,6 +732,10 @@ export default class Loader {
         const triangleMesh = new THREE.Mesh(geometry, material)
         meshGroup.add(triangleMesh)
       }
+
+      meshGroup.objId = mesh.id
+      meshGroup.name = mesh.name
+
       group.add(meshGroup)
     }
   }
@@ -776,16 +785,19 @@ export default class Loader {
 
       // GET LIGHTS DATA
       let convertLights = []
-      for (const [id, light] of Object.entries(this.game.loadedLights)) {      
+      for (const [id, light] of Object.entries(this.game.loadedLights)) {
+        // console.log(light[1].defaultValues)
+
         convertLights.push({
           id: id,
           name: light[0],
           type: 'point',
-          color: light[1].color.getHexString(),
-          distance: light[1].distance,
-          intensity: light[1].intensity,
+          color: light[1].defaultValues?.color ?? null,
+          distance: light[1].defaultValues?.distance ?? null,
+          intensity: light[1].defaultValues?.intensity ?? null,
           decay: light[1].decay,
           visible: light[1].visible,
+          active: light[1].active,
           p: {
             x: light[1].position.x,
             y: light[1].position.y,

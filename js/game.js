@@ -22,12 +22,15 @@ export default class Game {
 
     this.mapLoading = false
 
-    // this.filename = 'cottage-1'
+    // this.filename = 'test-map-2'
     this.filename = 'cottage-1'
+
     this.ext = 'mtuc'
 
     this.animating = false
     this.play = true
+
+    this.mustWait = 25  //  20
 
     this.timers = {
       timeouts: [],
@@ -156,10 +159,6 @@ export default class Game {
   }
 
   async loop(timestamp = 0) {
-
-    // const mustWait = 25 //!!!
-    const mustWait = 25
-
     // FIRST LOAD OF MAP | MAPLOADED + ANIMATED START
     if (this.currentState == 'game' && !this.mapLoading) {
       // console.log('--- RELOAD MAP ---')
@@ -183,11 +182,11 @@ export default class Game {
     let delta = timestamp - this.lastRenderTime
 
     // --- MINIMUM FRAME LIMIT ---
-    if (delta < mustWait) return;
+    if (delta < this.mustWait) return;
 
     // ha túl nagyot ugrik (pl. tab visszajövés),
     // clampeljük hogy ne robbanjon szét a fizika
-    if (delta > 100) delta = 100;
+    // if (delta > 100) delta = 100;
 
     switch (this.currentState) {
       case 'menu':
@@ -231,6 +230,8 @@ export default class Game {
         fYaw: 0,
         fXaw: 0,
         energy: 100,
+        hitdelay: 200,
+        delaytime: 0,
       }
     }
     return this.map;
@@ -309,15 +310,14 @@ export default class Game {
       <div id="menu-container">
         <div class="full-size d-flex justify-content-center align-items-center">
           <div class="delta-time-menu text-white"></div>
-          <button class="btn btn-primary rounded-0" data-bs-toggle="modal" data-bs-target="#topLayer">
+          <button id="first-interaction-button" class="btn btn-primary rounded-0" data-bs-toggle="modal" data-bs-target="#topLayer">
             Join the menu
           </button>
           <div class="modal" id="topLayer" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered modal-xl">
-              <div class="modal-content bg-light">
+              <div class="modal-content bg-danger">
                 <div class="modal-header">
                   <h5 class="modal-title text-uppercase text-center w-100">The forgotten cottage</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body text-center row">
                   <h5>FILSE SAVE</h5>
@@ -350,7 +350,7 @@ export default class Game {
                   </div>
                   <br>
                   <div class="my-2">
-                      <input type="checkbox" id="lights-button" checked>
+                      <input type="checkbox" id="lights-button">
                       <span class="text-black"> All Lights ON</span>
                   </div>
                   <div class="mb-2">
@@ -540,31 +540,31 @@ export default class Game {
     }
   }
 
-removeBoundingBoxOfMap(mesh) {
-  if (mesh._boundingBox) {
-    this.boundingBoxes = this.boundingBoxes.filter(box => box !== mesh._boundingBox)
-    mesh._boundingBox = null
-  }
+  removeBoundingBoxOfMap(mesh) {
+    if (mesh._boundingBox) {
+      this.boundingBoxes = this.boundingBoxes.filter(box => box !== mesh._boundingBox)
+      mesh._boundingBox = null
+    }
 
-  if (mesh.container && mesh.container._boundingBox) {
-    this.boundingBoxes = this.boundingBoxes.filter(box => box !== mesh.container._boundingBox)
-    mesh.container._boundingBox = null
-  }
+    if (mesh.container && mesh.container._boundingBox) {
+      this.boundingBoxes = this.boundingBoxes.filter(box => box !== mesh.container._boundingBox)
+      mesh.container._boundingBox = null
+    }
 
-  this.boundingBoxes = this.boundingBoxes.filter(box => {
-    const testBox = new THREE.Box3().setFromObject(mesh)
-    return !box.equals(testBox)
-  })
+    this.boundingBoxes = this.boundingBoxes.filter(box => {
+      const testBox = new THREE.Box3().setFromObject(mesh)
+      return !box.equals(testBox)
+    })
 
-  mesh.traverse(obj => {
-    if (obj.geometry && obj.geometry.boundingBox) {
-      const childBox = obj.geometry.boundingBox.clone()
-      const pos = new THREE.Vector3()
-      obj.getWorldPosition(pos)
-      childBox.min.add(pos)
-      childBox.max.add(pos)
+    mesh.traverse(obj => {
+      if (obj.geometry && obj.geometry.boundingBox) {
+        const childBox = obj.geometry.boundingBox.clone()
+        const pos = new THREE.Vector3()
+        obj.getWorldPosition(pos)
+        childBox.min.add(pos)
+        childBox.max.add(pos)
 
-      this.boundingBoxes = this.boundingBoxes.filter(box => !box.equals(childBox))
+        this.boundingBoxes = this.boundingBoxes.filter(box => !box.equals(childBox))
       }
     })
   }
@@ -579,9 +579,9 @@ removeBoundingBoxOfMap(mesh) {
 
   refreshBoundingBoxOfMapContainer(mesh) {
     if (!mesh.container) return
-  
+
     const updatedBox = new THREE.Box3().setFromObject(mesh.container)
-  
+
     // előző box kiszedése
     if (mesh._boundingBox) {
       this.boundingBoxes = this.boundingBoxes.filter(box => box !== mesh._boundingBox)
@@ -589,7 +589,7 @@ removeBoundingBoxOfMap(mesh) {
   
     // új box berakása
     this.boundingBoxes.push(updatedBox)
-  
+
     // mentés
     mesh._boundingBox = updatedBox
   }
@@ -609,10 +609,10 @@ removeBoundingBoxOfMap(mesh) {
 
   boxFromDataRow(dataRow, ratio = 1) {
     const box = new THREE.Box3()
-  
+
     dataRow.forEach(mesh => {
       if (!mesh.tris) return
-  
+
       mesh.tris.forEach(tri => {
         tri.p.forEach(pt => {
           box.expandByPoint(new THREE.Vector3(
@@ -627,7 +627,7 @@ removeBoundingBoxOfMap(mesh) {
     return box
   }
 
-  playStartupSoundsBeings(mesh) {
+  async playStartupSoundsBeings(mesh) {
     if (!mesh) return
     if (!this.config['autoplaysounds']) return
     if (!mesh.filename) return
@@ -635,15 +635,13 @@ removeBoundingBoxOfMap(mesh) {
     const soundData = this.config['autoplaysounds'][mesh.filename]
     if (!soundData) return
 
-    console.log(mesh.filename)
-
     mesh.updateMatrixWorld(true)
   
     const box = new THREE.Box3().setFromObject(mesh)
     const center = new THREE.Vector3()
     box.getCenter(center)
   
-    this.sound.play(soundData.soundid, { volume: soundData.volume }, soundData.loop, mesh).then(phantom => {
+    await this.sound.play(soundData.soundid, { volume: soundData.volume }, soundData.loop, mesh).then(phantom => {
       if (!phantom) return
 
       phantom.position.copy(center)
@@ -658,7 +656,7 @@ removeBoundingBoxOfMap(mesh) {
   
       mesh.playSound = phantom
       mesh.playSound.audio = audio
-  
+
       // HELPER
       if (false && !mesh.soundHelper) {
         const geometry = new THREE.SphereGeometry(0.05, 12, 12)
@@ -674,11 +672,74 @@ removeBoundingBoxOfMap(mesh) {
     }).catch(err => console.warn("Sound play error:", err))
   }
 
+  stopBeingSound(mesh) {    
+    if (!mesh?.playSound) return;
+    console.log('ITT : STOP')
+
+    const phantom = mesh.playSound
+    const audio = phantom.audio || phantom.children?.[0]
+  
+    if (audio && audio.isPlaying) audio.stop()
+    if (phantom.parent) phantom.parent.remove(phantom)
+    if (audio) audio.disconnect()
+  
+    mesh.playSound = null
+  }
+
+  restartBeingSound(mesh) {
+    this.stopBeingSound(mesh)
+    this.playStartupSoundsBeings(mesh)
+  }
+
+  beingActiveOptions(being, value) {
+    if (!being) return
+
+    if (value === true) {
+      being.visible = true
+      being.active = true
+      this.restartBeingSound(being)
+    } else {
+      being.visible = false
+      being.active = false
+      this.stopBeingSound(being)
+
+      // bounding box törlés
+      if (being.box) {
+        this.boundingBoxes = this.boundingBoxes.filter(box => box !== being.box)
+        being.box = null
+      }
+    }
+  }
+
   energyModifyScreen(value) {
     console.log(this.map.player.energy)
     this.map.player.energy -= parseFloat(value)
 
     $("#energy-container .energy").css('width', `${this.map.player.energy}%`)
+  }
+
+  modifyPlayerEnergy(value) {
+    // return //!!!
+    console.log('damage: ', value)
+
+    const now = performance.now()
+
+    if (now - this.map.player.nowtime < this.map.player.hitdelay) return;
+    this.map.player.nowtime = now
+
+    // ENERGY
+    this.energyModifyScreen(value)
+
+    // SOUND
+    const r = Math.floor(Math.random() * 3)
+    this.sound.play(200 + r, {volume: 0.1, loop: false})
+
+    const el = $("#game-blood")
+
+    // CSS
+    el.removeClass("play")
+    void el[0].offsetWidth
+    el.addClass("play")
   }
 }
 

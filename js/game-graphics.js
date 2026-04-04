@@ -11,9 +11,11 @@ export default class Graphics {
 
   async init() {
     this.game.canvas = document.getElementById('game-canvas')
-    this.game.renderer = new THREE.WebGLRenderer({ canvas: this.game.canvas })
+    this.game.renderer = new THREE.WebGLRenderer({canvas: this.game.canvas})
     this.game.renderer.domElement.style.imageRendering = 'pixelated'
     this.game.renderer.setPixelRatio(1)
+    this.game.renderer.setClearColor(0x000000, 1)
+
     this.game.scene = new THREE.Scene()
     this.game.heandScene = new THREE.Scene()
 
@@ -29,24 +31,36 @@ export default class Graphics {
       this.game.targetFPS = 60
       this.game.renderInterval = 1000 / this.game.targetFPS
 
-      this.scX = window.innerWidth / 2
-      this.scY = window.innerHeight / 2
+      // this.scX = 1024; this.scY = 576
+      this.scX = window.innerWidth / 1; this.scY = window.innerHeight / 1
+
       this.far = 13
     } else {
       // LOW
 
-      /* //!!!
-      $("#game-container").removeClass('full-size').addClass('small-size')
-      $("#game-canvas").removeClass('full-size').addClass('small-size')
+      // !!!
+      /*
+      $("#game-container").removeClass('full-size').addClass('mx-auto').addClass('small-size')
+      $("#game-canvas").removeClass('full-size').addClass('mx-auto').addClass('small-size')
       */
 
-      this.game.targetFPS = 15
+      this.game.targetFPS = 25
       this.game.renderInterval = 1000 / this.game.targetFPS
 
       this.scX = window.innerWidth / 10
       this.scY = window.innerHeight / 10
       this.far = 7
 
+      this.move = {
+        push: false,
+        key: '',
+        speed: 0,
+        add: 0.01,
+        max: 0.1,
+        sub: 0.98,
+        cameraUp: {},
+        playerRotationY: {}
+      }
     }
 
     this.game.camera = new THREE.PerspectiveCamera(60, this.scX / this.scY, 0.1, this.far)

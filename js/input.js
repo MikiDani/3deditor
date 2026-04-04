@@ -6,6 +6,10 @@ export default class Input {
   constructor(game) {
     this.game = game
 
+    this.fistInteraction = false
+
+    this.lastKeyTime = 0
+
     this.selectedObjectIndex = 0
 
     this.gravity = 0
@@ -51,6 +55,11 @@ export default class Input {
     // RELOAD SCREEN
     $(window).on('resize', () => {
       this.game.graphics.reloadScreen()
+    });
+
+    // FIRST INTERACTION BUTTON
+    $(document).on('click', '#first-interaction-button', () => {
+      this.fistInteraction = true      
     });
 
     // CLOSE BUTTON
@@ -462,6 +471,9 @@ export default class Input {
             this.game.play = false
             this.game.currentState = 'menu'
             this.game.showHideOptions('menu')
+
+            if (this.fistInteraction) $('#first-interaction-button').trigger('click');
+
           } else if (this.game.currentState =='menu' || this.game.currentState =='inventory') {
             this.game.playerMouse.selectedObject = null
             this.game.play = true
@@ -616,20 +628,7 @@ export default class Input {
 
         // BLOOD
         if ((e.key == 'z' || e.key == 'Z') && this.game.currentState == 'game') {
-          console.log('BLOOD...')
-
-          // ENERGY
-          this.game.energyModifyScreen(1.2)
-
-          // SOUND
-          this.game.sound.play(100, {volume: 1, loop: false})
-
-          const el = $("#game-blood")
-
-          // CSS
-          el.removeClass("play")
-          void el[0].offsetWidth
-          el.addClass("play")
+          this.game.modifyPlayerEnergy(1.2)
         }
       }
 
@@ -693,6 +692,12 @@ export default class Input {
           }
         }
       }
+
+      // GAME KEYS
+      if (this.game.currentState == 'menu') {
+        return
+      }
+
     });
     this.game.inputsLoading = true
   }
@@ -1012,6 +1017,15 @@ export default class Input {
   }
 
   updatePlayer() {
+    //--
+    /*
+    const now = performance.now()
+    if (now - this.lastKeyTime < this.game.mustWait) return;
+    this.lastKeyTime = now
+    console.log('keydown listener attached')
+    */
+    //--
+
     const shift = this.game.keysPressed.has('shift')
     let moved = false;
 
@@ -1146,7 +1160,6 @@ export default class Input {
         this.game.isGrounded = true;
       }
     }
-
     return moved;
   }
 
@@ -1180,7 +1193,6 @@ export default class Input {
           break
         }
       }
-
     }
   }
 
@@ -1250,7 +1262,7 @@ export default class Input {
           }
 
           // IF USE MODE
-          if (this.game.playerMouse.mode == 'use' && this.game.currentState == 'game') this.game.gameplay.checkActions('click', action, distance);
+          if (this.game.playerMouse.mode == 'use' && this.game.currentState == 'game') this.game.gameplay.checkActions(Date.now(), 'click', action, distance);
 
         }
       }
