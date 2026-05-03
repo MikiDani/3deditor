@@ -331,8 +331,16 @@ export default class Input {
       // CLOSE TEXT BUTTON            
       if (e.button == 0 && this.game.currentState == 'game' && ( $(e.target).attr('id') == 'text-box-close-button' || $(e.target).closest('#text-box').length )) {
         e.preventDefault(); e.stopPropagation();
+
+        // START GAME TEXT REMOVE
+        if (this.game.startGameInfoText) {          
+          this.game.startGameInfoText = false
+          this.game.waitingGameInfoText = false
+          $('#text-box-text').html('')
+        }
+
         $("#text-box").hide()
-        return
+        return;
       }
     })
 
@@ -424,7 +432,7 @@ export default class Input {
       // HELPERS
       if (e.key == 'i') {
         console.log(this.game.map)
-        
+
         console.log('map.player')
         console.log(this.game.map.player)
         console.log(this.game.map.player.x)
@@ -524,6 +532,22 @@ export default class Input {
           this.game.playerMouse.selectedHeand = 2
           this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
           this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
+        }
+
+        if (e.key == 'Shift' && this.game.playerMouse.selectedHeand == 2) {
+          e.preventDefault(); e.stopPropagation();
+          if (this.game.playerMouse.playerAttack) return;
+
+          this.game.sound.play(this.game.gameplay.getArrayRandomId([210, 211]), {volume: 1})
+
+          this.game.playerMouse.playerAttack = true
+
+          setTimeout(() => {
+            this.game.playerMouse.playerAttack = false
+            this.game.gameplay.playerAttack('knife')
+          }, 1000)
+
+          return;
         }
 
         if(e.key =='3') {
@@ -845,12 +869,26 @@ export default class Input {
   }
 
   useSelectorChange() {
+    console.log('1')
+    
+    // TURN OFF POINTERLOCK
+    if (document.pointerLockElement) document.exitPointerLock();
+    this.game.isPointerLocked = false
+    $('#mouseorkey-selector').removeClass('mouse-selector-pic').addClass('key-selector-pic')
+
     this.game.playerMouse.mode = 'use'
     this.removeAllCursorClass()
     $("html").addClass('cursor-use-off')
   }
 
   lookSelectorChange() {
+    console.log('2')
+
+    // TURN OFF POINTERLOCK
+    if (document.pointerLockElement) document.exitPointerLock();
+    this.game.isPointerLocked = false
+    $('#mouseorkey-selector').removeClass('mouse-selector-pic').addClass('key-selector-pic')
+
     this.game.playerMouse.mode = 'look'
     this.removeAllCursorClass()
     $("html").addClass('cursor-look-off')
@@ -870,10 +908,10 @@ export default class Input {
   }
 
   setupCameraControls() {
-    this.game.rotateSpeed = THREE.MathUtils.degToRad(3)
+    this.game.rotateSpeed = THREE.MathUtils.degToRad(5)
     this.game.keysPressed = new Set()
 
-    this.game.isGrounded = true
+    this.game.isGrounded = false
     this.game.jumpState = {
       isJumping: false,
       size: 0.5,
@@ -892,63 +930,104 @@ export default class Input {
     window.addEventListener('keyup', (e) => {
       if (typeof e.key == 'string') this.game.keysPressed.delete(e.key.toLowerCase())
     })
+
+    // SEE UP / DOWN
+    document.addEventListener('wheel', (e) => {
+      if (this.game.currentState != 'game' || this.game.isPointerLocked) return
+  
+      const pitchLimit = THREE.MathUtils.degToRad(this.game.playerMouse.mouseMaxPitch)
+  
+      if (e.deltaY > 0) {
+        this.game.pitchObject.rotation.x -= this.game.rotateSpeed
+      } else {
+        this.game.pitchObject.rotation.x += this.game.rotateSpeed
+      }
+  
+      this.game.pitchObject.rotation.x = Math.max(
+        -pitchLimit,
+        Math.min(pitchLimit, this.game.pitchObject.rotation.x)
+      )
+    })
+
   }
 
   willCollide(testPos) {
     const size = this.game.playerBoundingBox.clone()
-
+  
     // HEAD AND JUMP CORRECTION
     const center = testPos.clone()
     
     center.y += (this.game.playerYModify - size.y / 2)
-
+  
     const cameraBox = new THREE.Box3().setFromCenterAndSize(center, size)
-
+  
     return this.game.boundingBoxes.some(box =>
       box.intersectsBox(cameraBox)
     )
   }
-
+  
+  hasGround(testPos) {
+    const size = this.game.playerBoundingBox.clone()
+  
+    size.x *= 0.75
+    size.z *= 0.75
+    size.y = 0.08
+  
+    const center = testPos.clone()
+    center.y += this.game.playerYModify - this.game.playerBoundingBox.y / 2 - 0.04
+  
+    const groundBox = new THREE.Box3().setFromCenterAndSize(center, size)
+  
+    return this.game.boundingBoxes.some(box =>
+      box.intersectsBox(groundBox)
+    )
+  }
+  
   testMove(offset, allowStep = false) {
     const player = this.game.player
     const start = player.position.clone()
-
+  
     if (this.game.ghostMode) {
       player.position.add(offset)
-      return true;
+      return true
     }
-
+  
+    const isHorizontalMove = offset.y == 0
+    const startHasGround = this.hasGround(start)
+  
     // 1) Teljes mozgás
     const target = start.clone().add(offset)
     if (!this.willCollide(target)) {
+      if (isHorizontalMove && startHasGround && !this.hasGround(target)) return false
+  
       player.position.copy(target)
-      return true;
+      return true
     }
-
+  
     // 2) Tengelyenkénti csúsztatás
     let moved = false
     let blocked = false
-
+  
     const dx = new THREE.Vector3(offset.x, 0, 0)
     const tryX = start.clone().add(dx)
-    if (!this.willCollide(tryX)) {
+    if (!this.willCollide(tryX) && (!isHorizontalMove || !startHasGround || this.hasGround(tryX))) {
       player.position.copy(tryX)
       moved = true
-    } else blocked = true;
+    } else blocked = true
   
     const dz = new THREE.Vector3(0, 0, offset.z)
     const tryZ = player.position.clone().add(dz)
-    if (!this.willCollide(tryZ)) {
+    if (!this.willCollide(tryZ) && (!isHorizontalMove || !startHasGround || this.hasGround(tryZ))) {
       player.position.copy(tryZ)
       moved = true
     } else {
       blocked = true
     }
-
+  
     if (allowStep && blocked) {
       const originalY = player.position.y
       const up = new THREE.Vector3(0, this.game.stepHeight, 0)
-
+    
       const raised = player.position.clone().add(up)
       if (!this.willCollide(raised)) {
         const stepTarget = raised.clone().add(offset)
@@ -961,7 +1040,7 @@ export default class Input {
           }
         }
       }
-
+    
       player.position.y = originalY
     }
   

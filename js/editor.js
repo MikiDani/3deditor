@@ -743,7 +743,7 @@ class Editor {
   async loadMapData() {
     // DEFAULT MAP
     
-    // let filename = 'test-map-2'; let ext = 'mtuc';
+    // let filename = 'test-map-1'; let ext = 'mtuc';
     let filename = 'cottage-1'; let ext = 'mtuc';
     
     // DEFAULT OBJECT
@@ -1657,6 +1657,9 @@ class Editor {
       $("select[name='being-gravity']").prop("selectedIndex", 0);
       $("select[name='being-active']").prop("selectedIndex", 0);
 
+      $("select[name='ap-active']").prop("selectedIndex", 0);
+      $("select[name='ap-name']").prop("selectedIndex", 0);
+
       $("input[name='being-angle']").val(''); $("input[name='being-ratio']").val(''); $("select[name='being-speed']").val('');
       $("select[name='being-energy']").val(''); $("select[name='being-damage']").val('');
 
@@ -2003,7 +2006,19 @@ class Editor {
   refreshBeingDataDOM(selectedBeingData) {
     $("input[name='selected-being-name']").val(selectedBeingData.name)
     $("input[name='being-p-X']").val(selectedBeingData.p.x); $("input[name='being-p-Y']").val(selectedBeingData.p.y); $("input[name='being-p-Z']").val(selectedBeingData.p.z);
-    $("input[name='being-angle']").val(selectedBeingData.angle); $("input[name='being-color']").val(selectedBeingData.color); $("input[name='being-intensity']").val(selectedBeingData.intensity); $("input[name='being-distance']").val(selectedBeingData.distance); $("select[name='being-edit-color']").val(selectedBeingData.editcolor);  $("select[name='being-gravity']").val(selectedBeingData.gravity); $("input[name='being-ratio']").val(selectedBeingData.ratio); $("input[name='being-speed']").val(selectedBeingData.speed); $("input[name='being-energy']").val(selectedBeingData.energy); $("input[name='being-damage']").val(selectedBeingData.damage);$("select[name='being-active']").val(selectedBeingData.active);
+    $("input[name='being-angle']").val(selectedBeingData.angle); $("input[name='being-color']").val(selectedBeingData.color); $("input[name='being-intensity']").val(selectedBeingData.intensity); $("input[name='being-distance']").val(selectedBeingData.distance); $("select[name='being-edit-color']").val(selectedBeingData.editcolor);  $("select[name='being-gravity']").val(selectedBeingData.gravity == 1 ? '1' : '0'); $("input[name='being-ratio']").val(selectedBeingData.ratio); $("input[name='being-speed']").val(selectedBeingData.speed); $("input[name='being-energy']").val(selectedBeingData.energy); $("input[name='being-damage']").val(selectedBeingData.damage);$("select[name='being-active']").val(selectedBeingData.active == 1 ? '1' : '0');
+    // ANIM POINTS
+    if (this.gamedata.beingoptions[selectedBeingData.filename]?.animationpoints) {
+      $("select[name='ap-active']").val(selectedBeingData.apactive == 1 ? '1' : '0').prop('disabled', false)
+      let optionsList = ``
+      for (const name of Object.keys(this.gamedata.beingoptions[selectedBeingData.filename].animationpoints)) {
+        optionsList += `<option value="${name}">${name}</option>`
+      }
+      $("select[name='ap-name']").html('').append(optionsList).val(selectedBeingData.apname).prop('disabled', false)
+    } else {
+      $("select[name='ap-active']").val('0').prop('disabled', true)
+      $("select[name='ap-name']").html('').prop('disabled', true)
+    }
   }
 
   objectNameAndTextInfo() {    
@@ -2988,7 +3003,6 @@ class Editor {
           ext = $("#modal-ext").val()
         } else {
           ext = $(this).attr('data-ext')
-          $("#modal-ext").val(ext)
         }
 
         if (filename && ext) {
@@ -3030,10 +3044,11 @@ class Editor {
     $(document).on('click', "#modal-container .modal-action-button", async function() {      
       let mode = $("#modal-container").attr('data-mode')
       let filename = $(this).attr('data-filename')
-
+      
       // AJAX LOAD
       if (mode == 'load' && filename) {
         let ext = $(this).attr('data-ext')
+        $("#modal-ext").val(ext)
 
         // OBJECT RATIO CONTAINER
         ext == 'mtuc'
@@ -3076,7 +3091,9 @@ class Editor {
       // AJAX SAVE AS
       if (mode == 'save' && filename) {
         let save = true;
-        let ext = $('#modal-ext').val()
+
+        let ext = $(this).attr('data-ext')
+        $("#modal-ext").val(ext)
 
         const responseIsset = await clone.fetchData({ ajax: true, issetfile: true, filename, ext: ext }); // console.log(responseIsset)
         if (responseIsset[0]) save = (confirm(`File is isset: ${filename} Are you seure ovverrite?`)) ? true : false;
@@ -4942,12 +4959,13 @@ class Editor {
     $(document).on('click', '#being-let-go', function() {
       clone.mouse.selectedBeingId = null
       clone.mouse.selectedBeingData = null
+      clone.refreshBeingListOff()
       clone.refreshBeingsList()
     });
 
     // SELECT being
     $(document).on('click', '.being-element', function() {
-      let selectedbeingId = parseInt($(this).attr('data-being-id'))
+      let selectedbeingId = parseInt($(this).attr('data-being-id'))     
 
       let selectedBeingData = clone.map.beings.find(being => being.id == selectedbeingId)
       if (selectedbeingId && selectedBeingData) {
@@ -5012,7 +5030,7 @@ class Editor {
     });
 
     // SELECT
-    $(document).on("change", "select[name='being-type'], select[name='being-edit-color'], select[name='being-gravity'], select[name='being-active']", function() {
+    $(document).on("change", "select[name='being-type'], select[name='being-edit-color'], select[name='being-gravity'], select[name='being-active'], select[name='ap-active'], select[name='ap-name']", function() {
       let variableName = $(this).attr('data-name')
       let value = $(this).val()
       clone.mouse.selectedBeingData[variableName] = value

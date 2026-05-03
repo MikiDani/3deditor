@@ -134,6 +134,8 @@ export default class Loader {
           this.texturesLinks[key2] = response.structure[key][key2]
         }
       }
+      // DEFAULT TEXTURE
+      this.texturesLinks['notexture'] = { notexture: '.\\data\\notexture' }
     } else throw('Textures didn\'t load.');
   }
 
@@ -240,17 +242,19 @@ export default class Loader {
 
   // MAP LOADER
   async mapLoader(filename, ext) {
-    // console.log(filename, ext)
-
     let loadType = null
     let savedgamesdir = null
 
     if (ext == 'stuc' || ext == 'local') {
       loadType = 'loadgame'
       savedgamesdir = '__saved_games__'
+      this.game.startGameInfoText = false; this.game.finishGameInfoText = false; this.game.waitingGameInfoText = false;
     } else {
       loadType = 'newgame'
+      this.game.startGameInfoText = false; /* !!! */ this.game.finishGameInfoText = false; this.game.waitingGameInfoText = false;
     }
+
+    $('#text-box').hide(); $('#text-box-text').html('');
 
     this.game.map = this.game.mapVariableReset()
     this.game.map.map_filename = filename
@@ -307,7 +311,9 @@ export default class Loader {
 
         // CHECK VISIBLE
         let selectedMeshStructure = this.game.findMeshById(this.game.map.structure, mesh.id)
-        if (selectedMeshStructure.visible != 1) continue;
+
+        if (selectedMeshStructure.visible != 1) continue; // EDITOR OFF
+        if (selectedMeshStructure.active == 0) continue;  // TURN OFF IN GAME
 
         // GIVE MESH DATA TO MESHGROUP        
         if (mesh.id) meshGroup.objId = mesh.id;                          // IF HAVE MESH ID
@@ -335,15 +341,15 @@ export default class Loader {
           geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))  
           geometry.computeVertexNormals()
 
-          let triTransparent = tri?.transparent ? true : false;
           let triNormal = tri?.normal ? 'FrontSide' : 'DoubleSide';
+          let triTransparent = tri?.transparent ? true : false;
+          // triTransparent = false; // !
 
           // SELECTED TEXTURE
           const texture = this.game.loadedTextures[tri.texture.name]
 
           // IF LOAD GAME PLAYINGSTATE
-          if (loadType == 'loadgame') texture.playingState = this.game.config['animationtextures'][tri.texture.name]?.playingState ?? true            
-
+          if (loadType == 'loadgame') texture.playingState = this.game.config['animationtextures'][tri.texture.name]?.playingState ?? true;
           if (texture?.needsUpdate) texture.needsUpdate = false;
 
           const materialType = (this.game.lightsOn) ? 'MeshLambertMaterial' : 'MeshBasicMaterial';
@@ -472,13 +478,12 @@ export default class Loader {
         for (const being of this.game.map.beings) {
           const actualBeingData = this.game.beingsList[being.filename].data[0]
           if (actualBeingData) {
-
             if (!being.visible) continue;
-
-            const beingGroup = new THREE.Group()           
+            const beingGroup = new THREE.Group()            
 
             beingGroup.beingId = being.id
             beingGroup.name = being.name
+            beingGroup.filename = being.filename
             beingGroup.ratio = being.ratio
             beingGroup.speed = being.speed
             beingGroup.energy = being.energy
@@ -488,6 +493,12 @@ export default class Loader {
             beingGroup.gravity = being.gravity == "1" ? true : false;
             beingGroup.active = being.active == "1" ? true : false;
             beingGroup.lights = this.game.beingsList[being.filename].lights
+            beingGroup.apname = being.apname ?? null
+            beingGroup.apactive = being.apactive == "1" ? true : false;
+            beingGroup.animationActive = true // DIE hoz kell
+
+            if (this.game.config.beingoptions[being.filename]?.animationpoints)
+              beingGroup.animationpoints = this.game.config.beingoptions[being.filename].animationpoints;
 
             beingGroup.animState = {
               'type': being.type,
@@ -496,9 +507,7 @@ export default class Loader {
               'cardsegment': 0,
             }
 
-            console.log(being.filename)
-
-            //-- Largest bounding box
+            // --- BOUNDINGBOX RATIO OPTIONS
             let largestBox = null
             let largestVolume = 0
 
@@ -515,9 +524,8 @@ export default class Loader {
                 largestVolume = volume
                 largestBox = box.clone()
               }
-            })
+            });
 
-            // --- BOUNDINGBOX RATIO OPTIONS
             if (largestBox) {
               const center = new THREE.Vector3()
               const size = new THREE.Vector3()
@@ -526,15 +534,15 @@ export default class Loader {
               largestBox.getSize(size)
               if (size.z === 0) size.z = 0.01; if (size.x === 0) size.x = 0.01; if (size.y === 0) size.y = 0.01;
 
-              size.multiplyScalar(0.6)
+              const boundingBoxRatioSize = this.game.config.beingoptions?.[beingGroup.filename]?.boundingBoxRatio ?? 1 * beingGroup.ratio
+              console.log(boundingBoxRatioSize)
 
+              size.multiplyScalar(boundingBoxRatioSize)
               largestBox.setFromCenterAndSize(center, size)
 
               this.game.beingsList[being.filename].largestBoundingBox = largestBox
             }
-
             //--
-
             this.createTHREEObject(being, beingGroup, actualBeingData, false)
 
             beingGroup.position.set(being.p.x, being.p.y, being.p.z)
@@ -673,7 +681,7 @@ export default class Loader {
           if (eventId == 'id' || eventId == 'name') continue;
           for(let event of thisAction.events) {
             if (event.id == eventId) {
-              meshGroup = this.game.gameplay.refreshOpenFxState(oldData, meshGroup)
+              meshGroup = this.game.gameplay.refreshOpenFxState(null, oldData, meshGroup)
             }
           }
         }
@@ -687,7 +695,6 @@ export default class Loader {
         }
       }
     }
-
     return meshGroup;
   }
 
@@ -714,9 +721,11 @@ export default class Loader {
         geometry.computeVertexNormals()
 
         let triTransparent = tri?.transparent ? true : false;
+        // triTransparent = false; // !
+
         let triNormal = tri?.normal ? 'FrontSide' : 'DoubleSide';
 
-        const texture = this.game.loadedTextures[tri.texture.name]
+        const texture = this.game.loadedTextures[tri.texture.name] ?? this.game.loadedTextures['notexture'];
 
         if (texture?.needsUpdate) texture.needsUpdate = false;
 
@@ -786,8 +795,6 @@ export default class Loader {
       // GET LIGHTS DATA
       let convertLights = []
       for (const [id, light] of Object.entries(this.game.loadedLights)) {
-        // console.log(light[1].defaultValues)
-
         convertLights.push({
           id: id,
           name: light[0],
@@ -807,6 +814,27 @@ export default class Loader {
         })
       }
 
+      // GET BEINGS DATA
+      let convertBeings = []
+      for (const [id, being] of Object.entries(this.game.loadedBeings)) {
+        const thisBeing = this.game.map.beings.find(being => being.id == id)
+        if (thisBeing) {
+          convertBeings.push({
+            ...thisBeing, 
+            active: being.active ? "1" : "0",
+            ratio: being.ratio,
+            speed: being.speed,
+            energy: being.energy,
+            type: being.animState.type,
+            p: {
+              x: being.position.x,
+              y: being.position.y,
+              z: being.position.z,
+            }
+          });
+        }
+      }
+
       // TO PREPARE SAVE DATA
       const saveMapData = {
         config: this.game.config,
@@ -814,7 +842,7 @@ export default class Loader {
         data: [this.game.map.data],
         structure: this.game.map.structure,
         lights: convertLights,
-        beings: this.game.map.beings,
+        beings: convertBeings,
         actions: this.game.map.actions,
         playerObjects: this.game.playerObjects,
         playerMouse: this.game.playerMouse,
@@ -858,7 +886,7 @@ export default class Loader {
   // ---
 
   async fetchData(data, originaldata) {
-    // const path = 'https://tuccmann.com/3deditor1/editor.php'; // Online
+    // const path = 'https://tuccmann.com/3deditor3/editor.php'; // Online
     const path = 'http://localhost/3deditor/editor.php';
     try {
       const response = await $.ajax({

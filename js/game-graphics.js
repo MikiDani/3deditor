@@ -31,20 +31,21 @@ export default class Graphics {
       this.game.targetFPS = 60
       this.game.renderInterval = 1000 / this.game.targetFPS
 
-      // this.scX = 1024; this.scY = 576
       this.scX = window.innerWidth / 1; this.scY = window.innerHeight / 1
+      // this.scX = 1024; this.scY = 576
+      // this.scX = 450; this.scY = 250
 
       this.far = 13
     } else {
       // LOW
-
+wwa
       // !!!
       /*
       $("#game-container").removeClass('full-size').addClass('mx-auto').addClass('small-size')
       $("#game-canvas").removeClass('full-size').addClass('mx-auto').addClass('small-size')
       */
 
-      this.game.targetFPS = 25
+      this.game.targetFPS = 10  // 25
       this.game.renderInterval = 1000 / this.game.targetFPS
 
       this.scX = window.innerWidth / 10

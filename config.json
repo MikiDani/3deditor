@@ -21,9 +21,9 @@
     },
     {
       "id": 2,
-      "xDistance": -0,
+      "xDistance": 0,
       "yDistance": -0.2,
-      "zDistance": 0.55,
+      "zDistance": 0.5,
       "yRatio": 140,
       "tilt": false
     },
@@ -94,6 +94,10 @@
     {
       "id": 60,
       "name": "Delete Mesh of screen"
+    },
+    {
+      "id": 80,
+      "name": "The game has been played!"
     }
   ],
   "lightfx": [
@@ -242,6 +246,15 @@
       "setRolloffFactor": 3
     },
     {
+      "id": 12,
+      "name": "creak1",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
       "id": 100,
       "name": "bet-attack1",
       "volume": 1,
@@ -292,6 +305,18 @@
     {
       "id": 202,
       "name": "player-damage3",
+      "volume": 1,
+      "loop": false
+    },
+    {
+      "id": 210,
+      "name": "knife1",
+      "volume": 1,
+      "loop": false
+    },
+    {
+      "id": 211,
+      "name": "knife2",
       "volume": 1,
       "loop": false
     },
@@ -470,6 +495,18 @@
           "F b2 Consequuntur ex asperiores totam mollitia illum architecto voluptates veritatis. Quas debitis sed libero sit beatae commodi, doloribus qui minus fugit voluptatibus, vero expedita, explicabo omnis animi? Vel, laborum alias."
         ]
       ]
+    },
+    {
+      "id": "start_text",
+      "text": [
+        "Az USA-ban élsz, ott kapsz egy levelet, hogy örökölsz a nagybátyád után, aki egy olasz horrorfilmrendező volt. Ez egy olasz kúria valahol vidéken. Ez majd egy levél lesz az elején, vagy valami szöveg. Odautazol. Gyerekkorodban mondjuk jártál ott, ezért az inas ismerhet.<br>A nagybácsi az annyira beleártotta magát a horrorba, hogy a filmek után a valóságban is kereste. Csatlakozott a környékbeli, unatkozó, romlott arisztokraták szektájához, akik fekete mágiával kísérleteznek. Ezek a játékban lehetnének ilyen csuhás alakok. Kapott tőlük valami varázskönyvet, aminek a segítségével megidézett egy démont. Ehhez meg kellett ölni a környéken pár prostit is, ezért nyomoz a rendőrség. Kapunk telefonhívást a rendőrségtől, esetleg lehet benne egy rendőr karakter, aki mászkál a kertben, és lehet vele dumálni néha.<br>Újságcikkben eltünk prostikról ír a rendörség.<br>A démon természetesen elnyelte, beszippantotta a nagybátyánkat, mert elrontja az idézést. És ő vagy az eltorzult teste, vagy maga a démon, ami lehet valami rovar vagy egyéb, még mindig a falakban él. Az emeleten legyen pár fal, amibe be lehet majd menni egy titkos ajtón át. Ezek legyenek vastagabb falak. Legyen valahol egy titkos szoba is, aminek ki lehet következtetni az elhelyezkedését. Esetleg kívülről lehet ablaka, ledeszkázott ablaka, de belül nincs ajtó, be van falazva, ide be lehet jutni. <br>Az egyik emeleti szobában a padlón szőnyeg, alatta az idézéshez használt pentagram kilógó csücske. A szőnyeget fel lehet szedni a földről, és ekkor előtárul az egész mágikus rajz. Ezt majd lehet használni, mondjuk, hogy elűzzük a démont, ha kijavítjuk rajta  a jeleket. Ehhez kell majd viasz, kréta, valami mágikus motyó, valami növény valamelyik sírról."
+      ]
+    },
+    {
+      "id": "finish_text",
+      "text": [
+        "FINISH! :) Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore.<br>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore.<br> Placeat sint!"
+      ]
     }
   ],
 
@@ -486,6 +523,10 @@
       "intervalTime": 100,
       "playingState": true
     },
+    "twins-move": {
+      "intervalTime": 400,
+      "playingState": true
+    },
     "fireplace-anim": {
       "intervalTime": 120,
       "playingState": true
@@ -493,19 +534,189 @@
   },
   "beingoptions": {
     "bat-a": {
+      "type": "enemy",
       "backMove": 0.6,
       "backAttack": 0.5,
-      "beingDistance": 0.3
+      "beingDistance": 0.4,
+      "rotateOn": true,
+      "moveOn": true,
+      "moveOnY": true,
+      "boundingBoxRatio": 0.3,
+      "attackSounds": [100,101,102],
+      "damageSounds": [100,101,102],
+      "dieSounds": [103]
     },
-    "zombi-t": {
+    "bat-bnimationpoints-demo": {
+      "type": "enemy",
+      "backMove": 0.6,
+      "backAttack": 0.5,
+      "beingDistance": 0.4,
+      "rotateOn": true,
+      "moveOn": true,
+      "moveOnY": true,
+      "boundingBoxRatio": 0.6,
+      "attackSounds": [100,101,102],
+      "damageSounds": [100,101,102],
+      "dieSounds": [103],
+      "animationpoints": {
+        "fly_home": {
+          "0": {
+            "type": "MOVE",
+            "x_axis": true,
+            "y_axis": true,
+            "z_axis": true,
+            "x_pos": 0.5,
+            "y_pos": 0.5,
+            "z_pos": 0,
+            "next": "10",
+            "sound": "100"
+          },
+          "10": {
+            "type": "ATTACK",
+            "x_axis": true,
+            "y_axis": true,
+            "z_axis": true,
+            "x_pos": 2,
+            "y_pos": 2,
+            "z_pos": 2,
+            "next": "20",
+            "sound": "101"
+          },
+          "20": {
+            "type": "MOVE",
+            "x_axis": false,
+            "y_axis": true,
+            "z_axis": true,
+            "x_pos": 1,
+            "y_pos": 3,
+            "z_pos": 1,
+            "next": "0",
+            "sound": "102"
+          }
+        },
+        "start_point": {
+          "0": {
+            "type": "MOVE",
+            "x_axis": true,
+            "y_axis": true,
+            "z_axis": true,
+            "x_pos": 3,
+            "y_pos": 3,
+            "z_pos": 1,
+            "next": "10",
+            "sound": "103"
+          },
+          "10": {
+            "type": "ATTACK",
+            "x_axis": true,
+            "y_axis": true,
+            "z_axis": false,
+            "x_pos": 1,
+            "y_pos": 3,
+            "z_pos": 1,
+            "next": null,
+            "sound": "100"
+          }
+        }
+      }
+    },
+    "valet-a": {
+      "type": "mpc",
       "backMove": 0.8,
       "backAttack": 0.6,
-      "beingDistance": 0.3
+      "beingDistance": 0.5,
+      "rotateOn": true,
+      "moveOn": true,
+      "moveOnY": false,
+      "boundingBoxRatio": 0.6,
+      "attackSounds": [100,101,102],
+      "damageSounds": [100,101,102],
+      "dieSounds": [103],
+      "animationpoints": {
+        "go_kitchen": {
+          "0": {
+            "type": "BASIC",
+            "x_axis": true,
+            "y_axis": false,
+            "z_axis": true,
+            "x_pos": 0.15,
+            "y_pos": 0.68,
+            "z_pos": 3.2,
+            "next": "10",
+            "sound": "103"
+          },
+          "10": {
+            "type": "MOVE",
+            "x_axis": true,
+            "y_axis": false,
+            "z_axis": true,
+            "x_pos": 0.1,
+            "y_pos": 0.68,
+            "z_pos": 4.45,
+            "next": "20",
+            "sound": "100"
+          },
+          "20": {
+            "type": "MOVE",
+            "x_axis": true,
+            "y_axis": false,
+            "z_axis": true,
+            "x_pos": 1.45,
+            "y_pos": 0.68,
+            "z_pos": 4.75,
+            "next": "30",
+            "sound": "101"
+          },
+          "30": {
+            "type": "MOVE",
+            "x_axis": true,
+            "y_axis": false,
+            "z_axis": true,
+            "x_pos": 1.55,
+            "y_pos": 0.68,
+            "z_pos": 8,
+            "next": "40",
+            "sound": "102"
+          },
+          "40": {
+            "type": "BASIC",
+            "x_axis": true,
+            "y_axis": false,
+            "z_axis": true,
+            "x_pos": 2.85,
+            "y_pos": 0.68,
+            "z_pos": 8.45,
+            "next": null,
+            "sound": "102"
+          }
+        }
+      }
     },
     "ghost-1": {
+      "type": "enemy",
       "backMove": 0.8,
       "backAttack": 0.6,
-      "beingDistance": 0.3
+      "beingDistance": 0.5,
+      "rotateOn": true,
+      "moveOn": true,
+      "moveOnY": false,
+      "boundingBoxRatio": 0.6,
+      "attackSounds": [100,101,102],
+      "damageSounds": [100,101,102],
+      "dieSounds": [103]
+    },
+    "spider-1": {
+      "type": "enemy",
+      "backMove": 1,
+      "backAttack": 0.85,
+      "beingDistance": 0.75,
+      "rotateOn": true,
+      "moveOn": true,
+      "moveOnY": false,
+      "boundingBoxRatio": 0.2,
+      "attackSounds": [100,101,102],
+      "damageSounds": [100,101,102],
+      "dieSounds": [103]
     }
   }
 }

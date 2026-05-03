@@ -13,24 +13,26 @@ import Inventory from './inventory.js'
 import Sound from './sound.js'
 
 export default class Game {
+  startGameInfoText
+  waitingGameInfoText
+  finishGameInfoText
   constructor() {
     this.loadingError = false
     this.generalLoading = false
     this.graphicsLoading = false
     this.inputsLoading = false
     this.soundsLoading = false
-
     this.mapLoading = false
 
-    // this.filename = 'test-map-2'
-    this.filename = 'cottage-1'
+    this.filename = 'test-map-3'
+    // this.filename = 'cottage-1'
 
     this.ext = 'mtuc'
 
     this.animating = false
     this.play = true
 
-    this.mustWait = 25  //  20
+    this.mustWait = 20  //  25
 
     this.timers = {
       timeouts: [],
@@ -57,9 +59,9 @@ export default class Game {
     this.loadedHeands = []
     this.loadedMeshs = []
     this.activePlayedSounds = []
-    
+
     // inventory datas
-    this.playerObjectsDefault = [1]
+    this.playerObjectsDefault = [0, 1, 2, 3, 4]
     this.playerObjects = this.playerObjectsDefault
     this.playerProtectedObjects = []
 
@@ -178,7 +180,7 @@ export default class Game {
     requestAnimationFrame((timestamp) => this.loop(timestamp))
 
     if (!this.lastRenderTime) this.lastRenderTime = timestamp
-  
+
     let delta = timestamp - this.lastRenderTime
 
     // --- MINIMUM FRAME LIMIT ---
@@ -193,18 +195,18 @@ export default class Game {
         this.menu.update(delta)
         this.lastRenderTime = timestamp
         break
-    
+
       case 'game':
         if (delta >= this.renderInterval) {
           const deltaTime = delta
-    
+
           if (this.mapLoading)
-            await this.gameplay.update(deltaTime)
-    
+            await this.gameplay.update(deltaTime);
+
           this.lastRenderTime = timestamp - (delta % this.renderInterval)
         }
         break
-    
+
       case 'inventory':
         this.inventory.update(delta)
         this.lastRenderTime = timestamp
@@ -467,6 +469,13 @@ export default class Game {
   }
 
   removeObjectOfMap(scene, threeObject) {
+    if (threeObject.helper) {
+      this.scene.remove(threeObject.helper)
+      threeObject.helper.geometry?.dispose?.()
+      threeObject.helper.material?.dispose?.()
+      threeObject.helper = null
+    }
+
     if (threeObject._boundingBox) {
       this.boundingBoxes = this.boundingBoxes.filter(box => box !== threeObject._boundingBox)
       threeObject._boundingBox = null
@@ -674,7 +683,6 @@ export default class Game {
 
   stopBeingSound(mesh) {    
     if (!mesh?.playSound) return;
-    console.log('ITT : STOP')
 
     const phantom = mesh.playSound
     const audio = phantom.audio || phantom.children?.[0]
@@ -694,7 +702,7 @@ export default class Game {
   beingActiveOptions(being, value) {
     if (!being) return
 
-    if (value === true) {
+    if (value == true) {
       being.visible = true
       being.active = true
       this.restartBeingSound(being)
@@ -712,16 +720,12 @@ export default class Game {
   }
 
   energyModifyScreen(value) {
-    console.log(this.map.player.energy)
     this.map.player.energy -= parseFloat(value)
 
     $("#energy-container .energy").css('width', `${this.map.player.energy}%`)
   }
 
   modifyPlayerEnergy(value) {
-    // return //!!!
-    console.log('damage: ', value)
-
     const now = performance.now()
 
     if (now - this.map.player.nowtime < this.map.player.hitdelay) return;

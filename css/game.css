@@ -114,9 +114,9 @@
 }
 
 .usn {
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
+  -webkit-user-select: none !important;
+     -moz-user-select: none !important;
+          user-select: none !important;
 }
 
 html, body {

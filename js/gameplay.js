@@ -6,7 +6,24 @@ export default class Gameplay {
     this.game = game
   }
 
+  async waitForGameInfo(text) {
+    while (this.game.startGameInfoText || this.game.finishGameInfoText) {
+      $('#text-box-text').html(text)
+      $('#text-box').show()
+      this.game.waitingGameInfoText = true
+      
+      /*
+      this.game.input.changeMouseLock()
+      $('#game-blood').show()
+      */
+
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+  }
+
   async update(deltaTime) {
+    if (this.game.waitingGameInfoText) return;
+
     const triCount = this.game.renderer.info.render.triangles
     $(".delta-time-game").html(`${deltaTime.toFixed(0)} | tris: ${triCount}`)
 
@@ -30,6 +47,13 @@ export default class Gameplay {
     // RENDER SCREEN
     await this.game.renderer.render(this.game.scene, this.game.camera)
 
+    // START / FINISH GAME INFO TEXT
+    if (this.game.startGameInfoText || this.game.finishGameInfoText) {      
+      let textName = this.game.startGameInfoText ? 'start_text' : 'finish_text';
+      const text = this.game.config.textdata.find(item => item.id === textName)?.text
+      await this.waitForGameInfo(text)
+    }
+
     // RENDER HEAND
     let selectedHeand = this.game.loadedHeands[this.game.playerMouse.selectedHeand]    
     if (!selectedHeand) return;
@@ -42,7 +66,7 @@ export default class Gameplay {
     if (old) this.game.heandScene.remove(old)
 
     this.game.heandScene.add(selectedHeand)
-    await this.game.renderer.render(this.game.heandScene, this.game.camera)
+    this.game.renderer.render(this.game.heandScene, this.game.camera)
 
     this.game.renderer.autoClear = true
   }
@@ -127,82 +151,130 @@ export default class Gameplay {
     }
   }
 
+  getArrayRandomId(idArray) {
+    if (!Array.isArray(idArray) || idArray.length === 0) return 100;
+    const randomIndex = Math.floor(Math.random() * idArray.length)
+    return idArray[randomIndex];
+  }
+
   async updateBeings(deltaTime) {    
     for (let [id, beingGroup] of Object.entries(this.game.loadedBeings)) {
-      if (beingGroup.active == false) continue;
+      if (!beingGroup || beingGroup.active == false) continue;
 
       const beingId = Number(id)
       const beingModell = this.game.beingsList[beingGroup.filename]
+      const beingConfig = this.game.config.beingoptions[beingGroup.filename]
+
+      // IF HIT ENEMY BEING
+      if (beingModell.type = 'enemy' && beingGroup.damageState && beingGroup.waitDamage == null) {
+        beingGroup.damageState = null
+        beingGroup.waitDamage = true
+
+        beingGroup.energy = beingGroup.energy - 1;
+        console.log('Energy: ', beingGroup.energy)
+
+        if (beingGroup.energy > 0) {
+          // DAMAGE
+          this.game.sound.play(this.getArrayRandomId(beingConfig.damageSounds), null, true, beingGroup)
+          beingGroup.animState = { type: 'DAMAGE', card: 0, cardframe: 0, cardsegment: 0 }
+
+          setTimeout(() => {
+            beingGroup.waitDamage = null
+            beingGroup.animState = {type: 'MOVE', card: 0, cardframe: 0,cardsegment: 0 }
+          }, 800)
+
+        } else {
+          // DIE
+          if (beingConfig.dieSounds) this.game.sound.play(this.getArrayRandomId(beingConfig.dieSounds), null, true, beingGroup);
+
+          beingGroup.dead = true
+          beingGroup.gravity = true
+          beingGroup.waitDamage = true
+
+          beingGroup.animState = {type: 'DIE', card: 0, cardframe: 0, cardsegment: 0 }
+        }
+      }
 
       // ANIMATION
-      beingGroup.animTime += deltaTime
-      if (beingGroup.animTime >= Number(beingGroup.speed)) {
-        beingGroup.animTime = 0
-        // console.log(beingGroup.id, beingGroup.filename, beingGroup.beingId, beingGroup.ratio, beingGroup.speed, beingGroup.energy, beingGroup.damage)
-        if (beingGroup.animState.type != 'none') {
-          beingGroup.animState = this.stepAnimState(beingGroup.animState, beingModell.animations)
+      if (beingGroup.animationActive) {
+        beingGroup.animTime += deltaTime
+        if (beingGroup.animTime >= Number(beingGroup.speed)) {
+          beingGroup.animTime = 0
+          // console.log(beingGroup.id, beingGroup.filename, beingGroup.beingId, beingGroup.ratio, beingGroup.speed, beingGroup.energy, beingGroup.damage)
+          if (beingGroup.animState.type != 'none') {
+            beingGroup.animState = this.stepAnimState(beingGroup.animState, beingModell.animations)
+  
+            const actualFrameData = this.game.deepCopy(this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.cardframe])
 
-          const actualFrameData = this.game.deepCopy(this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.cardframe])
-          const nextFrameData = this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.nextFrameIndex]
+            // IF DIE
+            if (beingGroup.animState.type == 'DIE' && beingGroup.animState.card == beingGroup.animState.maxcard && beingGroup.animState.cardsegment == beingGroup.animState.segmentlength - 1) {
+              beingGroup.animationActive = false
+              setTimeout(()=> {                
+                this.removeBeing(beingGroup, id)
+              }, 3000)
+              continue;
+            }
 
-          if (beingGroup.filename == 'bat-a') {
-            //console.log('card: ' + beingGroup.animState.card + '| cardframe: ' + beingGroup.animState.cardframe + '| cardsegment: ' + beingGroup.animState.cardsegment)          
-          }
-
-          this.visibleOptionsBeingAnimationState({selectedBeing: this.game.loadedBeings[beingId], frameData: actualFrameData, visibleData: beingGroup.animState.visibledata})
-
-          if (actualFrameData && nextFrameData) {
-            let actualFrameDataDifference = actualFrameData.map(mesh => ({
-              id: mesh.id,
-              tris: mesh.tris.map(tri => ({
-                id: tri.id,
-                p: tri.p.map(pt => ({
-                  x: Number(pt.x),
-                  y: Number(pt.y),
-                  z: Number(pt.z),
+            const nextFrameData = this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.nextFrameIndex] ?? this.game.beingsList[beingGroup.filename]?.data?.[beingGroup.animState.firstCardFrame]
+  
+            this.visibleOptionsBeingAnimationState({selectedBeing: this.game.loadedBeings[beingId], frameData: actualFrameData, visibleData: beingGroup.animState.visibledata})
+  
+            if (actualFrameData && nextFrameData) {
+              let actualFrameDataDifference = actualFrameData.map(mesh => ({
+                id: mesh.id,
+                tris: mesh.tris.map(tri => ({
+                  id: tri.id,
+                  p: tri.p.map(pt => ({
+                    x: Number(pt.x),
+                    y: Number(pt.y),
+                    z: Number(pt.z),
+                  }))
                 }))
               }))
-            }))
-  
-            actualFrameDataDifference = this.calcInterpolated(actualFrameDataDifference, nextFrameData, beingGroup.animState.segmentlength)
-  
-            let interpolatedFrame
-            if (beingGroup.animState.cardsegment > 0) {
-              interpolatedFrame = this.game.deepCopy(actualFrameData)
-  
-              if (beingGroup.animState.cardsegment != 0) {
-                for (let row of interpolatedFrame) {
-                  if (row?.tris) {
-                    for (let tri of row.tris) {
-                      let tri2 = actualFrameDataDifference
-                        .flatMap(obj => obj.tris)
-                        .find(triangle => triangle.id == tri.id);
-                      if (tri2) {
-                        for (let n = 0; n < 3; n++) {
-                          tri.p[n].x = tri.p[n].x - (tri2.p[n].x * beingGroup.animState.cardsegment)
-                          tri.p[n].y = tri.p[n].y - (tri2.p[n].y * beingGroup.animState.cardsegment)
-                          tri.p[n].z = tri.p[n].z - (tri2.p[n].z * beingGroup.animState.cardsegment)
-                        }       
+    
+              actualFrameDataDifference = this.calcInterpolated(actualFrameDataDifference, nextFrameData, beingGroup.animState.segmentlength)
+    
+              let interpolatedFrame
+              if (beingGroup.animState.cardsegment > 0) {
+                interpolatedFrame = this.game.deepCopy(actualFrameData)
+    
+                if (beingGroup.animState.cardsegment != 0) {
+                  for (let row of interpolatedFrame) {
+                    if (row?.tris) {
+                      for (let tri of row.tris) {
+                        let tri2 = actualFrameDataDifference
+                          .flatMap(obj => obj.tris)
+                          .find(triangle => triangle.id == tri.id);
+                        if (tri2) {
+                          for (let n = 0; n < 3; n++) {
+                            tri.p[n].x = tri.p[n].x - (tri2.p[n].x * beingGroup.animState.cardsegment)
+                            tri.p[n].y = tri.p[n].y - (tri2.p[n].y * beingGroup.animState.cardsegment)
+                            tri.p[n].z = tri.p[n].z - (tri2.p[n].z * beingGroup.animState.cardsegment)
+                          }       
+                        }
                       }
                     }
                   }
                 }
+                this.syncTrianglesPositions(beingGroup, interpolatedFrame)
               }
-              this.syncTrianglesPositions(beingGroup, interpolatedFrame)
             }
           }
         }
       }
 
       // ROTATE + MOVE + ATTACK
-      this.beingReactions(beingGroup)
+      if (beingGroup.animState.type != 'DAMAGE' && beingGroup.animState.type != 'DIE') {
+        // console.log(beingGroup.animState.type)
+        
+        this.rotateAndMove(beingGroup, this.game.config.beingoptions[beingGroup.filename])
+      }
 
       // GRAVITY
       if (beingGroup.gravity) {
         this.applyGravity(beingGroup, beingId)
+        if (beingGroup.position.y < -1) beingGroup.position.set(-3, 2, beingGroup.position.z);
       }
-
-      if (beingGroup.position.y < -1) beingGroup.position.set(-3, 2, beingGroup.position.z);
 
       // BOUNDING BOX INIT
       if (!beingGroup.box) {
@@ -229,30 +301,89 @@ export default class Gameplay {
     }
   }
 
-  async updateHeand(deltaTime) {
-    // console.log(this.game.heandsList)
+  removeBeing(beingGroup, id) {
+    beingGroup.active = false
+  
+    if (beingGroup.helper) {
+      this.game.scene.remove(beingGroup.helper)
+      beingGroup.helper.geometry?.dispose?.()
+      beingGroup.helper.material?.dispose?.()
+      beingGroup.helper = null
+    }
+  
+    if (beingGroup.box) {
+      this.game.boundingBoxes = this.game.boundingBoxes.filter(box => box !== beingGroup.box)
+      beingGroup.box = null
+    }
+  
+    this.game.removeObjectOfMap(this.game.scene, beingGroup)
+    delete this.game.loadedBeings[id]
+  }
+
+  async updateHeand(deltaTime) {  
     for (let [id, heandGroup] of Object.entries(this.game.loadedHeands)) {
       // SELECTED HEAND
       if (id == this.game.playerMouse.selectedHeand) {
         heandGroup.visible = true
-
+  
         const heandModell = this.game.heandsList[heandGroup.heandId]
-        if (!heandModell) continue;
-
+        if (!heandModell) continue
+  
         // INIT
-        if (typeof heandGroup.animTime != 'number') heandGroup.animTime = 0;
-
+        if (typeof heandGroup.animTime != 'number') heandGroup.animTime = 0
+  
+        // --- ATTACK LOGIC (HEAND 2) ---
+        if (id == 2) {
+          const attackAnimType = 'ATTACK'
+  
+          // Akkor egyszer játszódjon le az animáció
+          if (this.game.playerMouse.playerAttack) {
+            if (!heandGroup.attackPlaying) {
+              heandGroup.attackPlaying = true
+              heandGroup.animTime = 0
+              heandGroup.animState = {
+                type: attackAnimType,
+                card: 0,
+                cardframe: 0,
+                cardsegment: 0
+              }
+            }
+          } 
+          // Akkor ne játszódjon le az animáció csak az első frame eslő kocája legyen álladóan
+          else {
+            heandGroup.attackPlaying = false
+            heandGroup.animState = {
+              type: 'none',
+              card: 0,
+              cardframe: 0,
+              cardsegment: 0
+            }
+  
+            const firstFrameData = this.game.deepCopy(heandModell?.data?.[0])
+            if (firstFrameData) this.syncTrianglesPositions(heandGroup, firstFrameData)
+          }
+        }
+        // --------------------------------
+  
         // ANIMATION TIMER
         heandGroup.animTime += deltaTime
-
-        if (heandGroup.animTime >=  Number(heandGroup.speed)) {
+  
+        if (heandGroup.animTime >= Number(heandGroup.speed)) {
           heandGroup.animTime = 0
-
+  
           if (heandGroup.animState.type != 'none') {
-            heandGroup.animState = this.stepAnimState(heandGroup.animState, heandModell.animations)  
+            heandGroup.animState = this.stepAnimState(heandGroup.animState, heandModell.animations)
+  
+            // HA LEFUTOTT AZ ATTACK ANIMÁCIÓ → LEÁLL
+            if (id == 2 &&heandGroup.attackPlaying && heandGroup.animState.card == heandGroup.animState.maxcard && heandGroup.animState.cardsegment == heandGroup.animState.segmentlength - 1) {
+              heandGroup.attackPlaying = false
+              this.game.playerMouse.playerAttack = false
+              return;
+            }
+  
             const actualFrameData = this.game.deepCopy(heandModell?.data?.[heandGroup.animState.cardframe])
-            const nextFrameData = heandModell?.data?.[heandGroup.animState.nextFrameIndex]
-
+            const nextFrameData = heandModell?.data?.[heandGroup.animState.nextFrameIndex] ?? heandModell?.data?.[heandGroup.animState.firstCardFrame]
+  
             if (actualFrameData && nextFrameData) {
               let actualFrameDataDifference = actualFrameData.map(mesh => ({
                 id: mesh.id,
@@ -261,10 +392,11 @@ export default class Gameplay {
                   p: tri.p.map(pt => ({
                     x: Number(pt.x),
                     y: Number(pt.y),
-                    z: Number(pt.z),
+                    z: Number(pt.z)
                   }))
                 }))
               }))
+  
               actualFrameDataDifference = this.calcInterpolated(actualFrameDataDifference, nextFrameData, heandGroup.animState.segmentlength)
   
               let interpolatedFrame
@@ -277,7 +409,8 @@ export default class Gameplay {
                       for (let tri of row.tris) {
                         let tri2 = actualFrameDataDifference
                           .flatMap(obj => obj.tris)
-                          .find(triangle => triangle.id == tri.id);
+                          .find(triangle => triangle.id == tri.id)
+  
                         if (tri2) {
                           for (let n = 0; n < 3; n++) {
                             tri.p[n].x = tri.p[n].x - (tri2.p[n].x * heandGroup.animState.cardsegment)
@@ -295,39 +428,38 @@ export default class Gameplay {
             }
           }
         }
-
+  
         // végleges box újraszámolása
         if (!heandGroup.box) heandGroup.box = new THREE.Box3()
-        
+  
         // CAMERA WORLD ROTATION (yaw + pitch)
         const camQuat = new THREE.Quaternion()
         this.game.camera.getWorldQuaternion(camQuat)
-        
+  
         // CAMERA WORLD POSITION
         const camPos = new THREE.Vector3()
         this.game.camera.getWorldPosition(camPos)
-
-        const heandConfig = this.game.config.heands.find(heand=> heand.id == this.game.playerMouse.selectedHeand)
+  
+        const heandConfig = this.game.config.heands.find(heand => heand.id == this.game.playerMouse.selectedHeand)
         if (heandConfig) {
           // MOD UP/DOWN LOOK HEAD POSITION            
           const yModifyToXaw = ((this.game.pitchObject.rotation._x + 1) / heandConfig.yRatio) * -1
-
+  
           const localOffset = new THREE.Vector3(heandConfig.xDistance, heandConfig.yDistance + yModifyToXaw, -heandConfig.zDistance)
           const worldPos = camPos.clone().add(localOffset.clone().applyQuaternion(camQuat))
-
+  
           // HEAND POSITION
           heandGroup.position.copy(worldPos)
-
+  
           // FIX Y
           if (heandConfig.tilt) {
-            // y tengelyen ne vegye át a forgást
-            const camEuler = new THREE.Euler().setFromQuaternion(camQuat, 'YXZ')  // változás
-            const yawOnlyQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, camEuler.y, 0, 'YXZ'))  // változás
-            heandGroup.quaternion.copy(yawOnlyQuat)  // változás
+            const camEuler = new THREE.Euler().setFromQuaternion(camQuat, 'YXZ')
+            const yawOnlyQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, camEuler.y, 0, 'YXZ'))
+            heandGroup.quaternion.copy(yawOnlyQuat)
           } else {
             heandGroup.quaternion.copy(camQuat)
           }
-
+  
           // IF HAVE LIGHT          
           if (!heandGroup.lightsAdded) {
             if (heandGroup.lights) {
@@ -336,6 +468,7 @@ export default class Gameplay {
                 // ADD THE LAMP LIGHT TO MAP
                 this.game.scene.add(heandGroup.lightsGroup)
               }
+  
               heandGroup.lights.forEach(light => {
                 heandGroup.heandindex = heandGroup.heandindex ?? []
                 heandGroup.lightsGroup.add(light)
@@ -346,45 +479,47 @@ export default class Gameplay {
               if (heandGroup.heandindex) {
                 heandGroup.heandindex.forEach(index => {
                   delete this.game.loadedLights[index]
-                });
+                })
               }
+  
               if (heandGroup.lightsGroup) {
                 this.game.scene.remove(heandGroup.lightsGroup)
                 heandGroup.lightsGroup = null
                 heandGroup.lightsAdded = false
               }
             }
-
-            heandGroup.lightsAdded = true; // ONLY ONE
+  
+            heandGroup.lightsAdded = true // ONLY ONE
           }
-          
+  
           if (false || heandGroup.lightsGroup) {
             const originalCamPos = new THREE.Vector3()
             this.game.camera.getWorldPosition(originalCamPos)
-
+  
             const originalCamQuat = new THREE.Quaternion()
             this.game.camera.getWorldQuaternion(originalCamQuat)
-
+  
             heandGroup.lightsGroup.position.copy(originalCamPos)
             heandGroup.lightsGroup.quaternion.copy(originalCamQuat)
-
+  
             if (heandGroup.heandindex) {
               heandGroup.heandindex.forEach((index, i) => {
                 const localOffset = new THREE.Vector3(-0.15, i * 0.1, i * -0.1)
                 this.game.loadedLights[index][1].position.copy(originalCamPos).add(localOffset)
                 this.game.loadedLights[index][1].quaternion.copy(originalCamQuat)
                 // LIGHT VIBRATION
-                // this.game.loadedLights[index][1].intensity += this.lightVibration(0.025, 2500) // !!!
+                // this.game.loadedLights[index][1].intensity += this.lightVibration(0.025, 2500)
               })
             }
           }
+  
           this.refreshHeandLights()
-
+  
           heandGroup.updateMatrixWorld(true)
           heandGroup.box.setFromObject(heandGroup)
         }
       } else {
-        heandGroup.visible = false;
+        heandGroup.visible = false
       }
     }
   }
@@ -405,10 +540,12 @@ export default class Gameplay {
     }
   }
 
-  stepAnimState(animState, modellAnimations) {
+  stepAnimState(animState, modellAnimations) {    
     const animation = modellAnimations.find(anim => anim[0] == animState.type)
+    if (!animation) return animState;
+
     const animationList = animation ? animation[1] : []
-  
+
     let card = animState.card
     let cardsegment = animState.cardsegment
     const segmentlength = parseInt(animationList[card]?.[1] ? animationList[card][1]  : 0);
@@ -420,7 +557,8 @@ export default class Gameplay {
     }
 
     const cardframe = parseInt(animationList[card]?.[0] ? animationList[card][0] : 0);
-    const maxcard = animationList > 0 ? animationList.length - 1 : 1;
+    // const maxcard = animationList > 0 ? animationList.length - 1 : 1;
+    const maxcard = animationList.length > 0 ? animationList.length - 1 : 0
 
     const isLastCard = card == maxcard
     const nextCard = isLastCard ? 0 : card + 1
@@ -429,6 +567,8 @@ export default class Gameplay {
     const cardlength = animation[1].length   
 
     let visibledata = animation[2] ??= null;
+
+    const firstCardFrame = parseInt(animationList?.[0]?.[0] ?? 0)
 
     return {
       ...animState,
@@ -440,6 +580,7 @@ export default class Gameplay {
       segmentlength,
       nextFrameIndex,
       visibledata,
+      firstCardFrame,
     }
   }
 
@@ -463,123 +604,121 @@ export default class Gameplay {
 
   syncTrianglesPositions(group, data) {
     if (!group || !Array.isArray(group.children)) return;
-    if (!Array.isArray(data)) return;   
+    if (!Array.isArray(data)) return;
 
     for (let m = 0; m < data.length; m++) {
       const mesh = data[m]
       const meshGroup = group.children[m]
       if (!mesh || !meshGroup) continue;
-  
+
       const tris = mesh.tris || [];
       const triMeshes = (meshGroup.children || [])
-  
+
       const count = Math.min(tris.length, triMeshes.length)
       for (let t = 0; t < count; t++) {
         const tri = tris[t]
         const triangleMesh = triMeshes[t]
         if (!triangleMesh || !triangleMesh.geometry) continue;
-  
+
         const geom = triangleMesh.geometry
         const pos = geom.getAttribute('position')
         if (!pos || pos.itemSize !== 3 || pos.count < 3) continue;
-  
+
         pos.setXYZ(0, tri.p[0].x * group.ratio, tri.p[0].y * group.ratio, tri.p[0].z * group.ratio)
         pos.setXYZ(1, tri.p[1].x * group.ratio, tri.p[1].y * group.ratio, tri.p[1].z * group.ratio)
         pos.setXYZ(2, tri.p[2].x * group.ratio, tri.p[2].y * group.ratio, tri.p[2].z * group.ratio)
         pos.needsUpdate = true
-  
+
         // group.ratio = group.ratio + 0.000005  // hülyeség : )
-        // geom.computeVertexNormals()  // ??
+        // geom.computeVertexNormals()  // ??  
         geom.computeBoundingBox?.()  // !!
       }
     }
   }
 
-  beingReactions(beingGroup) {    
-    // if (beingGroup.filename == 'bat-a') console.log(beingGroup.animState.type);
-    switch (beingGroup.animState.type) {
-      case('MOVE'):
-        switch (beingGroup.filename) {
-          case('zombi-t'):
-            this.rotateAndMoveInPlayer(beingGroup, true, true, this.game.config.beingoptions['zombi-t']) // rotate, moveX, moveY, options
-            break;
-          case('bat-a'):            
-            this.rotateAndMoveInPlayer(beingGroup, true, true, true, this.game.config.beingoptions['bat-a'])
-            break;
-          case('ghost-1'):
-            this.rotateAndMoveInPlayer(beingGroup, true, true, false, this.game.config.beingoptions['ghost-1'])
-          break;
-        }
-      break;
-      case('ATTACK'):
-        switch (beingGroup.filename) {
-          case('zombi-t'):
-            // ATTACK ZOMBIE
-            break;
-          case('bat-a'):
-            // ATTACK BAT
-            this.rotateAndMoveInPlayer(beingGroup, true, false, true, this.game.config.beingoptions['bat-a'])
-          break;
-          case('ghost-1'):
-            // ATTACK GHOST
-            console.log('ATTACK GHOST!!!')
-            console.log(beingGroup.animState.type)
-            this.rotateAndMoveInPlayer(beingGroup, true, false, false, this.game.config.beingoptions['ghost-1'])
-          break;
-        }
-      break;
-    }
-  }
+  rotateAndMove(beingGroup, options) {
+    if (options == null) options = {}
+    options.rotateOn ??= true
+    options.moveOn ??= true
+    options.moveOnY ??= true
+    options.backMove ??= 0.8
+    options.backAttack ??= 0.6
+    options.beingDistance ??= 0.4
 
-  rotateAndMoveInPlayer(beingGroup, rotateOn, moveOn, moveOnY, options) {
     // console.log('energy: ', beingGroup.energy)
     // console.log('damage: ', beingGroup.damage)
-    // console.log(beingGroup.filename)
-
-    // HIT PLAYER
-    if (beingGroup.filename == 'bat-a' && beingGroup.animState.type == 'ATTACK' && beingGroup.animState.card == beingGroup.animState.cardlength / 2)
-      this.game.modifyPlayerEnergy(beingGroup.damage);
-
-    if (beingGroup.filename == 'ghost-1' && beingGroup.animState.type == 'ATTACK')
-        this.game.modifyPlayerEnergy(beingGroup.damage);
 
     // PLAYER CENTER (world)
-    const playerCenter = new THREE.Vector3()
-    this.game.player.getWorldPosition(playerCenter)
+    let finishPosition = new THREE.Vector3()
+
+    // CHECK ANIMPOINT
+    let targetMode = null
+
+    if (beingGroup?.animationpoints) {
+      targetMode = 'animationpoints'
+      if (!beingGroup.apactive) return;
+
+      if (beingGroup.animStep == null) {
+        beingGroup.animStep = '0';
+        beingGroup.pointData = beingGroup.animationpoints?.[beingGroup.apname]?.[beingGroup.animStep] ?? null
+      }
+      if (!beingGroup.pointData) return;
+
+      finishPosition.set(beingGroup.pointData.x_pos, beingGroup.pointData.y_pos, beingGroup.pointData.z_pos)
+    } else {
+
+      targetMode = 'player'
+      this.game.player.getWorldPosition(finishPosition)
+    }
+
+    // IF NO ENEMY AND NO HAVE ANIMPOINTS GO RETURN
+    if (options.type !='enemy' && targetMode != 'animationpoints') return;  // !!
+
+    // HIT PLAYER
+    if (targetMode == 'player' && beingGroup.animState.type == 'ATTACK') {
+      /*
+      if (beingGroup.filename == 'bat-a' && beingGroup.animState.type == 'ATTACK' && beingGroup.animState.card == beingGroup.animState.cardlength / 2)
+        this.game.modifyPlayerEnergy(beingGroup.damage);
   
+      if ((beingGroup.filename == 'ghost-1' || beingGroup.filename == 'spider-1') && beingGroup.animState.type == 'ATTACK')
+          this.game.modifyPlayerEnergy(beingGroup.damage);
+      */
+     this.game.modifyPlayerEnergy(beingGroup.damage);
+    }
+
     // BEING CENTER (world)
     const beingBox = new THREE.Box3().setFromObject(beingGroup)
     const beingCenter = new THREE.Vector3()
     beingBox.getCenter(beingCenter)
-  
+
     // --- DIRECTION VECTORS ---
-    const dirFull = playerCenter.clone().sub(beingCenter) // new row
-    const dirFlat = dirFull.clone() // new row
-    dirFlat.y = 0 // new row
-  
-    if (dirFlat.lengthSq() > 0) dirFlat.normalize() // new row
-    if (dirFull.lengthSq() > 0) dirFull.normalize() // new row
-  
+    const dirFull = finishPosition.clone().sub(beingCenter)
+    const dirFlat = dirFull.clone()
+    dirFlat.y = 0
+
+    if (dirFlat.lengthSq() > 0) dirFlat.normalize()
+    if (dirFull.lengthSq() > 0) dirFull.normalize()
+
     // ROTATE SECTION
-    if (rotateOn) {
-      const targetAngle = Math.atan2(dirFlat.x, dirFlat.z) // new row
+    if (options.rotateOn) {
+      const targetAngle = Math.atan2(dirFlat.x, dirFlat.z)
       const currentAngle = beingGroup.rotation.y
-  
+
       let angleDiff = targetAngle - currentAngle
       angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff))
-  
+
       if (Math.abs(angleDiff) > THREE.MathUtils.degToRad(1)) {
         const step = THREE.MathUtils.degToRad(3)
         const nextAngle = currentAngle + (angleDiff > 0 ? step : -step)
-  
+
         const originalAngle = beingGroup.rotation.y
-  
+
         beingGroup.rotation.y = nextAngle
         beingGroup.updateMatrixWorld(true)
-  
+
         const testBox = new THREE.Box3().setFromObject(beingGroup)
         const collision = this.checkCrash(testBox, beingGroup.beingId, true)
-  
+
         if (collision) {
           beingGroup.rotation.y = originalAngle
           beingGroup.updateMatrixWorld(true)
@@ -588,33 +727,36 @@ export default class Gameplay {
     }
 
     // CHECK DISTANCE (CENTER TO CENTER)
-    const distanceToPlayer = beingCenter.distanceTo(playerCenter) // new row
-    // BACK TYPE TO MOVE
-    if (beingGroup.animState.type == 'ATTACK' && distanceToPlayer >= options.backMove) { //(i) options
-      beingGroup.animState = {
-        type: 'MOVE',
-        card: 0,
-        cardframe: 0,
-        cardsegment: 0,
-      }
-    }
-  
-    // BACK TYPE TO ATTACK
-    if (beingGroup.animState.type == 'MOVE' && distanceToPlayer <= options.backAttack) { //(i) options
-      beingGroup.animState = {
-        type: 'ATTACK',
-        card: 0,
-        cardframe: 0,
-        cardsegment: 0,
-      }
-    }
-  
-    // MOVE SECTION
-    if (moveOn) {
-      const moveDir = moveOnY ? dirFull : dirFlat // new row
-      const moveStep = moveDir.clone().multiplyScalar(beingGroup.speed / 1000) // new row
+    const distanceToTarget = beingCenter.distanceTo(finishPosition)
 
-      if (distanceToPlayer <= options.beingDistance) { //(i) options
+    if (targetMode == 'player') {
+      // BACK TYPE TO MOVE
+      if (beingGroup.animState.type == 'ATTACK' && distanceToTarget >= options.backMove) { //(i) options
+        beingGroup.animState = {
+          type: 'MOVE',
+          card: 0,
+          cardframe: 0,
+          cardsegment: 0,
+        }
+      }
+  
+      // BACK TYPE TO ATTACK
+      if (beingGroup.animState.type == 'MOVE' && distanceToTarget <= options.backAttack) { //(i) options
+        beingGroup.animState = {
+          type: 'ATTACK',
+          card: 0,
+          cardframe: 0,
+          cardsegment: 0,
+        }
+      }
+    }
+
+    // MOVE SECTION
+    if (options.moveOn) {
+      const moveDir = options.moveOnY ? dirFull : dirFlat
+      const moveStep = moveDir.clone().multiplyScalar(beingGroup.speed / 1000)
+
+      if (targetMode == 'player' && distanceToTarget <= options.beingDistance) {
         beingGroup.position.add(new THREE.Vector3(-moveStep.x, 0, -moveStep.z))
         return;
       }
@@ -624,10 +766,69 @@ export default class Gameplay {
       tempGroup.updateMatrixWorld(true)
 
       const testBox = new THREE.Box3().setFromObject(tempGroup)
-      const collision = this.checkCrash(testBox, beingGroup.beingId, true)
+      const collision = this.checkCrash(testBox, beingGroup.beingId, targetMode == 'animationpoints' ? false : true)
 
       if (!collision) {
         beingGroup.position.add(moveStep)
+
+        if (targetMode == 'player') {
+          beingGroup.position.add(new THREE.Vector3(moveStep.x, options.moveOnY ? moveStep.y : 0,moveStep.z))
+        } else if (targetMode == 'animationpoints') {
+          const tolerance = 0.1
+          const animPointsPositionData = beingGroup.pointData
+
+          let reached = true
+
+          if (animPointsPositionData.x_axis) {
+            if (Math.abs(beingCenter.x - finishPosition.x) > tolerance) reached = false
+          }
+
+          if (animPointsPositionData.y_axis) {
+            if (Math.abs(beingCenter.y - finishPosition.y) > tolerance) reached = false
+          }
+
+          if (animPointsPositionData.z_axis) {
+            if (Math.abs(beingCenter.z - finishPosition.z) > tolerance) reached = false
+          }
+
+          if (reached) {
+
+            beingGroup.position.copy(finishPosition)
+            /*
+            if (animPointsPositionData.x_axis) beingGroup.position.x = finishPosition.x
+            if (animPointsPositionData.y_axis) beingGroup.position.y = finishPosition.y
+            if (animPointsPositionData.z_axis) beingGroup.position.z = finishPosition.z
+            */
+
+            beingGroup.animStep = beingGroup.animationpoints[beingGroup.apname][beingGroup.animStep].next
+
+            if (true) {
+              const geometry = new THREE.SphereGeometry(0.02, 8, 8)
+              const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
+              const helperSphere = new THREE.Mesh(geometry, material)
+
+              helperSphere.position.copy(finishPosition)
+
+              this.game.scene.add(helperSphere)
+            }
+
+            // END
+            if (!beingGroup.animStep) {
+              // beingGroup.animState.type = 'NONE'
+              beingGroup.apactive = false
+              beingGroup.pointData = null
+              beingGroup.animStep = null
+              return;
+            }
+
+            beingGroup.pointData = beingGroup.animationpoints[beingGroup.apname][beingGroup.animStep]
+
+            if (beingGroup.pointData?.sound) this.game.sound.play(beingGroup.pointData.sound, null, true, beingGroup)
+            if (beingGroup.pointData?.type) beingGroup.animState.type = beingGroup.pointData.type
+            return;
+          }
+        }
+
       } else {
         let moved = false
 
@@ -659,7 +860,8 @@ export default class Gameplay {
           }
         }
 
-        if (!moved && !moveOnY) {
+        // CHECK STAIRS MOVE
+        if (!moved && !options.moveOnY) {
           const stepHeight = this.game.stepHeight
           const tempGroup2 = tempGroup.clone()
           tempGroup2.position.copy(beingGroup.position.clone().add(moveStep).add(new THREE.Vector3(0, stepHeight, 0)))
@@ -672,7 +874,6 @@ export default class Gameplay {
       }
     }
   }
-  
 
   checkCrash(testBox, ignoreBeingId = null, ignorePlayer = false) {
     // PLAYER CHECK HIT
@@ -707,6 +908,41 @@ export default class Gameplay {
     }
 
     return false;
+  }
+
+  playerAttack(weapon) {
+    const attackDistance = 0.5
+
+    const cameraPos = new THREE.Vector3()
+    this.game.camera.getWorldPosition(cameraPos)
+
+    const direction = new THREE.Vector3()
+    this.game.camera.getWorldDirection(direction)
+
+    const hitPoint = cameraPos.clone().add(direction.multiplyScalar(attackDistance))
+  
+    const attackBox = new THREE.Box3().setFromCenterAndSize(hitPoint, new THREE.Vector3(0.3, 0.3, 0.3))
+
+    // FOUND HIT BEING
+    for (const [id, beingGroup] of Object.entries(this.game.loadedBeings)) {
+      if (!beingGroup || beingGroup.active == false || beingGroup.energy <= 0) continue;
+
+      beingGroup.updateMatrixWorld(true)
+
+      const beingBox = beingGroup.box
+        ? beingGroup.box.clone()
+        : new THREE.Box3().setFromObject(beingGroup)
+  
+      if (attackBox.intersectsBox(beingBox)) {
+        //const mapBeingData = this.game.map.beings.find(being => being.id == beingGroup.beingId)
+
+        beingGroup.damageState = true
+        return;
+      }
+    }
+  
+    console.log('NO HIT:', weapon)
+    return null
   }
 
   applyGravity(objectGroup, id = null) {
@@ -1020,6 +1256,14 @@ export default class Gameplay {
       data[eventId].save_color = light.defaultValues.color
       data[eventId].save_distance = light.defaultValues.distance
       data[eventId].save_intensity = light.defaultValues.intensity
+
+      /*
+      data[eventId] = {}
+      data[eventId].state = light.defaultValues?.active ?? false
+      data[eventId].save_color = light.defaultValues?.color ?? 'ffffff'
+      data[eventId].save_distance = light.defaultValues?.distance ?? 0.5
+      data[eventId].save_intensity = light.defaultValues?.intensity ?? 0.5
+      */
     }
 
     switch(data.id) {
@@ -1393,7 +1637,27 @@ export default class Gameplay {
 
       case 60:
         // Delete Mesh of screen
+        console.log('mesh', mesh)
+
+        console.log('---')        
+
+        let selectedMapDataStructure = this.game.findMeshById(this.game.map.structure, mesh.objId)
+        if (selectedMapDataStructure) {
+          console.log('MEGTALALTA !! : )')
+          selectedMapDataStructure.active = 0
+          console.log(selectedMapDataStructure)
+        }
+
         this.game.removeObjectOfMap(this.game.scene, mesh)
+      break
+
+      case 80:
+        // Delete Mesh of screen
+        console.log('mesh', mesh)
+        console.log('FINISH!!!')
+
+        this.game.finishGameInfoText = true
+
       break
     }
   }
@@ -1403,19 +1667,31 @@ export default class Gameplay {
     switch(data.id) {
       case 0:
         // Active Being OFF / ON
+        if (!data[eventId]) data[eventId] = { active: being.active };
+
         being.active = !being.active
+
+        data[eventId].active = being.active
         this.game.beingActiveOptions(being, being.active)
       break
 
       case 1:
         // Active Being ON
+        if (!data[eventId]) data[eventId] = { active: being.active };
+
         being.active = true
+
+        data[eventId].active = being.active
         this.game.beingActiveOptions(being, true)
       break
 
       case 2:
         // Active Being OFF
+        if (!data[eventId]) data[eventId] = { active: being.active };
+
         being.active = false
+
+        data[eventId].active = being.active
         this.game.beingActiveOptions(being, false)
       break
     }
@@ -1447,21 +1723,9 @@ export default class Gameplay {
   openFx(deltaTime, data, mesh) {
     if (!mesh.container) this.refreshOpenFxState(deltaTime, data, mesh);
 
-    data.addedValue = data.state ? -data.addedStep : data.addedStep; // ÉRTÉKE
-    data.valueAdd = data.state ? -1 : 1; // COUNT-JA
-
     if (!data?.timeInterval) {
-      // CHECK CRASH
-      const clone = mesh.container.clone(true)
-      clone.rotation[data.axis] += data.addedValue
-      const futureBox = new THREE.Box3().setFromObject(clone)
-      const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
-
-      if (futureBox.intersectsBox(playerBox)) {
-        clearInterval(data.timeInterval)  // talan mashogy
-        data.timeInterval = null          // talan mashogy
-        return;
-      }
+      data.addedValue = data.state ? -data.addedStep : data.addedStep; // ÉRTÉKE
+      data.valueAdd = data.state ? -1 : 1; // COUNT-JA
 
       data.timeInterval = setInterval(() => {
         // TEST NEXT MOVE
@@ -1475,41 +1739,33 @@ export default class Gameplay {
           clone.rotation[data.axis] = tempRotation
           const testBox = new THREE.Box3().setFromObject(clone)
           const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
-          if (testBox.intersectsBox(playerBox)) {
-            clearInterval(data.timeInterval)  // talan mashogy
-            data.timeInterval = null          // talan mashogy
-            return;
-          }
+          if (testBox.intersectsBox(playerBox)) return;
 
           // MOVE AND REFRESH
           mesh.container.rotation[data.axis] = tempRotation
-          mesh.container.updateMatrixWorld(true)   // EZ HIÁNYZIK
+          mesh.container.updateMatrixWorld(true)
 
           data.value += data.valueAdd
 
-          // BOUNDING BOX FRISSÍTÉS A CONTAINERHEZ
+          // BOUNDING BOX REFRESH
           this.game.refreshBoundingBoxOfMapContainer(mesh)
 
           // CLAMP VALUE
-          data.value = Math.max(data.min, Math.min(data.max, data.value)) // clamping
+          data.value = Math.max(data.min, Math.min(data.max, data.value))
 
-          if (data.value == data.max - 1 || data.value < data.min + 1) {
+          if (data.value >= data.max || data.value <= data.min) {
             // console.log('STOP!');
             data.state = !data.state
             clearInterval(data.timeInterval);
             data.timeInterval = null;
           }
         }
-      }, 1);
+      }, 20);
     } else {
-      // IF NEW CLICK
-      clearInterval(data.timeInterval);
-      data.timeInterval = null;
-      /*
+      // IF NEW CLICK - INVERT WAY
       data.state = !data.state
       data.addedValue = data.state ? -data.addedStep : data.addedStep;
       data.valueAdd = data.state ? -1 : 1;
-      */
     }
   }
 
