@@ -9,7 +9,6 @@ import Input from './input.js'
 import Menu from './menu.js'
 import Gameplay from './gameplay.js'
 import Inventory from './inventory.js'
-
 import Sound from './sound.js'
 
 export default class Game {
@@ -24,15 +23,9 @@ export default class Game {
     this.soundsLoading = false
     this.mapLoading = false
 
-    this.filename = 'test-map-3'
-    // this.filename = 'cottage-1'
-
+    // this.filename = 'test-map-3'
+    this.filename = 'cottage-1'
     this.ext = 'mtuc'
-
-    this.animating = false
-    this.play = true
-
-    this.mustWait = 20  //  25
 
     this.timers = {
       timeouts: [],
@@ -61,21 +54,23 @@ export default class Game {
     this.activePlayedSounds = []
 
     // inventory datas
-    this.playerObjectsDefault = [0, 1, 2, 3, 4]
+    this.playerObjectsDefault = [0]
     this.playerObjects = this.playerObjectsDefault
-    this.playerProtectedObjects = []
+    this.playerProtectedObjects = [4, 5, 6]
 
     this.$loading = {}
     this.$menu = {}
     this.$game = {}
     this.$inventory = {}
     this.currentState = 'menu'
+    this.play = true
 
     this.move = {
+      active: true,
       push: false,
       key: '',
       speed: 0,
-      add: 0.001,      // 0005
+      add: 0.001,       // 0005
       max: 0.025,       // 15
       sub: 0.9,         // 95
       cameraUp: {},
@@ -84,18 +79,20 @@ export default class Game {
 
     this.currentGravity = -0.05,
     this.gravityValue = 0.05,
-
     this.stepHeight = 0.2
 
     this.mouseMaxPitchDefault = 80
     this.mouseMinPitchDefault = -80
 
     this.playerMouse = {
-      mode: null,    // use, view,
+      mode: null,    // use, view
       selectedObject: null,
       selectedHeand: '',
       mouseMaxPitch: 80,
       mouseMinPitch: -60,
+      knife: true,
+      lamp: false,
+      cigarette: true,
     }
 
     this.autoMovePlayerData = {
@@ -118,8 +115,6 @@ export default class Game {
   }
 
   async init() {
-    this.map = this.mapVariableReset()
-
     await this.buildHtmlElements()
 
     this.loader = new Loader(this)
@@ -184,12 +179,6 @@ export default class Game {
     let delta = timestamp - this.lastRenderTime
 
     // --- MINIMUM FRAME LIMIT ---
-    if (delta < this.mustWait) return;
-
-    // ha túl nagyot ugrik (pl. tab visszajövés),
-    // clampeljük hogy ne robbanjon szét a fizika
-    // if (delta > 100) delta = 100;
-
     switch (this.currentState) {
       case 'menu':
         this.menu.update(delta)
@@ -225,17 +214,9 @@ export default class Game {
       actionelements: [],
       objects: [],
       lights: [],
-      player: {
-        x: 0,
-        y: 0,
-        z: 0,
-        fYaw: 0,
-        fXaw: 0,
-        energy: 100,
-        hitdelay: 200,
-        delaytime: 0,
-      }
-    }
+      player: { /* config.json */ }
+    }   
+
     return this.map;
   }
 
@@ -322,6 +303,7 @@ export default class Game {
                   <h5 class="modal-title text-uppercase text-center w-100">The forgotten cottage</h5>
                 </div>
                 <div class="modal-body text-center row">
+                  <button id="closeBtn" class="btn btn-dark mt-2 mb-3">Belépés</button>
                   <h5>FILSE SAVE</h5>
                   <div id="filelist-container" class="w-50 mb-3" style="display: grid; grid-template-columns:repeat(3, 1fr);gap:5px;"></div>
                   
@@ -346,13 +328,21 @@ export default class Game {
                   <div class="text-center">
                     <input id="file-input" type="text" class="w-50" name="filename" value="${this.filename}" data-ext="${this.ext}">
                   </div>
+                  <div class="my-2 mt-3">
+                      <input type="checkbox" id="darkcontrast-button">
+                      <span class="text-black"> Minimum dark contrast</span>
+                  </div>
+                  <div class="my-2">
+                      <input type="checkbox" id="hints-button">
+                      <span class="text-black"> Hints</span>
+                  </div>
                   <div class="my-2">
                       <input type="checkbox" id="music-button">
                       <span class="text-black"> Music ON</span>
                   </div>
                   <br>
                   <div class="my-2">
-                      <input type="checkbox" id="lights-button">
+                      <input type="checkbox" id="lights-button" checked>
                       <span class="text-black"> All Lights ON</span>
                   </div>
                   <div class="mb-2">
@@ -363,7 +353,6 @@ export default class Game {
                       <input type="checkbox" id="ghost-button">
                       <span class="text-black"> Ghost mode</span>
                   </div>
-                  <button id="closeBtn" class="btn btn-dark">Belépés</button>
                 </div>
               </div>
             </div>
@@ -411,7 +400,7 @@ export default class Game {
         <div id="arrow-down"></div>
         <div id="inventory-selected-item-container">
           <div id="object-use" data-mode="use" class="item-selected-text-container">USE OBJECT</div>
-          <div id="object-eat" data-mode="eat" class="item-selected-text-container">EAT or DRINK OBJECT</div>
+          <div id="object-eat" data-mode="eat" class="item-selected-text-container">CONSUME ITEM</div>
           <div id="object-read" data-mode="read" class="item-selected-text-container">READ CONTENT</div>
         </div>
 
@@ -470,7 +459,7 @@ export default class Game {
 
   removeObjectOfMap(scene, threeObject) {
     if (threeObject.helper) {
-      this.scene.remove(threeObject.helper)
+      scene.remove(threeObject.helper)
       threeObject.helper.geometry?.dispose?.()
       threeObject.helper.material?.dispose?.()
       threeObject.helper = null
@@ -501,10 +490,12 @@ export default class Game {
     })
 
     scene.remove(threeObject)
-  
-    this.map.actionelements = this.map.actionelements.filter(
-      ([group, _]) => group !== threeObject
-    )
+
+    if (this.map?.actionelements) {
+      this.map.actionelements = this.map.actionelements.filter(
+        ([group, _]) => group !== threeObject
+      )
+    }
 
     if (this.boxHelp && scene.children.length > 0) {
       scene.children = scene.children.filter(obj => {
@@ -671,13 +662,13 @@ export default class Game {
         const geometry = new THREE.SphereGeometry(0.05, 12, 12)
         const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
         const helper = new THREE.Mesh(geometry, material)
-  
+
         helper.position.copy(center)
         this.scene.add(helper)
-  
+
         mesh.soundHelper = helper
       }
-  
+
     }).catch(err => console.warn("Sound play error:", err))
   }
 
@@ -695,6 +686,7 @@ export default class Game {
   }
 
   restartBeingSound(mesh) {
+    return //!!   STOP CLOCK SOUND !!!
     this.stopBeingSound(mesh)
     this.playStartupSoundsBeings(mesh)
   }
@@ -719,8 +711,9 @@ export default class Game {
     }
   }
 
-  energyModifyScreen(value) {
-    this.map.player.energy -= parseFloat(value)
+  energyModifyScreen(value = 0) {
+    this.map.player.energy += parseFloat(value)
+    this.map.player.energy = this.map.player.energy > 100 ? 100 : this.map.player.energy;
 
     $("#energy-container .energy").css('width', `${this.map.player.energy}%`)
   }
@@ -732,7 +725,7 @@ export default class Game {
     this.map.player.nowtime = now
 
     // ENERGY
-    this.energyModifyScreen(value)
+    this.energyModifyScreen(-value)
 
     // SOUND
     const r = Math.floor(Math.random() * 3)

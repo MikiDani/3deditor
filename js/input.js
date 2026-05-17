@@ -14,6 +14,9 @@ export default class Input {
 
     this.gravity = 0
 
+    this.isCrouching = false
+    this.originalHeight = null
+
     this.mouseMoveTimer = 0
     this.eventMouse = { x: 0, y: 0 }
     this.lastEventMouse
@@ -26,7 +29,6 @@ export default class Input {
     document.addEventListener("wheel", function(e) {
       if (e.ctrlKey) e.preventDefault();
     }, { passive: false })
-    // ---
 
     this.ideiglenesMenuInputs() // ! Ideiglenes
   }
@@ -108,6 +110,20 @@ export default class Input {
       this.game.ghostMode = $this.prop('checked')
     });
 
+    $('#hints-button').on('click', (event) => {
+      let $this = $(event.target)
+      this.game.menu.options.hints = $this.prop('checked')
+      console.log($this.prop('checked'))
+    });
+
+    $('#darkcontrast-button').on('click', (event) => {
+      let $this = $(event.target)
+
+      console.log($this.prop('checked'))
+
+      this.game.menu.options.darkContrast = $this.prop('checked') ? 0.008 : 0.004;
+    });
+
     $(document).on('click', '.filename-listelement, .savegame-listelement, .local-savegame-listelement', (event) => {
       const $this = $(event.target)
       const filename = $this.attr('data-filename')
@@ -168,9 +184,9 @@ export default class Input {
       }
     });
 
+    // LOADING SAVED GAME
     $('#loadgame-button, #local-loadgame-button').on('click', async () => {
       if (this.game.filename && this.game.ext && (this.game.ext == 'stuc' || this.game.ext == 'local')) {
-        // console.log('Loading saved game...');
 
         this.game.forceClearAllTimers()
 
@@ -238,7 +254,10 @@ export default class Input {
             if (intersects.length > 0) {
               
               // 2. CHECK FISRT HIT MESH
-              if (sceneIntersects[0].object.parent.name != intersects[0].object.parent.name) continue;
+              let sceneIntersects = raycaster.intersectObjects(Object.values(this.game.loadedMeshs), true)
+              let firstSolidIntersect = sceneIntersects.find(hit => !hit.object.parent?.pervious)
+
+              if (firstSolidIntersect?.object.parent.name != intersects[0].object.parent.name) continue;
 
               const intersect = intersects[0]
               const hitPoint = intersect.point;
@@ -263,6 +282,9 @@ export default class Input {
                 // USE
                 const found = this.game.map.actionelements.find(pair => pair[0].id === meshGroup.id)
                 if (found) {
+                  // IF ONLY LOOCK TEXT HAVE
+                  if (found[1].name == 'TEXT') break;
+
                   if (distance < found[1].conditions.distance_far) {
                     findUse = true
                     break
@@ -339,7 +361,9 @@ export default class Input {
           $('#text-box-text').html('')
         }
 
-        $("#text-box").hide()
+        this.game.sound.play(300 /* click1 */, { volume: 0.1, loop: false })
+
+        $("#text-box").removeClass('text-box-centered').hide()
         return;
       }
     })
@@ -428,6 +452,11 @@ export default class Input {
     // // // //
     // KEYS
     $(document).on('keydown', async (e) => {
+      // STOP PLAYER MOVE      
+      if (!this.game.move.active) {
+         e.preventDefault(); e.stopPropagation();
+        return;
+      }
 
       // HELPERS
       if (e.key == 'i') {
@@ -467,6 +496,12 @@ export default class Input {
         console.log('-!-')
       }
 
+      if (e.key == 'h') {
+         this.game.playerObjects.push(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+         this.game.map.player.energy = 80
+         this.game.energyModifyScreen()
+      }
+
       //---
 
       // GAME KEYS
@@ -502,6 +537,11 @@ export default class Input {
 
         if(e.key =='1') {
           e.preventDefault(); e.stopPropagation();
+
+           console.log(this.game.playerMouse.lamp)
+
+          if (!this.game.playerMouse.lamp) return;
+
           this.game.gameplay.removeHeandLight()
           this.resetautoMovePlayerData()
 
@@ -526,12 +566,20 @@ export default class Input {
 
         if(e.key =='2') {
           e.preventDefault(); e.stopPropagation();
+
+          console.log(this.game.playerMouse.knife)
+
+          if (!this.game.playerMouse.knife) return;
+
           this.game.gameplay.removeHeandLight()
           this.resetautoMovePlayerData()
+
+          if (this.game.playerMouse.selectedHeand != 2) this.game.sound.play(210, {volume: 1})
 
           this.game.playerMouse.selectedHeand = 2
           this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
           this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
+
         }
 
         if (e.key == 'Shift' && this.game.playerMouse.selectedHeand == 2) {
@@ -544,14 +592,19 @@ export default class Input {
 
           setTimeout(() => {
             this.game.playerMouse.playerAttack = false
-            this.game.gameplay.playerAttack('knife')
-          }, 1000)
+            this.game.gameplay.playerAttack()
+          }, 500)
 
           return;
         }
 
         if(e.key =='3') {
           e.preventDefault(); e.stopPropagation();
+
+          console.log(this.game.playerMouse.cigarette)
+
+          if (!this.game.playerMouse.cigarette) return;
+
           this.game.gameplay.removeHeandLight()
           this.resetautoMovePlayerData()
 
@@ -559,7 +612,7 @@ export default class Input {
           this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
           this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
 
-          this.game.sound.play(18, {volume: 0.2})
+          this.game.sound.play(204, {volume: 0.7})
         }
 
         if(e.key =='5') {
@@ -625,6 +678,8 @@ export default class Input {
         // POINTERLOCK MOUSE
         if (e.key == 'f' || e.key == 'F') {
           e.preventDefault(); e.stopPropagation();
+          $('#text-box-text').html('')
+          $('#text-box').hide()
           this.changeMouseLock()
           return
         }
@@ -675,7 +730,7 @@ export default class Input {
             // FIRST LEVEL MOVE - WHAT
             if (e.key == 'ArrowUp' || e.key == 'w' || e.key == 'W') this.moveUp();
             if (e.key == 'ArrowDown' || e.key == 's' || e.key == 'S') this.moveDown();
-    
+
             if (e.key == 'Enter' || e.key == 'ArrowRight' || e.key == 'd' || e.key == 'D') {
               this.game.inventory.inventoryMenu.objectSelected = true
               this.game.inventory.inventoryMenu.reloadInventory = true
@@ -686,26 +741,22 @@ export default class Input {
             if (e.key == 'ArrowUp' || e.key == 'w' || e.key == 'W') {
               if (this.game.inventory.inventoryMenu.selectedPosition > 0) {
                 this.game.inventory.inventoryMenu.selectedPosition--
-                console.log(this.game.inventory.inventoryMenu.selectedPosition)
-  
                 this.game.inventory.inventoryMenu.reloadInventory = true
               }
             }
-  
+
             if (e.key == 'ArrowDown' || e.key == 's' || e.key == 'S') {
               if (this.game.inventory.inventoryMenu.selectedPosition < this.game.inventory.inventoryMenu.selectedLength - 1) {
                 this.game.inventory.inventoryMenu.selectedPosition++
-                console.log(this.game.inventory.inventoryMenu.selectedPosition)
-                
                 this.game.inventory.inventoryMenu.reloadInventory = true
               }
             }
-  
+
             if (e.key == 'Enter') {
               this.game.inventory.inventoryMenu.selectedObject = true
               this.game.inventory.inventoryMenu.reloadInventory = true
             }
-  
+
             // SELECTED OBJECT MOVE
             if (e.key == 'Backspace' || e.key == 'ArrowLeft' || e.key == 'a' || e.key == 'A') {
               this.game.inventory.inventoryMenu.objectSelected = false
@@ -868,9 +919,7 @@ export default class Input {
     }
   }
 
-  useSelectorChange() {
-    console.log('1')
-    
+  useSelectorChange() {    
     // TURN OFF POINTERLOCK
     if (document.pointerLockElement) document.exitPointerLock();
     this.game.isPointerLocked = false
@@ -882,8 +931,6 @@ export default class Input {
   }
 
   lookSelectorChange() {
-    console.log('2')
-
     // TURN OFF POINTERLOCK
     if (document.pointerLockElement) document.exitPointerLock();
     this.game.isPointerLocked = false
@@ -925,10 +972,49 @@ export default class Input {
 
     window.addEventListener('keydown', (e) => {
       if (typeof e.key == 'string') this.game.keysPressed.add(e.key.toLowerCase())
+
+      if (e.key == 'c' || e.key == 'C') {
+        e.preventDefault()
+        e.stopPropagation()
+      
+        if (this.isCrouching) return
+      
+        const player = this.game.player
+        const box = this.game.playerBoundingBox
+      
+        this.originalHeight = box.y
+      
+        const newHeight = this.originalHeight * 0.5
+        const diff = this.originalHeight - newHeight
+      
+        box.y = newHeight
+        // player.position.y -= diff / 2
+      
+        this.isCrouching = true
+        this.game.jumpState.isLocked = true
+      }
     })
 
     window.addEventListener('keyup', (e) => {
       if (typeof e.key == 'string') this.game.keysPressed.delete(e.key.toLowerCase())
+      
+      if (e.key == 'c' || e.key == 'C') {
+        e.preventDefault()
+        e.stopPropagation()
+    
+        if (!this.isCrouching) return
+    
+        const player = this.game.player
+        const box = this.game.playerBoundingBox
+    
+        const diff = this.originalHeight - box.y
+    
+        box.y = this.originalHeight
+        player.position.y += diff
+    
+        this.isCrouching = false
+        this.game.jumpState.isLocked = false
+      }
     })
 
     // SEE UP / DOWN
@@ -1081,30 +1167,19 @@ export default class Input {
 
       const movementX = event.originalEvent.movementX || 0
       const movementY = event.originalEvent.movementY || 0
-    
+
       g.player.rotation.y -= movementX * 0.002
       g.pitchObject.rotation.x -= movementY * 0.002
-    
+
       const maxPitch = THREE.MathUtils.degToRad(g.playerMouse.mouseMaxPitch)
       const minPitch = THREE.MathUtils.degToRad(g.playerMouse.mouseMinPitch)
-    
+
       g.pitchObject.rotation.x = Math.max(minPitch, Math.min(maxPitch, g.pitchObject.rotation.x))
       g.camera.rotation.z = 0
-
-      // console.log(THREE.MathUtils.radToDeg(g.pitchObject.rotation.x))  // pitch x deg
     })
   }
 
   updatePlayer() {
-    //--
-    /*
-    const now = performance.now()
-    if (now - this.lastKeyTime < this.game.mustWait) return;
-    this.lastKeyTime = now
-    console.log('keydown listener attached')
-    */
-    //--
-
     const shift = this.game.keysPressed.has('shift')
     let moved = false;
 
@@ -1220,23 +1295,24 @@ export default class Input {
         this.game.jumpState.isJumping = false
       }
 
-      if (maxJumpHeight >= 0.5) this.game.jumpState.isJumping = false
+      if (maxJumpHeight >= 0.6) this.game.jumpState.isJumping = false
     }
 
     // ----- GRAVITY -----
     if (!this.game.jumpState.isJumping) {
-
       const gravityOffset = (this.game.gravity)
         ? new THREE.Vector3(0, this.game.currentGravity, 0)
-        : new THREE.Vector3(0, 0, 0);
+        : new THREE.Vector3(0, 0, 0)
 
-      const testPos = this.game.player.position.clone().add(gravityOffset);
+      const testPos = this.game.player.position.clone().add(gravityOffset)
 
       if (!this.willCollide(testPos)) {
-        this.game.player.position.add(gravityOffset);
-        this.game.isGrounded = false;
+        // if (moved && this.game.isGrounded) return moved
+
+        this.game.player.position.add(gravityOffset)
+        this.game.isGrounded = false
       } else {
-        this.game.isGrounded = true;
+        this.game.isGrounded = true
       }
     }
     return moved;
@@ -1248,14 +1324,12 @@ export default class Input {
       this.game.move.key = key
 
       if (this.game.move.speed < this.game.move.max) this.game.move.speed += this.game.move.add; //(i)
-      // console.log('ADD: ', this.game.move.speed)
     } else {      
       this.game.move.speed *= this.game.move.sub //(i)
       if (this.game.move.speed < 0.001) {
         this.game.move.speed = 0
         this.game.move.key = ''
       } else {
-        // console.log('SUB: ', this.game.move.speed)
         const direction = new THREE.Vector3(-Math.sin(this.game.move.playerRotationY), 0, -Math.cos(this.game.move.playerRotationY)).normalize()
         switch(this.game.move.key) {
           case 'w':
@@ -1320,7 +1394,10 @@ export default class Input {
         if (intersects.length > 0) {          
 
           // 2. CHECK FISRT HIT MESH
-          if (sceneIntersects[0].object.parent.name != intersects[0].object.parent.name) continue;
+          let sceneIntersects = raycaster.intersectObjects(Object.values(this.game.loadedMeshs), true)
+          let firstSolidIntersect = sceneIntersects.find(hit => !hit.object.parent?.pervious)
+
+          if (firstSolidIntersect?.object.parent.name != intersects[0].object.parent.name) continue;
 
           const cameraPos = new THREE.Vector3()
           this.game.camera.getWorldPosition(cameraPos)
@@ -1329,6 +1406,9 @@ export default class Input {
 
           // IF LOOK MODE AND HAVE TEXT
           if (this.game.playerMouse.mode == 'look' && action[0].text && distance < action[1].conditions.distance_far) {
+
+            this.game.sound.play(300 /* click1 */, { volume: 0.1, loop: false })
+
             if ($("#text-box").is(":visible") && $("#text-box-text").html() == action[0].text) {
               $("#text-box").hide()
               $("#text-box-text").html('')

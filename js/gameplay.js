@@ -9,9 +9,9 @@ export default class Gameplay {
   async waitForGameInfo(text) {
     while (this.game.startGameInfoText || this.game.finishGameInfoText) {
       $('#text-box-text').html(text)
-      $('#text-box').show()
+      $('#text-box').addClass('text-box-centered').show()
       this.game.waitingGameInfoText = true
-      
+
       /*
       this.game.input.changeMouseLock()
       $('#game-blood').show()
@@ -49,9 +49,18 @@ export default class Gameplay {
 
     // START / FINISH GAME INFO TEXT
     if (this.game.startGameInfoText || this.game.finishGameInfoText) {      
-      let textName = this.game.startGameInfoText ? 'start_text' : 'finish_text';
-      const text = this.game.config.textdata.find(item => item.id === textName)?.text
+      const textName = this.game.startGameInfoText ? 'start_text' : 'finish_text';
+      const text = this.game.config.textdata.find(item => item.id === textName)?.text      
+
       await this.waitForGameInfo(text)
+
+      // START NEW GAME PLAYER WAITING
+      if (textName == 'start_text') {
+        this.game.move.active = false
+        setTimeout(() => {
+          this.game.move.active = true
+        }, 6000)
+      }
     }
 
     // RENDER HEAND
@@ -210,7 +219,7 @@ export default class Gameplay {
             if (beingGroup.animState.type == 'DIE' && beingGroup.animState.card == beingGroup.animState.maxcard && beingGroup.animState.cardsegment == beingGroup.animState.segmentlength - 1) {
               beingGroup.animationActive = false
               setTimeout(()=> {                
-                this.removeBeing(beingGroup, id)
+                this.removeBeing(beingGroup)
               }, 3000)
               continue;
             }
@@ -301,23 +310,35 @@ export default class Gameplay {
     }
   }
 
-  removeBeing(beingGroup, id) {
+  removeBeing(beingGroup) {
+    if (!beingGroup) return
+
     beingGroup.active = false
-  
+    beingGroup.animationActive = false
+    beingGroup.apactive = false
+    beingGroup.pointData = null
+    beingGroup.animStep = null
+
     if (beingGroup.helper) {
       this.game.scene.remove(beingGroup.helper)
       beingGroup.helper.geometry?.dispose?.()
       beingGroup.helper.material?.dispose?.()
       beingGroup.helper = null
     }
-  
+
     if (beingGroup.box) {
       this.game.boundingBoxes = this.game.boundingBoxes.filter(box => box !== beingGroup.box)
       beingGroup.box = null
     }
-  
+
     this.game.removeObjectOfMap(this.game.scene, beingGroup)
-    delete this.game.loadedBeings[id]
+
+    for (const [id, loadedBeing] of Object.entries(this.game.loadedBeings)) {
+      if (loadedBeing === beingGroup) {
+        delete this.game.loadedBeings[id]
+        break
+      }
+    }
   }
 
   async updateHeand(deltaTime) {  
@@ -675,16 +696,7 @@ export default class Gameplay {
     if (options.type !='enemy' && targetMode != 'animationpoints') return;  // !!
 
     // HIT PLAYER
-    if (targetMode == 'player' && beingGroup.animState.type == 'ATTACK') {
-      /*
-      if (beingGroup.filename == 'bat-a' && beingGroup.animState.type == 'ATTACK' && beingGroup.animState.card == beingGroup.animState.cardlength / 2)
-        this.game.modifyPlayerEnergy(beingGroup.damage);
-  
-      if ((beingGroup.filename == 'ghost-1' || beingGroup.filename == 'spider-1') && beingGroup.animState.type == 'ATTACK')
-          this.game.modifyPlayerEnergy(beingGroup.damage);
-      */
-     this.game.modifyPlayerEnergy(beingGroup.damage);
-    }
+    if (targetMode == 'player' && beingGroup.animState.type == 'ATTACK') this.game.modifyPlayerEnergy(beingGroup.damage);
 
     // BEING CENTER (world)
     const beingBox = new THREE.Box3().setFromObject(beingGroup)
@@ -792,23 +804,15 @@ export default class Gameplay {
           }
 
           if (reached) {
-
             beingGroup.position.copy(finishPosition)
-            /*
-            if (animPointsPositionData.x_axis) beingGroup.position.x = finishPosition.x
-            if (animPointsPositionData.y_axis) beingGroup.position.y = finishPosition.y
-            if (animPointsPositionData.z_axis) beingGroup.position.z = finishPosition.z
-            */
-
             beingGroup.animStep = beingGroup.animationpoints[beingGroup.apname][beingGroup.animStep].next
 
-            if (true) {
+            // POSITION HELPER
+            if (false) {
               const geometry = new THREE.SphereGeometry(0.02, 8, 8)
               const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
               const helperSphere = new THREE.Mesh(geometry, material)
-
               helperSphere.position.copy(finishPosition)
-
               this.game.scene.add(helperSphere)
             }
 
@@ -818,6 +822,17 @@ export default class Gameplay {
               beingGroup.apactive = false
               beingGroup.pointData = null
               beingGroup.animStep = null
+              return;
+            }
+
+            // END AND REMOVE
+            if (beingGroup.animStep == 'remove') {
+              beingGroup.animationActive = false
+              beingGroup.active = false
+              beingGroup.apactive = false
+              beingGroup.pointData = null
+              beingGroup.animStep = null
+              setTimeout(() => { this.removeBeing(beingGroup)}, 0)
               return;
             }
 
@@ -910,7 +925,7 @@ export default class Gameplay {
     return false;
   }
 
-  playerAttack(weapon) {
+  playerAttack() {
     const attackDistance = 0.5
 
     const cameraPos = new THREE.Vector3()
@@ -940,9 +955,6 @@ export default class Gameplay {
         return;
       }
     }
-  
-    console.log('NO HIT:', weapon)
-    return null
   }
 
   applyGravity(objectGroup, id = null) {
@@ -1045,8 +1057,8 @@ export default class Gameplay {
         // ACTION HAVE ISSETOBJECT DOESN’T HAVE IN HEAND
         const objects = actions[1].conditions.issetobjects.map(x => [this.game.objectsList[x].name, actions[1].conditions.usedobjects.includes(x)])
         let listElements = this.makeActionObjectsMessageElement({type: 'list', objects: objects})
-
-        this.makeActionObjectsMessageElement({type: 'actionmessage', actionText: actions[1].conditions.failed_text + listElements})
+        let sendText = (this.game.menu.options.hints) ? actions[1].conditions.failed_text + listElements : actions[1].conditions.failed_text;
+        this.makeActionObjectsMessageElement({type: 'actionmessage', actionText: sendText})
         return;
       } else if (actions[1].conditions.issetobjects.length > 0 && this.game.playerMouse.selectedObject) {
         // HAVE ISSETOBJECT AND HAVE OBJECT IN HEAND
@@ -1214,6 +1226,8 @@ export default class Gameplay {
       this.game.input.getActualCursor()
     }
 
+    this.game.sound.play(300 /* click1 */, { volume: 0.1, loop: false })
+
     switch(type) {
       case "list":
         let elements = ``;
@@ -1225,8 +1239,8 @@ export default class Gameplay {
         });
         return elements;
       case "use":
-        let message = `<div class="text-center">You was used the <strong class="text-white">${useObject}</strong> here!<br>You neaded objects:</div>`
-        message += listElements
+        let message = `<div class="text-center">You was used the <strong class="text-white">${useObject}</strong> here!<br>${this.game.menu.options.hints ? 'You neaded objects:' : ''}</div>`
+        if (this.game.menu.options.hints) message += listElements
         $("#text-box-text").html(message)
         $("#text-box").show()
       break
@@ -1625,7 +1639,7 @@ export default class Gameplay {
       break
 
       case 50:
-        // PLAYER DEMAGE        
+        // PLAYER DEMAGE (Trap)
         if (typeof mesh.waitTimer !== 'number') mesh.waitTimer = 0
         mesh.waitTimer += deltaTime
 
@@ -1637,27 +1651,36 @@ export default class Gameplay {
 
       case 60:
         // Delete Mesh of screen
-        console.log('mesh', mesh)
-
-        console.log('---')        
-
+        // console.log('mesh', mesh)
         let selectedMapDataStructure = this.game.findMeshById(this.game.map.structure, mesh.objId)
-        if (selectedMapDataStructure) {
-          console.log('MEGTALALTA !! : )')
-          selectedMapDataStructure.active = 0
-          console.log(selectedMapDataStructure)
-        }
+        if (selectedMapDataStructure) selectedMapDataStructure.active = 0;
 
         this.game.removeObjectOfMap(this.game.scene, mesh)
       break
 
       case 80:
-        // Delete Mesh of screen
-        console.log('mesh', mesh)
-        console.log('FINISH!!!')
-
+        // Finish game
         this.game.finishGameInfoText = true
+      break
 
+      case 100:
+        // Pick up lamp
+        this.game.playerMouse.lamp = true
+        this.game.sound.play(15 /* fire1 */, null, true, mesh)
+        $(document).trigger($.Event('keydown', { key: '1', which: 49, keyCode: 49 }))
+      break
+
+      case 101:
+        // Pick up knife
+        this.game.playerMouse.knife = true
+        // this.game.sound.play(210 /* knife1 */, null, true, mesh)
+        $(document).trigger($.Event('keydown', { key: '2', which: 50, keyCode: 50 }))
+      break
+
+      case 102:
+        // Pick up cigatette
+        this.game.playerMouse.cigarette = true
+        $(document).trigger($.Event('keydown', { key: '3', which: 51, keyCode: 51 }))
       break
     }
   }

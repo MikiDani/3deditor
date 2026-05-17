@@ -126,7 +126,7 @@ export default class Inventory {
                 readType: readDetails[0],
                 readData: readData,
                 readIndex: 0,
-              }
+              }              
 
               // CSS BOOK AND NOTE ARROWS
               if (readDetails[0] == 'note') this.loadNotePage();
@@ -135,10 +135,33 @@ export default class Inventory {
             return;
           }
 
+          // PLAYER EAT
+          if (mode == 'eat') {
+            const consumeObject = this.game.playerMouse.selectedObject
+            if (!consumeObject) return
+
+            // DELETE OBJECT OF INVENTORY
+            const objectIndex = this.game.playerObjects.indexOf(consumeObject.objId)
+            if (objectIndex !== -1) {
+              this.game.playerObjects.splice(objectIndex, 1)
+            }
+
+            setTimeout(()=> {
+              this.game.sound.play(this.game.gameplay.getArrayRandomId([205, 206]), {volume: 1, loop: false})
+              this.game.energyModifyScreen(consumeObject.eat)
+            },600)
+
+            this.game.playerMouse.mode = 'use'
+            this.game.playerMouse.selectedObject = null
+            $("#cursor-text-box").hide().html('')
+          }
+
           // BACK GAME
           this.game.play = true
           this.game.currentState = 'game'
           this.game.showHideOptions('game')
+
+          this.game.input.getActualCursor()
 
           // SHOW OBJECT NAME
           if (mode == 'use') {
@@ -158,6 +181,8 @@ export default class Inventory {
           if (objectData == null) return;
 
           objectData.objId = objId // ADD this.game.loadedObjects ID
+
+          objectData.name = objectData.name[0].toUpperCase() + objectData.name.slice(1)
 
           let element = $("#inventory-item-text-container .item-text-container"); element.eq(i).html(objectData.name);
           if (i == this.inventoryMenu.inventoryPosition) {

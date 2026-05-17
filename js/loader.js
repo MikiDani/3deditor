@@ -251,12 +251,13 @@ export default class Loader {
       this.game.startGameInfoText = false; this.game.finishGameInfoText = false; this.game.waitingGameInfoText = false;
     } else {
       loadType = 'newgame'
-      this.game.startGameInfoText = false; /* !!! */ this.game.finishGameInfoText = false; this.game.waitingGameInfoText = false;
+      this.game.startGameInfoText = true; /* !!! */ this.game.finishGameInfoText = false; this.game.waitingGameInfoText = false;
     }
 
     $('#text-box').hide(); $('#text-box-text').html('');
 
-    this.game.map = this.game.mapVariableReset()
+    this.game.map = this.game.mapVariableReset()    
+
     this.game.map.map_filename = filename
     this.game.map.map_ext = ext
 
@@ -461,7 +462,7 @@ export default class Loader {
         }
         // MINIMUM AMBIENT LIGHT
         if (true) {
-          const ambient = new THREE.AmbientLight('#ffffff', 0.004)  // 0.05
+          const ambient = new THREE.AmbientLight('#ffffff', this.game.menu.options.darkContrast)
           this.game.scene.add(ambient)
         }
 
@@ -535,7 +536,7 @@ export default class Loader {
               if (size.z === 0) size.z = 0.01; if (size.x === 0) size.x = 0.01; if (size.y === 0) size.y = 0.01;
 
               const boundingBoxRatioSize = this.game.config.beingoptions?.[beingGroup.filename]?.boundingBoxRatio ?? 1 * beingGroup.ratio
-              console.log(boundingBoxRatioSize)
+              // console.log(boundingBoxRatioSize)
 
               size.multiplyScalar(boundingBoxRatioSize)
               largestBox.setFromCenterAndSize(center, size)
@@ -668,6 +669,8 @@ export default class Loader {
       this.game.addConsoleRow(`--- Map loaded: ${(endTime - startTime)} millisecond ---`, 'div', true, true)
 
       //--
+
+      this.game.energyModifyScreen()
       this.game.mapLoading = true
     }
   }

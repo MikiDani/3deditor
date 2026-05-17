@@ -3,6 +3,10 @@ import $ from 'jquery'
 export default class Menu {
     constructor(game) {
       this.game = game
+      this.options = {
+        hints: false,         // Shows what objects should be used for the given "action"
+        darkContrast: 0.004   // Minimum dark contrast options
+      }
       this.init()
     }
 

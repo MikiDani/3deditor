@@ -6,7 +6,7 @@
       "z": 0,
       "fYaw": 0,
       "fXaw": 0,
-      "energy": 100,
+      "energy": 30,
       "hitdelay": 1000,
       "nowtime": 0
     },
@@ -98,6 +98,18 @@
     {
       "id": 80,
       "name": "The game has been played!"
+    },
+    {
+      "id": 100,
+      "name": "Pick up the lamp"
+    },
+    {
+      "id": 101,
+      "name": "Pick up the knife"
+    },
+    {
+      "id": 102,
+      "name": "Pick up the cigarette"
     }
   ],
   "lightfx": [
@@ -255,6 +267,78 @@
       "setRolloffFactor": 3
     },
     {
+      "id": 13,
+      "name": "pickup1",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 14,
+      "name": "pickup2",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 15,
+      "name": "fire1",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 16,
+      "name": "scare1",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 17,
+      "name": "scare2",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 18,
+      "name": "scare3",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 19,
+      "name": "scare4",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 20,
+      "name": "scare5",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
       "id": 100,
       "name": "bet-attack1",
       "volume": 1,
@@ -291,6 +375,15 @@
       "setRolloffFactor": 3
     },
     {
+      "id": 104,
+      "name": "cat1",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
       "id": 200,
       "name": "player-damage1",
       "volume": 1,
@@ -309,6 +402,30 @@
       "loop": false
     },
     {
+      "id": 203,
+      "name": "player-scare1",
+      "volume": 1,
+      "loop": false
+    },
+    {
+      "id": 204,
+      "name": "player-cough1",
+      "volume": 1,
+      "loop": false
+    },
+    {
+      "id": 205,
+      "name": "player-eat1",
+      "volume": 1,
+      "loop": false
+    },
+    {
+      "id": 206,
+      "name": "player-eat2",
+      "volume": 1,
+      "loop": false
+    },
+    {
       "id": 210,
       "name": "knife1",
       "volume": 1,
@@ -321,13 +438,16 @@
       "loop": false
     },
     {
-      "id": 18,
-      "name": "cough1",
+      "id": 300,
+      "name": "click1",
       "volume": 1,
-      "loop": false,
-      "setRefDistance": 1,
-      "setMaxDistance": 2,
-      "setRolloffFactor": 3
+      "loop": false
+    },
+    {
+      "id": 301,
+      "name": "click2",
+      "volume": 1,
+      "loop": false
     }
   ],
   "autoplaysounds": {
@@ -339,8 +459,8 @@
       "setMaxDistance": 1,
       "setRolloffFactor": 7
     },
-    "xy": {
-      "soundid": 100,
+    "pot": {
+      "soundid": 10,
       "loop": true,
       "volume": 1,
       "setRefDistance": 1,
@@ -368,6 +488,19 @@
   ],
 
   "textdata": [
+    {
+      "id": "note_letter",
+      "titles": [
+        "Dear My Boy!1",
+        "Dear My Boy!2",
+        "Dear My Boy!3"
+      ],
+      "texts": [
+        "Dear Lumi Boy! Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore.<br> Placeat sint!1",
+        "Dear Lumi Boy! Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore.<br> Placeat sint!2",
+        "Dear Lumi Boy! Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore.<br> Placeat sint!3"
+      ]
+    },
     {
       "id": "note_1",
       "titles": [
@@ -499,7 +632,7 @@
     {
       "id": "start_text",
       "text": [
-        "Az USA-ban élsz, ott kapsz egy levelet, hogy örökölsz a nagybátyád után, aki egy olasz horrorfilmrendező volt. Ez egy olasz kúria valahol vidéken. Ez majd egy levél lesz az elején, vagy valami szöveg. Odautazol. Gyerekkorodban mondjuk jártál ott, ezért az inas ismerhet.<br>A nagybácsi az annyira beleártotta magát a horrorba, hogy a filmek után a valóságban is kereste. Csatlakozott a környékbeli, unatkozó, romlott arisztokraták szektájához, akik fekete mágiával kísérleteznek. Ezek a játékban lehetnének ilyen csuhás alakok. Kapott tőlük valami varázskönyvet, aminek a segítségével megidézett egy démont. Ehhez meg kellett ölni a környéken pár prostit is, ezért nyomoz a rendőrség. Kapunk telefonhívást a rendőrségtől, esetleg lehet benne egy rendőr karakter, aki mászkál a kertben, és lehet vele dumálni néha.<br>Újságcikkben eltünk prostikról ír a rendörség.<br>A démon természetesen elnyelte, beszippantotta a nagybátyánkat, mert elrontja az idézést. És ő vagy az eltorzult teste, vagy maga a démon, ami lehet valami rovar vagy egyéb, még mindig a falakban él. Az emeleten legyen pár fal, amibe be lehet majd menni egy titkos ajtón át. Ezek legyenek vastagabb falak. Legyen valahol egy titkos szoba is, aminek ki lehet következtetni az elhelyezkedését. Esetleg kívülről lehet ablaka, ledeszkázott ablaka, de belül nincs ajtó, be van falazva, ide be lehet jutni. <br>Az egyik emeleti szobában a padlón szőnyeg, alatta az idézéshez használt pentagram kilógó csücske. A szőnyeget fel lehet szedni a földről, és ekkor előtárul az egész mágikus rajz. Ezt majd lehet használni, mondjuk, hogy elűzzük a démont, ha kijavítjuk rajta  a jeleket. Ehhez kell majd viasz, kréta, valami mágikus motyó, valami növény valamelyik sírról."
+        "It came as a surprise. The letter from your Italian uncle's lawyers, that you inherited his mansion, located in south Italy. You remember vaguely spending some summers there in your childhood, then your parents moved across the ocean. You have left New York now to fulfill your curiosity, and to answer the document, containing his will, in person. Travelling through the rich Italian scenery, all those small, pastorial villages embedded in time, have sunk your soul in a mosaic-like, dreamy state.Tangled olive groves, lush vineyards on sun-drenched hills that rise from each other, guarded by ancient castle ruins, and purple wine that seems to flow in streams everywhere. Now you are here, the old house servant have let you in, greeting and remembering you, like you never really left. The shadowy mansion embraces you, like an oversized bug, weighing on you, as if it never wants you to leave. - It's good to see a familiar face, young Master - sais the butler. - Since your uncle has passed away, dark days have visited this place. It's nice to have you here after so many years. Please feel free to look around, I mean.. of  course, the mansion is yours now. I'm cooking dinner, but it's a bit late, let me retire to my room, and we will converse later - with these words spoken silently, he retreats to his room."
       ]
     },
     {
@@ -633,61 +766,28 @@
       "damageSounds": [100,101,102],
       "dieSounds": [103],
       "animationpoints": {
-        "go_kitchen": {
+        "go_room": {
           "0": {
-            "type": "BASIC",
-            "x_axis": true,
-            "y_axis": false,
-            "z_axis": true,
-            "x_pos": 0.15,
-            "y_pos": 0.68,
-            "z_pos": 3.2,
-            "next": "10",
-            "sound": "103"
-          },
-          "10": {
             "type": "MOVE",
             "x_axis": true,
             "y_axis": false,
             "z_axis": true,
             "x_pos": 0.1,
             "y_pos": 0.68,
-            "z_pos": 4.45,
-            "next": "20",
-            "sound": "100"
+            "z_pos": 4.3,
+            "next": "10",
+            "sound": null
           },
-          "20": {
+          "10": {
             "type": "MOVE",
             "x_axis": true,
             "y_axis": false,
             "z_axis": true,
-            "x_pos": 1.45,
+            "x_pos": -1,
             "y_pos": 0.68,
-            "z_pos": 4.75,
-            "next": "30",
-            "sound": "101"
-          },
-          "30": {
-            "type": "MOVE",
-            "x_axis": true,
-            "y_axis": false,
-            "z_axis": true,
-            "x_pos": 1.55,
-            "y_pos": 0.68,
-            "z_pos": 8,
-            "next": "40",
-            "sound": "102"
-          },
-          "40": {
-            "type": "BASIC",
-            "x_axis": true,
-            "y_axis": false,
-            "z_axis": true,
-            "x_pos": 2.85,
-            "y_pos": 0.68,
-            "z_pos": 8.45,
-            "next": null,
-            "sound": "102"
+            "z_pos": 4.3,
+            "next": "remove",
+            "sound": null
           }
         }
       }
