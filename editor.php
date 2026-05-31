@@ -506,7 +506,7 @@ function deleteDirectory($dir) {
 
 function clear_filename($getname) {
     $converted = iconv('UTF-8', 'ASCII//TRANSLIT', $getname);
-    $clean = preg_replace('/[^A-Za-z0-9 -]/', '', $converted);
+    $clean = preg_replace('/[^A-Za-z0-9 _-]/', '', $converted);
     return mb_strtolower($clean);
 }
 

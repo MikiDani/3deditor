@@ -4297,6 +4297,17 @@ class Editor {
       }
     });
 
+    $("select[name='mesh-active']").on('input', function () {
+      if (clone.mouse.selectedMeshId) {
+        let mapDataSelected = clone.map.data[clone.map.aid].find(element => element.id == clone.mouse.selectedMeshId)
+        if (mapDataSelected) {
+          const activeValue = $(this).val()
+          mapDataSelected.active = activeValue === 'true' ? true : false;
+          clone.fullRefreshCanvasGraphics()
+        }
+      }
+    });
+
     ///////////////
     // HTML inputs
     let triangeInputs = [
@@ -6022,6 +6033,12 @@ class Editor {
 
       // pervious setting
       $(`select[name='mesh-pervious'] option[value='${selectedMesh.pervious ? 'true' : 'false'}']`).prop('selected', true)
+
+      console.log('selectedMesh.active :', selectedMesh.active)
+    
+      
+      // active setting
+      $(`select[name='mesh-active'] option[value='${selectedMesh.active ? 'true' : 'false'}']`).prop('selected', true)
 
       // discard selected triange
       $('#object-list').find('.delete').remove()

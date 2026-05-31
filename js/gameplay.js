@@ -56,10 +56,13 @@ export default class Gameplay {
 
       // START NEW GAME PLAYER WAITING
       if (textName == 'start_text') {
+        // !!! VÁRÁS KIKAPCSOLVA
+        /*
         this.game.move.active = false
         setTimeout(() => {
           this.game.move.active = true
         }, 6000)
+        */
       }
     }
 
@@ -175,7 +178,7 @@ export default class Gameplay {
       const beingConfig = this.game.config.beingoptions[beingGroup.filename]
 
       // IF HIT ENEMY BEING
-      if (beingModell.type = 'enemy' && beingGroup.damageState && beingGroup.waitDamage == null) {
+      if (beingModell.type = 'enemy' && beingGroup.damageState && beingGroup.waitDamage == null && beingGroup.energy != 1000) {
         beingGroup.damageState = null
         beingGroup.waitDamage = true
 
@@ -1047,10 +1050,10 @@ export default class Gameplay {
       }
       // CHECK OBJECTS      
       if (actions[1].conditions.success) {
-        // TASK COMPLETTED 
+        // TASK COMPLETTED
         // this.makeActionObjectsMessageElement({type: 'actionmessage', actionText: actions[1].conditions.success_text})
       } else if (actions[1].conditions.issetobjects.length === 0 && this.game.playerMouse.selectedObject !== null) {
-        // OBJECT IS IN HAND, BUT ACTION DOESN’T HAVE ISSETOBJECT ARRAY
+        // OBJECT IS IN HAND, BUT ACTION DOESN’T HAVE ISSETOBJECT ARRAY        
         this.makeActionObjectsMessageElement({type: 'cantuse', cantUseObject: this.game.playerMouse.selectedObject.name}) 
         return;
       } else if (actions[1].conditions.issetobjects.length > 0 && !this.game.playerMouse.selectedObject) {
@@ -1085,10 +1088,15 @@ export default class Gameplay {
           // MISSING ACTION OBJECTS
           const objects = actions[1].conditions.issetobjects.map(x => [this.game.objectsList[x].name, actions[1].conditions.usedobjects.includes(x)])
           let listElements = this.makeActionObjectsMessageElement({type: 'list', objects: objects})
-          usedObjectName
-          ? this.makeActionObjectsMessageElement({type: 'use', useObject: usedObjectName, listElements: listElements})
-          : this.makeActionObjectsMessageElement({type: 'actionmessage', actionText: listElements})
-          return;
+          if (this.game.menu.options.hints) {
+            usedObjectName
+            ? this.makeActionObjectsMessageElement({type: 'use', useObject: usedObjectName, listElements: listElements})
+            : this.makeActionObjectsMessageElement({type: 'actionmessage', actionText: actions[1].conditions.failed_text + listElements})
+            return;
+          } else {
+            this.makeActionObjectsMessageElement({type: 'actionmessage', actionText: actions[1].conditions.failed_text})
+            return;
+          }
         }
       }
     }
@@ -1220,8 +1228,7 @@ export default class Gameplay {
   makeActionObjectsMessageElement({type: type, objects: objects, cantUseObject: cantUseObject, useObject: useObject, actionText, listElements: listElements}) {
     const removeCursor = () => {
       // REMOVE SELECTED OBJECT AND CURSOR
-      this.game.playerMouse.selectedObject = null     
-
+      this.game.playerMouse.selectedObject = null
       $('#cursor-text-box').hide().html('')
       this.game.input.getActualCursor()
     }
@@ -1353,16 +1360,31 @@ export default class Gameplay {
         this.refreshHeandLights()
       break
 
+      case 4:
+        // RANDOM RED COLOR
+        if (!(light instanceof THREE.PointLight)) return;
+
+        setTimeout(() => {
+          // piros domináns
+          const r = 0.9 + Math.random() * 0.1
+          // kis sárgás vibrálás
+          const g = 0.2 + Math.random() * 0.35
+          // minimális kék
+          const b = Math.random() * 0.08
+
+          light.color = new THREE.Color(r, g, b)
+        }, data.time)
+
+        this.refreshHeandLights()
+      break
+
       case 10:
         // RED COLOR 1
         if (!(light instanceof THREE.PointLight)) return;
         setTimeout(() => {
           light.color = new THREE.Color(135/255, 15/255, 0);
           light.distance = 1;
-          light.intensity = 0.2;
-
-          console.log(light)
-          
+          light.intensity = 0.2;          
         }, data.time)
 
         // this.refreshHeandLights()
@@ -1580,9 +1602,60 @@ export default class Gameplay {
         this.openFx(deltaTime, data[eventId], mesh)
       break
 
+      case 8:
+        // Open-9 (wc-board) x: y: z:
+        if (!data[eventId]) {
+          data[eventId] = {
+            meshId: mesh.objId,
+            meshName: mesh.name,
+            state: false,
+            min: 0,
+            max: 64,
+            value: 0,
+            waiting: 10,
+            valueAdd: null,
+            addedStep: 0.025,
+            addedValue: null,
+            offsetTypeX: 'max',
+            offsetTypeY: 'max',
+            offsetTypeZ: 'min',
+            axis: 'z',
+          }
+        }
+        // ONLY OPEN
+        if (data[eventId].state == true) return;
+
+        this.openFx(deltaTime, data[eventId], mesh)
+      break
+
       case 10:
         // SWITCH TEXTURE CHANGE
         this.textureOnOff(mesh, data, eventId, 'switch-1-on', 'switch-1-off')
+      break
+
+      case 11:
+        // SWITCH CARPET 2
+        this.textureOnOff(mesh, data, eventId, 'carpet-2', 'carpet-2-2')
+      break
+
+      case 12:
+        // pervius ON
+      break
+
+      case 13:
+        // BoundingBox OFF, mesh marad a scene-ben
+        if (!data[eventId]) {
+          data[eventId] = {
+            meshId: mesh.objId,
+            meshName: mesh.name,
+            state: true
+          }
+        }
+
+        mesh.pervious = true
+        data[eventId].state = true
+
+        this.game.removeBoundingBoxOfMap(mesh)
       break
 
       case 20:
@@ -1650,12 +1723,37 @@ export default class Gameplay {
       break
 
       case 60:
-        // Delete Mesh of screen
-        // console.log('mesh', mesh)
-        let selectedMapDataStructure = this.game.findMeshById(this.game.map.structure, mesh.objId)
-        if (selectedMapDataStructure) selectedMapDataStructure.active = 0;
+        // DELETE MESH OF SCREEN
+        this.meshDeleteState(mesh, data, eventId)
+        // let selectedMapDataStructure = this.game.findMeshById(this.game.map.structure, mesh.objId)
+        // if (selectedMapDataStructure) selectedMapDataStructure.active = 0;
+      break
 
-        this.game.removeObjectOfMap(this.game.scene, mesh)
+      case 65:
+        // Mesh visible ON
+        this.meshVisibleState(mesh, data, eventId, true)
+      break
+
+      case 66:
+        // Mesh visible OFF
+        this.meshVisibleState(mesh, data, eventId, false)
+      break
+
+      case 67:
+        // Mesh Grow Fx
+        /*
+        let count = 0
+        const originalPosition = mesh.position.clone()
+        const interval = setInterval(() => {
+          mesh.scale.multiplyScalar(1.01)
+          // pozíció vissza
+          mesh.position.copy(originalPosition)
+          count++
+          if (count >= 1000) {
+            clearInterval(interval)
+          }
+        }, 16)
+        */
       break
 
       case 80:
@@ -1717,24 +1815,122 @@ export default class Gameplay {
         data[eventId].active = being.active
         this.game.beingActiveOptions(being, false)
       break
+
+      case 10:
+        // AUTO: TALISMAN GHOST ON / OFF    
+        if (!this.game.playerObjects.includes(14)) {
+          if (!data[eventId]) {
+            data[eventId] = []
+            data[eventId] = {
+              state: true,
+              beingDeleted: false,
+              position: being.position.clone(),
+            }
+          }
+
+          if (data[eventId].state) {  
+            this.game.sound.play(22 /* magic2 */, { volume: 0.5, loop: false })
+            this.game.sound.play(107 /* talisman-ghost-getout */, { volume: 0.5, loop: false })
+
+            being.active = true
+            being.visible = true
+            data[eventId].state = false
+
+            const light60 = this.game.loadedLights[60]?.[1]
+            if (light60) {
+              /*
+              const beingWorldPos = new THREE.Vector3()
+              being.getWorldPosition(beingWorldPos)
+              light60.position.copy(beingWorldPos)
+              */
+
+              light60.visible = true
+            }
+          }
+
+          // OFF ACTION
+          clearTimeout(data[eventId].setTimeout)
+          data[eventId].setTimeout = setTimeout(() => {
+            being.active = false
+            being.visible = false
+            being.position.copy(data[eventId].position)
+            data[eventId].state = true
+            this.game.sound.play(22 /* magic2 */, { volume: 0.2, loop: false })
+
+            const light60 = this.game.loadedLights[60]?.[1]
+            if (light60) {
+              /*
+              const beingWorldPos = new THREE.Vector3()
+              being.getWorldPosition(beingWorldPos)
+              light60.position.copy(beingWorldPos)
+              */
+              light60.visible = false
+            }
+          }, 200);
+        } else {
+          // HAVE TALISMAN DELETE BEING
+          if (data[eventId] && !data[eventId].beingDeleted) {
+            this.removeBeing(being)
+            data[eventId].beingDeleted = true
+          }
+        }
+      break
+
     }
   }
 
   textureOnOff(mesh, data, eventId, texture_on, texture_off) {
     if (!data[eventId]) {
-      data[eventId] = []
       data[eventId] = {
-        "state": "switch-on",
-        "texture_on": texture_on,
-        "texture_off": texture_off,
+        state: texture_on,
+        texture_on: texture_on,
+        texture_off: texture_off,
       }
     }
-    data[eventId].state = data[eventId].state == data[eventId].texture_on ? data[eventId].texture_off : data[eventId].texture_on;
-    // console.log(data[eventId].state)
+
+    data[eventId].state = data[eventId].state == data[eventId].texture_on
+      ? data[eventId].texture_off
+      : data[eventId].texture_on
+
     this.refreshPicture(mesh, data[eventId])
+    // console.log(data[eventId].state)
+  }
+
+  meshVisibleState(mesh, data, eventId, visible) {
+    if (!data[eventId]) {
+      data[eventId] = {
+        meshId: mesh.objId,
+        meshName: mesh.name,
+        visible: mesh.visible
+      }
+    }
+
+    data[eventId].meshId = mesh.objId
+    data[eventId].meshName = mesh.name
+    data[eventId].visible = visible
+
+    mesh.visible = visible
+  }
+
+  meshDeleteState(mesh, data, eventId) {
+    if (!data[eventId]) {
+      data[eventId] = {
+        meshId: mesh.objId,
+        meshName: mesh.name,
+        deleted: false
+      }
+    }
+
+    data[eventId].meshId = mesh.objId
+    data[eventId].meshName = mesh.name
+    data[eventId].deleted = true
+
+    this.game.removeObjectOfMap(this.game.scene, mesh)
   }
 
   refreshPicture(mesh, data) {
+    const texture = this.game.loadedTextures[data.state] ?? this.game.loadedTextures['notexture']
+
     mesh.traverse(obj => {
       if (obj.isMesh && obj.material && obj.material.map) {
         obj.material.map = this.game.loadedTextures[data.state]

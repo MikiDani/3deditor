@@ -54,9 +54,9 @@ export default class Game {
     this.activePlayedSounds = []
 
     // inventory datas
-    this.playerObjectsDefault = [0]
+    this.playerObjectsDefault = [0, 2, 16, 17]
     this.playerObjects = this.playerObjectsDefault
-    this.playerProtectedObjects = [4, 5, 6]
+    this.playerProtectedObjects = [4, 5, 6, 17]
 
     this.$loading = {}
     this.$menu = {}
@@ -90,9 +90,9 @@ export default class Game {
       selectedHeand: '',
       mouseMaxPitch: 80,
       mouseMinPitch: -60,
-      knife: true,
+      knife: false,
       lamp: false,
-      cigarette: true,
+      cigarette: false,
     }
 
     this.autoMovePlayerData = {
@@ -303,21 +303,21 @@ export default class Game {
                   <h5 class="modal-title text-uppercase text-center w-100">The forgotten cottage</h5>
                 </div>
                 <div class="modal-body text-center row">
-                  <button id="closeBtn" class="btn btn-dark mt-2 mb-3">Belépés</button>
-                  <h5>FILSE SAVE</h5>
+                  <button class="start-button btn btn-dark mt-2 mb-3">Belépés</button>
+
+                  <h5>FILE SAVE</h5>
                   <div id="filelist-container" class="w-50 mb-3" style="display: grid; grid-template-columns:repeat(3, 1fr);gap:5px;"></div>
                   
                   <div id="load-save-container" class="w-50 mb-3" style="display: grid; grid-template-columns:repeat(3, 1fr);gap:5px;">
                     <div class="w-100 bg-pink d-flex flex-column justify-content-center align-items-center">
                       <button id="savegame-button" class="btn btn-sm btn-danger mb-3">Save</button>
-                      <button id="loadgame-button" class="btn btn-sm btn-success mb-3">Load</button>
+                      <button id="file-loadgame-button" class="btn btn-sm btn-success mb-3">Load</button>
                       <div id="savegame-message" class="text-center w-100">message</div>
                     </div>
                     <div id="savegame-list" class="d-flex flex-column justify-content-start align-items-center"></div>  
                   </div>
 
-                  <h5>STORAGE SAVE</h5>
-                  
+                  <h5>STORAGE SAVE</h5>                  
                   <div class="w-100 bg-pink d-flex flex-column justify-content-center align-items-center">
                     <button id="local-savegame-button" class="btn btn-sm btn-danger mb-3">Save</button>
                     <button id="local-loadgame-button" class="btn btn-sm btn-success mb-3">Load</button>
@@ -337,7 +337,7 @@ export default class Game {
                       <span class="text-black"> Hints</span>
                   </div>
                   <div class="my-2">
-                      <input type="checkbox" id="music-button">
+                      <input type="checkbox" id="music-button" checked>
                       <span class="text-black"> Music ON</span>
                   </div>
                   <br>
@@ -354,6 +354,7 @@ export default class Game {
                       <span class="text-black"> Ghost mode</span>
                   </div>
                 </div>
+                <button class="start-button btn btn-dark mt-2 mb-3">Belépés</button>
               </div>
             </div>
           </div>
@@ -577,6 +578,15 @@ export default class Game {
     mesh._boundingBox = updatedBox
   }
 
+  removeBoundingBoxOfMapXXX(mesh) {
+    if (!mesh?._boundingBox) return;
+    const index = this.boundingBoxes.indexOf(mesh._boundingBox)
+    if (index !== -1) {
+      this.boundingBoxes.splice(index, 1)
+      mesh._boundingBox = null
+    }
+  }
+
   refreshBoundingBoxOfMapContainer(mesh) {
     if (!mesh.container) return
 
@@ -686,7 +696,6 @@ export default class Game {
   }
 
   restartBeingSound(mesh) {
-    return //!!   STOP CLOCK SOUND !!!
     this.stopBeingSound(mesh)
     this.playStartupSoundsBeings(mesh)
   }
@@ -731,12 +740,10 @@ export default class Game {
     const r = Math.floor(Math.random() * 3)
     this.sound.play(200 + r, {volume: 0.1, loop: false})
 
-    const el = $("#game-blood")
-
-    // CSS
-    el.removeClass("play")
-    void el[0].offsetWidth
-    el.addClass("play")
+    // CSS PLAY
+    $("#game-blood").removeClass("play")
+    void $("#game-blood")[0].offsetWidth
+    $("#game-blood").addClass("play")
   }
 }
 

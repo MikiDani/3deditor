@@ -42,7 +42,7 @@ export default class Sound {
     let phantom = null
 
     const sound = use3D ? new THREE.PositionalAudio(this.listener) : new THREE.Audio(this.listener);
-  
+
     sound.setBuffer(soundData.buffer)
     sound.setLoop(soundData.loop)
     sound.setVolume(soundData.volume)

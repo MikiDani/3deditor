@@ -9,9 +9,7 @@ export default class Input {
     this.fistInteraction = false
 
     this.lastKeyTime = 0
-
     this.selectedObjectIndex = 0
-
     this.gravity = 0
 
     this.isCrouching = false
@@ -124,31 +122,44 @@ export default class Input {
       this.game.menu.options.darkContrast = $this.prop('checked') ? 0.008 : 0.004;
     });
 
-    $(document).on('click', '.filename-listelement, .savegame-listelement, .local-savegame-listelement', (event) => {
-      const $this = $(event.target)
-      const filename = $this.attr('data-filename')
-      const ext = $this.attr('data-ext')
-
-      this.game.filename = filename
-      this.game.ext = ext
-
-      $('#file-input').val(filename).attr('data-ext', ext)
-    });
-
-    $(document).on('click', '.filename-listelement, .del-save-button', async (event) => {
+    $(document).on('click', '.del-save-button', async (event) => {
       const $this = $(event.target).prev()
       const filename = $this.attr('data-filename')
       const ext = $this.attr('data-ext')
 
-      const responseDelete = await this.game.loader.fetchData({ ajax: true, delete: true, filename: filename, ext: ext, savedgamesdir: '__saved_games__' });
-      if (responseDelete.success) $("#savegame-message").html(`<div class="text-center text-success">${responseDelete.success}</div>`);
-      else $("#savegame-message").html(`<div class="text-center text-danger">${responseDelete.error}</div>`);
+      // LOACAL SAVE
+      if (ext == 'local') {
+        localStorage.removeItem(filename)
 
-      setTimeout(() => {$("#savegame-message").html('')}, 4000);
+        $("#local-savegame-message").html(`<div class="text-center text-success">Törölve: ${filename}</div>`)
+        setTimeout(() => {
+          $("#local-savegame-message").html('')
+        }, 4000)
+
+        this.game.loader.loadSavedgamesList('local')
+        return true;
+      }
+
+      // FILE SAVE
+      const responseDelete = await this.game.loader.fetchData({
+        ajax: true,
+        delete: true,
+        filename: filename,
+        ext: ext,
+        savedgamesdir: '__saved_games__'
+      })
+
+      if (responseDelete.success) $("#savegame-message").html(`<div class="text-center text-success">${responseDelete.success}</div>`)
+      else $("#savegame-message").html(`<div class="text-center text-danger">${responseDelete.error}</div>`)
+
+      setTimeout(() => {
+        $("#savegame-message").html('')
+      }, 4000)
+
       this.game.loader.loadSavedgamesList('file')
-    });
+    })
 
-    $('#closeBtn').on('click', () => {
+    $('.start-button').on('click', () => {
       const modal = bootstrap.Modal.getInstance(document.getElementById('topLayer'))
       if (modal) modal.hide()
 
@@ -184,8 +195,19 @@ export default class Input {
       }
     });
 
+    $(document).on('click', '.filename-listelement, .savegame-listelement', (event) => {
+      const $this = $(event.currentTarget)
+      const filename = $this.attr('data-filename')
+      const ext = $this.attr('data-ext')
+
+      this.game.filename = filename
+      this.game.ext = ext
+
+      $('#file-input').val(filename).attr('data-ext', ext)
+    })
+
     // LOADING SAVED GAME
-    $('#loadgame-button, #local-loadgame-button').on('click', async () => {
+    $('#file-loadgame-button, #local-loadgame-button').on('click', async () => {
       if (this.game.filename && this.game.ext && (this.game.ext == 'stuc' || this.game.ext == 'local')) {
 
         this.game.forceClearAllTimers()
@@ -199,7 +221,7 @@ export default class Input {
 
         this.game.loadedLights = []
         this.game.loadedBeings = []
-        this.game.loadedHeands = [] // fények miatt újra kell tölteni
+        this.game.loadedHeands = []
         this.game.loadedMeshs = []
 
         // inventory datas
@@ -209,7 +231,6 @@ export default class Input {
         this.game.mapLoading = false
 
         //--- start
-
         const modal = bootstrap.Modal.getInstance(document.getElementById('topLayer'))
         if (modal) modal.hide()
   
@@ -248,7 +269,6 @@ export default class Input {
           let findUse = false;
 
           for (const [meshId, meshGroup] of Object.entries(this.game.loadedMeshs)) {
-
             if (!meshGroup || !meshGroup.children) continue;
             const intersects = raycaster.intersectObjects(meshGroup.children, true)
             if (intersects.length > 0) {
@@ -258,6 +278,8 @@ export default class Input {
               let firstSolidIntersect = sceneIntersects.find(hit => !hit.object.parent?.pervious)
 
               if (firstSolidIntersect?.object.parent.name != intersects[0].object.parent.name) continue;
+              // SKIP IF NOT ACTIVE
+              if (!intersects[0].object.parent.visible) continue;
 
               const intersect = intersects[0]
               const hitPoint = intersect.point;
@@ -331,6 +353,8 @@ export default class Input {
       // RIGHT MOUSE CLICK
       if (e.button == 2) {
         e.preventDefault(); e.stopPropagation();
+        if (this.game.startGameInfoText || this.game.finishGameInfoText || this.game.waitingGameInfoText) return;
+
         if (this.game.inventory.readArray.readType !== null) return;
         this.getActualCursor()
         this.changeGameOrInventory()
@@ -452,9 +476,11 @@ export default class Input {
     // // // //
     // KEYS
     $(document).on('keydown', async (e) => {
-      // STOP PLAYER MOVE      
+      // STOP PLAYER MOVE
       if (!this.game.move.active) {
          e.preventDefault(); e.stopPropagation();
+         console.log('itt...1')
+         
         return;
       }
 
@@ -497,9 +523,16 @@ export default class Input {
       }
 
       if (e.key == 'h') {
-         this.game.playerObjects.push(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
-         this.game.map.player.energy = 80
-         this.game.energyModifyScreen()
+        // CHET
+        this.game.playerObjects.push(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)
+        this.game.inventory.update()
+
+        this.game.playerMouse.knife = true
+        this.game.playerMouse.lamp = true
+        this.game.playerMouse.cigarette = true
+
+        this.game.map.player.energy = 80
+        this.game.energyModifyScreen()
       }
 
       //---
@@ -638,7 +671,7 @@ export default class Input {
 
           this.game.loadedLights = []
           this.game.loadedBeings = []
-          this.game.loadedHeands = [] // fények miatt újra kell tölteni
+          this.game.loadedHeands = []
           this.game.loadedMeshs = []
 
           // inventory datas
@@ -678,6 +711,8 @@ export default class Input {
         // POINTERLOCK MOUSE
         if (e.key == 'f' || e.key == 'F') {
           e.preventDefault(); e.stopPropagation();
+          if (this.game.startGameInfoText || this.game.finishGameInfoText || this.game.waitingGameInfoText) return;
+
           $('#text-box-text').html('')
           $('#text-box').hide()
           this.changeMouseLock()
@@ -815,6 +850,7 @@ export default class Input {
   changeGameOrInventory() {
     if (this.game.currentState == 'game') {
       // GO INVENTORY
+      $("#game-blood").removeClass("play")
       if (document.pointerLockElement === this.game.canvas) document.exitPointerLock();
       this.setDefaultCursor()
       this.game.play = false
@@ -823,6 +859,7 @@ export default class Input {
 
     } else if (this.game.currentState == 'inventory') {
       // BACK GAME
+      $("#game-blood").removeClass("play")
       this.removeUsedObject()
       this.game.play = true
       this.game.currentState = 'game'
@@ -888,6 +925,8 @@ export default class Input {
 
       if (testValue >= 0 && testValue < length) {
         this.game.inventory.readArray.readIndex = parseInt(this.game.inventory.readArray.readIndex) + parseInt(readIndexMove)
+        if (this.game.inventory.readArray.readType == 'letter') this.game.inventory.loadLetterPage();
+        if (this.game.inventory.readArray.readType == 'photo') this.game.inventory.loadPhotoPage();
         if (this.game.inventory.readArray.readType == 'note') this.game.inventory.loadNotePage();
         if (this.game.inventory.readArray.readType == 'book') this.game.inventory.loadBookPage();
       }
@@ -1398,6 +1437,8 @@ export default class Input {
           let firstSolidIntersect = sceneIntersects.find(hit => !hit.object.parent?.pervious)
 
           if (firstSolidIntersect?.object.parent.name != intersects[0].object.parent.name) continue;
+          // SKIP IF NOT ACTIVE
+          if (!intersects[0].object.parent.visible) continue;
 
           const cameraPos = new THREE.Vector3()
           this.game.camera.getWorldPosition(cameraPos)

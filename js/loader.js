@@ -178,7 +178,7 @@ export default class Loader {
     }
   }
 
-  // Spritesheet generálása több képből és animált textúra létrehozása
+  // MORE ANIMATED PICTURE GENERATOR
   async createSpritesheetTexture(imagePaths, intervalTime = 500, textureplayingState = true) {
     const loader = new THREE.ImageLoader()
     const tilesHoriz = imagePaths.length
@@ -242,6 +242,8 @@ export default class Loader {
 
   // MAP LOADER
   async mapLoader(filename, ext) {
+    this.cleanupMapRuntimeHitboxes()
+
     let loadType = null
     let savedgamesdir = null
 
@@ -268,8 +270,9 @@ export default class Loader {
     if (ext == 'stuc' || ext == 'mtuc') {
       response = await this.fetchData({ ajax: true, load: true, filename: filename, ext: ext, savedgamesdir: savedgamesdir })
     } else if (ext == 'local') {
-      response = localStorage.getItem(filename)
-      response = JSON.parse(response)
+      const localSaveData = localStorage.getItem(filename)
+      const json = await this.decompressBase64ToString(localSaveData)
+      response = JSON.parse(json)
     }
 
     if (response?.data && response?.structure) {
@@ -310,11 +313,9 @@ export default class Loader {
       for (let mesh of this.game.map.data) {
         let meshGroup = new THREE.Group() // (i) START MESHGROUP
 
-        // CHECK VISIBLE
-        let selectedMeshStructure = this.game.findMeshById(this.game.map.structure, mesh.id)
-
-        if (selectedMeshStructure.visible != 1) continue; // EDITOR OFF
-        if (selectedMeshStructure.active == 0) continue;  // TURN OFF IN GAME
+        // CHECK VISIBLE (EDITOR MODE)
+        // let selectedMeshStructure = this.game.findMeshById(this.game.map.structure, mesh.id)        
+        // if (selectedMeshStructure.visible != 1) continue; // EDITOR OFF
 
         // GIVE MESH DATA TO MESHGROUP        
         if (mesh.id) meshGroup.objId = mesh.id;                          // IF HAVE MESH ID
@@ -322,6 +323,8 @@ export default class Loader {
         if (mesh.text) meshGroup.text = mesh.text;                       // IF HAVE MESH INFO TEXT ADD
         if (mesh.pickuped) meshGroup.pickuped = mesh.pickuped            // IF HAVE PICKUPED
         if (mesh.pervious) meshGroup.pervious = mesh.pervious            // IF HAVE PERVIOUS
+        // ACTIVE
+        meshGroup.visible = mesh.active ?? true
 
         for (let tri of mesh.tris) {
           const geometry = new THREE.BufferGeometry()
@@ -372,6 +375,7 @@ export default class Loader {
           box.min.add(triangleMesh.position)
           box.max.add(triangleMesh.position)
 
+          if (mesh.pervious) meshGroup.pervious = mesh.pervious
           if (!mesh.pervious) this.game.boundingBoxes.push(box); // ADD BOUNDING BOX !!!
 
           // YELLOW BOX-HELPER
@@ -410,8 +414,6 @@ export default class Loader {
           for (const actionId of mesh.actions) {
             const thisAction = this.game.map.actions.find(action => action.id == actionId)
             if (thisAction) {
-              if (loadType == 'loadgame') meshGroup = this.checkmoveFx(thisAction, meshGroup);
-
               thisAction.meshname = mesh.name
               this.game.map.actionelements.push([meshGroup, thisAction])
             }
@@ -633,7 +635,10 @@ export default class Loader {
           }
         }
         // console.log(this.game.loadedHeands)
-      }    
+      }
+
+      // MODIFIED MESH CHANGES
+      if (loadType == 'loadgame') this.restoreMoveFxStates()
 
       // SKY BACKGROUND
       if (!this.game.scene.background) {
@@ -675,6 +680,56 @@ export default class Loader {
     }
   }
 
+  restoreMoveFxStates() {
+    for (const action of this.game.map.actions) {
+      if (!action?.events) continue
+
+      for (const event of action.events) {
+        if (!Array.isArray(event.moveactions)) continue
+
+        for (const fx of event.moveactions) {
+          const meshId = Number(fx[0])
+          const moveFxId = Number(fx[1])
+
+          const meshGroup = this.game.loadedMeshs[meshId]
+          const fxData = this.game.config.movefx.find(row => Number(row.id) == moveFxId)
+
+          if (!meshGroup || !fxData) continue
+
+          const oldData = fxData[event.id]
+          if (!oldData) continue
+
+          if (moveFxId >= 0 && moveFxId < 10) {
+            this.game.gameplay.refreshOpenFxState(null, oldData, meshGroup)
+            continue
+          }
+
+          if (moveFxId > 9 && moveFxId < 100) {
+            if (oldData.deleted === true) {
+              this.game.removeObjectOfMap(this.game.scene, meshGroup)
+              delete this.game.loadedMeshs[meshId]
+              continue
+            }
+
+            if (oldData.visible !== undefined) {
+              meshGroup.visible = oldData.visible
+            }
+
+            if (typeof oldData.state === 'string' && oldData.texture_on && oldData.texture_off) {
+              this.game.gameplay.refreshPicture(meshGroup, oldData)
+            }
+
+            // BOUNDING BOX OFF RESTORE
+            if (moveFxId == 13 && oldData.state == true) {
+              meshGroup.pervious = true
+              this.game.removeBoundingBoxOfMap(meshGroup)
+            }
+          }
+        }
+      }
+    }
+  }
+
   checkmoveFx(thisAction, meshGroup) {
     // OPENFX POSITION REFRESH
     for(let value of Object.values(this.game.config.movefx)) {
@@ -689,11 +744,25 @@ export default class Loader {
           }
         }
       } else if (value.id > 9 && value.id < 100) {
-        // SWITCH 1. # Picture Change. # Micro Hamster Change
+        // SWITCH 1. # Picture Change. # Mesh visible ON/OFF # Delete Mesh of screen
         for(let [eventId, oldData] of Object.entries(value)) {
           if (eventId == 'id' || eventId == 'name') continue;
           for(let event of thisAction.events) {
-            if (event.id == eventId) this.game.gameplay.refreshPicture(meshGroup, oldData);
+            if (event.id == eventId) {
+              /*
+              if (oldData.deleted !== undefined && oldData.deleted) {
+                if (Number(oldData.meshId) == Number(meshGroup.objId)) {
+                  this.game.removeObjectOfMap(this.game.scene, meshGroup)
+                  return null
+                }
+                continue;
+              }
+              */
+              if (oldData.visible !== undefined) {
+                if (Number(oldData.meshId) == Number(meshGroup.objId)) meshGroup.visible = oldData.visible;
+              }
+              if (oldData.state) this.game.gameplay.refreshPicture(meshGroup, oldData);
+            }
           }
         }
       }
@@ -729,7 +798,6 @@ export default class Loader {
         let triNormal = tri?.normal ? 'FrontSide' : 'DoubleSide';
 
         const texture = this.game.loadedTextures[tri.texture.name] ?? this.game.loadedTextures['notexture'];
-
         if (texture?.needsUpdate) texture.needsUpdate = false;
 
         const materialType = this.game.lightsOn ? 'MeshLambertMaterial' : 'MeshBasicMaterial'
@@ -768,18 +836,47 @@ export default class Loader {
     } else if (mode == 'local') {
       $("#local-savegame-list").html('')
       let list = ``
+
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i)
         if (!key.startsWith('save_')) continue
-        list += `<div class="d-inline-flex align-items-center gap-2 mb-2"><span class="savegame-listelement text-dark cursor-pointer px-2 py-1" data-filename="${key}" data-ext="local">${key}</span><span class="del-save-button cursor-pointer rounded-circle bg-danger text-white d-flex justify-content-center align-items-center p-1">&#x2716;</span></div>`
+
+        list += `<div class="d-inline-flex align-items-center gap-2 mb-2"><span class="savegame-listelement text-dark cursor-pointer px-2 py-1" data-filename="${key}" data-ext="local">${key} (${(localStorage.getItem(key).length / 1024).toFixed(1)} KB)</span><span class="del-save-button cursor-pointer rounded-circle bg-danger text-white d-flex justify-content-center align-items-center p-1">&#x2716;</span></div>`
       }
-  
+
       $("#local-savegame-list").html(list)
+    }
+  }
+
+  cleanupMapRuntimeHitboxes() {
+    this.cleanupBeingRuntimeHitboxes()
+
+    this.game.boundingBoxes = []
+  }
+
+  cleanupBeingRuntimeHitboxes() {
+    if (!this.game?.loadedBeings) return
+
+    for (const beingGroup of Object.values(this.game.loadedBeings)) {
+      if (!beingGroup) continue
+
+      if (beingGroup.helper) {
+        this.game.scene.remove(beingGroup.helper)
+        beingGroup.helper.geometry?.dispose?.()
+        beingGroup.helper.material?.dispose?.()
+        beingGroup.helper = null
+      }
+
+      if (beingGroup.box) {
+        this.game.boundingBoxes = this.game.boundingBoxes.filter(box => box !== beingGroup.box)
+        beingGroup.box = null
+      }
     }
   }
 
   async saveGame(mode) {
     if (this.game.filename && this.game.ext) {
+      this.cleanupBeingRuntimeHitboxes()
 
       const save_filename = Date.now()
       const save_ext = 'stuc';
@@ -822,8 +919,9 @@ export default class Loader {
       for (const [id, being] of Object.entries(this.game.loadedBeings)) {
         const thisBeing = this.game.map.beings.find(being => being.id == id)
         if (thisBeing) {
+          const { box, helper, _boundingBox, container, ...safeBeingData } = thisBeing
           convertBeings.push({
-            ...thisBeing, 
+            ...safeBeingData,
             active: being.active ? "1" : "0",
             ratio: being.ratio,
             speed: being.speed,
@@ -834,7 +932,7 @@ export default class Loader {
               y: being.position.y,
               z: being.position.z,
             }
-          });
+          })
         }
       }
 
@@ -866,17 +964,83 @@ export default class Loader {
           return false;
         }
       } else if (mode == 'local') {
-        // LOCAL SAVE
-        let saveName = 'save_' + Date.now()
-        this.game.ext = 'local'
-        localStorage.setItem(saveName, JSON.stringify(saveMapData))
+        try {
+          const saveName = 'save_' + Date.now()
 
-        $("#local-savegame-message").html(`<div class="text-center text-success">${saveName}</div>`)
-          setTimeout(() => {$("#local-savegame-message").html('')}, 4000);
+          const compressedSaveMapData = await this.compressStringToBase64(saveMapDataJSON)
+
+          localStorage.setItem(saveName, compressedSaveMapData)
+          // localStorage.setItem(saveName, saveMapDataJSON) // old
+
+          this.game.filename = saveName
+          this.game.ext = 'local'
+
+          $("#file-input").val(saveName).attr('data-ext', 'local')
+
+          $("#local-savegame-message").html(`<div class="text-center text-success">${saveName}</div>`)
+          setTimeout(() => {
+            $("#local-savegame-message").html('')
+          }, 4000)
+
           return true;
+        } catch (err) {
+          if (
+            err.name === 'QuotaExceededError' ||
+            err.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+            err.code === 22 ||
+            err.code === 1014
+          ) {
+            $("#local-savegame-message").html(`<div class="text-center text-danger">Elfogyott a localStorage hely!</div>`)
+            setTimeout(() => {
+              $("#local-savegame-message").html('')
+            }, 4000)
+
+            return false;
+          }
+
+          throw err
+        }
       }
     }
   }
+
+  deleteCurrentLocalSave(filename = null) {
+    const saveName = filename ?? this.game.filename
+
+    if (!saveName || this.game.ext != 'local') {
+      $("#local-savegame-message").html(`<div class="text-center text-danger">Nincs local mentés kijelölve!</div>`)
+      setTimeout(() => {
+        $("#local-savegame-message").html('')
+      }, 4000)
+      return false;
+    }
+
+    if (!localStorage.getItem(saveName)) {
+      $("#local-savegame-message").html(`<div class="text-center text-danger">Nem található local mentés: ${saveName}</div>`)
+      setTimeout(() => {
+        $("#local-savegame-message").html('')
+      }, 4000)
+      return false;
+    }
+
+    localStorage.removeItem(saveName)
+
+    if (this.game.filename == saveName) {
+      this.game.filename = ''
+      this.game.ext = ''
+      $("#file-input").val('').attr('data-ext', '')
+    }
+
+    $("#local-savegame-message").html(`<div class="text-center text-success">Törölve: ${saveName}</div>`)
+    setTimeout(() => {
+      $("#local-savegame-message").html('')
+    }, 4000)
+
+    this.loadSavedgamesList('local')
+
+    return true;
+  }
+
 
   loadGame() {
     this.game.map.player = JSON.parse(saveMapData.player)
@@ -900,5 +1064,40 @@ export default class Loader {
       });
       return originaldata ? response : JSON.parse(response);
     } catch (error) {}
+  }
+
+  // COMPRESS LOCAL SAVE GAME
+  async compressStringToBase64(str) {
+    const stream = new Blob([str])
+      .stream()
+      .pipeThrough(new CompressionStream('gzip'))
+
+    const compressedBuffer = await new Response(stream).arrayBuffer()
+    const bytes = new Uint8Array(compressedBuffer)
+
+    let binary = ''
+    const chunkSize = 0x8000
+
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize)
+      binary += String.fromCharCode(...chunk)
+    }
+
+    return btoa(binary)
+  }
+
+  async decompressBase64ToString(base64) {
+    const binary = atob(base64)
+    const bytes = new Uint8Array(binary.length)
+
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i)
+    }
+
+    const stream = new Blob([bytes])
+      .stream()
+      .pipeThrough(new DecompressionStream('gzip'))
+
+    return await new Response(stream).text()
   }
 }

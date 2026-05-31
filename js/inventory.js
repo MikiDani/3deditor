@@ -68,7 +68,7 @@ export default class Inventory {
 
       // 3D OBJECT REFRESH ROTATE
       if (this.selectedObject) {
-        $(".delta-time-inventory").html(deltaTime.toFixed(1))       
+        if (deltaTime) $(".delta-time-inventory").html(deltaTime.toFixed(1))
 
         // ROTATE OBJECT
         if (this.game.loadedObjects[this.selectedObject.id]) {
@@ -126,10 +126,12 @@ export default class Inventory {
                 readType: readDetails[0],
                 readData: readData,
                 readIndex: 0,
-              }              
+              }
 
               // CSS BOOK AND NOTE ARROWS
               if (readDetails[0] == 'note') this.loadNotePage();
+              if (readDetails[0] == 'letter') this.loadLetterPage();
+              if (readDetails[0] == 'photo') this.loadPhotoPage();
               if (readDetails[0] == 'book') this.loadBookPage();
             }
             return;
@@ -234,6 +236,23 @@ export default class Inventory {
       $(".note-text").html(this.readArray.readData.texts[this.readArray.readIndex])
       $("#note-container").css('display', 'flex')
       $("#note-background").addClass('anim-in')
+      $("#note-background").removeClass('photo-bg').removeClass('letter-bg').addClass('note-bg').addClass('anim-in')
+      this.readArrowsOptions('note')
+    }
+
+    loadLetterPage() {
+      $(".note-title").html(this.readArray.readData.titles[this.readArray.readIndex])
+      $(".note-text").html(this.readArray.readData.texts[this.readArray.readIndex])
+      $("#note-container").css('display', 'flex')
+      $("#note-background").removeClass('note-bg').removeClass('photo-bg').addClass('letter-bg').addClass('anim-in')
+      this.readArrowsOptions('note')
+    }
+
+    loadPhotoPage() {
+      $(".note-title").html(this.readArray.readData.titles[this.readArray.readIndex])
+      $(".note-text").html(this.readArray.readData.texts[this.readArray.readIndex])
+      $("#note-container").css('display', 'flex')
+      $("#note-background").removeClass('note-bg').removeClass('letter-bg').addClass('photo-bg').addClass('anim-in')
       this.readArrowsOptions('note')
     }
 

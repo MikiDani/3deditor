@@ -1409,7 +1409,7 @@ button[class=ratio-buttons]:hover {
 }
 
 #modal-content .list-element {
-  padding: 10px 10px 10px 10px;
+  padding: 2px 10px 2px 10px;
   height: auto !important;
 }
 

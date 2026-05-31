@@ -68,11 +68,27 @@
     },
     {
       "id": 7,
-      "name": "Open-8 (wc-board) x:max y:min z:min"
+      "name": "Open-8 (wc-board) x: y: z:"
+    },
+    {
+      "id": 8,
+      "name": "Open-9 (Picture-open) x:max y:min z:min"
     },
     {
       "id": 10,
-      "name": "Switch 1."
+      "name": "Switch texture change"
+    },
+    {
+      "id": 11,
+      "name": "Carpet 2. texture change"
+    },
+    {
+      "id": 12,
+      "name": "pervius ON"
+    },
+    {
+      "id": 13,
+      "name": "pervius OFF"
     },
     {
       "id": 20,
@@ -94,6 +110,18 @@
     {
       "id": 60,
       "name": "Delete Mesh of screen"
+    },
+    {
+      "id": 65,
+      "name": "Mesh visible ON"
+    },
+    {
+      "id": 66,
+      "name": "Mesh visible OFF"
+    },
+    {
+      "id": 67,
+      "name": "Mesh Grow Fx"
     },
     {
       "id": 80,
@@ -131,6 +159,10 @@
       "name": "Turn OFF"
     },
     {
+      "id": 4,
+      "name": "RANDOM RED COLOR"
+    },
+    {
       "id": 10,
       "name": "RED 1. (255, 0, 0)"
     },
@@ -155,6 +187,10 @@
     {
       "id": 2,
       "name": "Active Being OFF"
+    },
+    {
+      "id": 10,
+      "name": "AUTO: TALISMAN GHOST ON / OFF"
     }
   ],
   "sounds": [
@@ -339,6 +375,42 @@
       "setRolloffFactor": 3
     },
     {
+      "id": 21,
+      "name": "magic1",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 22,
+      "name": "magic2",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 23,
+      "name": "ripping1",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 24,
+      "name": "ripping2",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
       "id": 100,
       "name": "bet-attack1",
       "volume": 1,
@@ -384,6 +456,33 @@
       "setRolloffFactor": 3
     },
     {
+      "id": 105,
+      "name": "bath-demon-join",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 106,
+      "name": "bath-demon-wash",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 107,
+      "name": "talisman-ghost-getout",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
       "id": 200,
       "name": "player-damage1",
       "volume": 1,
@@ -405,7 +504,10 @@
       "id": 203,
       "name": "player-scare1",
       "volume": 1,
-      "loop": false
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
     },
     {
       "id": 204,
@@ -489,35 +591,39 @@
 
   "textdata": [
     {
-      "id": "note_letter",
+      "id": "letter_uncle",
       "titles": [
-        "Dear My Boy!1",
-        "Dear My Boy!2",
-        "Dear My Boy!3"
+        "Dear Puntanelli !",
+        ""
       ],
       "texts": [
-        "Dear Lumi Boy! Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore.<br> Placeat sint!1",
-        "Dear Lumi Boy! Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore.<br> Placeat sint!2",
-        "Dear Lumi Boy! Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore.<br> Placeat sint!3"
+        "<br>It is our painful duty to inform you that Mr. Zibizugar, your uncle, has passed away and joined the greats on the eternal silver screen, as he liked to wisely say. As a respected horror film director in Italy, he became a wealthy man, and established his fortune, from which he left you his country house near Pignola. He loved to spend his time in this house, and his painfully shocking death also occurred there.",
+        "While you receive your inheritance, Gregovics,the old housekeeper, whom you may remember from your youth, will be supervising the building. Please travel here as soon as possible to inspect your uncle's special man cave, and receive the keys, which will end our office's obligation towards you. The mansion is waiting for you impatiently,<br><br><strong>Mr. Puntanelli!</strong><br><div style='float:right;'>Arrivederci!</div>"
       ]
     },
     {
       "id": "note_1",
-      "titles": [
-        "A 1. Minus assumenda rerum dicta minus libero.",
-        "A 2. Assumenda rerum dicta minus libero.",
-        "A 3. Aliquam minus libero nostrum."
-      ],
+      "titles": [""],
       "texts": [
-        "n1 Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore.<br> Placeat sint!",
-
-        "n2 Ad est provident voluptas tempore repellendus obcaecati, nobis eos corrupti enim dolores fugit dignissimos ipsum saepe molestiae. Quidem quod numquam laboriosam dolorem, consequatur earum doloribus. Voluptatibus quis molestiae incidunt officiis?<br>Aliquam assumenda rerum dicta minus libero nostrum iusto.",
-
-        "n3 Perferendis cumque ipsum, veritatis exercitationem ab animi illo harum nulla deleniti suscipit voluptates, molestiae quidem obcaecati repellendus ipsa qui aliquam perspiciatis vitae impedit necessitatibus odio."
+        "<div style='float:right;'><strong>Februar 8.</strong></div><br><br>Something went really wrong. I just feel it on the back of my neck. Going along with those mytesrious fanatics wasn't a good idea after all.<br><br>The ritual went out of it's bonds... The thing.. I think I feel that thing's presence lurking in the house. In the preying shadows. Something has come trough, and now I fear for my life."
       ]
     },
     {
       "id": "note_2",
+      "titles": [""],
+      "texts": [
+        "<div style='float:right;'><strong>Februar 12.</strong></div><br><br>It's in the cracks. It's in the corner of my eyes, when I walk the corridor, and dare to glance back. It's coming after me, when I'm on the stairs.<br><br>It's standing ouside the door, when I'm lying in my bed silently and dare not to move. I hear it whispering otherwordly obscenities, as he tells me of my death."
+      ]
+    },
+    {
+      "id": "note_3",
+      "titles": [""],
+      "texts": [
+        "<div style='float:right;'><strong>Februar 15.</strong></div><br><br>I've been introduced to a group of rich, imaginative bunch of people who play around with the dark forces.<br><br>It was fun at first, but I realised they are for real. They proved me. Now I'm not comfortable with existence. Back magic is real."
+      ]
+    },
+    {
+      "id": "note_a",
       "titles": [
         "B 1. Assumenda rerum dicta minus libero.",
         "B 2. Aliquam  rerum dicta minus libero.",
@@ -532,7 +638,7 @@
       ]
     },
     {
-      "id": "note_3",
+      "id": "note_b",
       "titles": [
         "C 1. Vsumenda rerum dicta minus libero nostrum.",
         "C 2. Aliquam rerum dicta minus libero nostrum.",
@@ -632,7 +738,7 @@
     {
       "id": "start_text",
       "text": [
-        "It came as a surprise. The letter from your Italian uncle's lawyers, that you inherited his mansion, located in south Italy. You remember vaguely spending some summers there in your childhood, then your parents moved across the ocean. You have left New York now to fulfill your curiosity, and to answer the document, containing his will, in person. Travelling through the rich Italian scenery, all those small, pastorial villages embedded in time, have sunk your soul in a mosaic-like, dreamy state.Tangled olive groves, lush vineyards on sun-drenched hills that rise from each other, guarded by ancient castle ruins, and purple wine that seems to flow in streams everywhere. Now you are here, the old house servant have let you in, greeting and remembering you, like you never really left. The shadowy mansion embraces you, like an oversized bug, weighing on you, as if it never wants you to leave. - It's good to see a familiar face, young Master - sais the butler. - Since your uncle has passed away, dark days have visited this place. It's nice to have you here after so many years. Please feel free to look around, I mean.. of  course, the mansion is yours now. I'm cooking dinner, but it's a bit late, let me retire to my room, and we will converse later - with these words spoken silently, he retreats to his room."
+        "It came as a surprise. The letter from your Italian uncle's lawyers, that you inherited his mansion, located in south Italy. You remember vaguely spending some summers there in your childhood, then your parents moved across the ocean. You have left New York now to fulfill your curiosity, and to answer the document, containing his will, in person.<br><br>Travelling through the rich Italian scenery, all those small, pastorial villages embedded in time, have sunk your soul in a mosaic-like, dreamy state.Tangled olive groves, lush vineyards on sun-drenched hills that rise from each other, guarded by ancient castle ruins, and purple wine that seems to flow in streams everywhere.<br><br>Now you are here, the old house servant have let you in, greeting and remembering you, like you never really left. The shadowy mansion embraces you, like an oversized bug, weighing on you, as if it never wants you to leave.<br><br>- It's good to see a familiar face, young Master - sais the butler. - Since your uncle has passed away, dark days have visited this place. It's nice to have you here after so many years. Please feel free to look around, I mean.. of  course, the mansion is yours now. I'm cooking dinner, but it's a bit late, let me retire to my room, and we will converse later - with these words spoken silently, he retreats to his room."
       ]
     },
     {
@@ -640,9 +746,15 @@
       "text": [
         "FINISH! :) Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore.<br>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore.<br> Placeat sint!"
       ]
+    },
+    {
+      "id": "photo_bedroom",
+      "titles": [""],
+      "texts": [
+        "<img src='img/inventory/photo-bedroom.png' class='usn w-100 text-center mt-4 me-3' style='float:right;transform:translateY(150px)scale(2);'>"
+      ]
     }
   ],
-
   "animationtextures": {
     "water-1": {
       "intervalTime": 350,
