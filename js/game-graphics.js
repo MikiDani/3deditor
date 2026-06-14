@@ -28,43 +28,32 @@ export default class Graphics {
     // console.log(this.checkGPU())
     if (this.checkGPU()) {
       // HIGH
-      this.game.targetFPS = 60
+      this.game.targetFPS = 80
       this.game.renderInterval = 1000 / this.game.targetFPS
 
-      this.scX = window.innerWidth / 1; this.scY = window.innerHeight / 1
-      // this.scX = 1024; this.scY = 576
-      // this.scX = 450; this.scY = 250
+      // this.scX = window.innerWidth / 1; this.scY = window.innerHeight / 1
+      // this.scX = 1920; this.scY = 1080; // nem kell és lassú is
+
+      this.scX = 1200; this.scY = 675;
 
       this.far = 13
     } else {
       // LOW
-wwa
-      // !!!
-      /*
-      $("#game-container").removeClass('full-size').addClass('mx-auto').addClass('small-size')
-      $("#game-canvas").removeClass('full-size').addClass('mx-auto').addClass('small-size')
-      */
-
       this.game.targetFPS = 10  // 25
       this.game.renderInterval = 1000 / this.game.targetFPS
 
-      this.scX = window.innerWidth / 10
-      this.scY = window.innerHeight / 10
-      this.far = 7
+      // this.scX = window.innerWidth / 10; this.scY = window.innerHeight / 10
 
-      this.move = {
-        push: false,
-        key: '',
-        speed: 0,
-        add: 0.01,
-        max: 0.1,
-        sub: 0.98,
-        cameraUp: {},
-        playerRotationY: {}
-      }
+      this.scX = 200
+      this.scY = 112
+
+      this.far = 5
     }
 
     this.game.camera = new THREE.PerspectiveCamera(60, this.scX / this.scY, 0.1, this.far)
+
+    this.game.canvas.style.width = '100vw'
+    this.game.canvas.style.height = '100vh'
 
     this.game.renderer.setSize(this.scX, this.scY, false)
     this.game.renderer.setPixelRatio(1)

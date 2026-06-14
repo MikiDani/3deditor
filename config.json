@@ -68,11 +68,15 @@
     },
     {
       "id": 7,
-      "name": "Open-8 (wc-board) x: y: z:"
+      "name": "Open-9 Z (wc-board) x:max y:max z:min"
     },
     {
       "id": 8,
       "name": "Open-9 (Picture-open) x:max y:min z:min"
+    },
+     {
+      "id": 9,
+      "name": "Open-4/2 (doorB) PULL 90 deg x:max y:max z:min"
     },
     {
       "id": 10,
@@ -91,8 +95,17 @@
       "name": "pervius OFF"
     },
     {
+      "id": 14,
+      "name": "Switch texture fire"
+    },
+    {
       "id": 20,
       "name": "Radio ON/OFF",
+      "state": "off"
+    },
+    {
+      "id": 21,
+      "name": "RADIO PAUSE / RESUME",
       "state": "off"
     },
     {
@@ -411,6 +424,33 @@
       "setRolloffFactor": 3
     },
     {
+      "id": 25,
+      "name": "radio",
+      "volume": 1,
+      "loop": true,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 26,
+      "name": "sizzle",
+      "volume": 0.5,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 27,
+      "name": "water1",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
       "id": 100,
       "name": "bet-attack1",
       "volume": 1,
@@ -619,7 +659,7 @@
       "id": "note_3",
       "titles": [""],
       "texts": [
-        "<div style='float:right;'><strong>Februar 15.</strong></div><br><br>I've been introduced to a group of rich, imaginative bunch of people who play around with the dark forces.<br><br>It was fun at first, but I realised they are for real. They proved me. Now I'm not comfortable with existence. Back magic is real."
+        "<div style='float:right;'><strong>Január 20.</strong></div><br><br>I've been introduced to a group of rich, imaginative bunch of people who play around with the dark forces.<br><br>It was fun at first, but I realised they are for real. They proved me. Now I'm not comfortable with existence. Back magic is real."
       ]
     },
     {
@@ -774,6 +814,10 @@
     },
     "fireplace-anim": {
       "intervalTime": 120,
+      "playingState": true
+    },
+    "fireplace-anim-2": {
+      "intervalTime": 1000,
       "playingState": true
     }
   },
@@ -930,5 +974,6 @@
       "damageSounds": [100,101,102],
       "dieSounds": [103]
     }
-  }
+  },
+  "protectedPickupMash": [21]
 }

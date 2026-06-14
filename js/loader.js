@@ -253,7 +253,7 @@ export default class Loader {
       this.game.startGameInfoText = false; this.game.finishGameInfoText = false; this.game.waitingGameInfoText = false;
     } else {
       loadType = 'newgame'
-      this.game.startGameInfoText = true; /* !!! */ this.game.finishGameInfoText = false; this.game.waitingGameInfoText = false;
+      this.game.startGameInfoText = false; /* !!! */ this.game.finishGameInfoText = false; this.game.waitingGameInfoText = false;
     }
 
     $('#text-box').hide(); $('#text-box-text').html('');

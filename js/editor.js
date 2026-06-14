@@ -652,6 +652,19 @@ class Editor {
     const maxId = Math.max(...this.map.data[this.map.aid].map(obj => obj.id));
     Mesh.setInstanceCount(maxId)
 
+    /*
+    console.log('---')
+    console.log(this.map.data[this.map.aid][2838].id)
+    console.log(this.map.data[this.map.aid][2838].name)
+    console.log(this.map.data[this.map.aid][2838].parent_id)
+    console.log('---')
+    this.map.data[this.map.aid][2838].parent_id = 8796
+    console.log('---u')
+    console.log(this.map.data[this.map.aid][2838].parent_id)
+    */
+    
+    
+
     // MAP STRUCTURE
     this.map.structure = this.deepCopy(response.structure)
 
@@ -5687,9 +5700,6 @@ class Editor {
 
         meshCopy.name += `-${newId}`
 
-
-        /// !!!!!!!!!!!!!!!!!!!!!!!! HIBA
-
         let newTris = []
         meshCopy.tris.forEach(tri => {
           const t = clone.deepCopy(tri)
@@ -6035,7 +6045,7 @@ class Editor {
       $(`select[name='mesh-pervious'] option[value='${selectedMesh.pervious ? 'true' : 'false'}']`).prop('selected', true)
 
       console.log('selectedMesh.active :', selectedMesh.active)
-    
+      // if (selectedMesh.active === 'undefined') selectedMesh.active = true;
       
       // active setting
       $(`select[name='mesh-active'] option[value='${selectedMesh.active ? 'true' : 'false'}']`).prop('selected', true)
@@ -6134,7 +6144,6 @@ class Editor {
   recursiveDrawMeshs(mesh, view, color, lineWidth) {
     let meshData = this.map.data[this.map.aid].find(mapMesh => mapMesh.id === mesh.id)
     if (meshData == null) return;
-    
     $(`.mesh-name[data-id=${mesh.id}]`).addClass("child-style")
     
     if (meshData.tris.length > 0 && Array.isArray(meshData.tris)) {

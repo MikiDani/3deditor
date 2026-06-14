@@ -73,6 +73,7 @@ export default class Game {
       add: 0.001,       // 0005
       max: 0.025,       // 15
       sub: 0.9,         // 95
+      rotateDeg: 3,
       cameraUp: {},
       playerRotationY: {}
     }
@@ -156,6 +157,9 @@ export default class Game {
   }
 
   async loop(timestamp = 0) {
+
+
+
     // FIRST LOAD OF MAP | MAPLOADED + ANIMATED START
     if (this.currentState == 'game' && !this.mapLoading) {
       // console.log('--- RELOAD MAP ---')
@@ -329,7 +333,7 @@ export default class Game {
                     <input id="file-input" type="text" class="w-50" name="filename" value="${this.filename}" data-ext="${this.ext}">
                   </div>
                   <div class="my-2 mt-3">
-                      <input type="checkbox" id="darkcontrast-button">
+                      <input type="checkbox" id="darkcontrast-button" checked>
                       <span class="text-black"> Minimum dark contrast</span>
                   </div>
                   <div class="my-2">

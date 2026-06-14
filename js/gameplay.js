@@ -4,6 +4,7 @@ import $ from 'jquery';
 export default class Gameplay {
   constructor(game) {
     this.game = game
+    this.openFxItems = []
   }
 
   async waitForGameInfo(text) {
@@ -28,10 +29,10 @@ export default class Gameplay {
     $(".delta-time-game").html(`${deltaTime.toFixed(0)} | tris: ${triCount}`)
 
     // GRAVITI RESPONE
-    if (this.game.player.position.y < -5) this.game.player.position.y = 7;  // !!
+    if (this.game.player.position.y < -5) this.game.player.position.y = 7  // !!
 
     // REFRESH SOUND POSITION
-    await this.game.input.updatePlayer()
+    await this.game.input.updatePlayer(deltaTime)
 
     this.game.sound.listener.position.copy(this.game.camera.position)
 
@@ -44,31 +45,31 @@ export default class Gameplay {
 
     await this.startActions(deltaTime)
 
+    this.updateOpenFx(deltaTime)
+
     // RENDER SCREEN
     await this.game.renderer.render(this.game.scene, this.game.camera)
 
     // START / FINISH GAME INFO TEXT
-    if (this.game.startGameInfoText || this.game.finishGameInfoText) {      
-      const textName = this.game.startGameInfoText ? 'start_text' : 'finish_text';
-      const text = this.game.config.textdata.find(item => item.id === textName)?.text      
+    if (this.game.startGameInfoText || this.game.finishGameInfoText) {
+      const textName = this.game.startGameInfoText ? 'start_text' : 'finish_text'
+      const text = this.game.config.textdata.find(item => item.id === textName)?.text
 
       await this.waitForGameInfo(text)
 
       // START NEW GAME PLAYER WAITING
       if (textName == 'start_text') {
         // !!! VÁRÁS KIKAPCSOLVA
-        /*
         this.game.move.active = false
         setTimeout(() => {
           this.game.move.active = true
         }, 6000)
-        */
       }
     }
 
     // RENDER HEAND
-    let selectedHeand = this.game.loadedHeands[this.game.playerMouse.selectedHeand]    
-    if (!selectedHeand) return;
+    let selectedHeand = this.game.loadedHeands[this.game.playerMouse.selectedHeand]
+    if (!selectedHeand) return
 
     this.game.renderer.autoClear = false
     this.game.renderer.clearDepth()
@@ -120,7 +121,7 @@ export default class Gameplay {
     })
     lightsToRemove.forEach(light => this.game.heandScene.remove(light))    
 
-    // új fények hozzáadása
+   // Új fények hozzáadása
     this.game.loadedLights.map(element => {
       const light = element[1]
       const newLight = new THREE.PointLight(
@@ -178,7 +179,7 @@ export default class Gameplay {
       const beingConfig = this.game.config.beingoptions[beingGroup.filename]
 
       // IF HIT ENEMY BEING
-      if (beingModell.type = 'enemy' && beingGroup.damageState && beingGroup.waitDamage == null && beingGroup.energy != 1000) {
+      if (beingModell.type == 'enemy' && beingGroup.damageState && beingGroup.waitDamage == null && beingGroup.energy != 1000) {
         beingGroup.damageState = null
         beingGroup.waitDamage = true
 
@@ -661,6 +662,7 @@ export default class Gameplay {
   }
 
   rotateAndMove(beingGroup, options) {
+    /*******
     if (options == null) options = {}
     options.rotateOn ??= true
     options.moveOn ??= true
@@ -668,6 +670,27 @@ export default class Gameplay {
     options.backMove ??= 0.8
     options.backAttack ??= 0.6
     options.beingDistance ??= 0.4
+    */
+
+    if (options == null) options = {}
+
+    const ratio = Number(beingGroup.ratio ?? 1)
+
+    options.rotateOn ??= true
+    options.moveOn ??= true
+    options.moveOnY ??= true
+
+    //!!!
+    /*
+    const backMove = (options.backMove ?? 0.8) * (ratio * 5)
+    const backAttack = (options.backAttack ?? 0.6) * (ratio * 5)
+    const beingDistance = (options.beingDistance ?? 0.4) * (ratio * 5)
+    */
+    
+    const backMove = (options.backMove ?? 0.8)
+    const backAttack = (options.backAttack ?? 0.6)
+    const beingDistance = (options.beingDistance ?? 0.4)
+    
 
     // console.log('energy: ', beingGroup.energy)
     // console.log('damage: ', beingGroup.damage)
@@ -746,7 +769,7 @@ export default class Gameplay {
 
     if (targetMode == 'player') {
       // BACK TYPE TO MOVE
-      if (beingGroup.animState.type == 'ATTACK' && distanceToTarget >= options.backMove) { //(i) options
+      if (beingGroup.animState.type == 'ATTACK' && distanceToTarget >= backMove) { //(i) options
         beingGroup.animState = {
           type: 'MOVE',
           card: 0,
@@ -756,7 +779,7 @@ export default class Gameplay {
       }
   
       // BACK TYPE TO ATTACK
-      if (beingGroup.animState.type == 'MOVE' && distanceToTarget <= options.backAttack) { //(i) options
+      if (beingGroup.animState.type == 'MOVE' && distanceToTarget <= backAttack) { //(i) options
         beingGroup.animState = {
           type: 'ATTACK',
           card: 0,
@@ -771,7 +794,7 @@ export default class Gameplay {
       const moveDir = options.moveOnY ? dirFull : dirFlat
       const moveStep = moveDir.clone().multiplyScalar(beingGroup.speed / 1000)
 
-      if (targetMode == 'player' && distanceToTarget <= options.beingDistance) {
+      if (targetMode == 'player' && distanceToTarget <= beingDistance) {
         beingGroup.position.add(new THREE.Vector3(-moveStep.x, 0, -moveStep.z))
         return;
       }
@@ -984,7 +1007,7 @@ export default class Gameplay {
     }
   }
 
-  async startActions(deltaTime) {    
+  async startActions_old(deltaTime) {    
     this.game.map.actionelements.forEach(action => {      
       // ALL AUTO ACTIONS
       if (action[1].conditions.click == 'auto') {
@@ -1016,7 +1039,27 @@ export default class Gameplay {
     });
   }
 
+  async startActions(deltaTime) {
+    const cameraPos = new THREE.Vector3()
+    this.game.camera.getWorldPosition(cameraPos)
+
+    this.game.map.actionelements.forEach(action => {
+      if (action[1].conditions.click != 'auto') return
+
+      const meshGroup = action[0]
+      if (!meshGroup) return
+
+      const box = new THREE.Box3().setFromObject(meshGroup)
+      if (box.isEmpty()) return
+
+      const distance = box.distanceToPoint(cameraPos)
+
+      this.checkActions(deltaTime, 'noclick', action, distance)
+    })
+  }
+
   async checkActions(deltaTime, type, actions, distance) {
+    if (actions[1].protectedDone) return; // REMAINING
     // MAKE USEDOBJECTS ARRAY
     if (typeof actions[1].conditions.usedobjects === 'undefined') actions[1].conditions.usedobjects = []
 
@@ -1164,13 +1207,23 @@ export default class Gameplay {
               this.game.playerObjects.push(parseInt(addObjectId))
               this.game.inventory.inventoryMenu.reloadInventory = true
             }
-            // REMOVE THREE OBJECT
-            actions[0].visible = false
-            let mapData = this.game.map.data.find(data => data.name == actions[0].name)
-            if (mapData) {
-              mapData.pickuped = true
+
+
+            console.log(this.game.config.protectedPickupMash)
+
+            const protectedPickupMesh = this.game.config.protectedPickupMash ?? []
+            console.log(protectedPickupMesh)
+
+            const skipDelete = actions[1].conditions.issetobjects.some(id => protectedPickupMesh.includes(id))
+            if (!skipDelete) {
+              // REMOVE THREE OBJECT
+              actions[0].visible = false
+              let mapData = this.game.map.data.find(data => data.name == actions[0].name)
+              if (mapData) mapData.pickuped = true;
+              this.game.removeObjectOfMap(this.game.scene, actions[0])
+            } else {
+              actions[1].protectedDone = true
             }
-            this.game.removeObjectOfMap(this.game.scene, actions[0])
           }
 
           // MOVE FX
@@ -1426,7 +1479,7 @@ export default class Gameplay {
             min: 0,
             max: 90,
             value: 0,
-            waiting: 10,
+            waiting: 20,
             valueAdd: null,
             addedStep: 0.025,
             addedValue: null,
@@ -1450,7 +1503,7 @@ export default class Gameplay {
             min: 0,
             max: 64,
             value: 0,
-            waiting: 10,
+            waiting: 20,
             valueAdd: null,
             addedStep: 0.025,
             addedValue: null,
@@ -1474,7 +1527,7 @@ export default class Gameplay {
             min: 0,
             max: 64,
             value: 0,
-            waiting: 10,
+            waiting: 20,
             valueAdd: null,
             addedStep: -0.025,
             addedValue: null,
@@ -1497,7 +1550,7 @@ export default class Gameplay {
             min: 0,
             max: 64,
             value: 0,
-            waiting: 10,
+            waiting: 20,
             valueAdd: null,
             addedStep: -0.025,
             addedValue: null,
@@ -1520,7 +1573,7 @@ export default class Gameplay {
             min: 0,
             max: 64,
             value: 0,
-            waiting: 10,
+            waiting: 20,
             valueAdd: null,
             addedStep: 0.025,
             addedValue: null,
@@ -1543,7 +1596,7 @@ export default class Gameplay {
             min: 0,
             max: 64,
             value: 0,
-            waiting: 10,
+            waiting: 20,
             valueAdd: null,
             addedStep: 0.025,
             addedValue: null,
@@ -1566,7 +1619,7 @@ export default class Gameplay {
             min: 0,
             max: 64,
             value: 0,
-            waiting: 10,
+            waiting: 20,
             valueAdd: null,
             addedStep: 0.025,
             addedValue: null,
@@ -1589,7 +1642,7 @@ export default class Gameplay {
             min: 0,
             max: 64,
             value: 0,
-            waiting: 10,
+            waiting: 20,
             valueAdd: null,
             addedStep: -0.025,
             addedValue: null,
@@ -1603,7 +1656,7 @@ export default class Gameplay {
       break
 
       case 8:
-        // Open-9 (wc-board) x: y: z:
+        // Open-9 Z (wc-board) x:max y:max z:min
         if (!data[eventId]) {
           data[eventId] = {
             meshId: mesh.objId,
@@ -1612,7 +1665,7 @@ export default class Gameplay {
             min: 0,
             max: 64,
             value: 0,
-            waiting: 10,
+            waiting: 20,
             valueAdd: null,
             addedStep: 0.025,
             addedValue: null,
@@ -1625,6 +1678,29 @@ export default class Gameplay {
         // ONLY OPEN
         if (data[eventId].state == true) return;
 
+        this.openFx(deltaTime, data[eventId], mesh)
+      break
+
+      case 9:
+        // Open-4/2 (doorB) PULL 90 deg x:max y:max z:min
+        if (!data[eventId]) {
+          data[eventId] = {
+            meshId: mesh.objId,
+            meshName: mesh.name,
+            state: false,
+            min: 0,
+            max: 64,
+            value: 0,
+            waiting: 20,
+            valueAdd: null,
+            addedStep: 0.025,
+            addedValue: null,
+            offsetTypeX: 'max',
+            offsetTypeY: 'max',
+            offsetTypeZ: 'min',
+            axis: 'y',
+          }
+        }
         this.openFx(deltaTime, data[eventId], mesh)
       break
 
@@ -1658,13 +1734,18 @@ export default class Gameplay {
         this.game.removeBoundingBoxOfMap(mesh)
       break
 
+       case 14:
+        // SWITCH FIREPLACE
+        this.textureOnOff(mesh, data, eventId, 'fireplace-anim', 'fireplace-anim-2')
+      break
+
       case 20:
         // RADIO ON / OFF
         if (!mesh.radioSwitch) mesh.radioSwitch = data.state;
 
         if (mesh.radioSwitch == "off") {
           // OFF->ON
-          this.game.sound.play(17 /* UFO */, { volume: 0.5 }, true, mesh).then(phantom => {
+          this.game.sound.play(25 /* Radio */, { volume: 0.5 }, true, mesh).then(phantom => {
             if (!phantom) return; // console.log(phantom)
 
             mesh.playSound = phantom;
@@ -1685,6 +1766,44 @@ export default class Gameplay {
             mesh.playSound = null;
           }
           mesh.radioSwitch = "off";
+        }
+      break
+
+      case 21:
+        // RADIO PAUSE / RESUME
+        if (!mesh.radioSwitch) mesh.radioSwitch = data.state ?? "off"
+
+        if (mesh.radioSwitch == "off") {
+          // OFF->ON / RESUME
+          if (mesh.playSound) {
+            const phantom = mesh.playSound
+            const audio = phantom.audio || phantom.children?.[0]
+
+            if (audio && !audio.isPlaying) audio.play(0.05)
+
+            mesh.radioSwitch = "on"
+          } else {
+            this.game.sound.play(25 /* Radio */, { volume: 0.5, loop: true }, true, mesh).then(phantom => {
+              if (!phantom) return
+
+              const audio = phantom.children[0]
+
+              mesh.playSound = phantom
+              mesh.playSound.audio = audio
+              mesh.radioSwitch = "on"
+            }).catch(err => console.warn("Sound play error:", err))
+          }
+
+        } else if (mesh.radioSwitch == "on") {
+          // ON->OFF / PAUSE
+          if (mesh.playSound) {
+            const phantom = mesh.playSound
+            const audio = phantom.audio || phantom.children?.[0]
+
+            if (audio && audio.isPlaying) audio.pause()
+          }
+
+          mesh.radioSwitch = "off"
         }
       break
 
@@ -1829,8 +1948,8 @@ export default class Gameplay {
           }
 
           if (data[eventId].state) {  
-            this.game.sound.play(22 /* magic2 */, { volume: 0.5, loop: false })
-            this.game.sound.play(107 /* talisman-ghost-getout */, { volume: 0.5, loop: false })
+            this.game.sound.play(22 /* magic2 */, { volume: 0.6, loop: false })
+            this.game.sound.play(107 /* talisman-ghost-getout */, { volume: 0.3, loop: false })
 
             being.active = true
             being.visible = true
@@ -1838,13 +1957,10 @@ export default class Gameplay {
 
             const light60 = this.game.loadedLights[60]?.[1]
             if (light60) {
-              /*
-              const beingWorldPos = new THREE.Vector3()
-              being.getWorldPosition(beingWorldPos)
-              light60.position.copy(beingWorldPos)
-              */
-
               light60.visible = true
+              light60.intensity = 0.7
+              light60.distance = 8
+              light60.decay = 2
             }
           }
 
@@ -1859,12 +1975,10 @@ export default class Gameplay {
 
             const light60 = this.game.loadedLights[60]?.[1]
             if (light60) {
-              /*
-              const beingWorldPos = new THREE.Vector3()
-              being.getWorldPosition(beingWorldPos)
-              light60.position.copy(beingWorldPos)
-              */
-              light60.visible = false
+              light60.visible = true
+              light60.intensity = 0
+              light60.distance = 0
+              light60.decay = 0
             }
           }, 200);
         } else {
@@ -1939,56 +2053,100 @@ export default class Gameplay {
     })
   }
 
-  openFx(deltaTime, data, mesh) {
-    if (!mesh.container) this.refreshOpenFxState(deltaTime, data, mesh);
+  stepOpenFx(data, mesh) {
+    const nextValue = Math.max(data.min, Math.min(data.max, data.value + data.valueAdd))
+    const nextRotation = data.addedStep * nextValue
+    const oldRotation = mesh.container.rotation[data.axis]
 
-    if (!data?.timeInterval) {
-      data.addedValue = data.state ? -data.addedStep : data.addedStep; // ÉRTÉKE
-      data.valueAdd = data.state ? -1 : 1; // COUNT-JA
+    mesh.container.rotation[data.axis] = nextRotation
+    mesh.container.updateMatrixWorld(true)
 
-      data.timeInterval = setInterval(() => {
-        // TEST NEXT MOVE
-        const now = performance.now()
-        if (mesh.lastUpdate === undefined) mesh.lastUpdate = now - (data.waiting * 2);
+    const testBox = new THREE.Box3().setFromObject(mesh.container)
+    const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
 
-        if (now - mesh.lastUpdate >= data.waiting) {
-          mesh.lastUpdate = now
-          const tempRotation = mesh.container.rotation[data.axis] + data.addedValue
-          const clone = mesh.container.clone(true)
-          clone.rotation[data.axis] = tempRotation
-          const testBox = new THREE.Box3().setFromObject(clone)
-          const playerBox = new THREE.Box3().setFromCenterAndSize(this.game.player.position.clone(), this.game.playerBoundingBox)
-          if (testBox.intersectsBox(playerBox)) return;
+    if (testBox.intersectsBox(playerBox)) {
+      mesh.container.rotation[data.axis] = oldRotation
+      mesh.container.updateMatrixWorld(true)
+      return false;
+    }
 
-          // MOVE AND REFRESH
-          mesh.container.rotation[data.axis] = tempRotation
-          mesh.container.updateMatrixWorld(true)
+    data.value = nextValue
 
-          data.value += data.valueAdd
+    this.game.refreshBoundingBoxOfMapContainer(mesh)
 
-          // BOUNDING BOX REFRESH
-          this.game.refreshBoundingBoxOfMapContainer(mesh)
-
-          // CLAMP VALUE
-          data.value = Math.max(data.min, Math.min(data.max, data.value))
-
-          if (data.value >= data.max || data.value <= data.min) {
-            // console.log('STOP!');
-            data.state = !data.state
-            clearInterval(data.timeInterval);
-            data.timeInterval = null;
-          }
-        }
-      }, 20);
-    } else {
-      // IF NEW CLICK - INVERT WAY
+    if (data.value >= data.max || data.value <= data.min) {
       data.state = !data.state
-      data.addedValue = data.state ? -data.addedStep : data.addedStep;
-      data.valueAdd = data.state ? -1 : 1;
+      data.openFxMoving = false
+      data.openFxElapsed = 0
+      data.addedValue = null
+      data.valueAdd = null
+      return true;
+    }
+
+    return false;
+  }
+
+  updateOpenFx(deltaTime) {
+    if (!this.openFxItems.length) return
+
+    for (let i = this.openFxItems.length - 1; i >= 0; i--) {
+      const item = this.openFxItems[i]
+      const data = item?.data
+      const mesh = item?.mesh
+
+      if (!data?.openFxMoving || !mesh?.container || !mesh.container.parent) {
+        this.openFxItems.splice(i, 1)
+        continue
+      }
+
+      const waiting = Math.max(1, Number(data.waiting) || 1)
+      data.openFxElapsed = (data.openFxElapsed ?? 0) + deltaTime
+
+      if (data.openFxElapsed < waiting) continue
+
+      const stepCount = Math.floor(data.openFxElapsed / waiting)
+      data.openFxElapsed = data.openFxElapsed % waiting
+
+      for (let step = 0; step < stepCount; step++) {
+        const stopped = this.stepOpenFx(data, mesh)
+
+        if (stopped || !data.openFxMoving) {
+          this.openFxItems.splice(i, 1)
+          break
+        }
+      }
     }
   }
 
+  addOpenFxItem(data, mesh) {
+    const found = this.openFxItems.some(item => item.data === data)
+    if (!found) this.openFxItems.push({ data, mesh })
+  }
+
+  openFx(deltaTime, data, mesh) {
+    if (!mesh.container) this.refreshOpenFxState(deltaTime, data, mesh)
+
+    data.value = data.value ?? data.min ?? 0
+
+    if (data.openFxMoving) data.state = !data.state
+
+    data.addedValue = data.state ? -data.addedStep : data.addedStep
+    data.valueAdd = data.state ? -1 : 1
+    data.openFxMoving = true
+    data.openFxElapsed = data.openFxElapsed ?? 0
+
+    this.addOpenFxItem(data, mesh)
+  }
+
   refreshOpenFxState(deltaTime, data, mesh) {
+
+    if (deltaTime == null) {
+      data.openFxMoving = false
+      data.openFxElapsed = 0
+      data.valueAdd = null
+      data.addedValue = null
+    }
+
     if (!mesh.containerOffset) {
       this.game.removeBoundingBoxOfMap(mesh)
 
@@ -2002,10 +2160,8 @@ export default class Gameplay {
       container.position.copy(mesh.containerOffset)
       mesh.container = container
 
-      // OPEN DOOR
-      if (data.state == true) {
-        container.rotation[data.axis] = data.addedValue * data.value
-      }
+      data.value = data.value ?? data.min ?? 0
+      container.rotation[data.axis] = data.addedStep * data.value
 
       container.add(mesh)
       this.game.scene.add(container)
@@ -2021,6 +2177,7 @@ export default class Gameplay {
         this.game.scene.add(helper)
       }
     }
+
     return mesh
   }
 }

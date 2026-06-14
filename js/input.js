@@ -247,7 +247,7 @@ export default class Input {
     });
   }
 
-  checkLookingInterval() {
+  checkLookingInterval_old() {
     this.chechLookInterval = setInterval(() => {
       const now = Date.now()
       if (now - this.mouseMoveTimer > 200) { 
@@ -329,6 +329,71 @@ export default class Input {
         }
       }
     }, 25);
+  }
+
+  checkLookingInterval() {
+    this.chechLookInterval = setInterval(() => {
+      const now = Date.now()
+
+      if (now - this.mouseMoveTimer > 200) {
+        if (document.pointerLockElement === null && this.game.currentState == 'game') {
+          this.mouseMoveTimer = Date.now()
+
+          const mouse = new THREE.Vector2()
+          mouse.x = (this.eventMouse.x / window.innerWidth) * 2 - 1
+          mouse.y = -(this.eventMouse.y / window.innerHeight) * 2 + 1
+
+          const raycaster = new THREE.Raycaster()
+          raycaster.setFromCamera(mouse, this.game.camera)
+
+          //-- 1. CHECK FISRT HIT MESH
+          let sceneIntersects = raycaster.intersectObjects(Object.values(this.game.loadedMeshs), true)
+          let firstSolidIntersect = sceneIntersects.find(hit => !hit.object.parent?.pervious)
+
+          let findLook = false
+          let findUse = false
+
+          if (firstSolidIntersect) {
+            const meshGroup = firstSolidIntersect.object.parent
+
+            if (meshGroup?.visible) {
+              const cameraPos = new THREE.Vector3()
+              this.game.camera.getWorldPosition(cameraPos)
+
+              const distance = cameraPos.distanceTo(firstSolidIntersect.point)
+
+              const found = this.game.map.actionelements.find(pair => pair[0] === meshGroup)
+
+              if (found) {
+                if (this.game.playerMouse.mode == 'look') {
+                  if (meshGroup.text) {
+                    if (distance < found[1].conditions.distance_far) {
+                      findLook = true
+                    }
+                  }
+                } else if (this.game.playerMouse.mode == 'use') {
+                  if (found[1].name != 'TEXT') {
+                    if (distance < found[1].conditions.distance_far) {
+                      findUse = true
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          this.removeAllCursorClass()
+
+          if (this.game.playerMouse.mode == 'look') {
+            findLook ? $("html").addClass('cursor-look-on') : $("html").addClass('cursor-look-off')
+          } else if (this.game.playerMouse.mode == 'use') {
+            findUse
+            ? this.game.playerMouse.selectedObject ? $("html").addClass('cursor-get-on') : $("html").addClass('cursor-use-on')
+            : this.game.playerMouse.selectedObject ? $("html").addClass('cursor-get-off') : $("html").addClass('cursor-use-off')
+          }
+        }
+      }
+    }, 100)
   }
 
   checkMousePositionOptions(event) {
@@ -524,7 +589,7 @@ export default class Input {
 
       if (e.key == 'h') {
         // CHET
-        this.game.playerObjects.push(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)
+        this.game.playerObjects.push(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22)
         this.game.inventory.update()
 
         this.game.playerMouse.knife = true
@@ -994,7 +1059,9 @@ export default class Input {
   }
 
   setupCameraControls() {
-    this.game.rotateSpeed = THREE.MathUtils.degToRad(5)
+    console.log(this.game.move.rotateDeg)
+    
+    this.game.rotateSpeed = THREE.MathUtils.degToRad(this.game.move.rotateDeg)
     this.game.keysPressed = new Set()
 
     this.game.isGrounded = false
@@ -1063,7 +1130,7 @@ export default class Input {
       const pitchLimit = THREE.MathUtils.degToRad(this.game.playerMouse.mouseMaxPitch)
   
       if (e.deltaY > 0) {
-        this.game.pitchObject.rotation.x -= this.game.rotateSpeed
+        this.game.pitchObject.rotation.x -= this.game.rotateSpeed 
       } else {
         this.game.pitchObject.rotation.x += this.game.rotateSpeed
       }
@@ -1218,7 +1285,9 @@ export default class Input {
     })
   }
 
-  updatePlayer() {
+  updatePlayer(deltaTime = 16.6667) {
+    const deltaRatio = Math.min(deltaTime / 16.6667, 3)
+
     const shift = this.game.keysPressed.has('shift')
     let moved = false;
 
@@ -1226,36 +1295,36 @@ export default class Input {
 
     if (this.game.keysPressed.has('w') || this.game.keysPressed.has('W') || this.game.keysPressed.has('arrowup')) {
 
-      this.speedController(true, 'w')
+      this.speedController(true, 'w', deltaRatio)
       this.game.move.playerRotationY = this.game.player.rotation.y
 
       if (shift) {
         if (!moved) {
           moved = this.game.ghostMode
-          ? this.testMove(new THREE.Vector3(0, this.game.move.speed, 0)) // UP
-          : this.testMove(direction.clone().multiplyScalar(this.game.move.speed * 1.6), true);
+          ? this.testMove(new THREE.Vector3(0, this.game.move.speed * deltaRatio, 0))
+          : this.testMove(direction.clone().multiplyScalar(this.game.move.speed * 1.6 * deltaRatio), true)
         }
       } else {
         if (!moved) {
-          moved = this.testMove(direction.clone().multiplyScalar(this.game.move.speed), true)
+          moved = this.testMove(direction.clone().multiplyScalar(this.game.move.speed * deltaRatio), true)
         }
       }
     }
 
     if (this.game.keysPressed.has('s') || this.game.keysPressed.has('S') || this.game.keysPressed.has('arrowdown')) {
 
-      this.speedController(true, 's')
+      this.speedController(true, 's', deltaRatio)
       this.game.move.playerRotationY = this.game.player.rotation.y
 
       if (shift) {
         if (!moved) {
           moved = this.game.ghostMode
-          ? this.testMove(new THREE.Vector3(0, -this.game.move.speed, 0)) // DOWN
-          : this.testMove(direction.clone().multiplyScalar(-this.game.move.speed * 1.6));
+          ? this.testMove(new THREE.Vector3(0, -this.game.move.speed * deltaRatio, 0))
+          : this.testMove(direction.clone().multiplyScalar(-this.game.move.speed * 1.6 * deltaRatio))
         }
       } else {
         if (!moved) {
-          moved = this.testMove(direction.clone().multiplyScalar(-this.game.move.speed))
+          moved = this.testMove(direction.clone().multiplyScalar(-this.game.move.speed * deltaRatio))
         }
       }
     }
@@ -1263,14 +1332,15 @@ export default class Input {
     if (this.game.keysPressed.has('a') || this.game.keysPressed.has('A') || this.game.keysPressed.has('arrowleft')) {
       if (shift || this.game.isPointerLocked) {
 
-        this.speedController(true, 'a')
+        this.speedController(true, 'a', deltaRatio)
         this.game.move.playerRotationY = this.game.player.rotation.y
         this.game.move.cameraUp = this.game.camera.up
 
-        const left = new THREE.Vector3().crossVectors(this.game.camera.up, direction).normalize().multiplyScalar(this.game.move.speed)
-        moved ||= this.testMove(left);
+        const left = new THREE.Vector3().crossVectors(this.game.camera.up, direction).normalize().multiplyScalar(this.game.move.speed * deltaRatio)
+        moved ||= this.testMove(left)
+
       } else {
-        this.game.player.rotation.y += this.game.rotateSpeed
+        this.game.player.rotation.y += this.game.rotateSpeed * deltaRatio
         moved = true
       }
     }
@@ -1278,30 +1348,31 @@ export default class Input {
     if (this.game.keysPressed.has('d') || this.game.keysPressed.has('D') || this.game.keysPressed.has('arrowright')) {
       if (shift || this.game.isPointerLocked) {
 
-        this.speedController(true, 'd')
+        this.speedController(true, 'd', deltaRatio)
         this.game.move.playerRotationY = this.game.player.rotation.y
         this.game.move.cameraUp = this.game.camera.up
 
-        const right = new THREE.Vector3().crossVectors(direction, this.game.camera.up).normalize().multiplyScalar(this.game.move.speed)
+        const right = new THREE.Vector3().crossVectors(direction, this.game.camera.up).normalize().multiplyScalar(this.game.move.speed * deltaRatio)
         moved ||= this.testMove(right)
+
       } else {
-        this.game.player.rotation.y -= this.game.rotateSpeed
+        this.game.player.rotation.y -= this.game.rotateSpeed * deltaRatio
         moved = true
       }
     }
 
-    if (!this.game.move.push && this.game.move.speed > 0) this.speedController(false);
+    if (!this.game.move.push && this.game.move.speed > 0) this.speedController(false, null, deltaRatio)
     this.game.move.push = false
 
     const pitchLimit = THREE.MathUtils.degToRad(80)
 
     if (this.game.keysPressed.has('pagedown')) {
-      this.game.pitchObject.rotation.x -= this.game.rotateSpeed;
+      this.game.pitchObject.rotation.x -= this.game.rotateSpeed * deltaRatio;
       this.game.pitchObject.rotation.x = Math.max(-pitchLimit, Math.min(pitchLimit, this.game.pitchObject.rotation.x))
     }
 
     if (this.game.keysPressed.has('pageup')) {
-      this.game.pitchObject.rotation.x += this.game.rotateSpeed;
+      this.game.pitchObject.rotation.x += this.game.rotateSpeed * deltaRatio;
       this.game.pitchObject.rotation.x = Math.max(-pitchLimit, Math.min(pitchLimit, this.game.pitchObject.rotation.x))
     }
 
@@ -1340,7 +1411,7 @@ export default class Input {
     // ----- GRAVITY -----
     if (!this.game.jumpState.isJumping) {
       const gravityOffset = (this.game.gravity)
-        ? new THREE.Vector3(0, this.game.currentGravity, 0)
+        ? new THREE.Vector3(0, this.game.currentGravity * deltaRatio, 0)
         : new THREE.Vector3(0, 0, 0)
 
       const testPos = this.game.player.position.clone().add(gravityOffset)
@@ -1357,14 +1428,15 @@ export default class Input {
     return moved;
   }
 
-  speedController(push, key) {
+  old_speedController(deltaRatio = 1, push, key) {
     if (push) {
       this.game.move.push = true
       this.game.move.key = key
 
-      if (this.game.move.speed < this.game.move.max) this.game.move.speed += this.game.move.add; //(i)
-    } else {      
-      this.game.move.speed *= this.game.move.sub //(i)
+      if (this.game.move.speed < this.game.move.max) this.game.move.speed += this.game.move.add * deltaRatio;
+    } else {
+      this.game.move.speed *= this.game.move.sub ** deltaRatio // / ** hatványozás
+
       if (this.game.move.speed < 0.001) {
         this.game.move.speed = 0
         this.game.move.key = ''
@@ -1382,6 +1454,46 @@ export default class Input {
           break
           case 'd':
             this.testMove(new THREE.Vector3().crossVectors(direction, this.game.move.cameraUp).normalize().multiplyScalar(this.game.move.speed))
+          break
+        }
+      }
+    }
+  }
+
+  speedController(push, key = null, deltaRatio = 1) {
+    if (push) {
+      this.game.move.push = true
+      this.game.move.key = key
+
+      if (this.game.move.speed < this.game.move.max) {
+        this.game.move.speed += this.game.move.add * deltaRatio
+        this.game.move.speed = Math.min(this.game.move.speed, this.game.move.max)
+      }
+    } else {
+      this.game.move.speed *= this.game.move.sub ** deltaRatio
+
+      if (this.game.move.speed < 0.001) {
+        this.game.move.speed = 0
+        this.game.move.key = ''
+      } else {
+        const direction = new THREE.Vector3(-Math.sin(this.game.move.playerRotationY), 0, -Math.cos(this.game.move.playerRotationY)).normalize()
+        const moveSize = this.game.move.speed * deltaRatio
+
+        switch(this.game.move.key) {
+          case 'w':
+            this.testMove(direction.clone().multiplyScalar(moveSize), true)
+          break
+
+          case 's':
+            this.testMove(direction.clone().multiplyScalar(-moveSize))
+          break
+
+          case 'a':
+            this.testMove(new THREE.Vector3().crossVectors(this.game.move.cameraUp, direction).normalize().multiplyScalar(moveSize))
+          break
+
+          case 'd':
+            this.testMove(new THREE.Vector3().crossVectors(direction, this.game.move.cameraUp).normalize().multiplyScalar(moveSize))
           break
         }
       }
