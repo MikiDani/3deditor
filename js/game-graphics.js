@@ -28,7 +28,7 @@ export default class Graphics {
     // console.log(this.checkGPU())
     if (this.checkGPU()) {
       // HIGH
-      this.game.targetFPS = 80
+      this.game.targetFPS = 60
       this.game.renderInterval = 1000 / this.game.targetFPS
 
       // this.scX = window.innerWidth / 1; this.scY = window.innerHeight / 1

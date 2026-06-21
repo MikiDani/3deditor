@@ -7,6 +7,7 @@
       "fYaw": 0,
       "fXaw": 0,
       "energy": 30,
+      "oil": 100,
       "hitdelay": 1000,
       "nowtime": 0
     },
@@ -833,7 +834,9 @@
       "boundingBoxRatio": 0.3,
       "attackSounds": [100,101,102],
       "damageSounds": [100,101,102],
-      "dieSounds": [103]
+      "dieSounds": [103],
+      "knifeRange": 1.1,
+      "knifeAim": 0.35
     },
     "bat-bnimationpoints-demo": {
       "type": "enemy",
@@ -847,6 +850,8 @@
       "attackSounds": [100,101,102],
       "damageSounds": [100,101,102],
       "dieSounds": [103],
+      "knifeRange": 1.1,
+      "knifeAim": 0.35,
       "animationpoints": {
         "fly_home": {
           "0": {
@@ -921,6 +926,8 @@
       "attackSounds": [100,101,102],
       "damageSounds": [100,101,102],
       "dieSounds": [103],
+      "knifeRange": 0,
+      "knifeAim": 0,
       "animationpoints": {
         "go_room": {
           "0": {
@@ -959,7 +966,9 @@
       "boundingBoxRatio": 0.6,
       "attackSounds": [100,101,102],
       "damageSounds": [100,101,102],
-      "dieSounds": [103]
+      "dieSounds": [103],
+      "knifeRange": 1.1,
+      "knifeAim": 0.35
     },
     "spider-1": {
       "type": "enemy",
@@ -972,7 +981,39 @@
       "boundingBoxRatio": 0.2,
       "attackSounds": [100,101,102],
       "damageSounds": [100,101,102],
-      "dieSounds": [103]
+      "dieSounds": [103],
+      "knifeRange": 1.1,
+      "knifeAim": 0.35
+    },
+    "SPIDER-KITCHEN-1": {
+      "type": "enemy",
+      "backMove": 0.45,
+      "backAttack": 0.4,
+      "beingDistance": 0.3,
+      "rotateOn": true,
+      "moveOn": true,
+      "moveOnY": false,
+      "boundingBoxRatio": 0.2,
+      "attackSounds": [100,101,102],
+      "damageSounds": [100,101,102],
+      "dieSounds": [103],
+      "knifeRange": 0.4,
+      "knifeAim": 0.8
+    },
+    "SPIDER-CELLAR-1": {
+      "type": "enemy",
+      "backMove": 1,
+      "backAttack": 0.85,
+      "beingDistance": 0.75,
+      "rotateOn": true,
+      "moveOn": true,
+      "moveOnY": false,
+      "boundingBoxRatio": 0.2,
+      "attackSounds": [100,101,102],
+      "damageSounds": [100,101,102],
+      "dieSounds": [103],
+      "knifeRange": 1.1,
+      "knifeAim": 0.35
     }
   },
   "protectedPickupMash": [21]

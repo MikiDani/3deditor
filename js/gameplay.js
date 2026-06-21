@@ -5,6 +5,11 @@ export default class Gameplay {
   constructor(game) {
     this.game = game
     this.openFxItems = []
+
+    this.oilUseTimer = 0
+    this.oilUseDelay = 300
+
+    this.heandLightClones = []
   }
 
   async waitForGameInfo(text) {
@@ -37,7 +42,7 @@ export default class Gameplay {
     this.game.sound.listener.position.copy(this.game.camera.position)
 
     // LAMP CENTER
-    await this.autoMovePlayer()
+    await this.autoMovePlayer(deltaTime)
 
     await this.updateBeings(deltaTime)
 
@@ -74,17 +79,58 @@ export default class Gameplay {
     this.game.renderer.autoClear = false
     this.game.renderer.clearDepth()
 
-    // remove previous heand object (DO NOT CLEAR SCENE)
-    const old = this.game.heandScene.children.find(o => o.isGroup)
-    if (old) this.game.heandScene.remove(old)
+    if (selectedHeand.parent !== this.game.heandScene) {
+      this.game.heandScene.add(selectedHeand)
+    }
 
-    this.game.heandScene.add(selectedHeand)
     this.game.renderer.render(this.game.heandScene, this.game.camera)
 
     this.game.renderer.autoClear = true
+
+    // USE OIL
+    if (this.game.playerMouse.selectedHeand == 1) {
+      if (this.game.map?.player?.oil <= 0) {
+        this.oilUseTimer = 0
+
+        $(document).trigger($.Event('keydown', {
+          key: '0',
+          which: 48,
+          keyCode: 48
+        }))
+
+        return
+      }
+
+      this.oilUseTimer += deltaTime
+
+      if (this.oilUseTimer >= this.oilUseDelay) {
+        const useCount = Math.floor(this.oilUseTimer / this.oilUseDelay)
+        this.oilUseTimer = this.oilUseTimer % this.oilUseDelay
+
+        for (let i = 0; i < useCount; i++) {
+          if (this.game.map.player.oil <= 0) break
+
+          this.game.oilModifyScreen(-0.3)
+
+          if (this.game.map.player.oil <= 0) {
+            this.oilUseTimer = 0
+
+            $(document).trigger($.Event('keydown', {
+              key: '0',
+              which: 48,
+              keyCode: 48
+            }))
+
+            break
+          }
+        }
+      }
+    } else {
+      this.oilUseTimer = 0
+    }
   }
 
-  async autoMovePlayer() {
+  async autoMovePlayer(deltaTime) {
     if (this.game.autoMovePlayerData.mode == null) return;
 
     switch (this.game.autoMovePlayerData.mode) {
@@ -113,15 +159,15 @@ export default class Gameplay {
     // console.log(this.game.autoMovePlayerData)
   }
 
-  async refreshHeandLights() {
-    // töröljük a korábbi fényeket
+  async refreshHeandLights() {    //!!! OLD !!!!
+    // delete old lights
     const lightsToRemove = []
     this.game.heandScene.traverse(obj => {
       if (obj.isLight) lightsToRemove.push(obj)
     })
     lightsToRemove.forEach(light => this.game.heandScene.remove(light))    
 
-   // Új fények hozzáadása
+   // add new lights
     this.game.loadedLights.map(element => {
       const light = element[1]
       const newLight = new THREE.PointLight(
@@ -135,6 +181,51 @@ export default class Gameplay {
       newLight.visible = light.visible
   
       this.game.heandScene.add(newLight)
+    })
+  }
+
+  syncHeandLights() {
+    if (!this.heandLightClones) this.heandLightClones = []
+
+    const liveIndexes = new Set()
+
+    this.game.loadedLights.forEach((element, index) => {
+      if (!element || !element[1]) return
+
+      liveIndexes.add(index)
+
+      const source = element[1]
+      let clone = this.heandLightClones[index]
+
+      if (!clone) {
+        clone = new THREE.PointLight(
+          source.color.clone ? source.color.clone() : source.color,
+          source.intensity,
+          source.distance,
+          source.decay
+        )
+
+        this.heandLightClones[index] = clone
+        this.game.heandScene.add(clone)
+      }
+
+      if (clone.color?.copy && source.color) clone.color.copy(source.color)
+
+      clone.intensity = source.intensity
+      clone.distance = source.distance
+      clone.decay = source.decay
+      clone.visible = source.visible
+      clone.position.copy(source.position)
+
+      if (source.quaternion) clone.quaternion.copy(source.quaternion)
+    })
+
+    this.heandLightClones.forEach((clone, index) => {
+      if (!clone) return
+      if (liveIndexes.has(index)) return
+
+      this.game.heandScene.remove(clone)
+      this.heandLightClones[index] = null
     })
   }
 
@@ -172,18 +263,36 @@ export default class Gameplay {
 
   async updateBeings(deltaTime) {    
     for (let [id, beingGroup] of Object.entries(this.game.loadedBeings)) {
-      if (!beingGroup || beingGroup.active == false) continue;
+      if (!beingGroup || beingGroup.active == false) continue
 
       const beingId = Number(id)
       const beingModell = this.game.beingsList[beingGroup.filename]
-      const beingConfig = this.game.config.beingoptions[beingGroup.filename]
+      const beingConfigInfo = this.game.getBeingOptionsInfo(beingGroup)
+      const beingConfig = beingConfigInfo.options
 
-      // IF HIT ENEMY BEING
-      if (beingModell.type == 'enemy' && beingGroup.damageState && beingGroup.waitDamage == null && beingGroup.energy != 1000) {
+      const isEnemy = beingConfig.type == 'enemy'
+
+      if (isEnemy && !beingGroup.beingOptionsDebugPrinted) {
+        console.log('--- ENEMY BEINGOPTIONS SELECTED ---')
+        console.log('beingId:', beingGroup.beingId)
+        console.log('being.name:', beingConfigInfo.nameKey)
+        console.log('being.filename:', beingConfigInfo.filenameKey)
+        console.log('selectedBy:', beingConfigInfo.selectedBy)
+        console.log('selectedName:', beingConfigInfo.selectedName)
+        console.log('hasNameConfig:', beingConfigInfo.hasNameConfig)
+        console.log('hasFilenameConfig:', beingConfigInfo.hasFilenameConfig)
+        console.log('finalOptions:', beingConfig)
+
+        beingGroup.beingOptionsDebugPrinted = true
+      }
+
+      const canTakeDamage = isEnemy && beingGroup.damageState === true && beingGroup.waitDamage == null
+
+      if (canTakeDamage) {
         beingGroup.damageState = null
         beingGroup.waitDamage = true
 
-        beingGroup.energy = beingGroup.energy - 1;
+        beingGroup.energy = beingGroup.energy - 1
         console.log('Energy: ', beingGroup.energy)
 
         if (beingGroup.energy > 0) {
@@ -280,7 +389,7 @@ export default class Gameplay {
       if (beingGroup.animState.type != 'DAMAGE' && beingGroup.animState.type != 'DIE') {
         // console.log(beingGroup.animState.type)
         
-        this.rotateAndMove(beingGroup, this.game.config.beingoptions[beingGroup.filename])
+        this.rotateAndMove(beingGroup, beingConfig)
       }
 
       // GRAVITY
@@ -291,11 +400,11 @@ export default class Gameplay {
 
       // BOUNDING BOX INIT
       if (!beingGroup.box) {
-        beingGroup.box = this.game.beingsList[beingGroup.filename].largestBoundingBox.clone()
+        beingGroup.box = beingGroup.largestBoundingBox.clone()
         this.game.boundingBoxes.push(beingGroup.box)
 
         // HELPER
-        if (false) {
+        if (true) { // being helper!
           beingGroup.helper = new THREE.Box3Helper(beingGroup.box, new THREE.Color('#ffff00'))
           this.game.scene.add(beingGroup.helper)
         }
@@ -305,7 +414,7 @@ export default class Gameplay {
       beingGroup.updateMatrixWorld(true)
 
       // BOX FRISSÍTÉS
-      beingGroup.box.copy(this.game.beingsList[beingGroup.filename].largestBoundingBox)
+      beingGroup.box.copy(beingGroup.largestBoundingBox)
       beingGroup.box.applyMatrix4(beingGroup.matrixWorld)
 
       // HELPER FRISSÍTÉS
@@ -538,7 +647,9 @@ export default class Gameplay {
             }
           }
   
-          this.refreshHeandLights()
+          // this.refreshHeandLights() //old
+
+          this.syncHeandLights()
   
           heandGroup.updateMatrixWorld(true)
           heandGroup.box.setFromObject(heandGroup)
@@ -662,16 +773,6 @@ export default class Gameplay {
   }
 
   rotateAndMove(beingGroup, options) {
-    /*******
-    if (options == null) options = {}
-    options.rotateOn ??= true
-    options.moveOn ??= true
-    options.moveOnY ??= true
-    options.backMove ??= 0.8
-    options.backAttack ??= 0.6
-    options.beingDistance ??= 0.4
-    */
-
     if (options == null) options = {}
 
     const ratio = Number(beingGroup.ratio ?? 1)
@@ -679,22 +780,11 @@ export default class Gameplay {
     options.rotateOn ??= true
     options.moveOn ??= true
     options.moveOnY ??= true
-
-    //!!!
-    /*
-    const backMove = (options.backMove ?? 0.8) * (ratio * 5)
-    const backAttack = (options.backAttack ?? 0.6) * (ratio * 5)
-    const beingDistance = (options.beingDistance ?? 0.4) * (ratio * 5)
-    */
     
     const backMove = (options.backMove ?? 0.8)
     const backAttack = (options.backAttack ?? 0.6)
     const beingDistance = (options.beingDistance ?? 0.4)
     
-
-    // console.log('energy: ', beingGroup.energy)
-    // console.log('damage: ', beingGroup.damage)
-
     // PLAYER CENTER (world)
     let finishPosition = new THREE.Vector3()
 
@@ -795,7 +885,7 @@ export default class Gameplay {
       const moveStep = moveDir.clone().multiplyScalar(beingGroup.speed / 1000)
 
       if (targetMode == 'player' && distanceToTarget <= beingDistance) {
-        beingGroup.position.add(new THREE.Vector3(-moveStep.x, 0, -moveStep.z))
+        // beingGroup.position.add(new THREE.Vector3(-moveStep.x, 0, -moveStep.z)) // BEING Eltolás
         return;
       }
 
@@ -951,7 +1041,52 @@ export default class Gameplay {
     return false;
   }
 
-  playerAttack() {
+  getKnifeAttackData() {
+    const attackDistance = 0.3
+    const attackSize = new THREE.Vector3(0.3, 0.3, 0.3)
+
+    const cameraPos = new THREE.Vector3()
+    this.game.camera.getWorldPosition(cameraPos)
+
+    const direction = new THREE.Vector3()
+    this.game.camera.getWorldDirection(direction)
+
+    const hitPoint = cameraPos.clone().add(direction.clone().multiplyScalar(attackDistance))
+    const attackBox = new THREE.Box3().setFromCenterAndSize(hitPoint, attackSize)
+
+    return { attackDistance, attackSize, cameraPos, direction, hitPoint, attackBox }
+  }
+
+  boxDistance(boxA, boxB) {
+    const dx = Math.max(0, Math.max(boxA.min.x - boxB.max.x, boxB.min.x - boxA.max.x))
+    const dy = Math.max(0, Math.max(boxA.min.y - boxB.max.y, boxB.min.y - boxA.max.y))
+    const dz = Math.max(0, Math.max(boxA.min.z - boxB.max.z, boxB.min.z - boxA.max.z))
+
+    return Math.sqrt(dx * dx + dy * dy + dz * dz)
+  }
+
+  makeDebugLine(name, color) {
+    const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()])
+    const material = new THREE.LineBasicMaterial({ color: color })
+    const line = new THREE.Line(geometry, material)
+
+    line.name = name
+    this.game.scene.add(line)
+
+    return line
+  }
+
+  updateDebugLine(line, a, b) {
+    const position = line.geometry.getAttribute('position')
+
+    position.setXYZ(0, a.x, a.y, a.z)
+    position.setXYZ(1, b.x, b.y, b.z)
+    position.needsUpdate = true
+
+    line.geometry.computeBoundingSphere()
+  }
+    
+  playerAttack_old() {
     const attackDistance = 0.5
 
     const cameraPos = new THREE.Vector3()
@@ -961,7 +1096,7 @@ export default class Gameplay {
     this.game.camera.getWorldDirection(direction)
 
     const hitPoint = cameraPos.clone().add(direction.multiplyScalar(attackDistance))
-  
+
     const attackBox = new THREE.Box3().setFromCenterAndSize(hitPoint, new THREE.Vector3(0.3, 0.3, 0.3))
 
     // FOUND HIT BEING
@@ -973,7 +1108,7 @@ export default class Gameplay {
       const beingBox = beingGroup.box
         ? beingGroup.box.clone()
         : new THREE.Box3().setFromObject(beingGroup)
-  
+
       if (attackBox.intersectsBox(beingBox)) {
         //const mapBeingData = this.game.map.beings.find(being => being.id == beingGroup.beingId)
 
@@ -982,6 +1117,78 @@ export default class Gameplay {
       }
     }
   }
+
+  playerAttack() {
+  const playerPos = new THREE.Vector3()
+  this.game.camera.getWorldPosition(playerPos)
+
+  const forward = new THREE.Vector3(
+    -Math.sin(this.game.player.rotation.y),
+    0,
+    -Math.cos(this.game.player.rotation.y)
+  ).normalize()
+
+  let bestHit = null
+
+  for (const [id, beingGroup] of Object.entries(this.game.loadedBeings)) {
+    if (!beingGroup || beingGroup.active == false || Number(beingGroup.energy) <= 0) continue
+
+    const beingConfig = this.game.getBeingOptions(beingGroup)
+    if (beingConfig.type != 'enemy') continue
+
+    const knifeRange = beingConfig.knifeRange ?? 1.1
+    const knifeAim = beingConfig.knifeAim ?? 0.35
+
+    beingGroup.updateMatrixWorld(true)
+
+    const beingBox = beingGroup.box ? beingGroup.box.clone() : new THREE.Box3().setFromObject(beingGroup)
+    const beingCenter = new THREE.Vector3()
+    beingBox.getCenter(beingCenter)
+
+    const toBeing = beingCenter.clone().sub(playerPos)
+    toBeing.y = 0
+
+    const distance = beingBox.distanceToPoint(playerPos)
+
+    if (toBeing.lengthSq() <= 0) continue
+
+    const directionToBeing = toBeing.normalize()
+    const aim = forward.dot(directionToBeing)
+
+    const hit = distance <= knifeRange && aim >= knifeAim
+
+    console.log('KNIFE CHECK', {
+      id,
+      name: beingGroup.name,
+      filename: beingGroup.filename,
+      knifeRange,
+      knifeAim,
+      distance,
+      aim,
+      hit
+    })
+
+    if (hit) {
+      if (!bestHit || distance < bestHit.distance) {
+        bestHit = { id, beingGroup, distance, aim }
+      }
+    }
+  }
+
+  if (bestHit) {
+    console.log('KNIFE HIT ENEMY', {
+      id: bestHit.id,
+      name: bestHit.beingGroup.name,
+      filename: bestHit.beingGroup.filename,
+      distance: bestHit.distance,
+      aim: bestHit.aim
+    })
+    bestHit.beingGroup.damageState = true
+    return;
+  }
+
+  console.log('KNIFE MISS ENEMY')
+}
 
   applyGravity(objectGroup, id = null) {
     if (!objectGroup.box) return;
@@ -1203,18 +1410,13 @@ export default class Gameplay {
           // EVENT CHECK ADD OBJECTS
           if (event.addobjects.length > 0) {
             for (const addObjectId of event.addobjects) {
-              // ADD OBJECT - Többször is előfordulhat egy tárgy, pl.: energiaital
-              this.game.playerObjects.push(parseInt(addObjectId))
-              this.game.inventory.inventoryMenu.reloadInventory = true
+              // ADD OBJECT
+              await this.game.inventory.addObjectToFront(addObjectId)
             }
 
-
-            console.log(this.game.config.protectedPickupMash)
-
             const protectedPickupMesh = this.game.config.protectedPickupMash ?? []
-            console.log(protectedPickupMesh)
-
             const skipDelete = actions[1].conditions.issetobjects.some(id => protectedPickupMesh.includes(id))
+
             if (!skipDelete) {
               // REMOVE THREE OBJECT
               actions[0].visible = false
@@ -2179,5 +2381,43 @@ export default class Gameplay {
     }
 
     return mesh
+  }
+
+  async preloadHeandsToGpu() {
+    if (!this.game.renderer || !this.game.heandScene || !this.game.camera) return
+
+    const oldSelectedHeand = this.game.playerMouse.selectedHeand
+    const oldAutoClear = this.game.renderer.autoClear
+
+    for (const id of Object.keys(this.game.loadedHeands)) {
+      if (id == 0) continue
+
+      this.game.playerMouse.selectedHeand = id
+
+      await this.updateHeand(16)
+
+      const heand = this.game.loadedHeands[id]
+      if (!heand) continue
+
+      if (heand.parent !== this.game.heandScene) {
+        this.game.heandScene.add(heand)
+      }
+
+      heand.visible = true
+
+      this.game.renderer.autoClear = false
+      this.game.renderer.clearDepth()
+
+      if (this.game.renderer.compile) {
+        this.game.renderer.compile(this.game.heandScene, this.game.camera)
+      }
+
+      this.game.renderer.render(this.game.heandScene, this.game.camera)
+
+      heand.visible = false
+    }
+
+    this.game.playerMouse.selectedHeand = oldSelectedHeand
+    this.game.renderer.autoClear = oldAutoClear
   }
 }

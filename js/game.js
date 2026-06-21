@@ -55,8 +55,8 @@ export default class Game {
 
     // inventory datas
     this.playerObjectsDefault = [0, 2, 16, 17]
-    this.playerObjects = this.playerObjectsDefault
-    this.playerProtectedObjects = [4, 5, 6, 17]
+    this.playerObjects = [...this.playerObjectsDefault]
+    this.playerProtectedObjects = [4, 5, 6, 17, 23]
 
     this.$loading = {}
     this.$menu = {}
@@ -71,7 +71,7 @@ export default class Game {
       key: '',
       speed: 0,
       add: 0.001,       // 0005
-      max: 0.025,       // 15
+      max: 0.015,       // 15
       sub: 0.9,         // 95
       rotateDeg: 3,
       cameraUp: {},
@@ -128,7 +128,8 @@ export default class Game {
 
     // FIRST MOUSE MODE
     this.playerMouse.mode = 'use'
-    this.input.removeAllCursorClass()
+    this.input.setDefaultCursor()
+
     // $('html').addClass('cursor-use')
 
     $('#mouseorkey-selector').addClass('click-selector-pic')
@@ -157,9 +158,6 @@ export default class Game {
   }
 
   async loop(timestamp = 0) {
-
-
-
     // FIRST LOAD OF MAP | MAPLOADED + ANIMATED START
     if (this.currentState == 'game' && !this.mapLoading) {
       // console.log('--- RELOAD MAP ---')
@@ -167,7 +165,9 @@ export default class Game {
       this.$loading.show()
       await this.loader.mapLoader(this.filename, this.ext) // LOADING MAP
 
-      if (!this.inventory.firstLoadedAllObjects) await this.inventory.firstLoadAllObjects(); // LOADING INVENTORY
+      await this.gameplay.preloadHeandsToGpu()
+
+      if (!this.inventory.firstLoadedAllObjects) await this.inventory.firstLoadAllObjects()
       this.$loading.hide()
 
       // PLAY MUSIC
@@ -263,11 +263,58 @@ export default class Game {
     return null;
   }
 
+  getBeingOptionsInfo(being) {
+    const beingoptions = this.config?.beingoptions ?? {}
+
+    const nameKey = being?.name ?? null
+    const filenameKey = being?.filename ?? null
+
+    const optionsByFilename = filenameKey ? beingoptions[filenameKey] : null
+    const optionsByName = nameKey ? beingoptions[nameKey] : null
+
+    const options = {
+      ...(optionsByFilename ?? {}),
+      ...(optionsByName ?? {})
+    }
+
+    let selectedBy = 'none'
+    let selectedName = null
+
+    if (optionsByName) {
+      selectedBy = 'being.name'
+      selectedName = nameKey
+    } else if (optionsByFilename) {
+      selectedBy = 'being.filename'
+      selectedName = filenameKey
+    }
+
+    return {
+      options,
+      selectedBy,
+      selectedName,
+      nameKey,
+      filenameKey,
+      hasNameConfig: !!optionsByName,
+      hasFilenameConfig: !!optionsByFilename
+    };
+  }
+
+  getBeingOptions(being) {
+    const info = this.getBeingOptionsInfo(being)
+    return info.options;
+  }
+
   showHideOptions(windowName) {
     const windows = {'loading': this.$loading, 'menu': this.$menu, 'game': this.$game, 'inventory': this.$inventory}
 
-    for(const [name, window] of Object.entries(windows)) {      
-      if (name == windowName) window.show(); else window.hide();
+    for(const [name, window] of Object.entries(windows)) {
+      if (name == windowName) window.show()
+      else window.hide()
+    }
+
+    if (this.input && document.pointerLockElement !== this.canvas) {
+      $('#custom-game-cursor').show()
+      windowName == 'game' ? this.input.getActualCursor() : this.input.setDefaultCursor();
     }
   }
 
@@ -341,12 +388,12 @@ export default class Game {
                       <span class="text-black"> Hints</span>
                   </div>
                   <div class="my-2">
-                      <input type="checkbox" id="music-button" checked>
+                      <input type="checkbox" id="music-button">
                       <span class="text-black"> Music ON</span>
                   </div>
                   <br>
                   <div class="my-2">
-                      <input type="checkbox" id="lights-button" checked>
+                      <input type="checkbox" id="lights-button">
                       <span class="text-black"> All Lights ON</span>
                   </div>
                   <div class="mb-2">
@@ -375,6 +422,9 @@ export default class Game {
             <button id="text-box-close-button"></button>
             <div id="text-box-text"></div>
           </div>
+        </div>
+        <div id="oil-container" style="display:none;">
+          <div class="oil"></div>
         </div>
         <div id="energy-container">
           <div class="energy"></div>
@@ -445,7 +495,7 @@ export default class Game {
     // this.$game.hide();
     this.$inventory.hide();
 
-    $("body").append( this.$loading,  this.$menu,  this.$game,  this.$inventory)
+    $("body").append(this.$loading, this.$menu, this.$game, this.$inventory, '<div id="custom-game-cursor"></div>')
 
     this.gravity = $("#gravity-button").prop("checked")
     this.lightsOn = $("#lights-button").prop("checked") 
@@ -582,15 +632,6 @@ export default class Game {
     mesh._boundingBox = updatedBox
   }
 
-  removeBoundingBoxOfMapXXX(mesh) {
-    if (!mesh?._boundingBox) return;
-    const index = this.boundingBoxes.indexOf(mesh._boundingBox)
-    if (index !== -1) {
-      this.boundingBoxes.splice(index, 1)
-      mesh._boundingBox = null
-    }
-  }
-
   refreshBoundingBoxOfMapContainer(mesh) {
     if (!mesh.container) return
 
@@ -645,9 +686,16 @@ export default class Game {
     if (!mesh) return
     if (!this.config['autoplaysounds']) return
     if (!mesh.filename) return
-  
+
     const soundData = this.config['autoplaysounds'][mesh.filename]
     if (!soundData) return
+
+    if (this.$loading?.is?.(':visible')) {
+      setTimeout(() => {
+        this.playStartupSoundsBeings(mesh)
+      }, soundData.startDelay ?? 500)
+      return;
+    }
 
     mesh.updateMatrixWorld(true)
   
@@ -722,6 +770,13 @@ export default class Game {
         being.box = null
       }
     }
+  }
+
+  oilModifyScreen(value = 0) {
+    this.map.player.oil += parseFloat(value)
+    this.map.player.oil = this.map.player.oil > 100 ? 100 : this.map.player.oil;
+
+    $("#oil-container .oil").css('width', `${this.map.player.oil}%`)
   }
 
   energyModifyScreen(value = 0) {

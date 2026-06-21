@@ -186,6 +186,43 @@ html, body {
     user-select: none;
 }
 
+
+//---
+
+html.game-custom-cursor,
+html.game-custom-cursor body,
+html.game-custom-cursor body *,
+html.game-custom-cursor button,
+html.game-custom-cursor a,
+html.game-custom-cursor input,
+html.game-custom-cursor textarea,
+html.game-custom-cursor select,
+html.game-custom-cursor label,
+html.game-custom-cursor .btn,
+html.game-custom-cursor .cursor-pointer,
+html.game-custom-cursor #text-box-container,
+html.game-custom-cursor #text-box-container *,
+html.game-custom-cursor #text-box,
+html.game-custom-cursor #text-box *,
+html.game-custom-cursor #text-box-close-button {
+  cursor: none !important;
+}
+
+#custom-game-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 32px;
+  height: 32px;
+  pointer-events: none;
+  z-index: 10000;
+  background-repeat: no-repeat;
+  background-size: contain;
+  transform: none;
+}
+
+//---
+
 a, button, input, textarea {
   cursor: url('/img/cursors/cursor-default.png') 5 5, auto !important;
 }
@@ -443,6 +480,26 @@ a:hover, button:hover, input:hover, textarea:hover {
   background-color: green !important;
   transition: width 1s ease;
 }
+
+#oil-container {
+  display: block;
+  position: absolute;
+  left: 20px;
+  bottom: 60px;
+  width: 120px;
+  height: 15px;
+  border: solid 2px gray;
+  background-color: #111;
+  z-index: 12;
+}
+
+.oil {
+  width: 100%;
+  height: 13px;
+  background-color: #e4bb03 !important;
+  transition: width 1s ease;
+}
+
 
 #use-selector {
   display: block;

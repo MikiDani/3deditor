@@ -303,4 +303,31 @@ export default class Inventory {
         this.game.loadedObjects[objectGroup.id].index = object.id
       }
     }
-  }
+
+  async addObjectToFront(objectId) {
+    const id = parseInt(objectId)
+
+    if (!Number.isFinite(id)) return false;
+
+    if (!this.firstLoadedAllObjects) await this.firstLoadAllObjects()
+
+    if (this.selectedObject && this.game.loadedObjects[this.selectedObject.id]) {
+      this.game.loadedObjects[this.selectedObject.id].visible = false
+    }
+
+    this.game.playerObjects.unshift(id)
+
+    this.inventoryMenu.selectedObject = false
+    this.inventoryMenu.reloadInventory = true
+    this.inventoryMenu.inventoryStartIndex = 0
+    this.inventoryMenu.inventoryPosition = 0
+    this.inventoryMenu.objectSelected = false
+    this.inventoryMenu.objectSelectedData = null
+    this.inventoryMenu.selectedPosition = 0
+    this.inventoryMenu.selectedLength = 0
+
+    this.selectedObject = await this.getInventorySelecteObjectData(id)
+
+    return true;
+  }   
+}

@@ -500,8 +500,10 @@ export default class Loader {
             beingGroup.apactive = being.apactive == "1" ? true : false;
             beingGroup.animationActive = true // DIE hoz kell
 
-            if (this.game.config.beingoptions[being.filename]?.animationpoints)
-              beingGroup.animationpoints = this.game.config.beingoptions[being.filename].animationpoints;
+            const beingOptions = this.game.getBeingOptions(beingGroup)
+
+            if (beingOptions.animationpoints)
+              beingGroup.animationpoints = beingOptions.animationpoints;
 
             beingGroup.animState = {
               'type': being.type,
@@ -537,13 +539,13 @@ export default class Loader {
               largestBox.getSize(size)
               if (size.z === 0) size.z = 0.01; if (size.x === 0) size.x = 0.01; if (size.y === 0) size.y = 0.01;
 
-              const boundingBoxRatioSize = this.game.config.beingoptions?.[beingGroup.filename]?.boundingBoxRatio ?? 1 * beingGroup.ratio
+              const boundingBoxRatioSize = beingOptions.boundingBoxRatio ?? 1 * beingGroup.ratio
               // console.log(boundingBoxRatioSize)
 
               size.multiplyScalar(boundingBoxRatioSize)
               largestBox.setFromCenterAndSize(center, size)
 
-              this.game.beingsList[being.filename].largestBoundingBox = largestBox
+              beingGroup.largestBoundingBox = largestBox
             }
             //--
             this.createTHREEObject(being, beingGroup, actualBeingData, false)
@@ -674,8 +676,9 @@ export default class Loader {
       this.game.addConsoleRow(`--- Map loaded: ${(endTime - startTime)} millisecond ---`, 'div', true, true)
 
       //--
-
+     
       this.game.energyModifyScreen()
+      this.game.oilModifyScreen()
       this.game.mapLoading = true
     }
   }

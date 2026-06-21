@@ -14,11 +14,14 @@ export default class Input {
 
     this.isCrouching = false
     this.originalHeight = null
+    this.waitingStandUp = false
 
     this.mouseMoveTimer = 0
     this.eventMouse = { x: 0, y: 0 }
     this.lastEventMouse
     this.chechLookInterval = null
+    this.lastActionCursorActive = false
+    this.cursorOverGameUi = false
 
     // TURN OFF BROWSER ZOOM
     $(document).on("keydown", function(e) {
@@ -31,6 +34,11 @@ export default class Input {
     this.ideiglenesMenuInputs() // ! Ideiglenes
   }
 
+  setCustomCursorImage(name) {
+    $('html').addClass('game-custom-cursor')
+    $('#custom-game-cursor').show().css('background-image', `url('/img/cursors/${name}.png')`)
+  }
+
   resetautoMovePlayerData() {
     this.game.autoMovePlayerData = {
       ...this.game.autoMovePlayerData,
@@ -40,6 +48,8 @@ export default class Input {
   }
 
   async ideiglenesMenuInputs() {
+     $(document).on('mousemove', (event) => { this.checkMousePositionOptions(event) })
+
     const response = await this.game.loader.fetchData({ ajax: true, getfiles: true })  
     if (response?.files) {
       let elements = '';
@@ -90,7 +100,6 @@ export default class Input {
     });
 
     // CHECK CURSOR POINT AND CLICK INTERVAL
-    $(document).on('mousemove', (event) => { this.checkMousePositionOptions(event) })
     this.checkLookingInterval()
 
     $('#gravity-button').on('click', (event) => {
@@ -247,96 +256,20 @@ export default class Input {
     });
   }
 
-  checkLookingInterval_old() {
-    this.chechLookInterval = setInterval(() => {
-      const now = Date.now()
-      if (now - this.mouseMoveTimer > 200) { 
-        if (document.pointerLockElement === null && this.game.currentState == 'game') {
-          this.mouseMoveTimer = Date.now()
-
-          const mouse = new THREE.Vector2()
-          mouse.x = (this.eventMouse.x / window.innerWidth) * 2 - 1
-          mouse.y = -(this.eventMouse.y / window.innerHeight) * 2 + 1
-          // console.log(mouse.x, mouse.y)
-
-          const raycaster = new THREE.Raycaster()
-          raycaster.setFromCamera(mouse, this.game.camera)
-
-          //-- 1. CHECK FISRT HIT MESH
-          let sceneIntersects = raycaster.intersectObjects(Object.values(this.game.loadedMeshs), true)
-
-          let findLook = false;
-          let findUse = false;
-
-          for (const [meshId, meshGroup] of Object.entries(this.game.loadedMeshs)) {
-            if (!meshGroup || !meshGroup.children) continue;
-            const intersects = raycaster.intersectObjects(meshGroup.children, true)
-            if (intersects.length > 0) {
-              
-              // 2. CHECK FISRT HIT MESH
-              let sceneIntersects = raycaster.intersectObjects(Object.values(this.game.loadedMeshs), true)
-              let firstSolidIntersect = sceneIntersects.find(hit => !hit.object.parent?.pervious)
-
-              if (firstSolidIntersect?.object.parent.name != intersects[0].object.parent.name) continue;
-              // SKIP IF NOT ACTIVE
-              if (!intersects[0].object.parent.visible) continue;
-
-              const intersect = intersects[0]
-              const hitPoint = intersect.point;
-
-              const cameraPos = new THREE.Vector3()
-              this.game.camera.getWorldPosition(cameraPos)
-
-              const distance = cameraPos.distanceTo(hitPoint)
-              // CHECK // console.log(meshGroup.id, meshGroup.name)
-              if (this.game.playerMouse.mode == 'look') {
-                // LOOK
-                if (meshGroup.text) {
-                  const found = this.game.map.actionelements.find(pair => pair[0].id === meshGroup.id)
-                  if (found) {
-                    if (distance < found[1].conditions.distance_far) {
-                      findLook = true
-                      break
-                    }
-                  }
-                }
-              } else if (this.game.playerMouse.mode == 'use') {
-                // USE
-                const found = this.game.map.actionelements.find(pair => pair[0].id === meshGroup.id)
-                if (found) {
-                  // IF ONLY LOOCK TEXT HAVE
-                  if (found[1].name == 'TEXT') break;
-
-                  if (distance < found[1].conditions.distance_far) {
-                    findUse = true
-                    break
-                  }
-                }
-              }
-            }
-          }
-
-          this.removeAllCursorClass()
-          if (this.game.playerMouse.mode == 'look') {
-            // LOOK
-            findLook ? $("html").addClass('cursor-look-on') : $("html").addClass('cursor-look-off');
-          } else if (this.game.playerMouse.mode == 'use') {
-            // USE
-            findUse
-            ? this.game.playerMouse.selectedObject ? $("html").addClass('cursor-get-on') : $("html").addClass('cursor-use-on')
-            : this.game.playerMouse.selectedObject ? $("html").addClass('cursor-get-off') : $("html").addClass('cursor-use-off')
-          }
-        }
-      }
-    }, 25);
-  }
-
   checkLookingInterval() {
     this.chechLookInterval = setInterval(() => {
       const now = Date.now()
 
       if (now - this.mouseMoveTimer > 200) {
         if (document.pointerLockElement === null && this.game.currentState == 'game') {
+
+          if (this.cursorOverGameUi) return;
+
+          if (this.cursorOverGameUi) {
+            this.setDefaultCursor()
+            return;
+          }
+
           this.mouseMoveTimer = Date.now()
 
           const mouse = new THREE.Vector2()
@@ -382,14 +315,22 @@ export default class Input {
             }
           }
 
-          this.removeAllCursorClass()
+          const actionCursorActive = findLook || findUse
+
+          if (actionCursorActive && !this.lastActionCursorActive) {
+            this.game.sound.play(301 /* click2 */, { volume: 0.1, loop: false })
+          }
+
+          this.lastActionCursorActive = actionCursorActive
 
           if (this.game.playerMouse.mode == 'look') {
-            findLook ? $("html").addClass('cursor-look-on') : $("html").addClass('cursor-look-off')
+            this.setCustomCursorImage(findLook ? 'cursor-look2-on' : 'cursor-look2-off')
           } else if (this.game.playerMouse.mode == 'use') {
-            findUse
-            ? this.game.playerMouse.selectedObject ? $("html").addClass('cursor-get-on') : $("html").addClass('cursor-use-on')
-            : this.game.playerMouse.selectedObject ? $("html").addClass('cursor-get-off') : $("html").addClass('cursor-use-off')
+            if (findUse) {
+              this.setCustomCursorImage(this.game.playerMouse.selectedObject ? 'cursor-get-on' : 'cursor-use-on')
+            } else {
+              this.setCustomCursorImage(this.game.playerMouse.selectedObject ? 'cursor-get-off' : 'cursor-use-off')
+            }
           }
         }
       }
@@ -397,12 +338,26 @@ export default class Input {
   }
 
   checkMousePositionOptions(event) {
+    if (!event) return
+
     this.lastEventMouse = event
     this.eventMouse.x = event.clientX
-    this.eventMouse.y = event.clientY   
+    this.eventMouse.y = event.clientY
+
+    const cursorSize = 32
+    const cursorX = Math.max(0, Math.min(event.clientX, window.innerWidth - cursorSize))
+    const cursorY = Math.max(0, Math.min(event.clientY, window.innerHeight - cursorSize))
+    $('#custom-game-cursor').css({ left: cursorX + 'px', top: cursorY + 'px' })
+
+    this.cursorOverGameUi = this.game.currentState == 'game' && $(event.target).closest('#text-box-container').length > 0
+
+    if (this.cursorOverGameUi) {
+      this.setDefaultCursor()
+      return
+    }
 
     if (this.game.playerMouse.mode == 'use' && $('#cursor-text-box:visible').length) {
-      $('#cursor-text-box').css({ left: event.clientX + 40 + 'px', top: event.clientY - 10 + 'px' });
+      $('#cursor-text-box').css({ left: event.clientX + 40 + 'px', top: event.clientY - 10 + 'px' })
     }
   }
 
@@ -478,7 +433,7 @@ export default class Input {
     })
 
     // DOUBLE CLICK 1.
-    $(document).on('dblclick', '#inventory-item-text-container .item-text-container', (e) => {
+    $(document).on('click', '#inventory-item-text-container .item-text-container', (e) => {
       if ($(e.currentTarget).html() == '') return;
 
       if (!this.game.inventory.inventoryMenu.selectedObject) {
@@ -508,7 +463,7 @@ export default class Input {
       }
     })
 
-    $(document).on('dblclick', '#inventory-selected-item-container .item-selected-text-container:visible', e => {
+    $(document).on('click', '#inventory-selected-item-container .item-selected-text-container:visible', e => {
       if (!this.game.inventory.inventoryMenu.selectedObject) {
         let index = $('#inventory-selected-item-container .item-selected-text-container:visible').index(e.currentTarget)
         this.game.inventory.inventoryMenu.selectedPosition = index
@@ -589,7 +544,7 @@ export default class Input {
 
       if (e.key == 'h') {
         // CHET
-        this.game.playerObjects.push(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22)
+        this.game.playerObjects.push(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26)
         this.game.inventory.update()
 
         this.game.playerMouse.knife = true
@@ -631,6 +586,8 @@ export default class Input {
           this.game.playerMouse.selectedHeand = 0
           this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
           this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
+
+          $("#oil-container").hide()
         }
 
         if(e.key =='1') {
@@ -640,7 +597,21 @@ export default class Input {
 
           if (!this.game.playerMouse.lamp) return;
 
-          this.game.gameplay.removeHeandLight()
+          // CHECK OIL
+          const oil = Number(this.game.map?.player?.oil ?? 0)
+          if (oil <= 0) {
+            if (this.game.playerMouse.selectedHeand != 0) {
+              $(document).trigger($.Event('keydown', {
+                key: '0',
+                which: 48,
+                keyCode: 48
+              }))
+            }
+            return;
+          }
+          
+          $("#oil-container").show()
+          if (this.game.playerMouse.selectedHeand != 1) this.game.gameplay.removeHeandLight()
           this.resetautoMovePlayerData()
 
           const camQuat = new THREE.Quaternion()
@@ -668,6 +639,8 @@ export default class Input {
           console.log(this.game.playerMouse.knife)
 
           if (!this.game.playerMouse.knife) return;
+
+          $("#oil-container").hide()
 
           this.game.gameplay.removeHeandLight()
           this.resetautoMovePlayerData()
@@ -703,6 +676,8 @@ export default class Input {
 
           if (!this.game.playerMouse.cigarette) return;
 
+          $("#oil-container").hide()
+
           this.game.gameplay.removeHeandLight()
           this.resetautoMovePlayerData()
 
@@ -710,7 +685,7 @@ export default class Input {
           this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
           this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
 
-          this.game.sound.play(204, {volume: 0.7})
+          this.game.sound.play(204, /* player-cough1 */ {volume: 0.3})
         }
 
         if(e.key =='5') {
@@ -935,7 +910,14 @@ export default class Input {
   removeUsedObject() {
     this.game.playerMouse.selectedObject = null
     $("#cursor-text-box").hide().html('')
-    this.getActualCursor()
+
+    if (this.game.playerMouse.mode != 'use' && this.game.playerMouse.mode != 'look') {
+      this.game.playerMouse.mode = 'look'
+    }
+
+    setTimeout(() => {
+      if (this.game.currentState == 'game') this.getActualCursor()
+    }, 0)
   }
 
   moveUp() {
@@ -1003,14 +985,17 @@ export default class Input {
     $("html").removeClass('cursor-default').removeClass('cursor-look-on').removeClass('cursor-look-off').removeClass('cursor-use-on').removeClass('cursor-use-off').removeClass('cursor-get-on').removeClass('cursor-get-off')
   }
 
+  setCustomCursorImage(name) {
+    $('html').addClass('game-custom-cursor')
+    $('#custom-game-cursor').css('background-image', `url('/img/cursors/${name}.png')`)
+  }
+
   setDefaultCursor() {
-    this.removeAllCursorClass()
-    $("html").addClass('cursor-default')
+    this.setCustomCursorImage('cursor-default')
   }
 
   setGetCursor() {
-    this.removeAllCursorClass()
-    $("html").addClass('cursor-get')
+    this.setCustomCursorImage('cursor-get-off')
   }
 
   getActualCursor() {
@@ -1023,26 +1008,22 @@ export default class Input {
     }
   }
 
-  useSelectorChange() {    
-    // TURN OFF POINTERLOCK
-    if (document.pointerLockElement) document.exitPointerLock();
+  useSelectorChange() {
+    if (document.pointerLockElement) document.exitPointerLock()
     this.game.isPointerLocked = false
     $('#mouseorkey-selector').removeClass('mouse-selector-pic').addClass('key-selector-pic')
 
     this.game.playerMouse.mode = 'use'
-    this.removeAllCursorClass()
-    $("html").addClass('cursor-use-off')
+    this.setCustomCursorImage('cursor-use-off')
   }
 
   lookSelectorChange() {
-    // TURN OFF POINTERLOCK
-    if (document.pointerLockElement) document.exitPointerLock();
+    if (document.pointerLockElement) document.exitPointerLock()
     this.game.isPointerLocked = false
     $('#mouseorkey-selector').removeClass('mouse-selector-pic').addClass('key-selector-pic')
 
     this.game.playerMouse.mode = 'look'
-    this.removeAllCursorClass()
-    $("html").addClass('cursor-look-off')
+    this.setCustomCursorImage('cursor-look2-off')
   }
 
   // --
@@ -1082,14 +1063,15 @@ export default class Input {
       if (e.key == 'c' || e.key == 'C') {
         e.preventDefault()
         e.stopPropagation()
-      
-        if (this.isCrouching) return
-      
+ 
+        if (this.isCrouching) return;
+        if (this.game.jumpState.isJumping || this.game.jumpState.isLocked || !this.game.isGrounded) return;
+
         const player = this.game.player
         const box = this.game.playerBoundingBox
-      
+
         this.originalHeight = box.y
-      
+
         const newHeight = this.originalHeight * 0.5
         const diff = this.originalHeight - newHeight
       
@@ -1107,17 +1089,33 @@ export default class Input {
       if (e.key == 'c' || e.key == 'C') {
         e.preventDefault()
         e.stopPropagation()
-    
+
         if (!this.isCrouching) return
-    
+
         const player = this.game.player
         const box = this.game.playerBoundingBox
-    
-        const diff = this.originalHeight - box.y
-    
+
+        const crouchHeight = box.y
+        const diff = this.originalHeight - crouchHeight
+        const standPosition = player.position.clone()
+        standPosition.y += diff
+
         box.y = this.originalHeight
-        player.position.y += diff
-    
+        const blocked = this.willCollide(standPosition)
+        box.y = crouchHeight
+
+        if (blocked) {
+          setTimeout(() => {
+            if (this.isCrouching && !this.game.keysPressed.has('c')) {
+              window.dispatchEvent(new KeyboardEvent('keyup', { key: 'c' }))
+            }
+          }, 100)
+          return;
+        }
+
+        box.y = this.originalHeight
+        player.position.copy(standPosition)
+
         this.isCrouching = false
         this.game.jumpState.isLocked = false
       }
@@ -1255,16 +1253,16 @@ export default class Input {
   mousePointerClickLoader() {
     this.game.isPointerLocked = false
 
-    document.addEventListener('mousedown', (e) => {
-      if (document.pointerLockElement) {
-        document.exitPointerLock()
-        $('#mouseorkey-selector').removeClass('mouse-selector-pic').addClass('key-selector-pic')
-        console.log('MOUSE: Kiléptél a pointer lockból')
-      }
-    });
-
     document.addEventListener('pointerlockchange', () => {
       this.game.isPointerLocked = document.pointerLockElement == this.game.canvas
+        // CURSOR SHOW/HIDE
+        if (this.game.isPointerLocked) {
+          $('#custom-game-cursor').hide()
+        } else {
+          $('#custom-game-cursor').show()
+          if (this.game.currentState == 'game') this.getActualCursor()
+          else this.setDefaultCursor()
+        }
     });
 
     $(document).on('mousemove', { game: this.game }, function(event) {
@@ -1377,7 +1375,7 @@ export default class Input {
     }
 
     // ----- UGRÁS -----
-    if (this.game.keysPressed.has(' ') && this.game.isGrounded && !this.game.jumpState.isJumping && !this.game.jumpState.isLocked) {
+    if (this.game.keysPressed.has(' ') && this.game.isGrounded && !this.game.jumpState.isJumping && !this.game.jumpState.isLocked && !this.isCrouching) {
       this.game.jumpState.isJumping = true
       this.game.jumpState.startY = this.game.player.position.y
       this.game.jumpState.targetY = this.game.player.position.y + this.game.jumpState.size
