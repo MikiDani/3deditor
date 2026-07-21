@@ -54,9 +54,9 @@ export default class Game {
     this.activePlayedSounds = []
 
     // inventory datas
-    this.playerObjectsDefault = [0, 2, 16, 17]
+    this.playerObjectsDefault = [0, 2, 16, 17, 28]
     this.playerObjects = [...this.playerObjectsDefault]
-    this.playerProtectedObjects = [4, 5, 6, 17, 23]
+    this.playerProtectedObjects = [4, 5, 6, 17, 23, 35]
 
     this.$loading = {}
     this.$menu = {}
@@ -595,7 +595,7 @@ export default class Game {
     }
   }
 
-  removeBoundingBoxOfMap(mesh) {
+  removeBoundingBoxOfMap_old(mesh) {
     if (mesh._boundingBox) {
       this.boundingBoxes = this.boundingBoxes.filter(box => box !== mesh._boundingBox)
       mesh._boundingBox = null
@@ -624,7 +624,7 @@ export default class Game {
     })
   }
 
-  refreshBoundingBoxOfMap(mesh) {
+  refreshBoundingBoxOfMap_old(mesh) {
     const updatedBox = new THREE.Box3().setFromObject(mesh.container)
     const index = this.boundingBoxes.findIndex(box => box === mesh._boundingBox)
     if (index !== -1) this.boundingBoxes[index] = updatedBox;
@@ -632,7 +632,7 @@ export default class Game {
     mesh._boundingBox = updatedBox
   }
 
-  refreshBoundingBoxOfMapContainer(mesh) {
+  refreshBoundingBoxOfMapContainer_old(mesh) {
     if (!mesh.container) return
 
     const updatedBox = new THREE.Box3().setFromObject(mesh.container)
@@ -648,6 +648,100 @@ export default class Game {
     // mentés
     mesh._boundingBox = updatedBox
   }
+
+  //--
+  removeBoundingBoxOfMap(mesh) {
+    if (!mesh) return
+
+    const refs = []
+
+    if (mesh._boundingBox) refs.push(mesh._boundingBox)
+    if (Array.isArray(mesh._boundingBoxes)) refs.push(...mesh._boundingBoxes)
+    if (mesh.container?._boundingBox) refs.push(mesh.container._boundingBox)
+    if (Array.isArray(mesh.container?._boundingBoxes)) refs.push(...mesh.container._boundingBoxes)
+
+    if (refs.length) this.boundingBoxes = this.boundingBoxes.filter(box => !refs.includes(box))
+
+    mesh._boundingBox = null
+    mesh._boundingBoxes = []
+    mesh.box = null
+
+    if (mesh.container) {
+      mesh.container._boundingBox = null
+      mesh.container._boundingBoxes = []
+    }
+
+    const source = mesh.container ?? mesh
+    source.updateMatrixWorld(true)
+    mesh.updateMatrixWorld(true)
+
+    const objectBox = new THREE.Box3().setFromObject(source)
+    this.boundingBoxes = this.boundingBoxes.filter(box => !box.equals(objectBox))
+
+    const childBoxes = []
+
+    mesh.traverse(obj => {
+      if (!obj.geometry) return
+      obj.geometry.computeBoundingBox?.()
+      if (!obj.geometry.boundingBox) return
+
+      const childBox = obj.geometry.boundingBox.clone().applyMatrix4(obj.matrixWorld)
+      childBoxes.push(childBox)
+    })
+
+    if (childBoxes.length) {
+      this.boundingBoxes = this.boundingBoxes.filter(box => !childBoxes.some(childBox => childBox.equals(box)))
+    }
+  }
+
+  addBoundingBoxOfMap(mesh) {
+    if (!mesh) return null
+
+    const source = mesh.container ?? mesh
+    source.updateMatrixWorld(true)
+    mesh.updateMatrixWorld(true)
+
+    const updatedBox = new THREE.Box3().setFromObject(source)
+    if (updatedBox.isEmpty()) return null
+
+    if (mesh._boundingBox) {
+      const index = this.boundingBoxes.indexOf(mesh._boundingBox)
+      if (index !== -1) this.boundingBoxes[index] = updatedBox
+      else this.boundingBoxes.push(updatedBox)
+    } else {
+      this.removeBoundingBoxOfMap(mesh)
+      this.boundingBoxes.push(updatedBox)
+    }
+
+    mesh._boundingBox = updatedBox
+    mesh._boundingBoxes = [updatedBox]
+    mesh.box = updatedBox.clone()
+
+    return updatedBox
+  }
+
+  refreshBoundingBoxOfMap(mesh) {
+    return this.addBoundingBoxOfMap(mesh)
+  }
+
+  refreshBoundingBoxOfMapContainer(mesh) {
+    return this.addBoundingBoxOfMap(mesh)
+  }
+
+  setMeshBoundingBoxActive(mesh, active) {
+    if (!mesh) return false
+
+    mesh.pervious = !active
+
+    if (active) this.addBoundingBoxOfMap(mesh)
+    else this.removeBoundingBoxOfMap(mesh)
+
+    const mapData = Array.isArray(this.map?.data) ? this.map.data.find(row => Number(row.id) == Number(mesh.objId)) : null
+    if (mapData) mapData.pervious = !active
+
+    return true
+  }
+  //--
 
   forceClearAllTimers() {
     let highestTimeoutId = setTimeout(() => {}, 0)
@@ -683,12 +777,12 @@ export default class Game {
   }
 
   async playStartupSoundsBeings(mesh) {
-    if (!mesh) return
-    if (!this.config['autoplaysounds']) return
-    if (!mesh.filename) return
+    if (!mesh) return;
+    if (!this.config['autoplaysounds']) return;
+    if (!mesh.filename) return;
 
     const soundData = this.config['autoplaysounds'][mesh.filename]
-    if (!soundData) return
+    if (!soundData) return;
 
     if (this.$loading?.is?.(':visible')) {
       setTimeout(() => {
@@ -711,6 +805,8 @@ export default class Game {
       const audio = phantom.children[0]
   
       if (audio) {
+        console.log(soundData.setRefDistance, soundData.setMaxDistance, soundData.setRolloffFactor)
+        
         if (soundData.setRefDistance != null) audio.setRefDistance(soundData.setRefDistance)
         if (soundData.setMaxDistance != null) audio.setMaxDistance(soundData.setMaxDistance)
         if (soundData.setRolloffFactor != null) audio.setRolloffFactor(soundData.setRolloffFactor)

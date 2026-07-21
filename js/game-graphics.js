@@ -28,12 +28,16 @@ export default class Graphics {
     // console.log(this.checkGPU())
     if (this.checkGPU()) {
       // HIGH
+      // this.game.targetFPS = 60 // Ez a jó
+
       this.game.targetFPS = 60
+
       this.game.renderInterval = 1000 / this.game.targetFPS
 
       // this.scX = window.innerWidth / 1; this.scY = window.innerHeight / 1
       // this.scX = 1920; this.scY = 1080; // nem kell és lassú is
 
+      // this.scX = 600; this.scY = 337; // small
       this.scX = 1200; this.scY = 675;
 
       this.far = 13

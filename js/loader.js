@@ -286,6 +286,8 @@ export default class Loader {
 
       if (response.playerObjects != null) this.game.playerObjects = response.playerObjects;
       if (response.playerMouse != null) this.game.playerMouse = response.playerMouse;
+      this.game.autoMovePlayerData = { mode: null, weapon: null, handY: 0, time: 0 }
+
       // MAP
       this.game.map.data = this.game.deepCopy(response.data[0], true)
       this.game.map.structure = this.game.deepCopy(response.structure, true) // true all visible is true
@@ -376,7 +378,12 @@ export default class Loader {
           box.max.add(triangleMesh.position)
 
           if (mesh.pervious) meshGroup.pervious = mesh.pervious
-          if (!mesh.pervious) this.game.boundingBoxes.push(box); // ADD BOUNDING BOX !!!
+          if (!mesh.pervious) {
+            // ADD BOUNDING BOX !!!
+            meshGroup._boundingBoxes ??= []
+            this.game.boundingBoxes.push(box)
+            meshGroup._boundingBoxes.push(box)
+          }
 
           // YELLOW BOX-HELPER
           if (false) {
@@ -452,11 +459,13 @@ export default class Loader {
               pointLight.position.set(light.p.x, light.p.y, light.p.z)
               // PRIMARY LIGHT
               this.game.scene.add(pointLight)
+              this.game.loadedLights[light.id] = [light.name, pointLight]
+
+              /*
               // HAND LIGHT
               const handLight = pointLight.clone()
               this.game.heandScene.add(handLight)
-
-              this.game.loadedLights[light.id] = [light.name, pointLight]
+              */
 
               this.game.addConsoleRow(`Added Light: ${light.id}. ${light.name}, `, 'div', false, true)
             }
@@ -723,9 +732,12 @@ export default class Loader {
             }
 
             // BOUNDING BOX OFF RESTORE
+            if (moveFxId == 12 && oldData.state == true) {
+              this.game.setMeshBoundingBoxActive(meshGroup, true)
+            }
+
             if (moveFxId == 13 && oldData.state == true) {
-              meshGroup.pervious = true
-              this.game.removeBoundingBoxOfMap(meshGroup)
+              this.game.setMeshBoundingBoxActive(meshGroup, false)
             }
           }
         }

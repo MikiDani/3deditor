@@ -100,6 +100,14 @@
       "name": "Switch texture fire"
     },
     {
+      "id": 15,
+      "name": "Switch shoud-dirty-cut"
+    },
+    {
+      "id": 16,
+      "name": "Film scroll anim"
+    },
+    {
       "id": 20,
       "name": "Radio ON/OFF",
       "state": "off"
@@ -135,7 +143,7 @@
     },
     {
       "id": 67,
-      "name": "Mesh Grow Fx"
+      "name": "Add cigarette to heand"
     },
     {
       "id": 80,
@@ -205,6 +213,10 @@
     {
       "id": 10,
       "name": "AUTO: TALISMAN GHOST ON / OFF"
+    },
+    {
+      "id": 11,
+      "name": "AUTO: FLY-CLOUDS"
     }
   ],
   "sounds": [
@@ -452,6 +464,42 @@
       "setRolloffFactor": 3
     },
     {
+      "id": 28,
+      "name": "maschine-noise1",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 29,
+      "name": "fly-clouds1",
+      "volume": 1,
+      "loop": true,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 30,
+      "name": "fly-clouds2",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 31,
+      "name": "broken1",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
       "id": 100,
       "name": "bet-attack1",
       "volume": 1,
@@ -517,6 +565,15 @@
     {
       "id": 107,
       "name": "talisman-ghost-getout",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 108,
+      "name": "cut1",
       "volume": 1,
       "loop": false,
       "setRefDistance": 1,
@@ -597,21 +654,20 @@
     "clock-1": {
       "soundid": 10,
       "loop": true,
-      "volume": 1,
+      "volume": 0.7,
       "setRefDistance": 0.5,
-      "setMaxDistance": 1,
-      "setRolloffFactor": 7
+      "setMaxDistance": 3,
+      "setRolloffFactor": 1
     },
-    "pot": {
-      "soundid": 10,
+    "fly-clouds-1": {
+      "soundid": 29,
       "loop": true,
-      "volume": 1,
-      "setRefDistance": 1,
-      "setMaxDistance": 2,
-      "setRolloffFactor": 3
+      "volume": 0.3,
+      "setRefDistance": 0.5,
+      "setMaxDistance": 1.4,
+      "setRolloffFactor": 1
     }
   },
-
   "actionmessages": [
     {
       "object_id": 0,
@@ -820,6 +876,14 @@
     "fireplace-anim-2": {
       "intervalTime": 1000,
       "playingState": true
+    },
+    "movie-film-anim": {
+      "intervalTime": 500,
+      "playingState": true
+    },
+    "fly-cloud-anim": {
+      "intervalTime": 250,
+      "playingState": true
     }
   },
   "beingoptions": {
@@ -970,6 +1034,21 @@
       "knifeRange": 1.1,
       "knifeAim": 0.35
     },
+    "ghost-2": {
+      "type": "enemy",
+      "backMove": 0.8,
+      "backAttack": 0.6,
+      "beingDistance": 0.5,
+      "rotateOn": true,
+      "moveOn": true,
+      "moveOnY": false,
+      "boundingBoxRatio": 0.6,
+      "attackSounds": [100,101,102],
+      "damageSounds": [100,101,102],
+      "dieSounds": [103],
+      "knifeRange": 1.1,
+      "knifeAim": 0.35
+    },
     "spider-1": {
       "type": "enemy",
       "backMove": 1,
@@ -1002,6 +1081,21 @@
     },
     "SPIDER-CELLAR-1": {
       "type": "enemy",
+      "backMove": 0.8,
+      "backAttack": 0.7,
+      "beingDistance": 0.6,
+      "rotateOn": true,
+      "moveOn": true,
+      "moveOnY": false,
+      "boundingBoxRatio": 0.2,
+      "attackSounds": [100,101,102],
+      "damageSounds": [100,101,102],
+      "dieSounds": [103],
+      "knifeRange": 1.1,
+      "knifeAim": 0.35
+    },
+    "SPIDER-CELLAR-2": {
+      "type": "enemy",
       "backMove": 1,
       "backAttack": 0.85,
       "beingDistance": 0.75,
@@ -1016,5 +1110,6 @@
       "knifeAim": 0.35
     }
   },
-  "protectedPickupMash": [21]
+  "protectedPickupMash": [21],
+  "oneShotClickActions": [88, 102]
 }

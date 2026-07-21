@@ -161,7 +161,9 @@ $yellow-light: #ffff00;
 }
 
 .text-selected {
-  color: $secondary !important;
+  // color: $secondary !important;
+
+  color: gray !important;
 }
 
 .bg-test {
@@ -784,13 +786,6 @@ a:hover, button:hover, input:hover, textarea:hover {
   line-height: normal;
   letter-spacing: 0.6rem;
   color: $primary;
-
-  // border: 1px solid red;
-
-  /*
-  background-color: deeppink;
-  border: 1px solid red;
-  */
 }
 
 #arrow-down {

@@ -50,10 +50,17 @@ export default class Sound {
 
     // --- 3D hang esetén ---
     if (use3D && meshGroup) {
-      sound.panner.distanceModel = 'inverse'
-      sound.setRefDistance(soundData.setRefDistance)
-      sound.setMaxDistance(soundData.setMaxDistance)
-      sound.setRolloffFactor(soundData.setRolloffFactor)
+      if (soundData.loop) {
+        sound.setDistanceModel('linear')
+        sound.setRefDistance(soundData.setRefDistance)
+        sound.setMaxDistance(soundData.setMaxDistance)
+        sound.setRolloffFactor(1)
+      } else {
+        sound.setDistanceModel('inverse')
+        sound.setRefDistance(soundData.setRefDistance)
+        sound.setMaxDistance(soundData.setMaxDistance)
+        sound.setRolloffFactor(soundData.setRolloffFactor)
+      }
 
       const position = meshGroup.center 
         ? meshGroup.center.clone() 

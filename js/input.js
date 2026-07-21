@@ -295,7 +295,13 @@ export default class Input {
 
               const distance = cameraPos.distanceTo(firstSolidIntersect.point)
 
-              const found = this.game.map.actionelements.find(pair => pair[0] === meshGroup)
+              // const found = this.game.map.actionelements.find(pair => pair[0] === meshGroup) // old
+
+              const found = this.game.map.actionelements.find(pair => {
+                if (pair[0] !== meshGroup) return false
+                if (this.game.gameplay.isOneShotClickDone(pair[1])) return false
+                return true;
+              })
 
               if (found) {
                 if (this.game.playerMouse.mode == 'look') {
@@ -544,7 +550,13 @@ export default class Input {
 
       if (e.key == 'h') {
         // CHET
-        this.game.playerObjects.push(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26)
+        this.game.playerObjects.push(
+          1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+          11, 12, 13, 14, 15,16, 17, 18, 19, 20, 
+          21, 22, 23, 24, 25, 26, 27, 28, 28, 30, 
+          31, 32, 33, 34, 35
+        )
+
         this.game.inventory.update()
 
         this.game.playerMouse.knife = true
@@ -579,15 +591,9 @@ export default class Input {
         }
 
         if(e.key =='0') {
-          e.preventDefault(); e.stopPropagation();
-          this.game.gameplay.removeHeandLight()
-          this.resetautoMovePlayerData()
+          e.preventDefault(); e.stopPropagation()
 
-          this.game.playerMouse.selectedHeand = 0
-          this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
-          this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
-
-          $("#oil-container").hide()
+          this.game.gameplay.startHandSwitch(0)
         }
 
         if(e.key =='1') {
@@ -620,9 +626,7 @@ export default class Input {
 
           // AUTO MOVE PLAYER HEAND CENTER
           if (THREE.MathUtils.radToDeg(euler.x) < 25 && THREE.MathUtils.radToDeg(euler.x) > -30) {
-            this.game.playerMouse.selectedHeand = 1
-            this.game.playerMouse.mouseMaxPitch = 25
-            this.game.playerMouse.mouseMinPitch = -30
+            this.game.gameplay.startHandSwitch(1)
           } else {
             // console.log('Wrong!!!')
             this.game.autoMovePlayerData = {
@@ -636,8 +640,6 @@ export default class Input {
         if(e.key =='2') {
           e.preventDefault(); e.stopPropagation();
 
-          console.log(this.game.playerMouse.knife)
-
           if (!this.game.playerMouse.knife) return;
 
           $("#oil-container").hide()
@@ -647,7 +649,7 @@ export default class Input {
 
           if (this.game.playerMouse.selectedHeand != 2) this.game.sound.play(210, {volume: 1})
 
-          this.game.playerMouse.selectedHeand = 2
+          this.game.gameplay.startHandSwitch(2)
           this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
           this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
 
@@ -672,8 +674,6 @@ export default class Input {
         if(e.key =='3') {
           e.preventDefault(); e.stopPropagation();
 
-          console.log(this.game.playerMouse.cigarette)
-
           if (!this.game.playerMouse.cigarette) return;
 
           $("#oil-container").hide()
@@ -681,18 +681,11 @@ export default class Input {
           this.game.gameplay.removeHeandLight()
           this.resetautoMovePlayerData()
 
-          this.game.playerMouse.selectedHeand = 3
+          this.game.gameplay.startHandSwitch(3)
           this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
           this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
 
           this.game.sound.play(204, /* player-cough1 */ {volume: 0.3})
-        }
-
-        if(e.key =='5') {
-          e.preventDefault(); e.stopPropagation();
-          console.log('-----')
-          console.log('-----')
-          console.log(this.game.timers) 
         }
 
         if(e.key =='6') {
@@ -1537,6 +1530,8 @@ export default class Input {
     let sceneIntersects = raycaster.intersectObjects(Object.values(this.game.loadedMeshs), true)
 
     for (const action of this.game.map.actionelements) {
+      if (this.game.gameplay.isOneShotClickDone(action[1])) continue;
+      
       if (action[1].conditions.click == clickType) {
         const intersects = raycaster.intersectObjects(action[0].children, true)
         // IF HAVE CLICK SHOT MESH

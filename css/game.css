@@ -102,7 +102,7 @@
 }
 
 .text-selected {
-  color: #ea8708 !important;
+  color: gray !important;
 }
 
 .bg-test {
@@ -694,10 +694,6 @@ a:hover, button:hover, input:hover, textarea:hover {
   line-height: normal;
   letter-spacing: 0.6rem;
   color: #8eb28e;
-  /*
-  background-color: deeppink;
-  border: 1px solid red;
-  */
 }
 
 #arrow-down {

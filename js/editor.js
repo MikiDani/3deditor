@@ -974,7 +974,7 @@ class Editor {
             <div class="d-flex justify-content-start align-items-center">
               <span title="The event is activated by clicking - or double-clicking - or not.">Click:</span>
               <select data-type="long" name="click" data-action-id="${animAction.id}" class="mx-3">
-                ${this.optionElementMaker([{id:'auto', name:'auto'},{id:'mousedown', name:'mousedown'},{id:'dblclick', name:'dblclick'}], animAction.conditions.click)}
+                ${this.optionElementMaker([{id:'auto', name:'auto'},{id:'autoonce', name:'auto once'},{id:'mousedown', name:'mousedown'},{id:'dblclick', name:'dblclick'}], animAction.conditions.click)}
               </select>
               <span title="The character must be at least this close for the event to activate.">Distance Near:</span>
               <input type="number" step="0.01" name="distance-near" value="${animAction.conditions.distance_near ? animAction.conditions.distance_near : '0.1'}" data-action-id="${animAction.id}" class="mx-3">
@@ -3971,7 +3971,7 @@ class Editor {
       let mode = $(this).attr('data-mode')
       let halfSize = $(this).attr('data-half-size') === 'true';
 
-      if (clone.selectedView) {
+      if (clone.selectedView && clone.selectedView != 'screen-canvas') {
         $(this).addClass('bg-success')
         let worldUnit = parseFloat($(`span.data-grid-value[data-name='${clone.selectedView}']`).attr('data-worldunit'))
         $(`input[name='move-size'][data-mode='${mode}']`).val(halfSize ? worldUnit / 2 : worldUnit)
@@ -5113,14 +5113,14 @@ class Editor {
       if (being) {
         let newbeing = JSON.parse(JSON.stringify(being)) // deepcopy
 
-        newbeing.id = being.getInstanceCount() + 1
+        newbeing.id = Being.getInstanceCount() + 1
         newbeing.name = newbeing.name + '-clone'
-        being.setInstanceCount(newbeing.id)
+        Being.setInstanceCount(newbeing.id)
 
         clone.map.beings.push(newbeing)
 
         setTimeout(() => {
-          $(`.being-element[data-light-id='${newLight.id}']`).trigger('click')
+          $(`.being-element[data-light-id='${newbeing.id}']`).trigger('click')
         }, 20)
         clone.refreshBeingsList()
       }
@@ -6043,9 +6043,6 @@ class Editor {
 
       // pervious setting
       $(`select[name='mesh-pervious'] option[value='${selectedMesh.pervious ? 'true' : 'false'}']`).prop('selected', true)
-
-      console.log('selectedMesh.active :', selectedMesh.active)
-      // if (selectedMesh.active === 'undefined') selectedMesh.active = true;
       
       // active setting
       $(`select[name='mesh-active'] option[value='${selectedMesh.active ? 'true' : 'false'}']`).prop('selected', true)

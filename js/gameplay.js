@@ -9,7 +9,11 @@ export default class Gameplay {
     this.oilUseTimer = 0
     this.oilUseDelay = 300
 
+    // HANDLE LIGHT CLONES
     this.heandLightClones = []
+
+    this.heandChangeDuration = 400
+    this.heandChangeDistance = 0.5
   }
 
   async waitForGameInfo(text) {
@@ -91,14 +95,8 @@ export default class Gameplay {
     if (this.game.playerMouse.selectedHeand == 1) {
       if (this.game.map?.player?.oil <= 0) {
         this.oilUseTimer = 0
-
-        $(document).trigger($.Event('keydown', {
-          key: '0',
-          which: 48,
-          keyCode: 48
-        }))
-
-        return
+        this.startHandSwitch(0)
+        return;
       }
 
       this.oilUseTimer += deltaTime
@@ -114,13 +112,7 @@ export default class Gameplay {
 
           if (this.game.map.player.oil <= 0) {
             this.oilUseTimer = 0
-
-            $(document).trigger($.Event('keydown', {
-              key: '0',
-              which: 48,
-              keyCode: 48
-            }))
-
+            this.startHandSwitch(0)
             break
           }
         }
@@ -130,103 +122,115 @@ export default class Gameplay {
     }
   }
 
+  startHandSwitch(weapon) {
+    if (Number(this.game.playerMouse.selectedHeand) == weapon) return;
+    if (this.game.autoMovePlayerData.mode == 'hand-down' || this.game.autoMovePlayerData.mode == 'hand-up') return;
+
+    this.game.autoMovePlayerData = {
+      mode: 'hand-down',
+      weapon: Number(weapon),
+      handY: 0,
+      time: 0
+    }
+  }
+
   async autoMovePlayer(deltaTime) {
-    if (this.game.autoMovePlayerData.mode == null) return;
+    if (this.game.autoMovePlayerData.mode == null) return
 
     switch (this.game.autoMovePlayerData.mode) {
       case 'y-center': {
-        // IF CHANGE LAMP, AND THE HEAD Y NOT CENTER LIMIT
         const step = THREE.MathUtils.degToRad(5)
         let x = this.game.pitchObject.rotation.x
-  
-        // NORMALIZE REGION
+
         x = THREE.MathUtils.euclideanModulo(x + Math.PI, Math.PI * 2) - Math.PI
 
         if (Math.abs(x) <= step) {
-          // CENTER
-          this.game.pitchObject.rotation.x = 0;
-          $(document).trigger($.Event('keydown', { key: `${this.game.autoMovePlayerData.weapon}`, which: 49, keyCode: 49 }));
+          this.game.pitchObject.rotation.x = 0
+
+          const weapon = this.game.autoMovePlayerData.weapon
 
           this.game.autoMovePlayerData.mode = null
           this.game.autoMovePlayerData.weapon = null
+
+          $(document).trigger($.Event('keydown', { key: `${weapon}`, which: 49, keyCode: 49 }))
         } else {
-          // MOVEING
-          this.game.pitchObject.rotation.x += (x > 0 ? -step : step);
+          this.game.pitchObject.rotation.x += x > 0 ? -step : step
         }
-        break;
+
+        break
+      }
+
+      case 'hand-down': {
+        this.game.autoMovePlayerData.time += deltaTime
+        const p = Math.min(this.game.autoMovePlayerData.time / this.heandChangeDuration, 1)
+        this.game.autoMovePlayerData.handY = -this.heandChangeDistance * p
+        if (p >= 1) {
+          this.game.gameplay.removeHeandLight()
+          this.game.playerMouse.selectedHeand = this.game.autoMovePlayerData.weapon
+
+          if (this.game.autoMovePlayerData.weapon == 0) {
+            this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
+            this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
+            $("#oil-container").hide()
+            this.game.autoMovePlayerData = { mode: null, weapon: null, handY: 0, time: 0 }
+            return;
+          }
+
+          if (this.game.autoMovePlayerData.weapon == 1) {
+            this.game.playerMouse.mouseMaxPitch = 25
+            this.game.playerMouse.mouseMinPitch = -30
+            $("#oil-container").show()
+          } else {
+            this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
+            this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
+            $("#oil-container").hide()
+          }
+
+          this.game.autoMovePlayerData.mode = 'hand-up'
+          this.game.autoMovePlayerData.time = 0
+        }
+
+        break
+      }
+
+      case 'hand-up': {
+        this.game.autoMovePlayerData.time += deltaTime
+        const p = Math.min(this.game.autoMovePlayerData.time / this.heandChangeDuration, 1)
+        this.game.autoMovePlayerData.handY = -this.heandChangeDistance * (1 - p)
+        if (p >= 1) this.game.autoMovePlayerData = { mode: null, weapon: null, handY: 0, time: 0 };
+        break
       }
     }
-    // console.log(this.game.autoMovePlayerData)
-  }
-
-  async refreshHeandLights() {    //!!! OLD !!!!
-    // delete old lights
-    const lightsToRemove = []
-    this.game.heandScene.traverse(obj => {
-      if (obj.isLight) lightsToRemove.push(obj)
-    })
-    lightsToRemove.forEach(light => this.game.heandScene.remove(light))    
-
-   // add new lights
-    this.game.loadedLights.map(element => {
-      const light = element[1]
-      const newLight = new THREE.PointLight(
-        light.color.clone ? light.color.clone() : light.color,
-        light.intensity,
-        light.distance,
-        light.decay,
-      )
-
-      newLight.position.copy(light.position)
-      newLight.visible = light.visible
-  
-      this.game.heandScene.add(newLight)
-    })
   }
 
   syncHeandLights() {
-    if (!this.heandLightClones) this.heandLightClones = []
-
-    const liveIndexes = new Set()
-
-    this.game.loadedLights.forEach((element, index) => {
-      if (!element || !element[1]) return
-
-      liveIndexes.add(index)
-
-      const source = element[1]
+    for (let index = 0; index < this.game.loadedLights.length; index++) {
+      const source = this.game.loadedLights[index]?.[1]
       let clone = this.heandLightClones[index]
 
       if (!clone) {
-        clone = new THREE.PointLight(
-          source.color.clone ? source.color.clone() : source.color,
-          source.intensity,
-          source.distance,
-          source.decay
-        )
+        clone = new THREE.PointLight('#ffffff', 0, 0, 2)
+        clone.visible = true
 
         this.heandLightClones[index] = clone
         this.game.heandScene.add(clone)
       }
 
+      if (!source) {
+        clone.intensity = 0
+        clone.distance = 0
+        continue
+      }
+
       if (clone.color?.copy && source.color) clone.color.copy(source.color)
 
-      clone.intensity = source.intensity
-      clone.distance = source.distance
+      clone.intensity = source.visible === false ? 0 : source.intensity
+      clone.distance = source.visible === false ? 0 : source.distance
       clone.decay = source.decay
-      clone.visible = source.visible
       clone.position.copy(source.position)
 
       if (source.quaternion) clone.quaternion.copy(source.quaternion)
-    })
-
-    this.heandLightClones.forEach((clone, index) => {
-      if (!clone) return
-      if (liveIndexes.has(index)) return
-
-      this.game.heandScene.remove(clone)
-      this.heandLightClones[index] = null
-    })
+    }
   }
 
   lightVibration(amplitude, durationMs) {
@@ -398,32 +402,31 @@ export default class Gameplay {
         if (beingGroup.position.y < -1) beingGroup.position.set(-3, 2, beingGroup.position.z);
       }
 
-      // BOUNDING BOX INIT
-      if (!beingGroup.box) {
-        beingGroup.box = beingGroup.largestBoundingBox.clone()
-        this.game.boundingBoxes.push(beingGroup.box)
-
-        // HELPER
-        if (true) { // being helper!
-          beingGroup.helper = new THREE.Box3Helper(beingGroup.box, new THREE.Color('#ffff00'))
-          this.game.scene.add(beingGroup.helper)
-        }
-      }
-
       // WORLD MATRIX ELŐBB
       beingGroup.updateMatrixWorld(true)
 
-      // BOX FRISSÍTÉS
-      beingGroup.box.copy(beingGroup.largestBoundingBox)
-      beingGroup.box.applyMatrix4(beingGroup.matrixWorld)
+      // BOUNDING BOX INIT ÉS FRISSÍTÉS
+      if (!beingGroup.pervious && beingGroup.largestBoundingBox) {
+        if (!beingGroup.box) {
+          beingGroup.box = beingGroup.largestBoundingBox.clone()
+          this.game.boundingBoxes.push(beingGroup.box)
 
-      // HELPER FRISSÍTÉS
-      if (beingGroup.helper) beingGroup.helper.box.copy(beingGroup.box);
+          // HELPER
+          if (false) {
+            beingGroup.helper = new THREE.Box3Helper(beingGroup.box, new THREE.Color('#ffff00'))
+            this.game.scene.add(beingGroup.helper)
+          }
+        }
 
+        beingGroup.box.copy(beingGroup.largestBoundingBox)
+        beingGroup.box.applyMatrix4(beingGroup.matrixWorld)
+
+        if (beingGroup.helper) beingGroup.helper.box.copy(beingGroup.box)
+      }
     }
   }
 
-  removeBeing(beingGroup) {
+  removeBeing_old(beingGroup) {
     if (!beingGroup) return
 
     beingGroup.active = false
@@ -454,7 +457,41 @@ export default class Gameplay {
     }
   }
 
-  async updateHeand(deltaTime) {  
+  removeBeing(beingGroup) {
+    if (!beingGroup) return;
+
+    this.game.stopBeingSound(beingGroup)
+
+    beingGroup.active = false
+    beingGroup.visible = false
+    beingGroup.animationActive = false
+    beingGroup.apactive = false
+    beingGroup.pointData = null
+    beingGroup.animStep = null
+
+    if (beingGroup.helper) {
+      this.game.scene.remove(beingGroup.helper)
+      beingGroup.helper.geometry?.dispose?.()
+      beingGroup.helper.material?.dispose?.()
+      beingGroup.helper = null
+    }
+
+    if (beingGroup.box) {
+      this.game.boundingBoxes = this.game.boundingBoxes.filter(box => box !== beingGroup.box)
+      beingGroup.box = null
+    }
+
+    this.game.removeObjectOfMap(this.game.scene, beingGroup)
+
+    for (const [id, loadedBeing] of Object.entries(this.game.loadedBeings)) {
+      if (loadedBeing === beingGroup) {
+        delete this.game.loadedBeings[id]
+        break
+      }
+    }
+  }
+
+  async updateHeand(deltaTime, preload = false) {
     for (let [id, heandGroup] of Object.entries(this.game.loadedHeands)) {
       // SELECTED HEAND
       if (id == this.game.playerMouse.selectedHeand) {
@@ -579,7 +616,7 @@ export default class Gameplay {
           // MOD UP/DOWN LOOK HEAD POSITION            
           const yModifyToXaw = ((this.game.pitchObject.rotation._x + 1) / heandConfig.yRatio) * -1
   
-          const localOffset = new THREE.Vector3(heandConfig.xDistance, heandConfig.yDistance + yModifyToXaw, -heandConfig.zDistance)
+          const localOffset = new THREE.Vector3(heandConfig.xDistance, heandConfig.yDistance + yModifyToXaw + (this.game.autoMovePlayerData.handY ?? 0), -heandConfig.zDistance)
           const worldPos = camPos.clone().add(localOffset.clone().applyQuaternion(camQuat))
   
           // HEAND POSITION
@@ -594,63 +631,88 @@ export default class Gameplay {
             heandGroup.quaternion.copy(camQuat)
           }
   
-          // IF HAVE LIGHT          
-          if (!heandGroup.lightsAdded) {
-            if (heandGroup.lights) {
-              if (!heandGroup.lightsGroup) {
-                heandGroup.lightsGroup = new THREE.Group()
-                // ADD THE LAMP LIGHT TO MAP
-                this.game.scene.add(heandGroup.lightsGroup)
+          // IF HAVE LIGHT
+          if (!preload) {
+            if (!heandGroup.lightsAdded) {
+              if (heandGroup.lights) {
+                if (!heandGroup.lightsGroup) {
+                  heandGroup.lightsGroup = new THREE.Group()
+                  // ADD THE LAMP LIGHT TO MAP
+                  this.game.scene.add(heandGroup.lightsGroup)
+                }
+
+                heandGroup.heandindex ??= []
+                heandGroup.lights.forEach((light, i) => {
+                  light.userData.defaultColor ??= light.color.clone()
+                  light.userData.defaultIntensity ??= light.intensity
+                  light.userData.defaultDistance ??= light.distance
+                  light.userData.defaultDecay ??= light.decay
+
+                  if (light.parent !== heandGroup.lightsGroup) heandGroup.lightsGroup.add(light)
+
+                  let index = heandGroup.heandindex[i]
+                  let source = this.game.loadedLights[index]?.[1]
+
+                  if (!source) {
+                    source = light.clone()
+                    index = this.game.loadedLights.push([heandModell.filename, source]) - 1
+                    heandGroup.heandindex[i] = index
+                  }
+
+                  light.color.copy(light.userData.defaultColor)
+                  light.intensity = light.userData.defaultIntensity
+                  light.distance = light.userData.defaultDistance
+                  light.decay = light.userData.defaultDecay
+                  light.visible = true
+
+                  source.color.copy(light.userData.defaultColor)
+                  source.intensity = light.userData.defaultIntensity
+                  source.distance = light.userData.defaultDistance
+                  source.decay = light.userData.defaultDecay
+                  source.visible = true
+                })
+              } else {
+                // RESET
+                if (heandGroup.heandindex) {
+                  heandGroup.heandindex.forEach(index => {
+                    delete this.game.loadedLights[index]
+                  })
+                }
+    
+                if (heandGroup.lightsGroup) {
+                  this.game.scene.remove(heandGroup.lightsGroup)
+                  heandGroup.lightsGroup = null
+                  heandGroup.lightsAdded = false
+                }
               }
-  
-              heandGroup.lights.forEach(light => {
-                heandGroup.heandindex = heandGroup.heandindex ?? []
-                heandGroup.lightsGroup.add(light)
-                heandGroup.heandindex.push(this.game.loadedLights.push([heandModell.filename, light.clone()]) - 1)
-              })
-            } else {
-              // RESET
+    
+              heandGroup.lightsAdded = true // ONLY ONE
+            }
+    
+            if (false || heandGroup.lightsGroup) {
+              const originalCamPos = new THREE.Vector3()
+              this.game.camera.getWorldPosition(originalCamPos)
+    
+              const originalCamQuat = new THREE.Quaternion()
+              this.game.camera.getWorldQuaternion(originalCamQuat)
+    
+              heandGroup.lightsGroup.position.copy(originalCamPos)
+              heandGroup.lightsGroup.quaternion.copy(originalCamQuat)
+    
               if (heandGroup.heandindex) {
-                heandGroup.heandindex.forEach(index => {
-                  delete this.game.loadedLights[index]
+                heandGroup.heandindex.forEach((index, i) => {
+                  const localOffset = new THREE.Vector3(-0.15, i * 0.1, i * -0.1)
+                  this.game.loadedLights[index][1].position.copy(originalCamPos).add(localOffset)
+                  this.game.loadedLights[index][1].quaternion.copy(originalCamQuat)
+                  // LIGHT VIBRATION
+                  // this.game.loadedLights[index][1].intensity += this.lightVibration(0.025, 2500)
                 })
               }
-  
-              if (heandGroup.lightsGroup) {
-                this.game.scene.remove(heandGroup.lightsGroup)
-                heandGroup.lightsGroup = null
-                heandGroup.lightsAdded = false
-              }
             }
-  
-            heandGroup.lightsAdded = true // ONLY ONE
+    
+            this.syncHeandLights()
           }
-  
-          if (false || heandGroup.lightsGroup) {
-            const originalCamPos = new THREE.Vector3()
-            this.game.camera.getWorldPosition(originalCamPos)
-  
-            const originalCamQuat = new THREE.Quaternion()
-            this.game.camera.getWorldQuaternion(originalCamQuat)
-  
-            heandGroup.lightsGroup.position.copy(originalCamPos)
-            heandGroup.lightsGroup.quaternion.copy(originalCamQuat)
-  
-            if (heandGroup.heandindex) {
-              heandGroup.heandindex.forEach((index, i) => {
-                const localOffset = new THREE.Vector3(-0.15, i * 0.1, i * -0.1)
-                this.game.loadedLights[index][1].position.copy(originalCamPos).add(localOffset)
-                this.game.loadedLights[index][1].quaternion.copy(originalCamQuat)
-                // LIGHT VIBRATION
-                // this.game.loadedLights[index][1].intensity += this.lightVibration(0.025, 2500)
-              })
-            }
-          }
-  
-          // this.refreshHeandLights() //old
 
-          this.syncHeandLights()
-  
           heandGroup.updateMatrixWorld(true)
           heandGroup.box.setFromObject(heandGroup)
         }
@@ -662,18 +724,26 @@ export default class Gameplay {
 
   removeHeandLight() {
     const actHeand = this.game.loadedHeands[this.game.playerMouse.selectedHeand]
-    if (actHeand  && actHeand.heandindex) {
+    if (!actHeand) return
+
+    if (actHeand.heandindex) {
       actHeand.heandindex.forEach(index => {
-        delete this.game.loadedLights[index]
-      });
-      actHeand.heandindex = []
+        const source = this.game.loadedLights[index]?.[1]
+        if (!source) return;
+
+        source.intensity = 0
+        source.distance = 0
+        source.visible = false
+      })
     }
-    // LIGHT REMOVE THE MAP
-    if (actHeand && actHeand.lightsGroup) {
+
+    if (actHeand.lightsGroup) {
       this.game.scene.remove(actHeand.lightsGroup)
       actHeand.lightsGroup = null
       actHeand.lightsAdded = false
     }
+
+    this.syncHeandLights()
   }
 
   stepAnimState(animState, modellAnimations) {    
@@ -1009,33 +1079,31 @@ export default class Gameplay {
   checkCrash(testBox, ignoreBeingId = null, ignorePlayer = false) {
     // PLAYER CHECK HIT
     if (!ignorePlayer) {
-      const half = this.game.playerBoundingBox.clone();
+      const half = this.game.playerBoundingBox.clone()
       half.y = 1
-  
-      const playerCenter = this.game.player.position.clone();
-      const playerBox = new THREE.Box3(
-        playerCenter.clone().sub(half),
-        playerCenter.clone().add(half)
-      )
-      if (testBox.intersectsBox(playerBox)) {
-        return true;
-      }
+
+      const playerCenter = this.game.player.position.clone()
+      const playerBox = new THREE.Box3(playerCenter.clone().sub(half), playerCenter.clone().add(half))
+
+      if (testBox.intersectsBox(playerBox)) return true;
     }
 
     // MAP CHECK HIT
-    for (const [key, loadedMesh] of Object.entries(this.game.loadedMeshs)) {      
-      if (testBox.intersectsBox(loadedMesh.box)) {
-        return true;
-      }
+    for (const [key, loadedMesh] of Object.entries(this.game.loadedMeshs)) {
+      if (!loadedMesh) continue
+      if (loadedMesh.pervious) continue
+      if (!loadedMesh.box) continue
+
+      if (testBox.intersectsBox(loadedMesh.box)) return true;
     }
 
     // BEINGS CHECK HIT
     for (const [beingId, beingGroup] of Object.entries(this.game.loadedBeings)) {
-      const id = Number(beingId);
-      if (id === ignoreBeingId) continue; // saját maga kihagyva
-      if (beingGroup.box && testBox.intersectsBox(beingGroup.box)) {
-        return true;
-      }
+      const id = Number(beingId)
+
+      if (id === ignoreBeingId) continue
+
+      if (beingGroup.box && testBox.intersectsBox(beingGroup.box)) return true;
     }
 
     return false;
@@ -1251,22 +1319,70 @@ export default class Gameplay {
     this.game.camera.getWorldPosition(cameraPos)
 
     this.game.map.actionelements.forEach(action => {
-      if (action[1].conditions.click != 'auto') return
+      const clickType = action[1].conditions.click
+      if (clickType != 'auto' && clickType != 'autoonce') return;
+      if (clickType == 'autoonce' && action[1].autoOnceDone) return;
 
       const meshGroup = action[0]
-      if (!meshGroup) return
+      if (!meshGroup) return;
 
       const box = new THREE.Box3().setFromObject(meshGroup)
-      if (box.isEmpty()) return
+      if (box.isEmpty()) return;
 
       const distance = box.distanceToPoint(cameraPos)
+
+      // this.makeAutoActionSphereHelper(action, box, distance)  // AUTO ACTION SEGÉD!!!
 
       this.checkActions(deltaTime, 'noclick', action, distance)
     })
   }
 
+  makeAutoActionSphereHelper(action, box, distance) { // !!! Majd törölni
+    if (!action || !action[1]?.conditions || !this.game.scene) return
+
+    const meshGroup = action[0]
+    const actionData = action[1]
+    const helperName = `auto-action-sphere-${actionData.id}`
+
+    const center = new THREE.Vector3()
+    box.getCenter(center)
+
+    const radius = Number(actionData.conditions.distance_far ?? 0)
+    if (!radius) return
+
+    let helper = this.game.scene.getObjectByName(helperName)
+
+    if (!helper) {
+      const geometry = new THREE.SphereGeometry(radius, 24, 12)
+      const material = new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true, transparent: true, opacity: 0.35, depthTest: false })
+      helper = new THREE.Mesh(geometry, material)
+      helper.name = helperName
+      helper.renderOrder = 999
+      this.game.scene.add(helper)
+
+      const centerGeometry = new THREE.SphereGeometry(0.05, 8, 8)
+      const centerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, depthTest: false })
+      const centerHelper = new THREE.Mesh(centerGeometry, centerMaterial)
+      centerHelper.name = `${helperName}-center`
+      centerHelper.renderOrder = 1000
+      helper.add(centerHelper)
+    }
+
+    helper.position.copy(center)
+
+    const scale = radius / helper.geometry.parameters.radius
+    helper.scale.set(scale, scale, scale)
+
+    helper.visible = true
+    helper.userData.distance = distance
+    helper.userData.distanceNear = actionData.conditions.distance_near
+    helper.userData.distanceFar = actionData.conditions.distance_far
+    helper.userData.meshName = meshGroup?.name
+  }
+
   async checkActions(deltaTime, type, actions, distance) {
     if (actions[1].protectedDone) return; // REMAINING
+      if (type == 'click' && this.isOneShotClickDone(actions[1])) return;
     // MAKE USEDOBJECTS ARRAY
     if (typeof actions[1].conditions.usedobjects === 'undefined') actions[1].conditions.usedobjects = []
 
@@ -1326,6 +1442,12 @@ export default class Gameplay {
             // DELETE OBJECT FROM INVENTORY
             this.game.playerObjects = this.game.playerObjects.filter(obj => obj !== this.game.playerMouse.selectedObject.objId)
             this.game.inventory.inventoryMenu.reloadInventory = true
+            // REFRESH INVENTORY
+            this.game.inventory.inventoryMenu.inventoryStartIndex = 0
+            this.game.inventory.inventoryMenu.inventoryPosition = 0
+            this.game.inventory.inventoryMenu.reloadInventory = true
+            $('#arrow-up').trigger('click')
+            $("#inventory-item-text-container .item-text-container").removeClass("text-hover text-selected").eq(0).addClass("text-hover")
           }
         }
         // CHECK EXACT MATCH
@@ -1357,6 +1479,15 @@ export default class Gameplay {
       if (actions[1].conditions.issetobjects.length > 0 && !this.game.checkPlayerObject(actions[1].conditions.issetobjects)) return;
     }
 
+    // CHECK ONE SHOT CLICK ACTION
+    if (type == 'click') {
+      const oneShotClickActions = this.game.config.oneShotClickActions ?? []
+      if (oneShotClickActions.includes(Number(actions[1].id))) actions[1].oneShotClickDone = true
+    }
+
+    // AUTO ONCE COMPLETED
+    if (actions[1].conditions.click == 'autoonce') actions[1].autoOnceDone = true;
+
     // START EVENTS
     for(const event of actions[1].events) {
       // ACTION
@@ -1370,7 +1501,9 @@ export default class Gameplay {
             for (const soundId of event.playsounds) {
               // NO CLICK SOUND PLAYING ONLY ONE TIME
               (async () => {
-                if (type == 'noclick') {
+                if (actions[1].conditions.click == 'autoonce') {
+                  await this.game.sound.play(soundId, {loop: false}, true, actions[0])
+                } else if (type == 'noclick') {
                   if (!actions[0].endFunction) {
                     actions[0].endFunction = true
 
@@ -1386,11 +1519,11 @@ export default class Gameplay {
 
                         audio.stop()
                         audio.disconnect()
-                        if (phantom.parent) phantom.parent.remove(phantom);
-                
+                        if (phantom.parent) phantom.parent.remove(phantom)
+
                         actions[0].playSound = null
                         actions[0].endFunction = null
-                      };
+                      }
 
                       audio.source.onended = endFunction
                       actions[0].endFunction = endFunction
@@ -1399,7 +1532,6 @@ export default class Gameplay {
                 } else {
                   const loadedSounds = this.game.loadedSounds.find(obj => obj.id == soundId)
                   if (loadedSounds) {
-                    // console.log(loadedSounds)
                     await this.game.sound.play(loadedSounds.id, null, true, actions[0])
                   }
                 }
@@ -1532,14 +1664,6 @@ export default class Gameplay {
       data[eventId].save_color = light.defaultValues.color
       data[eventId].save_distance = light.defaultValues.distance
       data[eventId].save_intensity = light.defaultValues.intensity
-
-      /*
-      data[eventId] = {}
-      data[eventId].state = light.defaultValues?.active ?? false
-      data[eventId].save_color = light.defaultValues?.color ?? 'ffffff'
-      data[eventId].save_distance = light.defaultValues?.distance ?? 0.5
-      data[eventId].save_intensity = light.defaultValues?.intensity ?? 0.5
-      */
     }
 
     switch(data.id) {
@@ -1551,7 +1675,7 @@ export default class Gameplay {
           light.color = randomColor;
         }, data.time)
 
-        this.refreshHeandLights()
+        this.syncHeandLights()
       break
 
       case 1:
@@ -1580,7 +1704,7 @@ export default class Gameplay {
 
         // data[eventId].state = !data[eventId].state
 
-        this.refreshHeandLights()
+        this.syncHeandLights()
       break
 
       case 2:
@@ -1594,7 +1718,7 @@ export default class Gameplay {
         light.distance = data[eventId].save_distance
         light.intensity = data[eventId].save_intensity
 
-        this.refreshHeandLights()
+        this.syncHeandLights()
       break
 
       case 3:
@@ -1612,25 +1736,20 @@ export default class Gameplay {
         light.distance = 0
         light.intensity = 0
 
-        this.refreshHeandLights()
+        this.syncHeandLights()
       break
 
       case 4:
-        // RANDOM RED COLOR
+        // RANDOM RED COLOR 100ms
         if (!(light instanceof THREE.PointLight)) return;
 
         setTimeout(() => {
-          // piros domináns
-          const r = 0.9 + Math.random() * 0.1
-          // kis sárgás vibrálás
-          const g = 0.2 + Math.random() * 0.35
-          // minimális kék
-          const b = Math.random() * 0.08
-
-          light.color = new THREE.Color(r, g, b)
+          const randomRedColor = new THREE.Color()
+          randomRedColor.setHSL(Math.random() * 0.04, Math.random(), 0.15 + Math.random() * 0.45)
+          light.color = randomRedColor
         }, data.time)
 
-        this.refreshHeandLights()
+        this.syncHeandLights()
       break
 
       case 10:
@@ -1642,7 +1761,7 @@ export default class Gameplay {
           light.intensity = 0.2;          
         }, data.time)
 
-        // this.refreshHeandLights()
+        this.syncHeandLights()
       break
 
       case 15:
@@ -1652,7 +1771,7 @@ export default class Gameplay {
           light.color = new THREE.Color(0, 255/255, 0);
         }, data.time)
 
-        this.refreshHeandLights()
+        this.syncHeandLights()
       break
 
       case 20:
@@ -1662,7 +1781,7 @@ export default class Gameplay {
           light.color = new THREE.Color(0, 0, 255/255);
         }, data.time)
 
-        this.refreshHeandLights()
+        this.syncHeandLights()
       break
     }
   }
@@ -1917,28 +2036,40 @@ export default class Gameplay {
       break
 
       case 12:
-        // pervius ON
+        // BoundingBox ON, mesh marad a scene-ben
+        if (!data[eventId]) data[eventId] = { meshId: mesh.objId, meshName: mesh.name, state: false }
+
+        data[eventId].meshId = mesh.objId
+        data[eventId].meshName = mesh.name
+        data[eventId].state = true
+
+        this.game.setMeshBoundingBoxActive(mesh, true)
       break
 
       case 13:
         // BoundingBox OFF, mesh marad a scene-ben
-        if (!data[eventId]) {
-          data[eventId] = {
-            meshId: mesh.objId,
-            meshName: mesh.name,
-            state: true
-          }
-        }
+        if (!data[eventId]) data[eventId] = { meshId: mesh.objId, meshName: mesh.name, state: false }
 
-        mesh.pervious = true
+        data[eventId].meshId = mesh.objId
+        data[eventId].meshName = mesh.name
         data[eventId].state = true
 
-        this.game.removeBoundingBoxOfMap(mesh)
+        this.game.setMeshBoundingBoxActive(mesh, false)
       break
 
-       case 14:
+      case 14:
         // SWITCH FIREPLACE
         this.textureOnOff(mesh, data, eventId, 'fireplace-anim', 'fireplace-anim-2')
+      break
+
+      case 15:
+        // SWITCH SHROUD-DIRTY-CUT
+        this.textureOnOff(mesh, data, eventId, 'shroud-dirty-cut1', 'shroud-dirty-cut2')
+      break
+
+      case 16:
+        // FILM SCROLL ANIM
+        this.textureOnOff(mesh, data, eventId, 'film-scroll1', 'film-scroll-anim1')
       break
 
       case 20:
@@ -2009,11 +2140,6 @@ export default class Gameplay {
         }
       break
 
-      case 30:
-        // PICTURE TEXTURE CHANGE
-        this.textureOnOff(mesh, data, eventId, 'picture-2', 'picture-3')
-      break
-
       case 40:
         // STOP/START ANIMATED TEXTURE
         mesh.texture.playingState = !mesh.texture.playingState
@@ -2060,21 +2186,19 @@ export default class Gameplay {
         this.meshVisibleState(mesh, data, eventId, false)
       break
 
-      case 67:
-        // Mesh Grow Fx
-        /*
-        let count = 0
-        const originalPosition = mesh.position.clone()
-        const interval = setInterval(() => {
-          mesh.scale.multiplyScalar(1.01)
-          // pozíció vissza
-          mesh.position.copy(originalPosition)
-          count++
-          if (count >= 1000) {
-            clearInterval(interval)
-          }
-        }, 16)
-        */
+      case 67: {
+        // Add Cigarette in heand
+        if (!data[eventId]) data[eventId] = { state: false }
+        if (data[eventId].state) break;
+
+        data[eventId].state = true
+        this.game.playerMouse.cigarette = true
+
+        this.game.playerMouse.selectedObject = null
+        $("#cursor-text-box").hide().html('')
+
+        $(document).trigger($.Event('keydown', { key: '3', which: 51, keyCode: 51 }))
+      }
       break
 
       case 80:
@@ -2192,6 +2316,56 @@ export default class Gameplay {
         }
       break
 
+      case 11:
+        // AUTO: FLY-CLOUDS
+
+        if (!data[eventId]) {
+          data[eventId] = {
+            state: true,
+            beingDeleted: false,
+            beingId: being.beingId ?? null,
+            beingName: being.name ?? null,
+            beingFilename: being.filename ?? null,
+          }
+        }
+
+        if (data[eventId].beingDeleted) {
+          this.game.stopBeingSound(being)
+          this.removeBeing(being)
+          return
+        }
+
+        if (!this.game.playerMouse.cigarette || Number(this.game.playerMouse.selectedHeand) != 3)
+        {
+          if (typeof being.waitTimer !== 'number') being.waitTimer = 0
+          being.waitTimer += deltaTime
+
+          if (being.waitTimer >= 250) {
+            being.waitTimer = 0
+            this.game.modifyPlayerEnergy(5)
+          }
+          return
+        }
+        if (!data[eventId].state) return
+
+        this.game.sound.play(30 /* fly-clouds2 */, { volume: 1, loop: false })
+
+        data[eventId].state = false
+        data[eventId].beingDeleted = true
+        data[eventId].active = false
+        data[eventId].visible = false
+
+        const mapBeing = this.game.map?.beings?.find(row => Number(row.id) == Number(being.beingId))
+
+        if (mapBeing) {
+          mapBeing.active = "0"
+          mapBeing.visible = false
+          mapBeing.deleted = true
+        }
+
+        this.game.stopBeingSound(being)
+        this.removeBeing(being)
+      break
     }
   }
 
@@ -2388,14 +2562,31 @@ export default class Gameplay {
 
     const oldSelectedHeand = this.game.playerMouse.selectedHeand
     const oldAutoClear = this.game.renderer.autoClear
+    const handIds = Object.keys(this.game.loadedHeands).filter(id => Number(id) !== 0)
 
-    for (const id of Object.keys(this.game.loadedHeands)) {
-      if (id == 0) continue
+    // MAP FÉNYEK KLÓNJAINAK LÉTREHOZÁSA
+    this.syncHeandLights()
 
+    // ELSŐ KÖR: MINDEN KÉZ FÉNYHELYÉNEK LÉTREHOZÁSA
+    for (const id of handIds) {
       this.game.playerMouse.selectedHeand = id
 
-      await this.updateHeand(16)
+      await this.updateHeand(16, false)
 
+      // A FÉNYHELY MEGMARAD, CSAK KIKAPCSOLJUK
+      this.removeHeandLight()
+    }
+
+    // MOST MÁR AZ ÖSSZES FÉNY KLÓNJA LÉTEZIK
+    this.syncHeandLights()
+
+    // MINDEN KÉZ ELREJTÉSE
+    Object.values(this.game.loadedHeands).forEach(heand => {
+      if (heand) heand.visible = false
+    })
+
+    // MÁSODIK KÖR: GPU ELŐFORDÍTÁS A VÉGLEGES FÉNYSZÁMMAL
+    for (const id of handIds) {
       const heand = this.game.loadedHeands[id]
       if (!heand) continue
 
@@ -2418,6 +2609,15 @@ export default class Gameplay {
     }
 
     this.game.playerMouse.selectedHeand = oldSelectedHeand
+
+    const oldHeand = this.game.loadedHeands[oldSelectedHeand]
+    if (oldHeand) oldHeand.visible = true
+
     this.game.renderer.autoClear = oldAutoClear
+  }
+
+  isOneShotClickDone(action) {
+    const oneShotClickActions = this.game.config.oneShotClickActions ?? []
+    return oneShotClickActions.includes(Number(action?.id)) && action?.oneShotClickDone === true
   }
 }
