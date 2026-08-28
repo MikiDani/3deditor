@@ -260,6 +260,14 @@ class Editor {
     this.typeShowHide(ext)
   }
 
+  centerCanvases() {
+    setTimeout(() => {
+      const keyF6 = $(".reset-center-button[data-name='XYview-canvas']"); keyF6.trigger('click');
+      const keyF7 = $(".reset-center-button[data-name='XZview-canvas']"); keyF7.trigger('click');
+      const keyF8 = $(".reset-center-button[data-name='ZYview-canvas']"); keyF8.trigger('click');
+    }, 20)
+  }
+
   async init() {
     this.startTime = performance.now()
     let consolePrint = false // print in console
@@ -652,24 +660,27 @@ class Editor {
     const maxId = Math.max(...this.map.data[this.map.aid].map(obj => obj.id));
     Mesh.setInstanceCount(maxId)
 
-    /*
-    console.log('---')
-    console.log(this.map.data[this.map.aid][2838].id)
-    console.log(this.map.data[this.map.aid][2838].name)
-    console.log(this.map.data[this.map.aid][2838].parent_id)
-    console.log('---')
-    this.map.data[this.map.aid][2838].parent_id = 8796
-    console.log('---u')
-    console.log(this.map.data[this.map.aid][2838].parent_id)
-    */
-    
-    
-
     // MAP STRUCTURE
     this.map.structure = this.deepCopy(response.structure)
 
     // MAP PLAYER
-    this.map.player = this.deepCopy(response.player)
+    if (ext == 'mtuc' && response.player) {
+      this.map.player = this.deepCopy(response.player)
+    } else {
+      this.map.player = {
+        x: 0,
+        y: 1,
+        z: 5,
+        fYaw: 0,
+        fXaw: 0
+      }
+      this.graph.playerPos = this.map.player
+      this.graph.vCamera.x = this.map.player.x
+      this.graph.vCamera.y = this.map.player.y
+      this.graph.vCamera.z = this.map.player.z
+      this.graph.fYaw = this.map.player.fYaw
+      this.graph.fXaw = this.map.player.fXaw
+    }
 
     // EXT = MAP TYPE
     if (ext == 'mtuc') {
@@ -708,6 +719,7 @@ class Editor {
         let fileList = response2.files.filter(file => file.extension == 'otuc')
         fileList.filter(file => file.extension == 'otuc').forEach(file => {
           let exp = file.name.split('_')
+          this.map.objects = this.map.objects ?? []
           this.map.objects.push({id: exp[0], name: exp[1], filename: file.name })
         });
       }
@@ -737,6 +749,7 @@ class Editor {
       this.map.animations = this.deepCopy(response.animations)
       this.map.ratio = response.ratio ?? 1;
       this.map.eat = response.eat ?? 'false';
+      this.map.eattype = response.eattype ?? '0';
       this.map.read = response.read ?? 'false';
       this.map.text = response.text ?? '';
 
@@ -748,6 +761,7 @@ class Editor {
 
       this.refreshRatioInput(this.map.ratio)
       this.refreshEatInput(this.map.eat)
+      this.refreshEattypeInput(this.map.eattype)
       this.refreshReadInput(this.map.read)
       this.refreshTextInput(this.map.text)
     }
@@ -755,15 +769,8 @@ class Editor {
 
   async loadMapData() {
     // DEFAULT MAP
-    
-    // let filename = 'test-map-1'; let ext = 'mtuc';
     let filename = 'cottage-1'; let ext = 'mtuc';
     
-    // DEFAULT OBJECT
-    // let filename = 'zombi'; let ext = 'otuc';
-    // let filename = 'clock-1'; let ext = 'otuc';
-    // let filename = 'bat-a-2'; let ext = 'otuc';
-
     $("#modal-ext").val(ext)
     this.mapVariableReset(ext)
 
@@ -1567,6 +1574,10 @@ class Editor {
 
   refreshEatInput(eat) {
     $('#object-eat').val(eat);
+  }
+
+  refreshEattypeInput(eattype) {    
+    $('#object-eattype').val(eattype);
   }
 
   refreshReadInput(read) {
@@ -2485,6 +2496,12 @@ class Editor {
       // console.log(clone.map.eat)
     });
 
+    // OBJECT EATTYPE SELECT
+    $("#object-eattype").on('change', function() {
+      clone.map.eattype = $(this).val()
+      // console.log(clone.map.eattype)
+    });
+
     // OBJECT READ INPUT
     $("#object-read").on('input', function() {
       clone.map.read = $(this).val()
@@ -3093,6 +3110,8 @@ class Editor {
             $("#modal-close").trigger('click')
             $('#modal-input').val('')
             $("#modal-message").html('')
+            // CENTER CANVASES
+            if (ext == 'otuc') clone.centerCanvases()
           }, 500);
         } else if (response?.error) {
           $("#modal-message").html(`<span class="text-center text-warning">${response?.error}</span>`)
@@ -3105,23 +3124,12 @@ class Editor {
       if (mode == 'save' && filename) {
         let save = true;
 
-        let ext = $(this).attr('data-ext')
+        let ext = $(this).attr('data-ext') ?? 'otuc'
         $("#modal-ext").val(ext)
 
         const responseIsset = await clone.fetchData({ ajax: true, issetfile: true, filename, ext: ext }); // console.log(responseIsset)
-        if (responseIsset[0]) save = (confirm(`File is isset: ${filename} Are you seure ovverrite?`)) ? true : false;
+        if (responseIsset?.[0]) save = (confirm(`File is isset: ${filename} Are you seure ovverrite?`)) ? true : false;
         if (save) {
-          /*
-          console.log(clone.map.lights)
-
-          clone.map.lights.forEach(light => {
-            console.log(light)
-            console.log(light.active)
-
-            light.active ??= true;
-          });
-          */
-
           let saveMapData = JSON.stringify(clone.getCloneMapData(clone))
 
           const responseSave = await clone.fetchData({ ajax: true, save: true, filename, ext: ext, mapdata: saveMapData }); // console.log('response:'); console.log(responseSave);
@@ -4867,18 +4875,10 @@ class Editor {
 
     // SELECT
     $(document).on("change", "select[name='light-type'], select[name='light-edit-color'], select[name='light-active']", function() {
-      let variableName = $(this).attr('data-name')
-
-      console.log($(this).val())
-      
+      let variableName = $(this).attr('data-name')      
       let value = $(this).val() == 1 ? true : false;
 
-      console.log(value)
-      
-      clone.mouse.selectedLightData[variableName] = value
-
-      console.log(clone.mouse.selectedLightData[variableName])
-      
+      clone.mouse.selectedLightData[variableName] = value      
     });
 
     // DELETE LIGHT
@@ -6558,14 +6558,10 @@ class Editor {
         let np0X = view.posX + this.mouse.addRec.cords[0][view.vX] * view.ratio
         let np0Y = view.posY + this.mouse.addRec.cords[0][view.vY] * view.ratio
 
-        // 
-        if (true) {   //!!!
-          
-          view.ctx.fillStyle = 'orange'
-          view.ctx.beginPath()
-          view.ctx.arc(np0X, np0Y, 3, 0, 2 * Math.PI)
-          view.ctx.fill()
-        }
+        view.ctx.fillStyle = 'orange'
+        view.ctx.beginPath()
+        view.ctx.arc(np0X, np0Y, 3, 0, 2 * Math.PI)
+        view.ctx.fill()
       }
 
       // POS FULL AXIS ORIGO

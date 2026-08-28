@@ -968,7 +968,7 @@ export class Graphics {
     this.screenCtx.lineTo(p2.x*this.RATIO, p2.y*this.RATIO)
     this.screenCtx.lineTo(p3.x*this.RATIO, p3.y*this.RATIO)
     this.screenCtx.closePath()
-    this.screenCtx.lineWidth = 3
+    this.screenCtx.lineWidth = 1
     this.screenCtx.stroke()
   }
 

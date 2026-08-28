@@ -91,6 +91,7 @@ export default class Loader {
               'text': response4.text,
               'read': response4.read ? (response4.read === 'false' ? false : response4.read) : false,
               'eat': response4.eat ? (response4.eat === 'false' ? false : parseInt(response4.eat)) : false,
+              'eattype': response4.eattype ?? '0',
               'data': this.game.deepCopy(response4.data),
               'structure': this.game.deepCopy(response4.structure),
             }
@@ -244,6 +245,10 @@ export default class Loader {
   async mapLoader(filename, ext) {
     this.cleanupMapRuntimeHitboxes()
 
+    this.game.graphics.distanceMode = $("input[name='distance-mode']:checked").val()
+    
+    this.game.graphics.reloadScreen(this.game.graphics.distanceMode)
+
     let loadType = null
     let savedgamesdir = null
 
@@ -285,7 +290,19 @@ export default class Loader {
       this.game.map.player.nowtime = performance.now()
 
       if (response.playerObjects != null) this.game.playerObjects = response.playerObjects;
-      if (response.playerMouse != null) this.game.playerMouse = response.playerMouse;
+      
+      if (response.playerMouse != null) {
+        this.game.playerMouse = response.playerMouse
+
+        $("#weapon1-selector").hide()
+        $("#weapon2-selector").hide()
+        $("#weapon3-selector").hide()
+
+        if (this.game.playerMouse.lamp) $("#weapon1-selector").show()
+        if (this.game.playerMouse.knife) $("#weapon2-selector").show()
+        if (this.game.playerMouse.cigarette) $("#weapon3-selector").show()
+      }
+
       this.game.autoMovePlayerData = { mode: null, weapon: null, handY: 0, time: 0 }
 
       // MAP
@@ -488,11 +505,13 @@ export default class Loader {
         this.game.addConsoleRow('--- Add Beings ---', 'div', true, true)
 
         for (const being of this.game.map.beings) {
-          const actualBeingData = this.game.beingsList[being.filename].data[0]
+          const actualBeingData = this.game.beingsList[being.filename].data[0] ?? null
           if (actualBeingData) {
             if (!being.visible) continue;
-            const beingGroup = new THREE.Group()            
+            const beingNotHaveHitbox = this.game.config.beingNotHaveHitbox ?? []
+            const beingName = being.name?.toLowerCase() ?? ''
 
+            const beingGroup = new THREE.Group()
             beingGroup.beingId = being.id
             beingGroup.name = being.name
             beingGroup.filename = being.filename
@@ -508,6 +527,9 @@ export default class Loader {
             beingGroup.apname = being.apname ?? null
             beingGroup.apactive = being.apactive == "1" ? true : false;
             beingGroup.animationActive = true // DIE hoz kell
+
+            // IF NO HITBOX
+            beingGroup.noHitbox = beingNotHaveHitbox.some(word => beingName.includes(String(word).toLowerCase()))
 
             const beingOptions = this.game.getBeingOptions(beingGroup)
 
@@ -549,7 +571,12 @@ export default class Loader {
               if (size.z === 0) size.z = 0.01; if (size.x === 0) size.x = 0.01; if (size.y === 0) size.y = 0.01;
 
               const boundingBoxRatioSize = beingOptions.boundingBoxRatio ?? 1 * beingGroup.ratio
-              // console.log(boundingBoxRatioSize)
+              
+              /*
+              console.log('name:', beingGroup.name)
+              console.log(boundingBoxRatioSize) // !!!
+              console.log('---:')
+              */
 
               size.multiplyScalar(boundingBoxRatioSize)
               largestBox.setFromCenterAndSize(center, size)
@@ -652,7 +679,7 @@ export default class Loader {
       if (loadType == 'loadgame') this.restoreMoveFxStates()
 
       // SKY BACKGROUND
-      if (!this.game.scene.background) {
+      if (!this.game.scene.background && this.game.graphics.distanceMode == 'best') {
         this.game.addConsoleRow('--- Add Skybox ---', 'div', true, true)
 
         const loader = new THREE.CubeTextureLoader()
@@ -1068,7 +1095,7 @@ export default class Loader {
   // ---
 
   async fetchData(data, originaldata) {
-    // const path = 'https://tuccmann.com/3deditor3/editor.php'; // Online
+    // const path = 'https://tuccmann.com/3deditor4/editor.php'; // Online
     const path = 'http://localhost/3deditor/editor.php';
     try {
       const response = await $.ajax({

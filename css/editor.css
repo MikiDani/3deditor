@@ -690,12 +690,22 @@ button[class=ratio-buttons]:hover {
 }
 
 #object-list,
-#light-list {
+#light-list,
+#being-list {
   position: relative;
   flex: 1;
   min-height: 50px;
   overflow: auto;
   scroll-behavior: smooth;
+}
+
+#object-list {
+  height: 200px;
+}
+
+#light-list,
+#being-list {
+  height: 100px;
 }
 
 #object-list-size-button,

@@ -75,9 +75,13 @@
       "id": 8,
       "name": "Open-9 (Picture-open) x:max y:min z:min"
     },
-     {
+    {
       "id": 9,
       "name": "Open-4/2 (doorB) PULL 90 deg x:max y:max z:min"
+    },
+     {
+      "id": 22,
+      "name": "Open-9 (Secret-cabinet-up-open) x:max y:min z:min"
     },
     {
       "id": 10,
@@ -118,6 +122,11 @@
       "state": "off"
     },
     {
+      "id": 23,
+      "name": "Switch Girl picture change 1",
+      "state": "off"
+    },
+    {
       "id": 30,
       "name": "Picture Change"
     },
@@ -144,6 +153,10 @@
     {
       "id": 67,
       "name": "Add cigarette to heand"
+    },
+    {
+      "id": 68,
+      "name": "Teleport to the cell"
     },
     {
       "id": 80,
@@ -500,6 +513,33 @@
       "setRolloffFactor": 3
     },
     {
+      "id": 32,
+      "name": "spade1",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 33,
+      "name": "cooking1",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 34,
+      "name": "oilcan1",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
       "id": 100,
       "name": "bet-attack1",
       "volume": 1,
@@ -581,6 +621,33 @@
       "setRolloffFactor": 3
     },
     {
+      "id": 110,
+      "name": "ghost2-laughter",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 111,
+      "name": "ghost2-sream1",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 112,
+      "name": "ghost2-sream2",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
       "id": 200,
       "name": "player-damage1",
       "volume": 1,
@@ -626,6 +693,12 @@
       "loop": false
     },
     {
+      "id": 207,
+      "name": "player-drink1",
+      "volume": 1,
+      "loop": false
+    },
+    {
       "id": 210,
       "name": "knife1",
       "volume": 1,
@@ -648,6 +721,15 @@
       "name": "click2",
       "volume": 1,
       "loop": false
+    },
+    {
+      "id": 1000,
+      "name": "die1",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
     }
   ],
   "autoplaysounds": {
@@ -670,31 +752,45 @@
   },
   "actionmessages": [
     {
-      "object_id": 0,
-      "action_id": 1,
-      "message": "If you cast a spell on the fridge with the magic book, that's funny! : )"
-    },
-    {
-      "object_id": 1,
-      "action_id": 8,
-      "message": "To use a bush on the door... Funny :P"
+      "object_id": 17,
+      "action_id": 114,
+      "message": "I get the joke! But starting a fire with a screwdriver might be a bit tricky! Haha!"
     },
     {
       "object_id": 3,
       "action_id": 1,
       "message": "Your idiote! The table dont use on the fridge! : )"
+    },
+    {
+      "object_id": 25,
+      "action_id": 121,
+      "message": "I can't use it yet. I need the potion to be boiling first. I need to light the stove."
+    },
+    {
+      "object_id": 41,
+      "action_id": 121,
+      "message": "I can't use it yet. I need the potion to be boiling first. I need to light the stove."
+    },
+    {
+      "object_id": 43,
+      "action_id": 121,
+      "message": "I can't use it yet. I need the potion to be boiling first. I need to light the stove."
+    },
+    {
+      "object_id": 45,
+      "action_id": 121,
+      "message": "I can't use it yet. I need the potion to be boiling first. I need to light the stove."
     }
   ],
-
   "textdata": [
     {
       "id": "letter_uncle",
       "titles": [
-        "Dear Puntanelli !",
+        "Dear Mr Dante Puntanelli,",
         ""
       ],
       "texts": [
-        "<br>It is our painful duty to inform you that Mr. Zibizugar, your uncle, has passed away and joined the greats on the eternal silver screen, as he liked to wisely say. As a respected horror film director in Italy, he became a wealthy man, and established his fortune, from which he left you his country house near Pignola. He loved to spend his time in this house, and his painfully shocking death also occurred there.",
+        "<br>It is our painful duty to inform you that your uncle, Mr Vittorio Puntanelli, the director known in the film world as Vittorio Corvessani, has passed away and joined the greats on the eternal silver screen, as he wisely used to say. As a respected horror film director in Italy, he became a wealthy man, and established his fortune, from which he left you his country house near Pignola. He loved to spend his time in this house, and his painfully shocking death also occurred there.",
         "While you receive your inheritance, Gregovics,the old housekeeper, whom you may remember from your youth, will be supervising the building. Please travel here as soon as possible to inspect your uncle's special man cave, and receive the keys, which will end our office's obligation towards you. The mansion is waiting for you impatiently,<br><br><strong>Mr. Puntanelli!</strong><br><div style='float:right;'>Arrivederci!</div>"
       ]
     },
@@ -884,6 +980,14 @@
     "fly-cloud-anim": {
       "intervalTime": 250,
       "playingState": true
+    },
+    "magic-haze-1": {
+      "intervalTime": 550,
+      "playingState": true
+    },
+    "pentagram-fluid": {
+      "intervalTime": 320,
+      "playingState": true
     }
   },
   "beingoptions": {
@@ -1043,9 +1147,9 @@
       "moveOn": true,
       "moveOnY": false,
       "boundingBoxRatio": 0.6,
-      "attackSounds": [100,101,102],
-      "damageSounds": [100,101,102],
-      "dieSounds": [103],
+      "attackSounds": [111,112],
+      "damageSounds": [],
+      "dieSounds": [111],
       "knifeRange": 1.1,
       "knifeAim": 0.35
     },
@@ -1067,8 +1171,8 @@
     "SPIDER-KITCHEN-1": {
       "type": "enemy",
       "backMove": 0.45,
-      "backAttack": 0.4,
-      "beingDistance": 0.3,
+      "backAttack": 0.5,
+      "beingDistance": 0.4,
       "rotateOn": true,
       "moveOn": true,
       "moveOnY": false,
@@ -1108,8 +1212,24 @@
       "dieSounds": [103],
       "knifeRange": 1.1,
       "knifeAim": 0.35
+    },
+    "SPIDER-SECRET": {
+      "type": "enemy",
+      "backMove": 0.45,
+      "backAttack": 0.5,
+      "beingDistance": 0.4,
+      "rotateOn": true,
+      "moveOn": true,
+      "moveOnY": false,
+      "boundingBoxRatio": 0.05,
+      "attackSounds": [100,101,102],
+      "damageSounds": [100,101,102],
+      "dieSounds": [103],
+      "knifeRange": 0.4,
+      "knifeAim": 0.8
     }
   },
   "protectedPickupMash": [21],
-  "oneShotClickActions": [88, 102]
+  "oneShotClickActions": [70, 88, 102, 114, 126],
+  "beingNotHaveHitbox": ["bush", "ghost2"]
 }

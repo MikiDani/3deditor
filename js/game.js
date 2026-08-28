@@ -25,6 +25,8 @@ export default class Game {
 
     // this.filename = 'test-map-3'
     this.filename = 'cottage-1'
+    // this.filename = 'cabinet-wall'
+
     this.ext = 'mtuc'
 
     this.timers = {
@@ -54,7 +56,7 @@ export default class Game {
     this.activePlayedSounds = []
 
     // inventory datas
-    this.playerObjectsDefault = [0, 2, 16, 17, 28]
+    this.playerObjectsDefault = [0, 48, 46, 47, 4, 45, 44, 43, 42, 17, 41, 32, 2, 16, 17, 28, 38, 39, 40]
     this.playerObjects = [...this.playerObjectsDefault]
     this.playerProtectedObjects = [4, 5, 6, 17, 23, 35]
 
@@ -387,6 +389,23 @@ export default class Game {
                       <input type="checkbox" id="hints-button">
                       <span class="text-black"> Hints</span>
                   </div>
+
+                  <div id="distance-mode-container" class="row g-0" style="display:none;">
+                    <div class="col-6 text-black">Distance Mode</div>
+                    <div class="col">
+                        <input type="radio" name="distance-mode" value="best">
+                        <span class="text-black"> Best</span>
+                    </div>
+                    <div class="col">
+                        <input type="radio" name="distance-mode" value="medium" checked>
+                        <span class="text-black"> Medium</span>
+                    </div>
+                    <div class="col">
+                        <input type="radio" name="distance-mode" value="low">
+                        <span class="text-black"> Low</span>
+                    </div>
+                  </div>
+
                   <div class="my-2">
                       <input type="checkbox" id="music-button">
                       <span class="text-black"> Music ON</span>
@@ -415,6 +434,7 @@ export default class Game {
     this.$game = $(`
       <div id="game-container" style="display:none;">
         <div id="game-blood"></div>
+        <div id="game-black-screen" style="display:none;"></div>
         <canvas id="game-canvas"></canvas>
         <div id="cursor-text-box" style="display:none;"></div>
         <div id="text-box-container">
@@ -429,6 +449,11 @@ export default class Game {
         <div id="energy-container">
           <div class="energy"></div>
         </div>
+        <div id="weapon0-selector"></div>
+        <div id="weapon1-selector" style="display:none;"></div>
+        <div id="weapon2-selector" style="display:none;"></div>
+        <div id="weapon3-selector" style="display:none;"></div>
+        <div id="inventory-selector"></div>
         <div id="use-selector"></div>
         <div id="look-selector"></div>
         <div id="mouseorkey-selector" class="mouseorkey-preload"></div>
@@ -437,6 +462,9 @@ export default class Game {
 
     this.$inventory = $(`
       <div id="inventory-container">
+        <div id="inventory-exit">
+          <div class="inventory-close-button">?</div>
+        </div>
         <div id="inventory-logo"></div>
         <canvas id="inventory-3d-canvas"></canvas>
         <div id="object-text-container">
@@ -880,9 +908,69 @@ export default class Game {
     this.map.player.energy = this.map.player.energy > 100 ? 100 : this.map.player.energy;
 
     $("#energy-container .energy").css('width', `${this.map.player.energy}%`)
+
+    if (value < 0 && this.map.player.energy <= 0 && !this.playerDead) this.playerDie();
+    
+  }
+
+  playerDie() {
+    this.playerDead = true
+
+    // STOP PLAYER MOVE
+    this.move.active = false
+    this.move.speed = 0
+    this.move.push = false
+
+    if (this.keysPressed) this.keysPressed.clear()
+
+    // FIX CROUCH
+    this.input.forceCrouch()
+
+    // EXIT MOUSE LOCK
+    if (document.pointerLockElement) document.exitPointerLock()
+
+    // BLOOD
+    $("#game-blood").removeClass('play').addClass('die').show()
+
+    // DIE SOUND
+    this.sound.play(202, {volume: 1, loop: false})
+    this.sound.play(1000, {volume: 1, loop: false})
+
+    // HEAD TILT 45 DEG
+    this.camera.rotation.z = THREE.MathUtils.degToRad(75)
+  }
+
+  playerDeathReset() {
+    this.playerDead = false
+
+    // PLAYER MOVE
+    this.move.active = true
+    this.move.speed = 0
+    this.move.push = false
+
+    if (this.keysPressed) this.keysPressed.clear()
+
+    // CROUCH RESET
+    if (this.input.isCrouching) {
+      if (this.input.originalHeight !== null) this.playerBoundingBox.y = this.input.originalHeight
+
+      this.input.isCrouching = false
+      this.input.waitingStandUp = false
+      this.input.originalHeight = null
+
+      if (this.jumpState) this.jumpState.isLocked = false
+    }
+
+    // BLOOD RESET
+    $("#game-blood").removeClass('play die').hide()
+
+    // HEAD RESET
+    this.camera.rotation.z = 0
   }
 
   modifyPlayerEnergy(value) {
+    if (this.playerDead) return;
+
     const now = performance.now()
 
     if (now - this.map.player.nowtime < this.map.player.hitdelay) return;
@@ -893,7 +981,7 @@ export default class Game {
 
     // SOUND
     const r = Math.floor(Math.random() * 3)
-    this.sound.play(200 + r, {volume: 0.1, loop: false})
+    this.sound.play(200 + r, {volume: 0.8, loop: false})
 
     // CSS PLAY
     $("#game-blood").removeClass("play")

@@ -53,17 +53,17 @@ $yellow-light: #ffff00;
   background-image:
     url('../img/inventory/click-selector.png'),
     url('../img/inventory/mouse-selector.png'),
-    url('/img/cursors/cursor-default.png'),
-    url('/img/cursors/cursor-use-on.png'),
-    url('/img/cursors/cursor-use-off.png'),
-    url('/img/cursors/cursor-get-on.png'),
-    url('/img/cursors/cursor-get-off.png'),
-    url('/img/cursors/cursor-look2-on.png'),
-    url('/img/cursors/cursor-look2-off.png'),
+    url('../img/cursors/cursor-default.png'),
+    url('../img/cursors/cursor-use-on.png'),
+    url('../img/cursors/cursor-use-off.png'),
+    url('../img/cursors/cursor-get-on.png'),
+    url('../img/cursors/cursor-get-off.png'),
+    url('../img/cursors/cursor-look2-on.png'),
+    url('../img/cursors/cursor-look2-off.png'),
     url('../img/inventory/text-border.png'),
     url('../img/inventory/green-dark-bg.png'),
-    url('/img/check-mark.png'),
-    url('/img/error-mark.png'),
+    url('../img/check-mark.png'),
+    url('../img/error-mark.png'),
     url('../img/inventory/close-button.png'),
     url('../img/inventory/use-selector.png'),
     url('../img/inventory/look-selector.png'),
@@ -226,11 +226,11 @@ html.game-custom-cursor #text-box-close-button {
 //---
 
 a, button, input, textarea {
-  cursor: url('/img/cursors/cursor-default.png') 5 5, auto !important;
+  cursor: url('../img/cursors/cursor-default.png') 5 5, auto !important;
 }
 
 a:hover, button:hover, input:hover, textarea:hover {
-    cursor: url('/img/cursors/cursor-default.png') 5 5, auto !important;
+    cursor: url('../img/cursors/cursor-default.png') 5 5, auto !important;
 }
 
 .cursor-pointer {
@@ -253,31 +253,31 @@ a:hover, button:hover, input:hover, textarea:hover {
 }
 
 .cursor-default {
-  cursor: url('/img/cursors/cursor-default.png') 5 5, auto !important;
+  cursor: url('../img/cursors/cursor-default.png') 5 5, auto !important;
 }
 
 .cursor-use-on {
-  cursor: url('/img/cursors/cursor-use-on.png') 5 5, auto;
+  cursor: url('../img/cursors/cursor-use-on.png') 5 5, auto;
 }
 
 .cursor-use-off {
-  cursor: url('/img/cursors/cursor-use-off.png') 5 5, auto;
+  cursor: url('../img/cursors/cursor-use-off.png') 5 5, auto;
 }
 
 .cursor-get-on {
-  cursor: url('/img/cursors/cursor-get-on.png') 5 5, auto;
+  cursor: url('../img/cursors/cursor-get-on.png') 5 5, auto;
 }
 
 .cursor-get-off {
-  cursor: url('/img/cursors/cursor-get-off.png') 5 5, auto;
+  cursor: url('../img/cursors/cursor-get-off.png') 5 5, auto;
 }
 
 .cursor-look-on {
-  cursor: url('/img/cursors/cursor-look2-on.png') 5 5, auto !important;
+  cursor: url('../img/cursors/cursor-look2-on.png') 5 5, auto !important;
 }
 
 .cursor-look-off {
-  cursor: url('/img/cursors/cursor-look2-off.png') 5 5, auto !important;
+  cursor: url('../img/cursors/cursor-look2-off.png') 5 5, auto !important;
 }
 
 #game-canvas {
@@ -309,8 +309,22 @@ a:hover, button:hover, input:hover, textarea:hover {
   opacity: 0;
 }
 
+#game-black-screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 9999;
+  pointer-events: none;
+}
+
 #game-blood.play {
   animation: bloodPulse 1s;
+  -webkit-animation: bloodPulse 1s;
+}
+
+#game-blood.die {
+  opacity: 1 !important;
 }
 
 @keyframes bloodPulse {
@@ -422,7 +436,7 @@ a:hover, button:hover, input:hover, textarea:hover {
     color: $primary;
     background-image: url('../img/inventory/green-dark-bg.png');
     
-    cursor: url('/img/cursors/cursor-default.png') 5 5, auto !important;
+    cursor: url('../img/cursors/cursor-default.png') 5 5, auto !important;
 
     z-index: 1000;
   }
@@ -435,7 +449,7 @@ a:hover, button:hover, input:hover, textarea:hover {
     display: inline-block;
     width: 12px;
     height: 12px;
-    background-image: url('/img/check-mark.png');
+    background-image: url('../img/check-mark.png');
     background-size: cover;
   }
 
@@ -443,7 +457,7 @@ a:hover, button:hover, input:hover, textarea:hover {
     display: inline-block;
     width: 12px;
     height: 12px;
-    background-image: url('/img/error-mark.png');
+    background-image: url('../img/error-mark.png');
     background-size: cover;
   }
 
@@ -503,6 +517,25 @@ a:hover, button:hover, input:hover, textarea:hover {
 }
 
 
+#inventory-selector {
+  display: block;
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  width: 110px;
+  aspect-ratio: 1 / 1;
+  background-image: url('../img/inventory/inventory-selector.png');
+  background-size: cover;
+  z-index: 12;
+  // background-color: deeppink;
+  &:hover {
+    transform: scale(1.05);
+  }
+  &:active {
+    transform: scale(1.1);
+  }
+}
+
 #use-selector {
   display: block;
   position: absolute;
@@ -550,6 +583,82 @@ a:hover, button:hover, input:hover, textarea:hover {
   aspect-ratio: 1 / 1;
   background-size: cover;
   z-index: 12;
+  &:hover {
+    transform: scale(1.05);
+  }
+  &:active {
+    transform: scale(1.1);
+  }
+}
+
+#weapon0-selector {
+  display: block;
+  position: absolute;
+  right: 160px;
+  top: 27px;
+  width: 80px;
+  aspect-ratio: 1 / 1;
+  background-image: url('../img/inventory/weapon0-selector.png');
+  background-size: cover;
+  z-index: 12;
+  // background-color: deeppink;
+  &:hover {
+    transform: scale(1.05);
+  }
+  &:active {
+    transform: scale(1.1);
+  }
+}
+
+#weapon1-selector {
+  display: block;
+  position: absolute;
+  right: 260px;
+  top: 27px;
+  width: 80px;
+  aspect-ratio: 1 / 1;
+  background-image: url('../img/inventory/weapon1-selector.png');
+  background-size: cover;
+  z-index: 12;
+  // background-color: deeppink;
+  &:hover {
+    transform: scale(1.05);
+  }
+  &:active {
+    transform: scale(1.1);
+  }
+}
+
+#weapon2-selector {
+  display: block;
+  position: absolute;
+  right: 360px;
+  top: 27px;
+  width: 80px;
+  aspect-ratio: 1 / 1;
+  background-image: url('../img/inventory/weapon2-selector.png');
+  background-size: cover;
+  z-index: 12;
+  // background-color: deeppink;
+  &:hover {
+    transform: scale(1.05);
+  }
+  &:active {
+    transform: scale(1.1);
+  }
+}
+
+#weapon3-selector {
+  display: block;
+  position: absolute;
+  right: 460px;
+  top: 27px;
+  width: 80px;
+  aspect-ratio: 1 / 1;
+  background-image: url('../img/inventory/weapon3-selector.png');
+  background-size: cover;
+  z-index: 12;
+  // background-color: deeppink;
   &:hover {
     transform: scale(1.05);
   }
@@ -709,6 +818,13 @@ a:hover, button:hover, input:hover, textarea:hover {
     image-rendering: crisp-edges;
 
     background-color: #000;
+}
+
+#inventory-exit {
+  position: absolute;
+  right: pxw(50);
+  top: pxh(50);
+  z-index: 2;
 }
 
 #inventory-logo {
@@ -908,6 +1024,24 @@ $book-text-line-height: 0.9em;
   position: absolute;
   right: -20px;
   top: 0.1em;
+
+  width: 20px;
+  height: 20px;
+
+  background-image: url('../img/inventory/close-button.png');
+  background-color: transparent;
+  border: 0;
+
+  background-size: 20px (20px * 2);
+  background-position: 0 0;
+
+  &:hover {
+    background-position: 0 -20px;
+  }
+}
+
+.inventory-close-button {
+  position: relative;
 
   width: 20px;
   height: 20px;

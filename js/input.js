@@ -235,6 +235,9 @@ export default class Input {
 
         // inventory datas
         this.game.playerObjects = this.game.playerObjectsDefault
+
+        this.game.playerDeathReset()
+
         // console.log(this.game.playerObjects)
 
         this.game.mapLoading = false
@@ -258,6 +261,8 @@ export default class Input {
 
   checkLookingInterval() {
     this.chechLookInterval = setInterval(() => {
+      if (this.game.playerDead) return;
+
       const now = Date.now()
 
       if (now - this.mouseMoveTimer > 200) {
@@ -375,9 +380,28 @@ export default class Input {
 
     // MOUSE INVENTORY BUTTON
     $(document).on('mousedown', e => {
+      if (e.button == 0 && $(e.target).attr('id') == 'weapon0-selector') {
+        $(document).trigger($.Event('keydown', { key: '0', which: 48, keyCode: 48 }))
+        return;
+      }
+
+      if (e.button == 0 && $(e.target).attr('id') == 'weapon1-selector') {
+        $(document).trigger($.Event('keydown', { key: '1', which: 49, keyCode: 49 }))
+        return;
+      }
+
+      if (e.button == 0 && $(e.target).attr('id') == 'weapon2-selector') {
+        $(document).trigger($.Event('keydown', { key: '2', which: 50, keyCode: 50 }))
+        return;
+      }
+
+      if (e.button == 0 && $(e.target).attr('id') == 'weapon3-selector') {
+        $(document).trigger($.Event('keydown', { key: '3', which: 51, keyCode: 51 }))
+        return;
+      }
 
       // RIGHT MOUSE CLICK
-      if (e.button == 2) {
+      if (e.button == 2 || e.button == 0 && this.game.currentState == 'game' && $(e.target).attr('id') == 'inventory-selector') {
         e.preventDefault(); e.stopPropagation();
         if (this.game.startGameInfoText || this.game.finishGameInfoText || this.game.waitingGameInfoText) return;
 
@@ -403,6 +427,7 @@ export default class Input {
       // CLOSE TEXT BUTTON            
       if (e.button == 0 && this.game.currentState == 'game' && ( $(e.target).attr('id') == 'text-box-close-button' || $(e.target).closest('#text-box').length )) {
         e.preventDefault(); e.stopPropagation();
+        if (this.game.finishGameInfoText) return;
 
         // START GAME TEXT REMOVE
         if (this.game.startGameInfoText) {          
@@ -418,7 +443,12 @@ export default class Input {
       }
     })
 
-    // INVENTORY MOUSE CLICK
+    // INVENTORY EXIT CLICK
+    $(document).on('click', '#inventory-exit .inventory-close-button', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      this.changeGameOrInventory()
+    })
+
     $(document).on('click', '#inventory-item-text-container .item-text-container', (e) => {
       if ($(e.currentTarget).html() == '') return;
 
@@ -499,14 +529,41 @@ export default class Input {
     this.setupCameraControls()
     this.mousePointerClickLoader()
 
+    // DIE ESC KEY
+    document.addEventListener('keydown', (e) => {
+      // SHIFT + F5 RELOAD
+      if (e.shiftKey && e.key == 'F5') {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+
+        window.location.reload()
+        return
+      }
+
+      // ESC TO MENU
+      if (e.key != 'Escape' || !this.game.playerDead) return;
+
+      e.preventDefault()
+      e.stopImmediatePropagation()
+
+      const modal = bootstrap.Modal.getInstance(document.getElementById('topLayer'))
+      if (modal) modal.hide()
+
+      this.game.play = false
+      this.game.currentState = 'menu'
+      this.game.showHideOptions('menu')
+
+      if (this.fistInteraction) $('#first-interaction-button').trigger('click')
+    }, true)
+
     // // // //
     // KEYS
     $(document).on('keydown', async (e) => {
+
       // STOP PLAYER MOVE
       if (!this.game.move.active) {
-         e.preventDefault(); e.stopPropagation();
-         console.log('itt...1')
-         
+        e.preventDefault(); e.stopPropagation();
+        console.log('stop move...')
         return;
       }
 
@@ -554,7 +611,8 @@ export default class Input {
           1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
           11, 12, 13, 14, 15,16, 17, 18, 19, 20, 
           21, 22, 23, 24, 25, 26, 27, 28, 28, 30, 
-          31, 32, 33, 34, 35
+          31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 
+          41, 42, 43, 44, 45, 46, 47
         )
 
         this.game.inventory.update()
@@ -562,6 +620,10 @@ export default class Input {
         this.game.playerMouse.knife = true
         this.game.playerMouse.lamp = true
         this.game.playerMouse.cigarette = true
+
+        $("#weapon1-selector").show()
+        $("#weapon2-selector").show()
+        $("#weapon3-selector").show()
 
         this.game.map.player.energy = 80
         this.game.energyModifyScreen()
@@ -592,14 +654,16 @@ export default class Input {
 
         if(e.key =='0') {
           e.preventDefault(); e.stopPropagation()
+        if (this.game.finishGameInfoText) return;
 
           this.game.gameplay.startHandSwitch(0)
         }
 
         if(e.key =='1') {
           e.preventDefault(); e.stopPropagation();
+          if (this.game.finishGameInfoText) return;
 
-           console.log(this.game.playerMouse.lamp)
+          console.log(this.game.playerMouse.lamp)
 
           if (!this.game.playerMouse.lamp) return;
 
@@ -639,6 +703,7 @@ export default class Input {
 
         if(e.key =='2') {
           e.preventDefault(); e.stopPropagation();
+          if (this.game.finishGameInfoText) return;
 
           if (!this.game.playerMouse.knife) return;
 
@@ -673,6 +738,7 @@ export default class Input {
 
         if(e.key =='3') {
           e.preventDefault(); e.stopPropagation();
+          if (this.game.finishGameInfoText) return;
 
           if (!this.game.playerMouse.cigarette) return;
 
@@ -686,35 +752,6 @@ export default class Input {
           this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
 
           this.game.sound.play(204, /* player-cough1 */ {volume: 0.3})
-        }
-
-        if(e.key =='6') {
-          e.preventDefault(); e.stopPropagation();
-          // console.log(this.game.renderer.info)
-          console.log('6.')
-
-          this.game.forceClearAllTimers()
-
-          // DELETE ALL PLAYING SOUNDS
-          this.game.sound.removeAllPlayedAudio()
-
-          // DELETE ALL MESHS
-          this.game.deleteAllObjectInScene(this.game.scene)
-          this.game.deleteAllObjectInScene(this.game.heandScene)
-
-          this.game.loadedLights = []
-          this.game.loadedBeings = []
-          this.game.loadedHeands = []
-          this.game.loadedMeshs = []
-
-          // inventory datas
-          this.game.playerObjects = this.game.playerObjectsDefault
-          console.log(this.game.playerObjects)
-
-          this.game.mapLoading = false
-
-          // this.game.currentState = 'menu'
-          // this.game.showHideOptions(this.game.currentState)
         }
 
         if(e.key =='8') {
@@ -755,6 +792,7 @@ export default class Input {
         // USE MOUSE MODE
         if (e.key == 'e' || e.key == 'E') {
           e.preventDefault(); e.stopPropagation();
+          if (this.game.finishGameInfoText) return;
           this.useSelectorChange()
           return
         }
@@ -762,6 +800,7 @@ export default class Input {
         // LOOK MOUSE MODE
         if (e.key == 'q' || e.key == 'Q') {
           e.preventDefault(); e.stopPropagation();
+          if (this.game.finishGameInfoText) return;
           this.lookSelectorChange()
           return
         }
@@ -881,6 +920,8 @@ export default class Input {
   }
 
   changeGameOrInventory() {
+    if (this.game.playerDead && this.game.currentState == 'game') return;
+
     if (this.game.currentState == 'game') {
       // GO INVENTORY
       $("#game-blood").removeClass("play")
@@ -1021,6 +1062,17 @@ export default class Input {
 
   // --
 
+  forceCrouch() {
+    if (this.isCrouching) return;
+
+    const box = this.game.playerBoundingBox
+    this.originalHeight = box.y
+    box.y = this.originalHeight * 0.5
+
+    this.isCrouching = true
+    this.game.jumpState.isLocked = true
+  }
+
   setInventorySelectedMeshObject(inventoryIndex) {
     let object = this.game.loadedObjects.find(obj => obj && obj.index == inventoryIndex)
     if (object) this.game.inventory.selectedObject = object;
@@ -1083,7 +1135,8 @@ export default class Input {
         e.preventDefault()
         e.stopPropagation()
 
-        if (!this.isCrouching) return
+        if (this.game.playerDead) return;
+        if (!this.isCrouching) return;
 
         const player = this.game.player
         const box = this.game.playerBoundingBox
@@ -1116,7 +1169,7 @@ export default class Input {
 
     // SEE UP / DOWN
     document.addEventListener('wheel', (e) => {
-      if (this.game.currentState != 'game' || this.game.isPointerLocked) return
+      if (this.game.currentState != 'game' || this.game.isPointerLocked || this.game.finishGameInfoText || this.game.playerDead) return;
   
       const pitchLimit = THREE.MathUtils.degToRad(this.game.playerMouse.mouseMaxPitch)
   
@@ -1231,6 +1284,9 @@ export default class Input {
   }
 
   changeMouseLock() {
+    if (this.game.playerDead) return;
+    if (this.game.finishGameInfoText) return;
+
     $('#mouseorkey-selector').removeClass('key-selector-pic').removeClass('mouse-selector-pic')
     if (document.pointerLockElement === this.game.canvas) {
       // console.log('PointerLock OFF...')
@@ -1260,7 +1316,9 @@ export default class Input {
 
     $(document).on('mousemove', { game: this.game }, function(event) {
       const g = event.data.game
-      if (!g.isPointerLocked) return
+
+      if (g.playerDead) return;
+      if (!g.isPointerLocked) return;
 
       const movementX = event.originalEvent.movementX || 0
       const movementY = event.originalEvent.movementY || 0
@@ -1517,6 +1575,8 @@ export default class Input {
 
   // CLICK LOGICK
   handleClickEvent(event, clickType) {
+    if (this.game.playerDead) return;
+    if (this.game.finishGameInfoText) return;
     if (this.game.isPointerLocked) return;
 
     const mouse = new THREE.Vector2()

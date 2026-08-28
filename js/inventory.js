@@ -86,7 +86,7 @@ export default class Inventory {
       if (this.inventoryMenu.reloadInventory) {
         this.inventoryMenu.reloadInventory = false
 
-        $(".item-text-container").html('')
+        $(".item-text-container").html('').removeClass('text-hover text-selected')
 
         // IF SELECTED OBJECT
         if (this.inventoryMenu.selectedObject) {
@@ -115,6 +115,26 @@ export default class Inventory {
           }
 
           this.game.loadedObjects[this.selectedObject.id].visible = false
+
+          // CHECK IF OIL
+          const selectedUseObject = this.game.playerMouse.selectedObject
+          const isLampOil = mode == 'use' && selectedUseObject?.filename?.toLowerCase().includes('oil')
+
+          if (isLampOil && this.game.playerMouse.lamp) {
+            const objectIndex = this.game.playerObjects.indexOf(selectedUseObject.objId)
+
+            if (objectIndex !== -1) this.game.playerObjects.splice(objectIndex, 1)
+
+            this.game.oilModifyScreen(100)
+
+            this.game.sound.play(34, {volume: 1, loop: false})
+
+            this.game.playerMouse.mode = 'use'
+            this.game.playerMouse.selectedObject = null
+
+            $("#cursor-text-box").hide().html('')
+          }
+
           this.selectedObject = await this.getInventorySelecteObjectData(this.game.playerObjects[0])
 
           if (mode == 'read') {
@@ -147,11 +167,15 @@ export default class Inventory {
             if (objectIndex !== -1) {
               this.game.playerObjects.splice(objectIndex, 1)
             }
+            // REFRESH 3D OBJECTS
+            this.selectedObject = await this.getInventorySelecteObjectData(this.game.playerObjects[0])
 
-            setTimeout(()=> {
-              this.game.sound.play(this.game.gameplay.getArrayRandomId([205, 206]), {volume: 1, loop: false})
+            setTimeout(() => {
+              const soundNumber = consumeObject.eattype == '0' ? this.game.gameplay.getArrayRandomId([205, 206]) : 207
+
+              this.game.sound.play(soundNumber, {volume: 1, loop: false})
               this.game.energyModifyScreen(consumeObject.eat)
-            },600)
+            }, 250)
 
             this.game.playerMouse.mode = 'use'
             this.game.playerMouse.selectedObject = null
@@ -166,9 +190,9 @@ export default class Inventory {
           this.game.input.getActualCursor()
 
           // SHOW OBJECT NAME
-          if (mode == 'use') {
+          if (mode == 'use' && this.game.playerMouse.selectedObject) {
             this.game.input.setGetCursor()
-            $("#cursor-text-box").html(this.game.playerMouse.selectedObject.name).show()            
+            $("#cursor-text-box").html(this.game.playerMouse.selectedObject.name).show()
             this.game.input.checkMousePositionOptions(this.game.input.lastEventMouse)
           }
 
@@ -285,6 +309,7 @@ export default class Inventory {
         objectGroup.ratio = object.ratio
         objectGroup.read = object.read
         objectGroup.eat = object.eat
+        objectGroup.eattype = object.eattype
         objectGroup.text = object.text
 
         this.game.loader.createTHREEObject(object, objectGroup, object.data[0])
@@ -299,6 +324,7 @@ export default class Inventory {
         this.game.loadedObjects[objectGroup.id].ratio = object.ratio
         this.game.loadedObjects[objectGroup.id].read = object.read
         this.game.loadedObjects[objectGroup.id].eat = object.eat
+        this.game.loadedObjects[objectGroup.id].eattype = object.eattype
         this.game.loadedObjects[objectGroup.id].text = object.text
         this.game.loadedObjects[objectGroup.id].index = object.id
       }

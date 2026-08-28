@@ -6,6 +6,7 @@ export default class Graphics {
     this.game = game
     this.scX
     this.scY
+    this.distanceMode = 'best'
     this.init()
   }
 
@@ -25,25 +26,35 @@ export default class Graphics {
   }
 
   reloadScreen() {
+    // console.log('mode: ', this.distanceMode)
     // console.log(this.checkGPU())
     if (this.checkGPU()) {
       // HIGH
-      // this.game.targetFPS = 60 // Ez a jó
+      $("#distance-mode-container").show()
 
+      // this.game.targetFPS = 60 EZ LESZ !!!
       this.game.targetFPS = 60
-
       this.game.renderInterval = 1000 / this.game.targetFPS
 
       // this.scX = window.innerWidth / 1; this.scY = window.innerHeight / 1
       // this.scX = 1920; this.scY = 1080; // nem kell és lassú is
-
       // this.scX = 600; this.scY = 337; // small
+
       this.scX = 1200; this.scY = 675;
 
-      this.far = 13
+      switch (this.distanceMode) {
+        case 'best': this.far = 13; break
+        case 'medium': this.far = 7; break
+        case 'low': this.far = 5; break
+        default: this.far = 13;
+      }
+
     } else {
-      // LOW
-      this.game.targetFPS = 10  // 25
+      // LOW - NO HAVE GPU
+      $("#distance-mode-container").hide()
+
+      this.distanceMode = 'low'
+      this.game.targetFPS = 15  // 25
       this.game.renderInterval = 1000 / this.game.targetFPS
 
       // this.scX = window.innerWidth / 10; this.scY = window.innerHeight / 10

@@ -69,7 +69,7 @@ export default class Gameplay {
       // START NEW GAME PLAYER WAITING
       if (textName == 'start_text') {
         // !!! VÁRÁS KIKAPCSOLVA
-        this.game.move.active = false
+        this.game.move.active = true
         setTimeout(() => {
           this.game.move.active = true
         }, 6000)
@@ -122,15 +122,30 @@ export default class Gameplay {
     }
   }
 
-  startHandSwitch(weapon) {
-    if (Number(this.game.playerMouse.selectedHeand) == weapon) return;
+  startHandSwitch(weapon, nextMode = null) {
+    if (Number(this.game.playerMouse.selectedHeand) == weapon) {
+      if (nextMode) {
+        this.game.autoMovePlayerData = {
+          ...this.game.autoMovePlayerData,
+          mode: nextMode,
+          weapon: null,
+          handY: 0,
+          time: 0,
+          nextMode: null
+        }
+      }
+      return;
+    }
+
     if (this.game.autoMovePlayerData.mode == 'hand-down' || this.game.autoMovePlayerData.mode == 'hand-up') return;
 
     this.game.autoMovePlayerData = {
+      ...this.game.autoMovePlayerData,
       mode: 'hand-down',
       weapon: Number(weapon),
       handY: 0,
-      time: 0
+      time: 0,
+      nextMode: nextMode
     }
   }
 
@@ -160,6 +175,114 @@ export default class Gameplay {
         break
       }
 
+      case 'finish-center': {
+        const step = THREE.MathUtils.degToRad(5)
+        let x = this.game.pitchObject.rotation.x
+        x = THREE.MathUtils.euclideanModulo(x + Math.PI, Math.PI * 2) - Math.PI
+        if (Math.abs(x) <= step) {
+          this.game.pitchObject.rotation.x = 0
+          this.game.autoMovePlayerData = {
+            ...this.game.autoMovePlayerData,
+            mode: null
+          }
+          this.game.finishGameInfoText = true
+        } else {
+          this.game.pitchObject.rotation.x += x > 0 ? -step : step
+        }
+        break
+      }
+
+      case 'y-bottom': {
+        this.game.move.active = false
+        if (document.pointerLockElement === this.game.canvas) document.exitPointerLock()
+
+        const target = THREE.MathUtils.degToRad(this.game.mouseMinPitchDefault)
+        const step = THREE.MathUtils.degToRad(5)
+
+        const x = this.game.pitchObject.rotation.x
+
+        if (Math.abs(x - target) <= step) {
+          this.game.pitchObject.rotation.x = target
+
+          this.game.autoMovePlayerData = {
+            ...this.game.autoMovePlayerData,
+            mode: 'teleport-black',
+            time: 0
+          }
+        } else {
+          this.game.pitchObject.rotation.x += x > target ? -step : step
+        }
+
+        break
+      }
+
+      case 'teleport-black': {
+        if (!this.game.autoMovePlayerData.teleported) {
+          $("#game-black-screen").show()
+
+          this.game.player.position.set(2.82, 0.05, 3.13)
+
+          this.game.autoMovePlayerData.teleported = true
+          this.game.autoMovePlayerData.time = 0
+        }
+
+        this.game.autoMovePlayerData.time += deltaTime
+
+        if (this.game.autoMovePlayerData.time >= 2000) {
+          $("#game-black-screen").hide()
+
+          this.game.autoMovePlayerData = {
+            ...this.game.autoMovePlayerData,
+            mode: 'teleport-center',
+            time: 0
+          }
+        }
+        break
+      }
+
+      case 'teleport-center': {
+        const target = 0
+        const step = THREE.MathUtils.degToRad(5)
+
+        const x = this.game.pitchObject.rotation.x
+
+        if (Math.abs(x - target) <= step) {
+          this.game.pitchObject.rotation.x = target
+
+          this.game.autoMovePlayerData = {
+            ...this.game.autoMovePlayerData,
+            mode: 'teleport-finish',
+            time: 0
+          }
+        } else {
+          this.game.pitchObject.rotation.x += x > target ? -step : step
+        }
+
+        break
+      }
+
+      case 'teleport-finish': {
+        this.game.autoMovePlayerData = {
+          ...this.game.autoMovePlayerData,
+          mode: null,
+          weapon: null,
+          handY: 0,
+          time: 0,
+          nextMode: null,
+          teleportActive: false,
+          teleported: false
+        }
+
+        this.game.move.speed = 0
+        this.game.move.push = false
+        this.game.move.active = true
+
+        $("#text-box-text").html('What was that fog...? Something was wrong with it. I blacked out... Where the hell am I now?!')
+        $("#text-box").removeClass('text-box-centered').show()
+
+        break
+      }
+
       case 'hand-down': {
         this.game.autoMovePlayerData.time += deltaTime
         const p = Math.min(this.game.autoMovePlayerData.time / this.heandChangeDuration, 1)
@@ -172,7 +295,17 @@ export default class Gameplay {
             this.game.playerMouse.mouseMaxPitch = this.game.mouseMaxPitchDefault
             this.game.playerMouse.mouseMinPitch = this.game.mouseMinPitchDefault
             $("#oil-container").hide()
-            this.game.autoMovePlayerData = { mode: null, weapon: null, handY: 0, time: 0 }
+
+            const nextMode = this.game.autoMovePlayerData.nextMode
+
+            this.game.autoMovePlayerData = {
+              ...this.game.autoMovePlayerData,
+              mode: nextMode ?? null,
+              weapon: null,
+              handY: 0,
+              time: 0,
+              nextMode: null
+            }
             return;
           }
 
@@ -405,23 +538,25 @@ export default class Gameplay {
       // WORLD MATRIX ELŐBB
       beingGroup.updateMatrixWorld(true)
 
-      // BOUNDING BOX INIT ÉS FRISSÍTÉS
-      if (!beingGroup.pervious && beingGroup.largestBoundingBox) {
-        if (!beingGroup.box) {
-          beingGroup.box = beingGroup.largestBoundingBox.clone()
-          this.game.boundingBoxes.push(beingGroup.box)
+      if (!beingGroup.noHitbox) {
+        // BOUNDING BOX INIT ÉS FRISSÍTÉS
+        if (!beingGroup.pervious && beingGroup.largestBoundingBox) {
+          if (!beingGroup.box) {
+            beingGroup.box = beingGroup.largestBoundingBox.clone()
+            this.game.boundingBoxes.push(beingGroup.box)
 
-          // HELPER
-          if (false) {
-            beingGroup.helper = new THREE.Box3Helper(beingGroup.box, new THREE.Color('#ffff00'))
-            this.game.scene.add(beingGroup.helper)
+            // HELPER
+            if (false) {
+              beingGroup.helper = new THREE.Box3Helper(beingGroup.box, new THREE.Color('#ffff00'))
+              this.game.scene.add(beingGroup.helper)
+            }
           }
+
+          beingGroup.box.copy(beingGroup.largestBoundingBox)
+          beingGroup.box.applyMatrix4(beingGroup.matrixWorld)
+
+          if (beingGroup.helper) beingGroup.helper.box.copy(beingGroup.box)
         }
-
-        beingGroup.box.copy(beingGroup.largestBoundingBox)
-        beingGroup.box.applyMatrix4(beingGroup.matrixWorld)
-
-        if (beingGroup.helper) beingGroup.helper.box.copy(beingGroup.box)
       }
     }
   }
@@ -846,6 +981,7 @@ export default class Gameplay {
     if (options == null) options = {}
 
     const ratio = Number(beingGroup.ratio ?? 1)
+    const ignoreMapCollision = beingGroup.filename == 'ghost-2'
 
     options.rotateOn ??= true
     options.moveOn ??= true
@@ -882,7 +1018,7 @@ export default class Gameplay {
     if (options.type !='enemy' && targetMode != 'animationpoints') return;  // !!
 
     // HIT PLAYER
-    if (targetMode == 'player' && beingGroup.animState.type == 'ATTACK') this.game.modifyPlayerEnergy(beingGroup.damage);
+    if (!this.game.playerDead && targetMode == 'player' && beingGroup.animState.type == 'ATTACK') this.game.modifyPlayerEnergy(beingGroup.damage);
 
     // BEING CENTER (world)
     const beingBox = new THREE.Box3().setFromObject(beingGroup)
@@ -915,7 +1051,8 @@ export default class Gameplay {
         beingGroup.updateMatrixWorld(true)
 
         const testBox = new THREE.Box3().setFromObject(beingGroup)
-        const collision = this.checkCrash(testBox, beingGroup.beingId, true)
+
+        const collision = this.checkCrash(testBox, beingGroup.beingId, true, ignoreMapCollision)
 
         if (collision) {
           beingGroup.rotation.y = originalAngle
@@ -928,6 +1065,16 @@ export default class Gameplay {
     const distanceToTarget = beingCenter.distanceTo(finishPosition)
 
     if (targetMode == 'player') {
+      // IF DIE
+      if (this.game.playerDead && beingGroup.animState.type == 'ATTACK') {
+        beingGroup.animState = {
+          type: 'MOVE',
+          card: 0,
+          cardframe: 0,
+          cardsegment: 0
+        }
+      }
+
       // BACK TYPE TO MOVE
       if (beingGroup.animState.type == 'ATTACK' && distanceToTarget >= backMove) { //(i) options
         beingGroup.animState = {
@@ -937,14 +1084,45 @@ export default class Gameplay {
           cardsegment: 0,
         }
       }
-  
+
       // BACK TYPE TO ATTACK
-      if (beingGroup.animState.type == 'MOVE' && distanceToTarget <= backAttack) { //(i) options
+      if (!this.game.playerDead && beingGroup.animState.type == 'MOVE' && distanceToTarget <= backAttack) { //(i) options
+        /*
+        if (options.attackSounds?.length) {
+          console.log('attack hang')
+          
+          this.game.sound.play(this.getArrayRandomId(options.attackSounds), null, true, beingGroup)
+        }
+        */
+
         beingGroup.animState = {
           type: 'ATTACK',
           card: 0,
           cardframe: 0,
           cardsegment: 0,
+        }
+      }
+
+      // ATTACK SOUND
+      if (beingGroup.animState.type == 'ATTACK' && options.attackSounds?.length) {
+        const attackSoundPlaying = beingGroup.attackSound?.parent != null
+
+        if (!attackSoundPlaying && !beingGroup.attackSoundLoading) {
+          beingGroup.attackSoundLoading = true
+
+          beingGroup.updateMatrixWorld(true)
+
+          const soundBox = new THREE.Box3().setFromObject(beingGroup)
+
+          if (!beingGroup.center) beingGroup.center = new THREE.Vector3()
+          soundBox.getCenter(beingGroup.center)
+
+          const soundId = this.getArrayRandomId(options.attackSounds)
+
+          this.game.sound.play(soundId, null, true, beingGroup).then(phantom => {
+            beingGroup.attackSound = phantom
+            beingGroup.attackSoundLoading = false
+          })
         }
       }
     }
@@ -964,7 +1142,7 @@ export default class Gameplay {
       tempGroup.updateMatrixWorld(true)
 
       const testBox = new THREE.Box3().setFromObject(tempGroup)
-      const collision = this.checkCrash(testBox, beingGroup.beingId, targetMode == 'animationpoints' ? false : true)
+      const collision = this.checkCrash(testBox, beingGroup.beingId, targetMode == 'animationpoints' ? false : true, ignoreMapCollision)
 
       if (!collision) {
         beingGroup.position.add(moveStep)
@@ -1041,7 +1219,7 @@ export default class Gameplay {
           tempX.updateMatrixWorld(true)
 
           const boxX = new THREE.Box3().setFromObject(tempX)
-          if (!this.checkCrash(boxX, beingGroup.beingId, true)) {
+          if (!this.checkCrash(boxX, beingGroup.beingId, true, ignoreMapCollision)) {
             beingGroup.position.add(stepX)
             moved = true
           }
@@ -1055,7 +1233,7 @@ export default class Gameplay {
           tempZ.updateMatrixWorld(true)
 
           const boxZ = new THREE.Box3().setFromObject(tempZ)
-          if (!this.checkCrash(boxZ, beingGroup.beingId, true)) {
+          if (!this.checkCrash(boxZ, beingGroup.beingId, true, ignoreMapCollision)) {
             beingGroup.position.add(stepZ)
             moved = true
           }
@@ -1069,14 +1247,14 @@ export default class Gameplay {
           tempGroup2.updateMatrixWorld(true)
 
           const testBox2 = new THREE.Box3().setFromObject(tempGroup2)
-          const collision2 = this.checkCrash(testBox2, beingGroup.beingId)
+          const collision2 = this.checkCrash(testBox2, beingGroup.beingId, false, ignoreMapCollision)
           if (!collision2) beingGroup.position.add(moveStep).y += stepHeight
         }
       }
     }
   }
 
-  checkCrash(testBox, ignoreBeingId = null, ignorePlayer = false) {
+  checkCrash(testBox, ignoreBeingId = null, ignorePlayer = false, ignoreMap = false) {
     // PLAYER CHECK HIT
     if (!ignorePlayer) {
       const half = this.game.playerBoundingBox.clone()
@@ -1089,12 +1267,14 @@ export default class Gameplay {
     }
 
     // MAP CHECK HIT
-    for (const [key, loadedMesh] of Object.entries(this.game.loadedMeshs)) {
-      if (!loadedMesh) continue
-      if (loadedMesh.pervious) continue
-      if (!loadedMesh.box) continue
+    if (!ignoreMap) {
+      for (const [key, loadedMesh] of Object.entries(this.game.loadedMeshs)) {
+        if (!loadedMesh) continue
+        if (loadedMesh.pervious) continue
+        if (!loadedMesh.box) continue
 
-      if (testBox.intersectsBox(loadedMesh.box)) return true;
+        if (testBox.intersectsBox(loadedMesh.box)) return true;
+      }
     }
 
     // BEINGS CHECK HIT
@@ -2025,6 +2205,30 @@ export default class Gameplay {
         this.openFx(deltaTime, data[eventId], mesh)
       break
 
+      case 22:
+        // Open-9 (Secret-cabinet-up-open) x:max y:min z:min
+        if (!data[eventId]) {
+          data[eventId] = {
+            meshId: mesh.objId,
+            meshName: mesh.name,
+            state: false,
+            min: 0,
+            max: 64,
+            value: 0,
+            waiting: 20,
+            valueAdd: null,
+            addedStep: -0.025,
+            addedValue: null,
+            offsetTypeX: 'max',
+            offsetTypeY: 'max',
+            offsetTypeZ: 'max',
+            axis: 'z',
+          }
+        }
+        // ONLY OPEN
+        this.openFx(deltaTime, data[eventId], mesh)
+      break
+
       case 10:
         // SWITCH TEXTURE CHANGE
         this.textureOnOff(mesh, data, eventId, 'switch-1-on', 'switch-1-off')
@@ -2140,6 +2344,11 @@ export default class Gameplay {
         }
       break
 
+      case 23:
+        // SWITCH GIRL PICTURE CHANGE 1
+        this.textureOnOff(mesh, data, eventId, 'ghost2-picture-on', 'ghost2-picture-off')
+      break
+
       case 40:
         // STOP/START ANIMATED TEXTURE
         mesh.texture.playingState = !mesh.texture.playingState
@@ -2194,6 +2403,8 @@ export default class Gameplay {
         data[eventId].state = true
         this.game.playerMouse.cigarette = true
 
+        $("#weapon3-selector").show()
+
         this.game.playerMouse.selectedObject = null
         $("#cursor-text-box").hide().html('')
 
@@ -2201,14 +2412,39 @@ export default class Gameplay {
       }
       break
 
+      case 68: {
+        // Teleport to the cell
+          if (this.game.autoMovePlayerData.teleportActive) break
+          setTimeout(() => {
+            this.game.move.active = false
+            this.game.move.speed = 0
+            this.game.move.push = false
+
+            if (this.game.keysPressed) this.game.keysPressed.clear()
+
+            this.game.autoMovePlayerData.teleportActive = true
+
+            this.startHandSwitch(0, 'y-bottom')
+          }, 1200);
+      }
+      break
+
       case 80:
         // Finish game
-        this.game.finishGameInfoText = true
+        if (document.pointerLockElement === this.game.canvas) document.exitPointerLock()
+
+        if (this.game.autoMovePlayerData.mode != 'finish-center' && !this.game.finishGameInfoText) {
+          this.game.autoMovePlayerData = {
+            ...this.game.autoMovePlayerData,
+            mode: 'finish-center'
+          }
+        }
       break
 
       case 100:
         // Pick up lamp
         this.game.playerMouse.lamp = true
+        $("#weapon1-selector").show()
         this.game.sound.play(15 /* fire1 */, null, true, mesh)
         $(document).trigger($.Event('keydown', { key: '1', which: 49, keyCode: 49 }))
       break
@@ -2216,6 +2452,7 @@ export default class Gameplay {
       case 101:
         // Pick up knife
         this.game.playerMouse.knife = true
+        $("#weapon2-selector").show()
         // this.game.sound.play(210 /* knife1 */, null, true, mesh)
         $(document).trigger($.Event('keydown', { key: '2', which: 50, keyCode: 50 }))
       break
@@ -2223,6 +2460,7 @@ export default class Gameplay {
       case 102:
         // Pick up cigatette
         this.game.playerMouse.cigarette = true
+        $("#weapon3-selector").show()
         $(document).trigger($.Event('keydown', { key: '3', which: 51, keyCode: 51 }))
       break
     }
