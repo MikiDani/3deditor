@@ -128,7 +128,8 @@ export default class Input {
 
       console.log($this.prop('checked'))
 
-      this.game.menu.options.darkContrast = $this.prop('checked') ? 0.008 : 0.004;
+      // this.game.menu.options.darkContrast = $this.prop('checked') ? 0.008 : 0.004;
+      this.game.menu.options.darkContrast = $this.prop('checked') ? 0.012 : 0.004;
     });
 
     $(document).on('click', '.del-save-button', async (event) => {
@@ -1466,11 +1467,22 @@ export default class Input {
       const testPos = this.game.player.position.clone().add(gravityOffset)
 
       if (!this.willCollide(testPos)) {
-        // if (moved && this.game.isGrounded) return moved
+        if (this.game.gravity && this.fallStartY === null) {
+          this.fallStartY = this.game.player.position.y
+        }
 
         this.game.player.position.add(gravityOffset)
         this.game.isGrounded = false
       } else {
+        if (!this.game.isGrounded && this.fallStartY !== null) {
+          const fallDistance = this.fallStartY - this.game.player.position.y
+
+          if (fallDistance > 0.7) {
+            this.game.modifyPlayerEnergy(15)
+          }
+        }
+
+        this.fallStartY = null
         this.game.isGrounded = true
       }
     }

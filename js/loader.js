@@ -301,6 +301,9 @@ export default class Loader {
         if (this.game.playerMouse.lamp) $("#weapon1-selector").show()
         if (this.game.playerMouse.knife) $("#weapon2-selector").show()
         if (this.game.playerMouse.cigarette) $("#weapon3-selector").show()
+
+        if (this.game.playerMouse.selectedHeand == 1) $("#oil-container").show()
+          else $("#oil-container").hide();
       }
 
       this.game.autoMovePlayerData = { mode: null, weapon: null, handY: 0, time: 0 }
@@ -929,6 +932,8 @@ export default class Loader {
         z: this.game.player.position.z,
         fYaw: this.game.player.rotation._y,
         fXaw: this.game.pitchObject.rotation._x,
+        oil: this.game.map.player.oil,
+        energy: this.game.map.player.energy,
       }
 
       // IF HAME REMOVE HEAND LIGHT IS SCENE

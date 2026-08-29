@@ -9,9 +9,6 @@ export default class Gameplay {
     this.oilUseTimer = 0
     this.oilUseDelay = 300
 
-    // HANDLE LIGHT CLONES
-    this.heandLightClones = []
-
     this.heandChangeDuration = 400
     this.heandChangeDistance = 0.5
   }
@@ -336,34 +333,22 @@ export default class Gameplay {
     }
   }
 
-  syncHeandLights() {
-    for (let index = 0; index < this.game.loadedLights.length; index++) {
-      const source = this.game.loadedLights[index]?.[1]
-      let clone = this.heandLightClones[index]
+  refreshHeandLights() {
+    const oldLights = this.game.heandScene.children.filter(object => object.userData.heandWorldLight)
 
-      if (!clone) {
-        clone = new THREE.PointLight('#ffffff', 0, 0, 2)
-        clone.visible = true
+    oldLights.forEach(light => {
+      this.game.heandScene.remove(light)
+    })
 
-        this.heandLightClones[index] = clone
-        this.game.heandScene.add(clone)
-      }
+    this.game.loadedLights.forEach(element => {
+      const source = element?.[1]
+      if (!source) return
 
-      if (!source) {
-        clone.intensity = 0
-        clone.distance = 0
-        continue
-      }
+      const light = source.clone()
+      light.userData.heandWorldLight = true
 
-      if (clone.color?.copy && source.color) clone.color.copy(source.color)
-
-      clone.intensity = source.visible === false ? 0 : source.intensity
-      clone.distance = source.visible === false ? 0 : source.distance
-      clone.decay = source.decay
-      clone.position.copy(source.position)
-
-      if (source.quaternion) clone.quaternion.copy(source.quaternion)
-    }
+      this.game.heandScene.add(light)
+    })
   }
 
   lightVibration(amplitude, durationMs) {
@@ -626,7 +611,7 @@ export default class Gameplay {
     }
   }
 
-  async updateHeand(deltaTime, preload = false) {
+  async updateHeand(deltaTime) {
     for (let [id, heandGroup] of Object.entries(this.game.loadedHeands)) {
       // SELECTED HEAND
       if (id == this.game.playerMouse.selectedHeand) {
@@ -765,87 +750,30 @@ export default class Gameplay {
           } else {
             heandGroup.quaternion.copy(camQuat)
           }
-  
+
           // IF HAVE LIGHT
-          if (!preload) {
-            if (!heandGroup.lightsAdded) {
-              if (heandGroup.lights) {
-                if (!heandGroup.lightsGroup) {
-                  heandGroup.lightsGroup = new THREE.Group()
-                  // ADD THE LAMP LIGHT TO MAP
-                  this.game.scene.add(heandGroup.lightsGroup)
-                }
+          if (heandGroup.lights) {
+            if (!heandGroup.lightsGroup) {
+              heandGroup.lightsGroup = new THREE.Group()
 
-                heandGroup.heandindex ??= []
-                heandGroup.lights.forEach((light, i) => {
-                  light.userData.defaultColor ??= light.color.clone()
-                  light.userData.defaultIntensity ??= light.intensity
-                  light.userData.defaultDistance ??= light.distance
-                  light.userData.defaultDecay ??= light.decay
+              heandGroup.lights.forEach(light => {
+                if (light.parent !== heandGroup) heandGroup.add(light)
 
-                  if (light.parent !== heandGroup.lightsGroup) heandGroup.lightsGroup.add(light)
+                const worldLight = light.clone()
+                heandGroup.lightsGroup.add(worldLight)
+              })
 
-                  let index = heandGroup.heandindex[i]
-                  let source = this.game.loadedLights[index]?.[1]
-
-                  if (!source) {
-                    source = light.clone()
-                    index = this.game.loadedLights.push([heandModell.filename, source]) - 1
-                    heandGroup.heandindex[i] = index
-                  }
-
-                  light.color.copy(light.userData.defaultColor)
-                  light.intensity = light.userData.defaultIntensity
-                  light.distance = light.userData.defaultDistance
-                  light.decay = light.userData.defaultDecay
-                  light.visible = true
-
-                  source.color.copy(light.userData.defaultColor)
-                  source.intensity = light.userData.defaultIntensity
-                  source.distance = light.userData.defaultDistance
-                  source.decay = light.userData.defaultDecay
-                  source.visible = true
-                })
-              } else {
-                // RESET
-                if (heandGroup.heandindex) {
-                  heandGroup.heandindex.forEach(index => {
-                    delete this.game.loadedLights[index]
-                  })
-                }
-    
-                if (heandGroup.lightsGroup) {
-                  this.game.scene.remove(heandGroup.lightsGroup)
-                  heandGroup.lightsGroup = null
-                  heandGroup.lightsAdded = false
-                }
-              }
-    
-              heandGroup.lightsAdded = true // ONLY ONE
+              this.game.scene.add(heandGroup.lightsGroup)
             }
-    
-            if (false || heandGroup.lightsGroup) {
-              const originalCamPos = new THREE.Vector3()
-              this.game.camera.getWorldPosition(originalCamPos)
-    
-              const originalCamQuat = new THREE.Quaternion()
-              this.game.camera.getWorldQuaternion(originalCamQuat)
-    
-              heandGroup.lightsGroup.position.copy(originalCamPos)
-              heandGroup.lightsGroup.quaternion.copy(originalCamQuat)
-    
-              if (heandGroup.heandindex) {
-                heandGroup.heandindex.forEach((index, i) => {
-                  const localOffset = new THREE.Vector3(-0.15, i * 0.1, i * -0.1)
-                  this.game.loadedLights[index][1].position.copy(originalCamPos).add(localOffset)
-                  this.game.loadedLights[index][1].quaternion.copy(originalCamQuat)
-                  // LIGHT VIBRATION
-                  // this.game.loadedLights[index][1].intensity += this.lightVibration(0.025, 2500)
-                })
-              }
-            }
-    
-            this.syncHeandLights()
+
+            const originalCamPos = new THREE.Vector3()
+            this.game.camera.getWorldPosition(originalCamPos)
+
+            const originalCamQuat = new THREE.Quaternion()
+            this.game.camera.getWorldQuaternion(originalCamQuat)
+
+            heandGroup.lightsGroup.position.copy(originalCamPos)
+            heandGroup.lightsGroup.quaternion.copy(originalCamQuat)
           }
 
           heandGroup.updateMatrixWorld(true)
@@ -857,28 +785,69 @@ export default class Gameplay {
     }
   }
 
+  warmupHeands() {
+    const heands = Object.values(this.game.loadedHeands).filter(Boolean)
+    const oldAutoClear = this.game.renderer.autoClear
+
+    // MINDEN KÉZ ELŐRE A HEAND SCENE-BE
+    heands.forEach(heand => {
+      if (heand.parent !== this.game.heandScene) {
+        this.game.heandScene.add(heand)
+      }
+
+      // KÉZ SAJÁT FÉNYE IS LEGYEN OTT MÁR BETÖLTÉSKOR
+      if (heand.lights) {
+        heand.lights.forEach(light => {
+          light.intensity = 0.3
+          if (light.parent !== heand) heand.add(light)
+        })
+      }
+
+      // BIZTOSAN RENDERELJE LE A GPU
+      heand.traverse(object => {
+        if (object.isMesh) object.frustumCulled = false
+      })
+
+      heand.visible = false
+    })
+
+    // LÁMPA FÉNY ELŐMELEGÍTÉSE A FŐ SCENE-BEN
+    const lampHeand = this.game.loadedHeands[1]
+    const lampLight = lampHeand?.lights?.[0]
+
+    if (lampLight) {
+      const warmupLight = lampLight.clone()
+
+      this.game.scene.add(warmupLight)
+      this.game.renderer.render(this.game.scene, this.game.camera)
+      this.game.scene.remove(warmupLight)
+    }
+
+    // EGYSZER MINDEN KÉZ LERENDERELÉSE
+    this.game.renderer.autoClear = false
+
+    heands.forEach(heand => {
+      heand.visible = true
+
+      this.game.renderer.clearDepth()
+      this.game.renderer.render(this.game.heandScene, this.game.camera)
+
+      heand.visible = false
+    })
+
+    this.game.renderer.autoClear = oldAutoClear
+
+    // AKTUÁLIS KÉZ VISSZA
+    const selectedHeand = this.game.loadedHeands[this.game.playerMouse.selectedHeand]
+    if (selectedHeand) selectedHeand.visible = true
+  }
+
   removeHeandLight() {
     const actHeand = this.game.loadedHeands[this.game.playerMouse.selectedHeand]
-    if (!actHeand) return
+    if (!actHeand?.lightsGroup) return
 
-    if (actHeand.heandindex) {
-      actHeand.heandindex.forEach(index => {
-        const source = this.game.loadedLights[index]?.[1]
-        if (!source) return;
-
-        source.intensity = 0
-        source.distance = 0
-        source.visible = false
-      })
-    }
-
-    if (actHeand.lightsGroup) {
-      this.game.scene.remove(actHeand.lightsGroup)
-      actHeand.lightsGroup = null
-      actHeand.lightsAdded = false
-    }
-
-    this.syncHeandLights()
+    this.game.scene.remove(actHeand.lightsGroup)
+    actHeand.lightsGroup = null
   }
 
   stepAnimState(animState, modellAnimations) {    
@@ -1849,13 +1818,14 @@ export default class Gameplay {
     switch(data.id) {
       case 0:
         // RANDOM COLOR 100ms
-        if (!(light instanceof THREE.PointLight)) return;
-        setTimeout(() => {
-          const randomColor = new THREE.Color(Math.random(), Math.random(), Math.random());
-          light.color = randomColor;
-        }, data.time)
+        if (!(light instanceof THREE.PointLight)) return
 
-        this.syncHeandLights()
+        setTimeout(() => {
+          const randomColor = new THREE.Color(Math.random(), Math.random(), Math.random())
+          light.color = randomColor
+
+          this.refreshHeandLights()
+        }, data.time)
       break
 
       case 1:
@@ -1884,7 +1854,7 @@ export default class Gameplay {
 
         // data[eventId].state = !data[eventId].state
 
-        this.syncHeandLights()
+        this.refreshHeandLights()
       break
 
       case 2:
@@ -1898,7 +1868,7 @@ export default class Gameplay {
         light.distance = data[eventId].save_distance
         light.intensity = data[eventId].save_intensity
 
-        this.syncHeandLights()
+        this.refreshHeandLights()
       break
 
       case 3:
@@ -1916,52 +1886,55 @@ export default class Gameplay {
         light.distance = 0
         light.intensity = 0
 
-        this.syncHeandLights()
+        this.refreshHeandLights()
       break
 
       case 4:
         // RANDOM RED COLOR 100ms
-        if (!(light instanceof THREE.PointLight)) return;
+        if (!(light instanceof THREE.PointLight)) return
 
         setTimeout(() => {
           const randomRedColor = new THREE.Color()
           randomRedColor.setHSL(Math.random() * 0.04, Math.random(), 0.15 + Math.random() * 0.45)
           light.color = randomRedColor
-        }, data.time)
 
-        this.syncHeandLights()
+          this.refreshHeandLights()
+        }, data.time)
       break
 
       case 10:
         // RED COLOR 1
-        if (!(light instanceof THREE.PointLight)) return;
-        setTimeout(() => {
-          light.color = new THREE.Color(135/255, 15/255, 0);
-          light.distance = 1;
-          light.intensity = 0.2;          
-        }, data.time)
+        if (!(light instanceof THREE.PointLight)) return
 
-        this.syncHeandLights()
+        setTimeout(() => {
+          light.color = new THREE.Color(135 / 255, 15 / 255, 0)
+          light.distance = 1
+          light.intensity = 0.2
+
+          this.refreshHeandLights()
+        }, data.time)
       break
 
       case 15:
         // GREEN COLOR 1
-        if (!(light instanceof THREE.PointLight)) return;
-        setTimeout(() => {
-          light.color = new THREE.Color(0, 255/255, 0);
-        }, data.time)
+        if (!(light instanceof THREE.PointLight)) return
 
-        this.syncHeandLights()
+        setTimeout(() => {
+          light.color = new THREE.Color(0, 255 / 255, 0)
+
+          this.refreshHeandLights()
+        }, data.time)
       break
 
       case 20:
         // BLUE COLOR 1
-        if (!(light instanceof THREE.PointLight)) return;
-        setTimeout(() => {
-          light.color = new THREE.Color(0, 0, 255/255);
-        }, data.time)
+        if (!(light instanceof THREE.PointLight)) return
 
-        this.syncHeandLights()
+        setTimeout(() => {
+          light.color = new THREE.Color(0, 0, 255 / 255)
+
+          this.refreshHeandLights()
+        }, data.time)
       break
     }
   }
@@ -2793,65 +2766,6 @@ export default class Gameplay {
     }
 
     return mesh
-  }
-
-  async preloadHeandsToGpu() {
-    if (!this.game.renderer || !this.game.heandScene || !this.game.camera) return
-
-    const oldSelectedHeand = this.game.playerMouse.selectedHeand
-    const oldAutoClear = this.game.renderer.autoClear
-    const handIds = Object.keys(this.game.loadedHeands).filter(id => Number(id) !== 0)
-
-    // MAP FÉNYEK KLÓNJAINAK LÉTREHOZÁSA
-    this.syncHeandLights()
-
-    // ELSŐ KÖR: MINDEN KÉZ FÉNYHELYÉNEK LÉTREHOZÁSA
-    for (const id of handIds) {
-      this.game.playerMouse.selectedHeand = id
-
-      await this.updateHeand(16, false)
-
-      // A FÉNYHELY MEGMARAD, CSAK KIKAPCSOLJUK
-      this.removeHeandLight()
-    }
-
-    // MOST MÁR AZ ÖSSZES FÉNY KLÓNJA LÉTEZIK
-    this.syncHeandLights()
-
-    // MINDEN KÉZ ELREJTÉSE
-    Object.values(this.game.loadedHeands).forEach(heand => {
-      if (heand) heand.visible = false
-    })
-
-    // MÁSODIK KÖR: GPU ELŐFORDÍTÁS A VÉGLEGES FÉNYSZÁMMAL
-    for (const id of handIds) {
-      const heand = this.game.loadedHeands[id]
-      if (!heand) continue
-
-      if (heand.parent !== this.game.heandScene) {
-        this.game.heandScene.add(heand)
-      }
-
-      heand.visible = true
-
-      this.game.renderer.autoClear = false
-      this.game.renderer.clearDepth()
-
-      if (this.game.renderer.compile) {
-        this.game.renderer.compile(this.game.heandScene, this.game.camera)
-      }
-
-      this.game.renderer.render(this.game.heandScene, this.game.camera)
-
-      heand.visible = false
-    }
-
-    this.game.playerMouse.selectedHeand = oldSelectedHeand
-
-    const oldHeand = this.game.loadedHeands[oldSelectedHeand]
-    if (oldHeand) oldHeand.visible = true
-
-    this.game.renderer.autoClear = oldAutoClear
   }
 
   isOneShotClickDone(action) {

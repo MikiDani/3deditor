@@ -132,8 +132,6 @@ export default class Game {
     this.playerMouse.mode = 'use'
     this.input.setDefaultCursor()
 
-    // $('html').addClass('cursor-use')
-
     $('#mouseorkey-selector').addClass('click-selector-pic')
 
     // Ha új betöltés lenne, init akkor már nem tölti be amit nem kell
@@ -167,9 +165,11 @@ export default class Game {
       this.$loading.show()
       await this.loader.mapLoader(this.filename, this.ext) // LOADING MAP
 
-      await this.gameplay.preloadHeandsToGpu()
+      this.gameplay.refreshHeandLights()
+      this.gameplay.warmupHeands()
 
       if (!this.inventory.firstLoadedAllObjects) await this.inventory.firstLoadAllObjects()
+
       this.$loading.hide()
 
       // PLAY MUSIC
@@ -397,11 +397,11 @@ export default class Game {
                         <span class="text-black"> Best</span>
                     </div>
                     <div class="col">
-                        <input type="radio" name="distance-mode" value="medium" checked>
+                        <input type="radio" name="distance-mode" value="medium">
                         <span class="text-black"> Medium</span>
                     </div>
                     <div class="col">
-                        <input type="radio" name="distance-mode" value="low">
+                        <input type="radio" name="distance-mode" value="low" checked>
                         <span class="text-black"> Low</span>
                     </div>
                   </div>
@@ -412,7 +412,7 @@ export default class Game {
                   </div>
                   <br>
                   <div class="my-2">
-                      <input type="checkbox" id="lights-button">
+                      <input type="checkbox" id="lights-button" checked>
                       <span class="text-black"> All Lights ON</span>
                   </div>
                   <div class="mb-2">
@@ -915,6 +915,7 @@ export default class Game {
 
   playerDie() {
     this.playerDead = true
+    this.playerMouse.selectedHeand = 0
 
     // STOP PLAYER MOVE
     this.move.active = false
@@ -984,7 +985,7 @@ export default class Game {
     this.sound.play(200 + r, {volume: 0.8, loop: false})
 
     // CSS PLAY
-    $("#game-blood").removeClass("play")
+    $("#game-blood").removeClass("play").show()
     void $("#game-blood")[0].offsetWidth
     $("#game-blood").addClass("play")
   }
