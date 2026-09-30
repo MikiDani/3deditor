@@ -20,6 +20,40 @@ export default class Loader {
     } catch (e) { this.game.loadingError = true; return; }
     if (logOn) console.log(this.game.config);
 
+
+    // !!! DEV BOOK MODE
+    const devBookMode = false
+    let objname = 'book_3'
+
+    if (devBookMode) {
+      const readData = this.game.config.textdata.find(read => read.id == objname)
+
+      if (!readData) {
+        console.error(`Book not found in config.textdata: ${objname}`)
+        return;
+      }
+
+      this.game.inventory.readArray = {
+        readType: 'book',
+        readData: readData,
+        readIndex: 0
+      }
+
+      // Ne akarja az inventory a 3D objecteket betölteni/frissíteni
+      this.game.inventory.firstLoadedAllObjects = true
+      this.game.inventory.inventoryMenu.reloadInventory = false
+
+      // Egyből inventory
+      this.game.play = false
+      this.game.currentState = 'inventory'
+      this.game.showHideOptions('inventory')
+
+      // Egyből könyv
+      this.game.inventory.loadBookPage()
+
+      return;
+    }
+
     //ADD ACTIONS CLICK CHECKS
     this.game.input.actionsClicksCheck()
 
@@ -258,7 +292,7 @@ export default class Loader {
       this.game.startGameInfoText = false; this.game.finishGameInfoText = false; this.game.waitingGameInfoText = false;
     } else {
       loadType = 'newgame'
-      this.game.startGameInfoText = false; /* !!! */ this.game.finishGameInfoText = false; this.game.waitingGameInfoText = false;
+      this.game.startGameInfoText = true; this.game.finishGameInfoText = false; this.game.waitingGameInfoText = false;
     }
 
     $('#text-box').hide(); $('#text-box-text').html('');

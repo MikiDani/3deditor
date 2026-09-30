@@ -784,160 +784,200 @@
   ],
   "textdata": [
     {
-      "id": "letter_uncle",
+      "id": "letter_inheritance",
       "titles": [
-        "Dear Mr Dante Puntanelli,",
+        "Dear Mr. Dante Puntanelli,",
         ""
       ],
       "texts": [
-        "<br>It is our painful duty to inform you that your uncle, Mr Vittorio Puntanelli, the director known in the film world as Vittorio Corvessani, has passed away and joined the greats on the eternal silver screen, as he wisely used to say. As a respected horror film director in Italy, he became a wealthy man, and established his fortune, from which he left you his country house near Pignola. He loved to spend his time in this house, and his painfully shocking death also occurred there.",
-        "While you receive your inheritance, Gregovics,the old housekeeper, whom you may remember from your youth, will be supervising the building. Please travel here as soon as possible to inspect your uncle's special man cave, and receive the keys, which will end our office's obligation towards you. The mansion is waiting for you impatiently,<br><br><strong>Mr. Puntanelli!</strong><br><div style='float:right;'>Arrivederci!</div>"
+        "<br><br>It is our sad duty to inform you that your uncle, Mr. Vittorio Puntanelli - a director known in the film world as Vittorio Corvessani - has passed away.<br><br>As a well-known Italian B-movie horror director, he made a small fortune and built up his estate.",
+        "From this estate, he has left you his country house near Pignola. He loved spending time in this house, and it was also the place of his tragic and shocking death.<br><br>Until you take possession of your inheritance, Albert Gregovics, the elderly caretaker, whom you may remember from your childhood, will look after the house.",
+        "Please travel here as soon as possible to see the unusual home of your uncle, receive the keys to the estate, and learn about the parts of his will that concern you. Once this is done, most of our legal duties regarding the inheritance will be complete.<br><br>The manor is waiting for you impatiently, Mr. Puntanelli.<br><br>Yours sincerely,<img src='img/inventory/wax-seal.png' class='usn mt-1 me-3' style='float:right;'>"
+      ]
+    },
+    {
+      "id": "letter_will",
+      "titles": [
+        "Extract from the Last Will <br>of Vittorio Puntanelli",
+        "",
+        ""
+      ],
+      "texts": [
+        "<br>I, Vittorio Puntanelli, known professionally as Vittorio Corvessani, being of sound mind and acting of my own free will, declare the following.<br>I leave my manor near Pignola, together with its grounds, furniture, and every key belonging to it, to my nephew, Dante Puntanelli. The house shall be his, with all its doors, locked rooms, cellars, and everything he may find within its walls.",
+        "My film collection, notes, occult collection, ritual tools, and all objects connected to the ceremonies of the Brotherhood of the Crimson Threshold shall become the property of the Brotherhood.<br>They shall also have control over the rest of my fortune.<br><br>Finally, I leave them something that no earthly court can record as part of an inheritance:<br><span style='margin-left:150px;'>MY SOUL.</span>",
+        "If our agreement was genuine, they will know how to claim it.<br><br>If they lied to me, Dante would be wise to burn this document and never speak their name again.<br><br><br>Vittorio Puntanelli -Corvessani-<br><img src='img/inventory/wax-seal.png' class='usn mt-1 me-3' style='float:left;'>"
       ]
     },
     {
       "id": "note_1",
       "titles": [""],
       "texts": [
-        "<div style='float:right;'><strong>Februar 8.</strong></div><br><br>Something went really wrong. I just feel it on the back of my neck. Going along with those mytesrious fanatics wasn't a good idea after all.<br><br>The ritual went out of it's bonds... The thing.. I think I feel that thing's presence lurking in the house. In the preying shadows. Something has come trough, and now I fear for my life."
+        "<div style='float:right;'><strong>February 2</strong></div><br><br><br>I was introduced to a group of wealthy, imaginative people who like to play with dark forces.<br><br>At first, I found them entertaining. They talked about spirits and other worlds as if these things were completely normal to them, and as if they really understood them.",
+        "<br>Then they proved that they weren't just making things up. Black magic is real. If that's true, then perhaps death isn't as final as I once thought.<br><br>Before they left tonight, they gave me some Crimson Witchclaw flower seeds. They told me to plant them in the garden in spring because they'll be needed for summonings."
       ]
     },
     {
       "id": "note_2",
       "titles": [""],
       "texts": [
-        "<div style='float:right;'><strong>Februar 12.</strong></div><br><br>It's in the cracks. It's in the corner of my eyes, when I walk the corridor, and dare to glance back. It's coming after me, when I'm on the stairs.<br><br>It's standing ouside the door, when I'm lying in my bed silently and dare not to move. I hear it whispering otherwordly obscenities, as he tells me of my death."
+        "<div style='float:right;'><strong>February 26</strong></div><br><br><br>Today I was in Silvia's room again. I still can't escape the sadness when I think about what happened, even after all these years.<br><br>For years, I couldn't bring myself to go inside. Everything was still exactly as she had left it that summer.",
+        "<br>In the end, I had the doorway bricked up. Gregovics thought I did it because I couldn't bear to look at the room anymore.<br><br>He was partly right. But the room didn't stay empty.<br><br>Something very different is taking shape on the other side of the wall now..."
       ]
     },
     {
       "id": "note_3",
       "titles": [""],
       "texts": [
-        "<div style='float:right;'><strong>Január 20.</strong></div><br><br>I've been introduced to a group of rich, imaginative bunch of people who play around with the dark forces.<br><br>It was fun at first, but I realised they are for real. They proved me. Now I'm not comfortable with existence. Back magic is real."
+        "<div style='float:right;'><strong>March 28</strong></div><br><br><br>The laboratory is finished. I'm glad that the first part of my plan has become real. Where Silvia's old bedroom used to be, there are now flasks, copper pots, and books that may help me contact her.<br><br>I'd do anything to see her again and hear her voice. Anything..."
       ]
     },
     {
-      "id": "note_a",
-      "titles": [
-        "B 1. Assumenda rerum dicta minus libero.",
-        "B 2. Aliquam  rerum dicta minus libero.",
-        "B 3. Rerum dicta minus libero nostrum."
-      ],
+      "id": "note_4",
+      "titles": [""],
       "texts": [
-        "Marnin ipsum dolor sit amet consectetur adipisicing elit. <img src='img/inventory/book-img-01.png' style='float:right;'> Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem.",
-
-        "n3 Perferendis cumque ipsum, veritatis exercitationem ab animi. <img src='img/inventory/book-img-05.png' class='w-50 me-3' style='float:left;'> Illo harum nulla deleniti suscipit voluptates, molestiae quidem obcaecati repellendus ipsa qui aliquam perspiciatis vitae impedit necessitatibus odio nobis! Numquam commodi.",
-
-        "Placeat sint, velit nobis quaerat et ullam adipisci laborum laboriosam quibusdam numquam alias repellat dolorem unde a vitae culpa perspiciatis! Nihil recusandae est provident iure possimus architecto doloribus, beatae ullam! &nbsp;&nbsp;&nbsp; <strong>Peter Pan</strong>"
+        "<div style='float:right;'><strong>April 10</strong></div><br><br><br>I managed to summon the spirit of a Portuguese sailor who died long ago. His name is Baltasar de Alvarenga. He was a pirate in the 1780s, until he drowned during a battle in the Mediterranean Sea. He's a strong and cruel creature, but surprisingly obedient as long as he gets clear orders.",
+        "<br>I ordered him to guard my bedroom. He won't let anyone inside.<br><br>However, he ignores anyone wearing a protection amulet. I made two protection amulets against him. I always keep one with me, and I keep the other in the house for Albert, in case he needs to clean the chimney or tidy up my room."
       ]
     },
     {
-      "id": "note_b",
-      "titles": [
-        "C 1. Vsumenda rerum dicta minus libero nostrum.",
-        "C 2. Aliquam rerum dicta minus libero nostrum.",
-        "C 3. Rerum dicta minus libero nostrum."
-      ],
+      "id": "note_5",
+      "titles": [""],
       "texts": [
-        "3n1 Quibusdam veritatis accusantium dolore similique numquam, adipisci molestiae. <img src='img/inventory/book-img-04.png' style='float:right;'> Odio officiis harum fuga saepe voluptates quas! Incidunt exercitationem atque debitis, error quae assumenda fugiat inventore tempore quos corrupti? Tempora, obcaecati.",
-        "3n2 Dolore nemo, incidunt architecto aliquam inventore, amet officia modi maiores, consequuntur soluta! Tenetur distinctio vero ipsam, vel rerum cumque dolores non. At, fugiat eos iure corrupti sapiente amet cum nulla."
+        "<div style='float:right;'><strong>May 13</strong></div><br><br><br>Silvia is back. Or rather... I thought I was bringing Silvia back.<br><br>God, I wish I hadn't succeeded!<br><br>She isn't the way I remember her. Sometimes I can still see my child in her, but there's a monster watching me through her eyes.",
+        "<br>It's as if she stayed too long in a place no human should ever return from.<br><br>She has moved into the large wardrobe in the sitting room. Under no circumstances<br>should it be opened!<br><br>As long as she's left alone, she stays quiet. If she's disturbed... she'll attack anyone with hatred! She bit me badly last time too."
       ]
-    },    
+    },
+    {
+      "id": "note_6",
+      "titles": [""],
+      "texts": [
+        "<div style='float:right;'><strong>June 2</strong></div><br><br><br>I've lost the bathroom. Several spirits have moved in there, and none of them obey me. I have no power over them.<br><br>Don't look into the mirror! Something evil lives inside it. If you stare at it for too long, it will stare back at you.",
+        "<br>The bathtub has been taken over by the ghosts of three conjoined French prostitutes from the Middle Ages.<br><br>They bathe in otherworldly blood, and all three mouths whisper at the same time.<br><br>Don't stay near them for too long. They always take a part of you with them!"
+      ]
+    },
+    {
+      "id": "note_7",
+      "titles": [""],
+      "texts": [
+        "<div style='float:right;'><strong>July 18</strong></div><br><br><br>Something has gone terribly wrong. I can feel it on the back of my neck.<br>Getting involved with those fanatics was a mistake. The ritual got out of control. They're asking me to do strange things I don't want to do. But I've tied myself to them now. I may regret it... in fact, I already do.",
+        "<br>That thing... I think I can feel its presence as it moves through the house. Hiding in the shadows.<br><br>Something came through. And now I fear for my life."
+      ]
+    },
+    {
+      "id": "note_8",
+      "titles": [""],
+      "texts": [
+        "<div style='float:right;'><strong>June 19</strong></div><br><br><br>Since yesterday, I haven't felt safe in my own house.<br><br>Just to be safe, I hid one of the outer gate keys next to the pentagram in the courtyard. In case I ever need to leave the house quickly while something is breathing down my neck.",
+        "<br><br>I left the book with the summoning spell recipe on the bookshelf in the sitting room. The potion also needs my top hat, as an object that connects me to the summoning. Without it, the spell won't begin.<br><br>I wore that hat for so many years that it almost became a part of me. On film sets, at premieres, in better times.", "<br>Magic likes objects that people are attached to. If I have to give a part of myself to something, I'd rather give this than my soul."
+      ]
+    },
+    {
+      "id": "note_9",
+      "titles": [""],
+      "texts": [
+        "<div style='float:right;'><strong>August 26</strong></div><br><br><br>It's in the cracks...<br><br>It's there in the corner of my eye when I walk down the hallway and dare to look back.<br><br>It follows me when I'm on the stairs.<br><br>It stands outside the door while I lie silently in bed, too afraid to move.",
+        "<br>I can hear it whispering horrible things from the other side.<br><br>It talks about my death..."
+      ]
+    },
     {
       "id": "book_1",
-     "titles": [
-        ["Book I. Tempora vitae fugit.", "Book II. Tempora vitae fugit."],
-        ["Book III. Dolorum atque modi.", "Book IV. Dolorum atque modi."],
-        ["", "Book VI. Quisquam rerum iste."],
-        ["Book VII. Voluptates nulla omnis.", "Book VIII. Voluptates nulla omnis."],
-        ["Book IX. Repudiandae dicta natus.", ""],
-        ["Book XI. Laudantium sit facere.", "Book XII. Laudantium sit facere."]
+      "bg": "book-bg-red",
+      "titles": [
+        ["<div class='text-center w-100 ms-5 text-red'>The Gospel of<br>the Crimson Threshold</dir>", "<div class='text-red'>About the Brotherhood of the Crimson Threshold</div>"],
+        ["", "<div class='text-red'>The Initiate&#39;s Oath</div>"],
+        ["", ""],
+        ["", "<div class='text-red'>About Otherworldly Bats</div>"],
+        ["", "<div class='text-red'>The Law of the Gate</div>"]
       ],
       "texts": [
         [
-          "A b1 Lorem, ipsum dolor sit amet consectetur adipisicing elit.<img src='img/inventory/book-img-01.png' class='usn mt-4 me-3' style='float:right;'> Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? dolore.Reiciendis aut corporis soluta quidem consequuntur libero dolore. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem?",
-
-          "A b2 Quibusdam numquam alias repellat dolorem unde a vitae culpa perspiciatis! Nihil recusandae est provident iure possimus architecto doloribus, beatae ullam! Reiciendis aut corporis soluta quidem consequuntur libero dolore. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero."
+          "<div class='crimson-treshold-logo'></div><br><br><br><br><br><br><br><br><br><br><div style='font-size:38px;line-height:28px;text-align:center;'>&quot;The visible world is only one side of the wall.&quot;<br>&quot;Death is not a gate. Death is a lock.&quot;</div><br><div class='text-center w-100'>&quot;And we hold the key.&quot;</div>",
+          "<br><br><br>The Brotherhood of the Crimson Threshold is not a religion, because it does not ask for faith. It is not a philosophy, because thoughts alone are not enough. The Brotherhood has only one purpose: to prove that other planes exist beyond the world of the living, and that they can be opened with enough will, sacrifice, and knowledge.<br><br>Anyone who joins us must leave their old attachments behind. Outside the Brotherhood, there is no family,"
         ],
         [
-          "B b1 Lorem, ipsum dolor sit amet consectetur adipisicing elit ullam magnam in ad, facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore.",
-
-          "B b2 Et ullam adipisci laborum laboriosam quibusdam numquam alias repellat dolorem unde a vitae culpa perspiciatis! Nihil recusandae est provident iure possimus architecto doloribus, beatae ullam!"
+          "<div class='crimson-ilustration-1'></div>friend, lover, or priest who may be told our secrets. Whatever you see beyond the Threshold, you will carry with you until death.<br><br><div style='width:70%;'>In return, you may see things that other people can only dream about.<br><br></div><div style='width:70%;'>You may hear the dead. You may speak with them. You may command them.<br><br></div><div style='letter-spacing:4.43px;'>And if you look through the open gate for long enough, sooner or later something on the other side will look back at you.</div>",
+          "<div class='crimson-ilustration-2'></div><div class='book-img-ghost'></div><br><br><div style='width:90%; letter-spacing:4px;'>&quot;I carry my name among the living, but I give my secrets to the Threshold. My blood belongs to this world.<br></div><div style='width:100%;'>My word belongs to the Brotherhood.<br>And my soul belongs to whoever comes for me from the other side.&quot;<br><br></div><strong class='text-red'>About Spirits</strong><br><br><div style='width:65%;letter-spacing:4px;'>A spirit is not simply the memory of a dead person. Parts of the soul that remain after death may become tied</div><div style='letter-spacing: 2px;'>to a place, a person, an object, or a strong emotion.</div>"
         ],
         [
-          "A b3 Voluptates delectus nesciunt cum repellendus asperiores odit alias sed quibusdam quaerat. Eveniet, ducimus vitae. <img src='img/inventory/book-img-02.png' class='usn mt-4 me-3' style='float:right;'> Atque veritatis laborum fugit libero obcaecati quidem earum cumque sapiente aliquid consequuntur! Rem, aperiam cum. Expedita laudantium quas reprehenderit, minima mollitia?",
-
-          "A b4 Harum natus blanditiis, deserunt molestias aliquam ipsam incidunt fugit repellendus numquam cumque alias nobis consequatur ex assumenda dolorum officia. Voluptatibus, deleniti. Mollitia dicta itaque ipsam sed praesentium nulla voluptas eligendi saepe reprehenderit quod fuga iure labore."
+          "<div class='crimson-ilustration-4'></div>With the right ritual, these bonds can be used to call the soul back.<br><div style='width:55%;letter-spacing:4.3px;'>Summoned spirits give off cold, and in this world they appear transparent and blue. Some keep their personality and memories, while others carry only a single emotion: hatred, fear, sorrow, or a desire for revenge.</div><div style='letter-spacing:4.3px;'>However, no one should expect the dead to think about time, love, or mercy in the same way they did when they were alive.</div>",
+          "<div class='crimson-ilustration-3'></div>A properly made &quot;protection amulet&quot; hides the living presence of its wearer from spirits.<br><br><div style='width:80%;letter-spacing:2px;'>Warning: the amulet protects you from them, but it does not make you invulnerable.</div><div style='width:80%;letter-spacing:2px;'>To summon them, you need graveyard soil, black candle wax, a piece of a personal object connected to the dead person, a raven feather, and a handful of salt.<br><br></div><strong class='text-red'>About Grave-Walking Giant Spiders</strong><br><br>The records of the Brotherhood call these creatures &quot;Brown Weavers.&quot;"
         ],
         [
-          "B b3 Magnam aspernatur distinctio saepe excepturi molestiae ipsam nesciunt deserunt. <img src='img/inventory/book-img-06.png' class='w-30 me-2' style='float:left;'> Eveniet quaerat asperiores suscipit temporibus. Quasi blanditiis beatae placeat fugiat, necessitatibus earum consequuntur doloribus saepe! Reprehenderit quibusdam nihil provident dignissimos eius, minima incidunt.",
-
-          "B b4 Inventore molestiae in, temporibus eligendi quos hic, consequuntur ipsa omnis velit quia laboriosam quibusdam minus facere doloremque cum, voluptatibus porro ratione. Optio quibusdam minima exercitationem dolor laudantium doloremque pariatur vero explicabo!"
+          "<div class='book-img-bg1'></div><div class='book-img-spider'></div><div style='width:50%;letter-spacing:4px;'>They are not simply larger versions of earthly spiders. Their bodies come from a cold, dark plane where solid webs cover the ground and no living creature has ever seen sunlight.<br><br></div>A fully grown creature can be as large as a small horse. The ends of its six legs are covered with hook-like poisonous hairs, allowing it to move across walls, ceilings, and smooth stone.<br><br>To summon them, burned black silk, bone dust, and fresh animal blood are required.",
+          "<div class='book-img-bg2'></div><div class='book-img-bet'></div><br><br><br><br><br><br><br>The book calls these two-legged, bat-like creatures with partly fox-like heads &quot;Blind Winged Ones.&quot; They come from one of the darker regions beyond the Threshold.<br><br>Their bodies are heavy and bony, with long claws on two powerful legs. In place of arms, they have huge leathery"
         ],
         [
-          "C b1 Repudiandae ducimus delectus possimus commodi vero eveniet cum, voluptates nesciunt reiciendis alias iste obcaecati labore quidem, asperiores corporis neque amet debitis. <img src='img/inventory/book-img-03.png' class='usn mt-4 me-3' style='float:left;'> Sed, voluptate laborum eligendi accusantium aut exercitationem laboriosam vitae similique!",
-
-          "C b2 Voluptatum id eveniet iusto sunt accusantium perferendis cum inventore ullam consequuntur voluptatibus mollitia commodi, nemo fuga. Reiciendis, doloremque.<img src='img/inventory/book-img-05.png' class='w-50 me-3' style='float:center;'> Cumque, fugiat quidem nihil ex repudiandae earum quibusdam laboriosam nulla voluptate?"
-        ],
-        [
-          "D b1 Quis modi laborum fuga, nesciunt esse harum blanditiis sapiente unde placeat dolore? Beatae ipsa consequuntur voluptas! Consectetur, asperiores! <img src='img/inventory/book-img-04.png' class='w-50 me-3' style='float:left;'> Ipsum esse est, quibusdam non, similique sed aperiam nobis nihil recusandae aut?",
-
-          "D b2 Tempore repellat vitae magni, est molestias mollitia alias rem explicabo. Cumque laudantium libero laboriosam, iste voluptatum doloremque iusto expedita dolorem eaque dicta possimus obcaecati porro eveniet, architecto saepe. Illo, nihil."
+          "<div class='book-img-bg3'></div><div class='book-img-bet2'></div>wings that allow them to travel great distances in a short time. Their small eyes have poor vision, so they mainly find their way through sounds, smells, and the heartbeat of living creatures.<br><div style='letter-spacing: 4px;width:60%;'>They often wait in high places, on beams, rooftops, and dark corners of ceilings,</div>then attack their victims from above.<br>They are mainly attracted by blood, noise, and fear.<br><br>To summon one, burned bat bone, black fox fur, three drops of fresh blood, and a handful of cave soil are required.",
+          "<div class='book-img-bg4'></div><div class='book-img-bg5'></div><div class='book-img-pentagram'></div><br>Every summoning is a two way process beware! For a summoning linked to a specific individual, place an object associated with that person in the center of the pentagram. Then, you may use the potion or the incantation.<br><br><br><br><br><br><br><div style='letter-spacing:2px;'>The wise summoner does not ask:<br><span class='text-red'>&quot;Am I capable of opening the gate?&quot;</span> but rather,<br><span class='text-red'>&quot;Will I be able to close it again?&quot;</span></div>"
         ]
       ]
     },
     {
       "id": "book_2",
+      "bg": "book-bg-blue",
       "titles": [
-        ["Two I. Tempora vitae fugit.", "Two II. Vitae fugit."],
-        ["Two III. Dolorum atque modi.", ""],
-        ["Two V. Quisquam rerum iste delectus.", "Two VI. Quisquam rerum."],
-        ["", "Two VIII. Omnis."],
-        ["Two IX. Repudiandae dicta natus labore et fuga.", "Two X. Repudiandae dicta."],
-        ["Two XI. Laudantium sit facere.", "Two XII. Laudantium."]
+        ["<div class='text-center text-blue' style='width:120%;margin-left:30px;'>Practical Alchemy<br>And<br>Reasonably Safe Magic</div>", ""],
+        ["<div class='text-center text-blue' style='width:170%;margin-left:30px;'>Summoning Potion</div>"],
+        ["", ""],
+        ["", "<div class='text-center text-red' style='width:170%;margin-left:60px;'>Preparation:</div>"]
       ],
       "texts": [
         [
-          "A b1 Eveniet adipisci deleniti laudantium repellendus harum perferendis voluptatem, impedit perspiciatis error doloribus corporis. <img src='img/inventory/book-img-04.png' class='usn mt-4 me-3' style='float:right;'> Autem maiores rerum officiis consequatur, provident eligendi delectus nihil vel. Dolorum odit mollitia, magni inventore? Eaque voluptas optio temporibus libero recusandae repellat!",
-
-          "A b2 Voluptatem expedita quaerat illum aspernatur deleniti ab laboriosam repudiandae cumque qui porro! Mollitia perspiciatis nobis ratione natus repellat possimus dolorem fugit architecto ipsa, voluptatum est laudantium reiciendis non quo."
+          "<br><br><br><div class='book-img-cauldron'></div><br><br><br><br><br><br><br><br><strong class='text-blue'>About Spirits</strong><br><br><div style='letter-spacing:4.43px;'>A dead soul does not like being ordered around, so it is wiser to make it believe that it is returning by its own choice.</div>",
+          "<div class='book-img-magic'></div>A properly prepared summoning potion sends a scent into the spirit world that a soul without a body can recognize even from beyond the grave.<br><br><div style='width:70%;letter-spacing:3.9px;text-align:left;'>If the mixture turns black for a few moments while boiling, that is a good sign. If it starts boiling backwards, that is less encouraging.</div><br><div style='letter-spacing:4.43px;'>The potion itself only opens a door. Which spirit steps through it is determined by the personal item used in the summoning. The item must have belonged to the person you wish to summon while they were still alive.</div>"
         ],
         [
-          "B b1 Officiis alias atque cumque dolore nulla, est laboriosam dolorum? Quidem, expedita fugit! Libero debitis atque quisquam delectus deleniti necessitatibus. Perspiciatis eius voluptate mollitia cumque molestiae harum optio quasi repellendus!",
-
-          "B b2 Quo inventore saepe nobis rem maiores dolore dicta, explicabo iusto quisquam. <img src='img/inventory/book-img-05.png' class='usn mt-4 me-3' style='float:right;'> Obcaecati, impedit laboriosam dolor ullam, officiis accusantium rerum minima consequatur dolorum deserunt, quia voluptatibus!"
+          "</div><div class='book-img-cattail'></div><br><div class='text-red' style='text-align:left;margin-left:180px;'>Ingredients:</div><br><div class='text-blue' style='text-align:center;margin-left:-20px;'>Cat Tail:</div><br><br><br><br>A small amount of fur from the end of the tail is enough. Cats are said to have nine lives and to belong to at least three worlds at the same time, which makes them excellent messengers between different planes of existence. The cat itself usually has a different opinion about this.",
+          "<div class='book-img-witchclaw'></div><div class='text-blue' style='text-align:center;margin-left:-20px;'>Crimson Witchclaw:</div><br><br><br><br><br>An extremely rare woody plant with thorny flowers and crimson, spear-shaped petals. Its stem is covered with poisonous thorns.<br>Its crimson flowers are used to make paralyzing potions, creature-summoning mixtures, and spells that open gates through blood sacrifice. The thorns on its woody stem can also be used as poison."
         ],
         [
-          "C b1 Facilis cupiditate iste vero officiis animi numquam minus. Facere laboriosam itaque dolorem voluptates, blanditiis voluptatibus. Expedita praesentium voluptatem distinctio tempora ea voluptates labore, officia eligendi possimus, atque, quis sequi.",
-
-          "C b2 Recusandae dolores voluptate illum deserunt optio unde aliquam dolore quibusdam laudantium? Ipsam itaque vel at? Reprehenderit quidem vero doloremque error animi, corporis architecto rem unde saepe dolore veniam alias."
+          "<div class='book-img-frogbile'></div><div class='text-blue' style='text-align:center;margin-left:-20px;'>Swamp Frog Bile Concentrate:</div><br><br><br><br><br><br>The liquid binds the plant, animal, and spiritual ingredients together. Half a cup is needed. It is most effective when freshly extracted, but if kept in a properly sealed bottle, it can retain its magical properties for years.<br>Regarding the smell, most alchemists give the same advice: do not breathe it in before use!",
+          "<div class='book-img-horseeye'></div><div class='text-blue' style='text-align:center;margin-left:-20px;'>Eye of a Lipizzaner Horse:</div><br><br><br><br><br><br>The horse's eye is needed so the potion can &quot;see&quot; what the human eye can no longer sense.<br>No other kind of eye will work. A horse can sense a presence that a human usually notices only when it is already too late.<br>Preserved in liquid, it keeps for a long time."
         ],
         [
-          "D b1 Consectetur pariatur sit fugiat accusamus iure nostrum placeat asperiores exercitationem quas ad suscipit. Aliquam rerum assumenda praesentium vero ratione labore, eaque, eveniet quis deleniti itaque consequuntur repudiandae aspernatur laudantium.",
-
-          "D b2 Soluta odio amet quasi saepe libero tenetur. <img src='img/inventory/book-img-06.png' class='usn mt-4 me-3' style='float:right;'> Tempora magnam perspiciatis, incidunt ullam, nemo dicta molestias temporibus iure possimus quidem facilis. Voluptatibus, esse!"
+          "<div class='book-img-swamp'></div><div class='text-blue' style='text-align:center;margin-left:-20px;'>Amazonian Swamp Soil:</div><br><br><br><br><br><br>Where water, earth, decay, and life exist together, the boundaries between worlds are naturally thinner.<br><br>Half a handful is enough. Too much soil usually causes the potion to summon mud instead of a spirit.",
+          "<br><br>Bring the rat blood base to a boil and cook the listed ingredients together. Then stir the mixture until its surface becomes completely smooth. The ingredients can be added in any order for this spell. Add them one by one to the boiling base:<br><br><div class='text-blue' style='text-align:center;margin-left:-40px;'> - Cat Tail</div><div class='text-blue' style='text-align:center;margin-left:-40px;'> - Crimson Witchclaw</div><div class='text-blue' style='text-align:center;margin-left:-40px;'> - Swamp Frog Bile Concentrate</div><div class='text-blue' style='text-align:center;margin-left:-40px;'> - Eye of a Lipizzaner Horse</div><div class='text-blue' style='text-align:center;margin-left:-40px;'> - Amazonian Swamp Soil</div>"
+        ]
+      ]
+    },
+    {
+      "id": "book_3",
+      "bg": "book-bg-gold",
+      "titles": [
+        ["", ""],
+        ["", ""],
+        ["", ""],
+        ["", ""]
+      ],
+      "texts": [
+        [
+          "",
+          ""
         ],
         [
-          "E b1 Illum dignissimos quas adipisci excepturi dolore, voluptatum deleniti molestiae aut at magnam. Dolores distinctio nemo iusto odit ipsa amet necessitatibus reiciendis mollitia similique explicabo voluptates voluptatem, ab facilis repellat?",
-
-          "E b2 Odit, voluptatibus veritatis. Quia blanditiis expedita, excepturi perferendis fugiat quidem ducimus! <img src='img/inventory/book-img-01.png' style='float:right;'> Mollitia fuga officia sint accusantium, commodi perferendis autem molestias tenetur!"
+          "",
+          ""
         ],
         [
-          "F b1 Velit deleniti tempora possimus repellat voluptatibus soluta natus veritatis. Officiis id, debitis voluptates neque, provident impedit aspernatur voluptas aut quaerat eum alias eveniet. Minima, eligendi reiciendis itaque quibusdam sunt.",
-
-          "F b2 Consequuntur ex asperiores totam mollitia illum architecto voluptates veritatis. Quas debitis sed libero sit beatae commodi, doloribus qui minus fugit voluptatibus, vero expedita, explicabo omnis animi? Vel, laborum alias."
+          "",
+          "<div class='book-img-blood1'></div>"
+        ],
+        [
+          "<div class='book-img-blood2'></div><br><div class='text-red' style='text-align:center;margin-left:0px;font-size:70px;line-height:60px;'>Let fire consume your flesh,<br>let shadow swallow your soul,<br>let death seal away your soul.<br>You are already dead!</div>",
+          "<div class='book-img-devil'></div>"
         ]
       ]
     },
     {
       "id": "start_text",
       "text": [
-        "It came as a surprise. The letter from your Italian uncle's lawyers, that you inherited his mansion, located in south Italy. You remember vaguely spending some summers there in your childhood, then your parents moved across the ocean. You have left New York now to fulfill your curiosity, and to answer the document, containing his will, in person.<br><br>Travelling through the rich Italian scenery, all those small, pastorial villages embedded in time, have sunk your soul in a mosaic-like, dreamy state.Tangled olive groves, lush vineyards on sun-drenched hills that rise from each other, guarded by ancient castle ruins, and purple wine that seems to flow in streams everywhere.<br><br>Now you are here, the old house servant have let you in, greeting and remembering you, like you never really left. The shadowy mansion embraces you, like an oversized bug, weighing on you, as if it never wants you to leave.<br><br>- It's good to see a familiar face, young Master - sais the butler. - Since your uncle has passed away, dark days have visited this place. It's nice to have you here after so many years. Please feel free to look around, I mean.. of  course, the mansion is yours now. I'm cooking dinner, but it's a bit late, let me retire to my room, and we will converse later - with these words spoken silently, he retreats to his room."
+        "It came as a surprise. The letter was from your Italian uncle's lawyers: you have inherited his manor in southern Italy. You vaguely remember spending a few summers there as a child, before your parents moved across the ocean. Now you have left New York to satisfy your curiosity and deal with the inheritance in person.<br><br>As you travelled through the beautiful Italian countryside, the small villages, frozen in time, slowly filled you with a dreamlike calm. Tangled olive groves and rich vineyards cover the sunny hills, ancient castle ruins watch from above, and around here it sometimes feels as if wine really flows like water.<br><br>But now you are here.<br><br>The old house servant let you in and greeted you as if you had never really left. The afternoon sunlight barely reaches through the heavy curtains. Inside, the house is cool, still, and strangely quiet. The dark manor surrounds you like a giant insect, pressing down on you as if it decided the moment you arrived that it would never let you leave.<br><br>“Good to see a familiar face, young master,” says Albert Gregovics. “Dark days have come to this place since your uncle passed away. It is good to have you back after all these years. Feel free to look around. I mean... of course, the manor belongs to you now. I will prepare dinner, but it is getting rather late. Allow me to return to my room. We can talk later.”<br><br>With these quietly spoken words, Gregovics disappears down the hallway.<br><br>“Your story begins here...”"
       ]
     },
     {
       "id": "finish_text",
       "text": [
-        "FINISH! :) Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore.<br>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Sit ullam magnam in ad, deleniti, a vel eligendi facilis cupiditate excepturi eos quidem? Reiciendis aut corporis soluta quidem consequuntur libero dolore.<br> Placeat sint!"
+        "With great relief, you step through the wrought-iron gate. You have escaped this terrible place!<br><br>At first, you keep running until you finally reach the main road. Only then do you dare to stop and look back. You made it out of that cursed place alive.<br><br>Dawn is already breaking over the hills, and in the distance you can see the same olive groves, rows of vineyards, and peaceful rooftops you saw when you arrived. But now everything feels different. Now you know the truth. There is something on the other side. You don't know exactly what was released that night. You don't know how many creatures are still inside. And most of all, you don't know if the gate truly closed. But you don't care. You just want to forget all of it!<br><br>A church bell rings in the distance...<br><br>Feeling a little safer, you turn toward the sound and start walking to the village.<br><br>“Your story ends here.”"
       ]
     },
     {
@@ -945,6 +985,13 @@
       "titles": [""],
       "texts": [
         "<img src='img/inventory/photo-bedroom.png' class='usn w-100 text-center mt-4 me-3' style='float:right;transform:translateY(150px)scale(2);'>"
+      ]
+    },
+    {
+      "id": "photo_group",
+      "titles": [""],
+      "texts": [
+        "<img src='img/inventory/photo-group-portrait.png' class='usn w-100 text-center mt-4 me-3' style='float:right;transform:translateY(50px)scale(1.4);'>"
       ]
     }
   ],
@@ -1090,10 +1137,10 @@
       "rotateOn": true,
       "moveOn": true,
       "moveOnY": false,
-      "boundingBoxRatio": 0.6,
-      "attackSounds": [100,101,102],
-      "damageSounds": [100,101,102],
-      "dieSounds": [103],
+      "boundingBoxRatio": 0.006,
+      "attackSounds": [null,null,null],
+      "damageSounds": [null,null,null],
+      "dieSounds": [null],
       "knifeRange": 0,
       "knifeAim": 0,
       "animationpoints": {
@@ -1105,7 +1152,7 @@
             "z_axis": true,
             "x_pos": 0.1,
             "y_pos": 0.68,
-            "z_pos": 4.3,
+            "z_pos": 4.27,
             "next": "10",
             "sound": null
           },
@@ -1116,7 +1163,7 @@
             "z_axis": true,
             "x_pos": -1,
             "y_pos": 0.68,
-            "z_pos": 4.3,
+            "z_pos": 4.27,
             "next": "remove",
             "sound": null
           }

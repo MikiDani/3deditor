@@ -33,7 +33,7 @@ export default class Graphics {
       $("#distance-mode-container").show()
 
       // this.game.targetFPS = 60 EZ LESZ !!!
-      this.game.targetFPS = 60
+      this.game.targetFPS = 120
       this.game.renderInterval = 1000 / this.game.targetFPS
 
       // this.scX = window.innerWidth / 1; this.scY = window.innerHeight / 1
@@ -69,6 +69,11 @@ export default class Graphics {
 
     this.game.canvas.style.width = '100vw'
     this.game.canvas.style.height = '100vh'
+
+    this.scX = Math.max(this.scX, 1366)
+    this.scY = Math.max(this.scY, 768)
+
+    console.log(this.scX, this.scY)
 
     this.game.renderer.setSize(this.scX, this.scY, false)
     this.game.renderer.setPixelRatio(1)

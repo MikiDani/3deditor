@@ -118,7 +118,7 @@ export default class Inventory {
 
           // CHECK IF OIL
           const selectedUseObject = this.game.playerMouse.selectedObject
-          const isLampOil = mode == 'use' && selectedUseObject?.filename?.toLowerCase().includes('oil')
+          const isLampOil = mode == 'use' && selectedUseObject?.filename?.toLowerCase().includes('oil can')
 
           if (isLampOil && this.game.playerMouse.lamp) {
             const objectIndex = this.game.playerObjects.indexOf(selectedUseObject.objId)
@@ -246,6 +246,8 @@ export default class Inventory {
     }
 
     loadBookPage() {
+      $("#book-background").removeClass('book-bg-red book-bg-blue book-bg-gold').addClass(this.readArray.readData.bg)
+
       $(".book-title-1").html(this.readArray.readData.titles[this.readArray.readIndex][0])
       $(".book-text-1").html(this.readArray.readData.texts[this.readArray.readIndex][0])
       $(".book-title-2").html(this.readArray.readData.titles[this.readArray.readIndex][1])

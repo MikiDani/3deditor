@@ -19,6 +19,8 @@
 // Alap felbontás
 $base-width: 1920;
 $base-height: 1080;
+$min-width: 1366px;
+$min-height: 768px;
 $base-width-px: 1920px;
 $base-height-px: 1080px;
 
@@ -71,7 +73,8 @@ $yellow-light: #ffff00;
     url('../img/inventory/note-bg.png'),
     url('../img/inventory/arrow2-off.png'),
     url('../img/inventory/arrow2-on.png'),
-    url('../img/inventory/book-bg.png'),
+    url('../img/inventory/book-bg-red.png'),
+    url('../img/inventory/book-bg-blue.png'),
     url('../img/inventory/inventory-bg.png'),
     url('../img/inventory/inventory-logo.png'),
     url('../img/inventory/arrow-off.png'),
@@ -148,6 +151,14 @@ $yellow-light: #ffff00;
   color: red !important;
 }
 
+.text-red {
+  color: #871313 !important;
+}
+
+.text-blue {
+  color: #00495e !important;
+}
+
 .text-yellow-light {
   color: $yellow-light !important;
 }
@@ -179,51 +190,32 @@ $yellow-light: #ffff00;
 }
 
 html, body {
-    overflow: hidden;
-    height: 100%;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: black !important;
-    // CURSOR
-    user-select: none;
+  overflow: hidden;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-width: $min-width !important;
+  min-height: $min-height !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: black !important;
+  user-select: none;
 }
 
-
-//---
-
-html.game-custom-cursor,
-html.game-custom-cursor body,
-html.game-custom-cursor body *,
-html.game-custom-cursor button,
-html.game-custom-cursor a,
-html.game-custom-cursor input,
-html.game-custom-cursor textarea,
-html.game-custom-cursor select,
-html.game-custom-cursor label,
-html.game-custom-cursor .btn,
-html.game-custom-cursor .cursor-pointer,
-html.game-custom-cursor #text-box-container,
-html.game-custom-cursor #text-box-container *,
-html.game-custom-cursor #text-box,
-html.game-custom-cursor #text-box *,
-html.game-custom-cursor #text-box-close-button {
-  cursor: none !important;
+#loading-container,
+#menu-container,
+#game-container,
+#inventory-container,
+#book-container,
+#note-container,
+.full-size,
+#game-canvas,
+#game-blood,
+#text-box-container {
+  width: 100vw !important;
+  height: 100vh !important;
+  min-width: $min-width !important;
+  min-height: $min-height !important;
 }
-
-#custom-game-cursor {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 32px;
-  height: 32px;
-  pointer-events: none;
-  z-index: 10000;
-  background-repeat: no-repeat;
-  background-size: contain;
-  transform: none;
-}
-
-//---
 
 a, button, input, textarea {
   cursor: url('../img/cursors/cursor-default.png') 5 5, auto !important;
@@ -488,6 +480,7 @@ a:hover, button:hover, input:hover, textarea:hover {
   border: solid 2px gray;
   background-color: red;
   z-index: 12;
+  user-select: none;
 }
 
 .energy {
@@ -495,6 +488,7 @@ a:hover, button:hover, input:hover, textarea:hover {
   height: 13px;
   background-color: green !important;
   transition: width 1s ease;
+  user-select: none;
 }
 
 #oil-container {
@@ -507,6 +501,7 @@ a:hover, button:hover, input:hover, textarea:hover {
   border: solid 2px gray;
   background-color: #111;
   z-index: 12;
+  user-select: none;
 }
 
 .oil {
@@ -514,6 +509,7 @@ a:hover, button:hover, input:hover, textarea:hover {
   height: 13px;
   background-color: #e4bb03 !important;
   transition: width 1s ease;
+  user-select: none;
 }
 
 
@@ -694,7 +690,9 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 #note-background {
   position: relative;
-  height: 95%;
+  top: 15px;
+  min-width: 680px !important;
+  width: 20%;
   aspect-ratio: 495 / 715;
   background-size: 100% 100%;
   background-position: center;
@@ -702,7 +700,6 @@ a:hover, button:hover, input:hover, textarea:hover {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
-
 .note-bg {
   background-image: url('../img/inventory/note-bg.png');
 }
@@ -889,7 +886,7 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 .item-text-container {
   font-family: 'Hand', sans-serif;
-  font-size: 3.5rem;
+  font-size: 3rem;
 
   left: pxw(610);
   top: pxh(170);
@@ -901,6 +898,7 @@ a:hover, button:hover, input:hover, textarea:hover {
   padding-left: 60px;
   line-height: normal;
   letter-spacing: 0.6rem;
+  white-space: nowrap !important;
   color: $primary;
 }
 
@@ -976,16 +974,15 @@ a:hover, button:hover, input:hover, textarea:hover {
   color: $primary;
 }
 
-
 // --- BOOK VARIABLES ---
 
 $book-scale: 3.5;
 
-$book-title-size: 1.25em * $book-scale;
+$book-title-size: 1.1em * $book-scale;
 $book-title-spacing: 0.02em * $book-scale;
-$book-title-line-height: 0.7em;
+$book-title-line-height: 0.8em;
 
-$book-text-size: 0.82em * $book-scale;
+$book-text-size: 0.9em * $book-scale;
 $book-text-spacing: 0.03em * $book-scale;
 $book-text-line-height: 0.9em;
 
@@ -993,31 +990,44 @@ $book-text-line-height: 0.9em;
 
 #book-container {
   position: fixed;
-  width: 100vw;
-  max-width: $base-width-px !important;
-  height: 100vh;
   display: flex;
+  width: 100vw;
+  height: 100vh;
+  max-width: $base-width-px !important;
   justify-content: center;
   align-items: center;
-  background-color: #004500ee;
   background-image: url('../img/inventory/inventory-read-bg.png');
   background-size: 200px 200px;
   background-repeat: repeat;
   background-blend-mode: overlay;
+  background-color: #004500ee;
   z-index: 2;
 }
 
 #book-background {
   position: relative;
-  height: 95vh;
+  top: 15px;
+  min-width: 1370px !important;
+  width: 20%;
   max-width: 100vw;
   aspect-ratio: 990 / 715;
-  background-image: url('../img/inventory/book-bg.png');
   background-size: 100% 100%;
   background-position: center;
   background-repeat: no-repeat;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+}
+
+.book-bg-red {
+  background-image: url('../img/inventory/book-bg-red.png');
+}
+
+.book-bg-blue {
+  background-image: url('../img/inventory/book-bg-blue.png');
+}
+
+.book-bg-gold {
+  background-image: url('../img/inventory/book-bg-gold.png');
 }
 
 .book-close-button {
@@ -1060,53 +1070,48 @@ $book-text-line-height: 0.9em;
 
 #book-content-1 {
   position: absolute;
-  left: 0.8em;
-  top: 0.4em;
-  width: 46%;
+  left: 4em;
+  top: 2em;
+  width: 44%;
   height: 84%;
   padding: 3.2em 1em 5em 3.2em;
   transform: rotate(1.6deg);
   overflow: hidden;
+  // background-color: rgba(0, 191, 255, 0.218);
 }
 
 #book-content-2 {
   position: absolute;
-  right: 0.9em;
-  top: 0.2em;
-  width: 46%;
+  right: 4em;
+  top: 2em;
+  width: 44%;
   height: 84%;
   padding: 3.2em 2.2em 5em 1.4em;
   transform: rotate(-1.6deg);
   overflow: hidden;
+  // background-color: rgba(0, 255, 187, 0.218);
 }
 
 .book-title-1,
 .book-title-2 {
   font-family: 'Absolute', sans-serif;
-
-  font-size: $book-title-size;
   font-weight: bold;
-
+  font-size: $book-title-size;
   letter-spacing: $book-title-spacing;
   line-height: $book-title-line-height;
-
   color: $fourth;
+  position: absolute;
+  top: 80px;
 }
 
 .book-text-1,
 .book-text-2 {
   font-family: 'Absolute', sans-serif;
-
+  font-weight: bold;
   font-size: $book-text-size;
-  font-weight: normal;
-
   letter-spacing: $book-text-spacing;
   line-height: $book-text-line-height;
-
-  width: 100%;
-
   transform: rotate(-2deg);
-
   color: $fourth;
 }
 
@@ -1133,16 +1138,16 @@ $book-text-line-height: 0.9em;
   font-family: 'Absolute', sans-serif;
 
   font-size: $book-text-size;
-  font-weight: normal;
+  font-weight: bold;
 
   letter-spacing: $book-text-spacing;
   line-height: $book-text-line-height;
 
-  width: 100%;
-
   transform: rotate(-2deg);
 
   color: $fourth;
+
+  // background-color: deeppink !important;
 }
 
 #note-arrow-left {
@@ -1189,4 +1194,333 @@ $book-text-line-height: 0.9em;
   &:hover {
     background-image: url('../img/inventory/arrow2-on.png');
   }
+}
+
+.crimson-treshold-logo {
+  position: absolute;
+  left: 145px;
+  top: 200px;
+  width: 320px;
+  aspect-ratio: 1/1;
+  background-size: cover;
+  background-image: url('../img/inventory/crimson-treshold-logo.png');
+}
+
+.crimson-ilustration-1 {
+  position: absolute;
+  right: 50px;
+  top: 240px;
+  width: 125px;
+  height: 450px;
+  background-size: cover;
+  background-image: url('../img/inventory/crimson-illustration-1.png');
+}
+
+.crimson-ilustration-2 {
+  position: absolute;
+  right: 10px;
+  top: 25px;
+  width: 256px;
+  aspect-ratio: 1/1;
+  background-size: cover;
+  background-image: url('../img/inventory/crimson-illustration-2.png');
+}
+
+.crimson-ilustration-3 {
+  position: absolute;
+  right: 20px;
+  top: 185px;
+  width: 143px;
+  height: 470px;
+  background-size: cover;
+  transform: rotate(1deg);
+  background-image: url('../img/inventory/crimson-illustration-3.png');
+}
+
+.crimson-ilustration-4 {
+  position: absolute;
+  right: 20px;
+  top: 190px;
+  width: 256px;
+  height: 490px;
+  background-size: cover;
+  transform: rotate(-7deg);
+  opacity: 0.9;
+  background-image: url('../img/inventory/crimson-illustration-4.png');
+}
+
+.book-img-ghost {
+  position: absolute;
+  right: 25px;
+  bottom: 45px;
+  width: 222px;
+  height: 357px;
+  aspect-ratio: 1/1;
+  background-size: cover;
+  background-image: url('../img/inventory/book-img-ghost.png');
+  opacity: 0.9;
+}
+
+.book-img-spider {
+  position: absolute;
+  right: 45px;
+  top: 160px;
+  width: 250px;
+  //height: 512px;
+  aspect-ratio: 458 / 512;
+  background-size: cover;
+  transform: rotate(30deg);
+  opacity: 0.9;
+  background-image: url('../img/inventory/book-img-spider.png');
+}
+
+.book-img-bg1 {
+  position: absolute;
+  right: -10px;
+  top: 120px;
+  width: 350px;
+  aspect-ratio: 1 / 1;
+  background-size: cover;
+  transform: rotate(30deg);
+  opacity: 0.5;
+  background-image: url('../img/inventory/book-img-bg1.png');
+  -webkit-transform: rotate(30deg);
+  -moz-transform: rotate(30deg);
+  -ms-transform: rotate(30deg);
+  -o-transform: rotate(30deg);
+}
+
+.book-img-bet {
+  position: absolute;
+  right: 45px;
+  top: 85px;
+  width: 512px;
+  height: 300px;
+  background-size: cover;
+  transform: rotate(0deg);
+  opacity: 0.9;
+  background-image: url('../img/inventory/book-img-bet.png');
+}
+
+.book-img-bg2 {
+  position: absolute;
+  right: 200px;
+  top: 150px;
+  width: 250px;
+  aspect-ratio: 1 / 1;
+  background-size: cover;
+  transform: rotate(30deg);
+  opacity: 0.5;
+  background-image: url('../img/inventory/book-img-bg1.png');
+  -webkit-transform: rotate(30deg);
+  -moz-transform: rotate(30deg);
+  -ms-transform: rotate(30deg);
+  -o-transform: rotate(30deg);
+}
+
+.book-img-bet2 {
+  position: absolute;
+  right: 55px;
+  top: 325px;
+  width: 240px;
+  aspect-ratio: 512/394;
+  background-size: cover;
+  transform: rotate(0deg);
+  opacity: 0.9;
+  background-image: url('../img/inventory/book-img-bet2.png');
+}
+
+.book-img-bg3 {
+  position: absolute;
+  right: 40px;
+  top: 320px;
+  width: 200px;
+  aspect-ratio: 1 / 1;
+  background-size: cover;
+  transform: rotate(30deg);
+  opacity: 0.5;
+  background-image: url('../img/inventory/book-img-bg1.png');
+}
+
+.book-img-pentagram {
+  position: absolute;
+  right: 170px;
+  top: 405px;
+  width: 300px;
+  height: 300px;
+  background-size: cover;
+  transform: rotate(0deg);
+  opacity: 0.9;
+  background-image: url('../img/inventory/book-img-pentagram.png');
+}
+
+.book-img-bg4 {
+  position: absolute;
+  right: 40px;
+  top: 400px;
+  width: 310px;
+  aspect-ratio: 1 / 1;
+  background-size: cover;
+  transform: rotate(90deg);
+  opacity: 0.5;
+  background-image: url('../img/inventory/book-img-bg1.png');
+  -webkit-transform: rotate(90deg);
+  -moz-transform: rotate(90deg);
+  -ms-transform: rotate(90deg);
+  -o-transform: rotate(90deg);
+}
+
+.book-img-bg5 {
+  position: absolute;
+  right: 280px;
+  top: 400px;
+  width: 310px;
+  aspect-ratio: 1 / 1;
+  background-size: cover;
+  transform: rotate(90deg);
+  opacity: 0.5;
+  background-image: url('../img/inventory/book-img-bg1.png');
+  -webkit-transform: rotate(90deg);
+  -moz-transform: rotate(90deg);
+  -ms-transform: rotate(90deg);
+  -o-transform: rotate(90deg);
+}
+
+.book-img-witchclaw {
+  position: absolute;
+  right: 200px;
+  top: 120px;
+  aspect-ratio: 266 / 300;
+  width: 240px;
+  background-size: cover;
+  transform: rotate(28deg);
+  opacity: 0.9;
+  background-image: url('../img/inventory/book-img-witchclaw.png');
+  -webkit-transform: rotate(28deg);
+  -moz-transform: rotate(28deg);
+  -ms-transform: rotate(28deg);
+  -o-transform: rotate(28deg);
+}
+
+.book-img-frogbile {
+  position: absolute;
+  right: 220px;
+  top: 155px;
+  aspect-ratio: 199 / 300;
+  width: 160px;
+  background-size: cover;
+  transform: rotate(0deg);
+  opacity: 0.9;
+  background-image: url('../img/inventory/book-img-frogbile.png');
+}
+
+.book-img-horseeye {
+  position: absolute;
+  right: 210px;
+  top: 150px;
+
+  aspect-ratio: 263 / 300;
+  width: 240px;
+
+  background-size: cover;
+  transform: rotate(0deg);
+  opacity: 0.9;
+  background-image: url('../img/inventory/book-img-horseeye.png');
+}
+
+.book-img-swamp {
+  position: absolute;
+  right: 140px;
+  top: 180px;
+  aspect-ratio: 300 / 200;
+  width: 290px;
+  background-size: cover;
+  transform: rotate(0deg);
+  opacity: 0.9;
+  background-image: url('../img/inventory/book-img-swamp.png');
+}
+
+.book-img-cattail {
+  position: absolute;
+  right: 190px;
+  top: 280px;
+  aspect-ratio: 300 / 224;
+  width: 220px;
+  background-size: cover;
+  transform: rotate(0deg);
+  opacity: 0.9;
+  background-image: url('../img/inventory/book-img-cattail.png');
+  -webkit-transform: rotate(0deg);
+  -moz-transform: rotate(0deg);
+  -ms-transform: rotate(0deg);
+  -o-transform: rotate(0deg);
+}
+
+.book-img-cauldron {
+  position: absolute;
+  right: 90px;
+  top: 250px;
+  width: 400px;
+  aspect-ratio: 512 / 468;
+  background-size: cover;
+  transform: rotate(0deg);
+  opacity: 0.9;
+  background-image: url('../img/inventory/book-img-cauldron.png');
+}
+
+.book-img-magic {
+  position: absolute;
+  right: 20px;
+  top: 320px;
+  width: 200px;
+  aspect-ratio: 300 / 250;
+  background-size: cover;
+  transform: rotate(20deg);
+  opacity: 1;
+  background-image: url('../img/inventory/book-img-magic.png');
+  -webkit-transform: rotate(20deg);
+  -moz-transform: rotate(20deg);
+  -ms-transform: rotate(20deg);
+  -o-transform: rotate(20deg);
+}
+
+.book-img-devil {
+  position: absolute;
+  right: 20px;
+  top: 170px;
+  aspect-ratio: 1 / 1;
+  width: 560px;
+  background-size: cover;
+  transform: rotate(15deg);
+  opacity: 1;
+  background-image: url('../img/inventory/book-img-devil.png');
+}
+
+.book-img-blood1 {
+    position: absolute;
+    right: 13px;
+    bottom: 20px;
+    width: 396px;
+    aspect-ratio: 396 / 512;
+    background-size: cover;
+    transform: rotate(1.8deg);
+    opacity: 1;
+    background-image: url('../img/inventory/book-img-blood1.png');
+}
+
+.book-img-blood2 {
+  position: absolute;
+  left: 11px;
+  bottom: 20px;
+  width: 396px;
+  aspect-ratio: 396 / 512;
+  background-size: cover;
+  transform: rotate(-1.5deg);
+  opacity: 0.9;
+  background-image: url('../img/inventory/book-img-blood2.png');
+  z-index: -1;
+  -webkit-transform: rotate(-1.5deg);
+  -moz-transform: rotate(-1.5deg);
+  -ms-transform: rotate(-1.5deg);
+  -o-transform: rotate(-1.5deg);
 }

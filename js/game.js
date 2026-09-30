@@ -56,7 +56,8 @@ export default class Game {
     this.activePlayedSounds = []
 
     // inventory datas
-    this.playerObjectsDefault = [0, 48, 46, 47, 4, 45, 44, 43, 42, 17, 41, 32, 2, 16, 17, 28, 38, 39, 40]
+    this.playerObjectsDefault = [57, 12, 13, 0, 56, 15, 18, 19, 49, 48, 46, 47, 4, 45, 44, 43, 42, 17, 41, 32, 2, 16, 17, 28, 38, 39, 40]
+    // 50,51,52,53,54,55
     this.playerObjects = [...this.playerObjectsDefault]
     this.playerProtectedObjects = [4, 5, 6, 17, 23, 35]
 
@@ -309,14 +310,13 @@ export default class Game {
   showHideOptions(windowName) {
     const windows = {'loading': this.$loading, 'menu': this.$menu, 'game': this.$game, 'inventory': this.$inventory}
 
-    for(const [name, window] of Object.entries(windows)) {
+    for (const [name, window] of Object.entries(windows)) {
       if (name == windowName) window.show()
       else window.hide()
     }
 
     if (this.input && document.pointerLockElement !== this.canvas) {
-      $('#custom-game-cursor').show()
-      windowName == 'game' ? this.input.getActualCursor() : this.input.setDefaultCursor();
+      windowName == 'game' ? this.input.getActualCursor() : this.input.setDefaultCursor()
     }
   }
 
@@ -518,12 +518,12 @@ export default class Game {
         <div class="delta-time-inventory text-white"></div>
       </div>`);
 
-    // this.$loading.hide();
+    this.$loading.hide(); // !!! KIVENNI
     // this.$menu.hide();
     // this.$game.hide();
     this.$inventory.hide();
 
-    $("body").append(this.$loading, this.$menu, this.$game, this.$inventory, '<div id="custom-game-cursor"></div>')
+    $("body").append(this.$loading, this.$menu, this.$game, this.$inventory)
 
     this.gravity = $("#gravity-button").prop("checked")
     this.lightsOn = $("#lights-button").prop("checked") 
@@ -585,14 +585,14 @@ export default class Game {
         return !(obj.type === 'LineSegments' && obj.material.color?.getHex() === 0xffff00)
       })
     }
-  
+
     for (const [id, meshGroup] of Object.entries(this.loadedMeshs)) {
       if (meshGroup === threeObject) {
         delete this.loadedMeshs[id]
         break
       }
     }
-  
+
     threeObject.traverse(obj => {
       if (obj.geometry) obj.geometry.dispose()
       if (obj.material) {
@@ -812,7 +812,7 @@ export default class Game {
     const soundData = this.config['autoplaysounds'][mesh.filename]
     if (!soundData) return;
 
-    if (this.$loading?.is?.(':visible')) {
+    if (this.$loading?.is?.(':visible') || this.startGameInfoText || this.waitingGameInfoText) {
       setTimeout(() => {
         this.playStartupSoundsBeings(mesh)
       }, soundData.startDelay ?? 500)
@@ -985,9 +985,14 @@ export default class Game {
     this.sound.play(200 + r, {volume: 0.8, loop: false})
 
     // CSS PLAY
-    $("#game-blood").removeClass("play").show()
-    void $("#game-blood")[0].offsetWidth
-    $("#game-blood").addClass("play")
+    const $blood = $("#game-blood")
+
+    $blood.off('animationend.blood').removeClass('play').show()
+    void $blood[0].offsetWidth
+
+    $blood.addClass('play').one('animationend.blood', () => {
+      if (!this.playerDead) $blood.removeClass('play').hide()
+    })
   }
 }
 

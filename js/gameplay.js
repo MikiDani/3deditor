@@ -29,6 +29,24 @@ export default class Gameplay {
   }
 
   async update(deltaTime) {
+    // START / FINISH GAME INFO TEXT
+    if (this.game.startGameInfoText || this.game.finishGameInfoText) {
+      const textName = this.game.startGameInfoText ? 'start_text' : 'finish_text'
+      const text = this.game.config.textdata.find(item => item.id == textName)?.text
+
+      await this.waitForGameInfo(text)
+
+      // START NEW GAME PLAYER WAITING
+      if (textName == 'start_text') {
+        this.game.move.active = false
+
+        setTimeout(() => {
+          this.game.move.active = true
+        }, 4000)
+      }
+
+      return
+    }
     if (this.game.waitingGameInfoText) return;
 
     const triCount = this.game.renderer.info.render.triangles
@@ -55,23 +73,6 @@ export default class Gameplay {
 
     // RENDER SCREEN
     await this.game.renderer.render(this.game.scene, this.game.camera)
-
-    // START / FINISH GAME INFO TEXT
-    if (this.game.startGameInfoText || this.game.finishGameInfoText) {
-      const textName = this.game.startGameInfoText ? 'start_text' : 'finish_text'
-      const text = this.game.config.textdata.find(item => item.id === textName)?.text
-
-      await this.waitForGameInfo(text)
-
-      // START NEW GAME PLAYER WAITING
-      if (textName == 'start_text') {
-        // !!! VÁRÁS KIKAPCSOLVA
-        this.game.move.active = true
-        setTimeout(() => {
-          this.game.move.active = true
-        }, 6000)
-      }
-    }
 
     // RENDER HEAND
     let selectedHeand = this.game.loadedHeands[this.game.playerMouse.selectedHeand]
@@ -191,7 +192,7 @@ export default class Gameplay {
 
       case 'y-bottom': {
         this.game.move.active = false
-        if (document.pointerLockElement === this.game.canvas) document.exitPointerLock()
+        if (document.pointerLockElement == this.game.canvas) document.exitPointerLock()
 
         const target = THREE.MathUtils.degToRad(this.game.mouseMinPitchDefault)
         const step = THREE.MathUtils.degToRad(5)
@@ -378,7 +379,7 @@ export default class Gameplay {
   }
 
   getArrayRandomId(idArray) {
-    if (!Array.isArray(idArray) || idArray.length === 0) return 100;
+    if (!Array.isArray(idArray) || idArray.length == 0) return 100;
     const randomIndex = Math.floor(Math.random() * idArray.length)
     return idArray[randomIndex];
   }
@@ -408,7 +409,7 @@ export default class Gameplay {
         beingGroup.beingOptionsDebugPrinted = true
       }
 
-      const canTakeDamage = isEnemy && beingGroup.damageState === true && beingGroup.waitDamage == null
+      const canTakeDamage = isEnemy && beingGroup.damageState == true && beingGroup.waitDamage == null
 
       if (canTakeDamage) {
         beingGroup.damageState = null
@@ -570,7 +571,7 @@ export default class Gameplay {
     this.game.removeObjectOfMap(this.game.scene, beingGroup)
 
     for (const [id, loadedBeing] of Object.entries(this.game.loadedBeings)) {
-      if (loadedBeing === beingGroup) {
+      if (loadedBeing == beingGroup) {
         delete this.game.loadedBeings[id]
         break
       }
@@ -604,7 +605,7 @@ export default class Gameplay {
     this.game.removeObjectOfMap(this.game.scene, beingGroup)
 
     for (const [id, loadedBeing] of Object.entries(this.game.loadedBeings)) {
-      if (loadedBeing === beingGroup) {
+      if (loadedBeing == beingGroup) {
         delete this.game.loadedBeings[id]
         break
       }
@@ -950,7 +951,9 @@ export default class Gameplay {
     if (options == null) options = {}
 
     const ratio = Number(beingGroup.ratio ?? 1)
-    const ignoreMapCollision = beingGroup.filename == 'ghost-2'
+    const ignoreMapCollision = beingGroup.filename == 'ghost-2' || beingGroup.filename == 'valet-a'
+
+    // beingGroup.filename == 'valet-a' ? console.log(beingGroup.filename) : '';
 
     options.rotateOn ??= true
     options.moveOn ??= true
@@ -1250,7 +1253,7 @@ export default class Gameplay {
     for (const [beingId, beingGroup] of Object.entries(this.game.loadedBeings)) {
       const id = Number(beingId)
 
-      if (id === ignoreBeingId) continue
+      if (id == ignoreBeingId) continue
 
       if (beingGroup.box && testBox.intersectsBox(beingGroup.box)) return true;
     }
@@ -1533,7 +1536,7 @@ export default class Gameplay {
     if (actions[1].protectedDone) return; // REMAINING
       if (type == 'click' && this.isOneShotClickDone(actions[1])) return;
     // MAKE USEDOBJECTS ARRAY
-    if (typeof actions[1].conditions.usedobjects === 'undefined') actions[1].conditions.usedobjects = []
+    if (typeof actions[1].conditions.usedobjects == 'undefined') actions[1].conditions.usedobjects = []
 
     // CHECK DISTANCES
     if (!(distance > actions[1].conditions.distance_near && distance < actions[1].conditions.distance_far)) {
@@ -1557,7 +1560,7 @@ export default class Gameplay {
       const actionId = actions[1].id
       if (objId != null && actionId != null) {
         // console.log('objId: ', objId); console.log('actionId: ', actionId);
-        const found = this.game.config.actionmessages.find(item => item.object_id === objId && item.action_id === actionId)
+        const found = this.game.config.actionmessages.find(item => item.object_id == objId && item.action_id == actionId)
         if (found) {
           this.makeActionObjectsMessageElement({type: 'actionmessage', actionText: found.message})
           return;
@@ -1567,7 +1570,7 @@ export default class Gameplay {
       if (actions[1].conditions.success) {
         // TASK COMPLETTED
         // this.makeActionObjectsMessageElement({type: 'actionmessage', actionText: actions[1].conditions.success_text})
-      } else if (actions[1].conditions.issetobjects.length === 0 && this.game.playerMouse.selectedObject !== null) {
+      } else if (actions[1].conditions.issetobjects.length == 0 && this.game.playerMouse.selectedObject !== null) {
         // OBJECT IS IN HAND, BUT ACTION DOESN’T HAVE ISSETOBJECT ARRAY        
         this.makeActionObjectsMessageElement({type: 'cantuse', cantUseObject: this.game.playerMouse.selectedObject.name}) 
         return;
@@ -1600,7 +1603,7 @@ export default class Gameplay {
           }
         }
         // CHECK EXACT MATCH
-        const success = actions[1].conditions.issetobjects.length === actions[1].conditions.usedobjects.length && actions[1].conditions.issetobjects.every(x => actions[1].conditions.usedobjects.includes(x))
+        const success = actions[1].conditions.issetobjects.length == actions[1].conditions.usedobjects.length && actions[1].conditions.issetobjects.every(x => actions[1].conditions.usedobjects.includes(x))
         if (success) {
           // COMPLETT ACTION OBJECTS
           actions[1].conditions.success = true
@@ -1681,7 +1684,26 @@ export default class Gameplay {
                 } else {
                   const loadedSounds = this.game.loadedSounds.find(obj => obj.id == soundId)
                   if (loadedSounds) {
-                    await this.game.sound.play(loadedSounds.id, null, true, actions[0])
+                    actions[0].actionSoundsPlaying ??= new Set()
+
+                    if (actions[0].actionSoundsPlaying.has(soundId)) return;
+
+                    actions[0].actionSoundsPlaying.add(soundId)
+
+                    const phantom = await this.game.sound.play(loadedSounds.id, null, true, actions[0])
+                    const audio = phantom?.children?.[0]
+
+                    if (!audio) {
+                      actions[0].actionSoundsPlaying.delete(soundId)
+                      return;
+                    }
+
+                    const originalOnEnded = audio.onEnded
+
+                    audio.onEnded = () => {
+                      originalOnEnded?.()
+                      actions[0].actionSoundsPlaying.delete(soundId)
+                    }
                   }
                 }
               })();
@@ -2373,15 +2395,17 @@ export default class Gameplay {
         if (!data[eventId]) data[eventId] = { state: false }
         if (data[eventId].state) break;
 
-        data[eventId].state = true
-        this.game.playerMouse.cigarette = true
-
-        $("#weapon3-selector").show()
-
-        this.game.playerMouse.selectedObject = null
-        $("#cursor-text-box").hide().html('')
-
-        $(document).trigger($.Event('keydown', { key: '3', which: 51, keyCode: 51 }))
+        setTimeout(()=> {
+          data[eventId].state = true
+          this.game.playerMouse.cigarette = true
+  
+          $("#weapon3-selector").show()
+  
+          this.game.playerMouse.selectedObject = null
+          $("#cursor-text-box").hide().html('')
+  
+          $(document).trigger($.Event('keydown', { key: '3', which: 51, keyCode: 51 }))
+        },250)
       }
       break
 
@@ -2404,7 +2428,7 @@ export default class Gameplay {
 
       case 80:
         // Finish game
-        if (document.pointerLockElement === this.game.canvas) document.exitPointerLock()
+        if (document.pointerLockElement == this.game.canvas) document.exitPointerLock()
 
         if (this.game.autoMovePlayerData.mode != 'finish-center' && !this.game.finishGameInfoText) {
           this.game.autoMovePlayerData = {
@@ -2706,7 +2730,7 @@ export default class Gameplay {
   }
 
   addOpenFxItem(data, mesh) {
-    const found = this.openFxItems.some(item => item.data === data)
+    const found = this.openFxItems.some(item => item.data == data)
     if (!found) this.openFxItems.push({ data, mesh })
   }
 
@@ -2770,6 +2794,6 @@ export default class Gameplay {
 
   isOneShotClickDone(action) {
     const oneShotClickActions = this.game.config.oneShotClickActions ?? []
-    return oneShotClickActions.includes(Number(action?.id)) && action?.oneShotClickDone === true
+    return oneShotClickActions.includes(Number(action?.id)) && action?.oneShotClickDone == true
   }
 }
