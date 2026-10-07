@@ -56,8 +56,7 @@ export default class Game {
     this.activePlayedSounds = []
 
     // inventory datas
-    this.playerObjectsDefault = [57, 12, 13, 0, 56, 15, 18, 19, 49, 48, 46, 47, 4, 45, 44, 43, 42, 17, 41, 32, 2, 16, 17, 28, 38, 39, 40]
-    // 50,51,52,53,54,55
+    this.playerObjectsDefault = [58, 57, 12, 13, 0, 56, 15, 18, 19, 49, 48, 46, 47, 4, 45, 44, 43, 42, 17, 41, 32, 2, 16, 17, 28, 38, 39, 40]
     this.playerObjects = [...this.playerObjectsDefault]
     this.playerProtectedObjects = [4, 5, 6, 17, 23, 35]
 
@@ -122,15 +121,15 @@ export default class Game {
     await this.buildHtmlElements()
 
     this.loader = new Loader(this)
-    this.graphics = new Graphics(this)
     this.menu = new Menu(this)
+    this.graphics = new Graphics(this)
     this.inventory = new Inventory(this)
     this.gameplay = new Gameplay(this)
     this.input = new Input(this)
     this.sound = new Sound(this)
 
     // FIRST MOUSE MODE
-    this.playerMouse.mode = 'use'
+    this.playerMouse.mode = 'look' // 'use'
     this.input.setDefaultCursor()
 
     $('#mouseorkey-selector').addClass('click-selector-pic')
@@ -161,7 +160,6 @@ export default class Game {
   async loop(timestamp = 0) {
     // FIRST LOAD OF MAP | MAPLOADED + ANIMATED START
     if (this.currentState == 'game' && !this.mapLoading) {
-      // console.log('--- RELOAD MAP ---')
 
       this.$loading.show()
       await this.loader.mapLoader(this.filename, this.ext) // LOADING MAP
@@ -342,94 +340,6 @@ export default class Game {
             </div>
           </div>
       </div>`)
-    this.$menu = $(`
-      <div id="menu-container">
-        <div class="full-size d-flex justify-content-center align-items-center">
-          <div class="delta-time-menu text-white"></div>
-          <button id="first-interaction-button" class="btn btn-primary rounded-0" data-bs-toggle="modal" data-bs-target="#topLayer">
-            Join the menu
-          </button>
-          <div class="modal" id="topLayer" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered modal-xl">
-              <div class="modal-content bg-danger">
-                <div class="modal-header">
-                  <h5 class="modal-title text-uppercase text-center w-100">The forgotten cottage</h5>
-                </div>
-                <div class="modal-body text-center row">
-                  <button class="start-button btn btn-dark mt-2 mb-3">Belépés</button>
-
-                  <h5>FILE SAVE</h5>
-                  <div id="filelist-container" class="w-50 mb-3" style="display: grid; grid-template-columns:repeat(3, 1fr);gap:5px;"></div>
-                  
-                  <div id="load-save-container" class="w-50 mb-3" style="display: grid; grid-template-columns:repeat(3, 1fr);gap:5px;">
-                    <div class="w-100 bg-pink d-flex flex-column justify-content-center align-items-center">
-                      <button id="savegame-button" class="btn btn-sm btn-danger mb-3">Save</button>
-                      <button id="file-loadgame-button" class="btn btn-sm btn-success mb-3">Load</button>
-                      <div id="savegame-message" class="text-center w-100">message</div>
-                    </div>
-                    <div id="savegame-list" class="d-flex flex-column justify-content-start align-items-center"></div>  
-                  </div>
-
-                  <h5>STORAGE SAVE</h5>                  
-                  <div class="w-100 bg-pink d-flex flex-column justify-content-center align-items-center">
-                    <button id="local-savegame-button" class="btn btn-sm btn-danger mb-3">Save</button>
-                    <button id="local-loadgame-button" class="btn btn-sm btn-success mb-3">Load</button>
-                    <div id="local-savegame-message" class="text-center w-100">message</div>
-                  </div>
-                  <div id="local-savegame-list" class="d-flex flex-column justify-content-start align-items-center"></div>
-
-                  <div class="text-center">
-                    <input id="file-input" type="text" class="w-50" name="filename" value="${this.filename}" data-ext="${this.ext}">
-                  </div>
-                  <div class="my-2 mt-3">
-                      <input type="checkbox" id="darkcontrast-button" checked>
-                      <span class="text-black"> Minimum dark contrast</span>
-                  </div>
-                  <div class="my-2">
-                      <input type="checkbox" id="hints-button">
-                      <span class="text-black"> Hints</span>
-                  </div>
-
-                  <div id="distance-mode-container" class="row g-0" style="display:none;">
-                    <div class="col-6 text-black">Distance Mode</div>
-                    <div class="col">
-                        <input type="radio" name="distance-mode" value="best">
-                        <span class="text-black"> Best</span>
-                    </div>
-                    <div class="col">
-                        <input type="radio" name="distance-mode" value="medium">
-                        <span class="text-black"> Medium</span>
-                    </div>
-                    <div class="col">
-                        <input type="radio" name="distance-mode" value="low" checked>
-                        <span class="text-black"> Low</span>
-                    </div>
-                  </div>
-
-                  <div class="my-2">
-                      <input type="checkbox" id="music-button">
-                      <span class="text-black"> Music ON</span>
-                  </div>
-                  <br>
-                  <div class="my-2">
-                      <input type="checkbox" id="lights-button" checked>
-                      <span class="text-black"> All Lights ON</span>
-                  </div>
-                  <div class="mb-2">
-                      <input type="checkbox" id="gravity-button" checked>
-                      <span class="text-black"> Gravity</span>
-                  </div>
-                  <div class="mb-2">
-                      <input type="checkbox" id="ghost-button">
-                      <span class="text-black"> Ghost mode</span>
-                  </div>
-                </div>
-                <button class="start-button btn btn-dark mt-2 mb-3">Belépés</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>`)
 
     this.$game = $(`
       <div id="game-container" style="display:none;">
@@ -463,7 +373,7 @@ export default class Game {
     this.$inventory = $(`
       <div id="inventory-container">
         <div id="inventory-exit">
-          <div class="inventory-close-button">?</div>
+          <div class="inventory-close-button"></div>
         </div>
         <div id="inventory-logo"></div>
         <canvas id="inventory-3d-canvas"></canvas>
@@ -523,11 +433,7 @@ export default class Game {
     // this.$game.hide();
     this.$inventory.hide();
 
-    $("body").append(this.$loading, this.$menu, this.$game, this.$inventory)
-
-    this.gravity = $("#gravity-button").prop("checked")
-    this.lightsOn = $("#lights-button").prop("checked") 
-    this.ghostMode = $("#ghost-button").prop("checked")
+    $("body").append(this.$loading, this.$game, this.$inventory)
   }
 
   checkPlayerObject(objects = []) {

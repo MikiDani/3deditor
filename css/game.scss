@@ -69,17 +69,50 @@ $yellow-light: #ffff00;
     url('../img/inventory/close-button.png'),
     url('../img/inventory/use-selector.png'),
     url('../img/inventory/look-selector.png'),
+    url('../img/inventory/inventory-selector.png'),
+    url('../img/inventory/weapon0-selector.png'),
+    url('../img/inventory/weapon1-selector.png'),
+    url('../img/inventory/weapon2-selector.png'),
+    url('../img/inventory/weapon3-selector.png'),
     url('../img/inventory/inventory-read-bg.png'),
     url('../img/inventory/note-bg.png'),
+    url('../img/inventory/letter-bg.png'),
     url('../img/inventory/arrow2-off.png'),
     url('../img/inventory/arrow2-on.png'),
     url('../img/inventory/book-bg-red.png'),
     url('../img/inventory/book-bg-blue.png'),
+    url('../img/inventory/book-bg-gold.png'),
     url('../img/inventory/inventory-bg.png'),
     url('../img/inventory/inventory-logo.png'),
     url('../img/inventory/arrow-off.png'),
     url('../img/inventory/arrow-on.png'),
-    url('../img/inventory/line.png');
+    url('../img/inventory/line.png'),
+    url('../img/inventory/picture-border-bg.png'),
+    url('../img/inventory/picture-ornament.png'),
+    url('../img/inventory/menu-bg-paint.png'),
+    url('../img/inventory/menu-bg.png'),
+    url('../img/inventory/book-img-blood2.png'),
+    url('../img/inventory/book-img-devil.png'),
+    url('../img/inventory/book-img-blood1.png'),
+    url('../img/inventory/book-img-magic.png'),
+    url('../img/inventory/book-img-cauldron.png'),
+    url('../img/inventory/book-img-cattail.png'),
+    url('../img/inventory/book-img-swamp.png'),
+    url('../img/inventory/book-img-horseeye.png'),
+    url('../img/inventory/book-img-frogbile.png'),
+    url('../img/inventory/book-img-witchclaw.png'),
+    url('../img/inventory/book-img-bg1.png'),
+    url('../img/inventory/book-img-pentagram.png'),
+    url('../img/inventory/book-img-bet.png'),
+    url('../img/inventory/book-img-bet2.png'),
+    url('../img/inventory/book-img-spider.png'),
+    url('../img/inventory/book-img-ghost.png'),
+    url('../img/inventory/crimson-illustration-4.png'),
+    url('../img/inventory/crimson-illustration-3.png'),
+    url('../img/inventory/crimson-illustration-2.png'),
+    url('../img/inventory/crimson-illustration-1.png'),
+    url('../img/inventory/crimson-treshold-logo.png'),
+    url('/img/blood/blood3.png');
 }
 
 .d-block {
@@ -714,8 +747,8 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 .note-close-button {
   position: absolute;
-  right: -30px;
-  top: 2px;
+  right: 18px;
+  top: 18px;
   width: 20px;
   height: 20px;
 
@@ -819,8 +852,8 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 #inventory-exit {
   position: absolute;
-  right: pxw(50);
-  top: pxh(50);
+  right: pxw(13);
+  top: pxh(17);
   z-index: 2;
 }
 
@@ -1032,8 +1065,8 @@ $book-text-line-height: 0.9em;
 
 .book-close-button {
   position: absolute;
-  right: -20px;
-  top: 0.1em;
+  right: 24px;
+  top: 18px;
 
   width: 20px;
   height: 20px;
@@ -1497,15 +1530,15 @@ $book-text-line-height: 0.9em;
 }
 
 .book-img-blood1 {
-    position: absolute;
-    right: 13px;
-    bottom: 20px;
-    width: 396px;
-    aspect-ratio: 396 / 512;
-    background-size: cover;
-    transform: rotate(1.8deg);
-    opacity: 1;
-    background-image: url('../img/inventory/book-img-blood1.png');
+  position: absolute;
+  right: 13px;
+  bottom: 20px;
+  width: 396px;
+  aspect-ratio: 396 / 512;
+  background-size: cover;
+  transform: rotate(1.8deg);
+  opacity: 1;
+  background-image: url('../img/inventory/book-img-blood1.png');
 }
 
 .book-img-blood2 {
@@ -1523,4 +1556,357 @@ $book-text-line-height: 0.9em;
   -moz-transform: rotate(-1.5deg);
   -ms-transform: rotate(-1.5deg);
   -o-transform: rotate(-1.5deg);
+}
+
+//-- MENÜ
+
+#menu-main {
+  width: 450px !important;
+  min-height: 250px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center !important;
+}
+
+#menu-load {
+  width: 550px;
+  min-height: 300px;
+}
+
+#menu-save {
+  width: 550px;
+  min-height: 250px;
+}
+
+#menu-options {
+  width: 650px;
+  min-height: 450px;
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+    
+  background-image: url('../img/inventory/menu-bg.png') !important;
+
+  padding: 2rem;
+  color: #c9c9c9 !important;
+
+  text-align: center;
+}
+
+#menu-information {
+  width: 850px;
+  min-height: 600px;
+}
+
+#topLayer .modal-dialog {
+  position: relative;
+  width: max-content;
+  max-width: none;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#menu-bg {
+  position: relative;
+  width: fit-content;
+  min-height: 400px;
+  padding: 4rem !important;
+  padding-top: 1.7rem !important;
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+    
+  background-image: url('../img/inventory/menu-bg-paint.png') !important;
+
+  --frame-size: 80px;
+}
+
+$cornersize: calc(var(--frame-size) * 1.85);
+
+.frame-corner-1 {
+  position: absolute;
+  left: -115px;
+  top: -97px;
+  transform: rotate(-45rad);
+  width: $cornersize;
+  height: $cornersize;
+  background: transparent;
+  background-image: url('../img/inventory/picture-ornament.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  z-index: 3;
+}
+
+.frame-corner-2 {
+  position: absolute;
+  right: -115px;
+  top: -97px;
+  transform: rotate(-125rad);
+  width: $cornersize;
+  height: $cornersize;
+  background: transparent;
+  background-image: url('../img/inventory/picture-ornament.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  z-index: 3;
+}
+
+.frame-corner-3 {
+  position: absolute;
+  left: -115px;
+  bottom: -97px;
+  transform: rotate(450rad);
+  width: $cornersize;
+  height: $cornersize;
+  background: transparent;
+  background-image: url('../img/inventory/picture-ornament.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  z-index: 3;
+}
+
+.frame-corner-4 {
+  position: absolute;
+  right: -115px;
+  bottom: -97px;
+  transform: rotate(-450rad);
+  width: $cornersize;
+  height: $cornersize;
+  background: transparent;
+  background-image: url('../img/inventory/picture-ornament.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  z-index: 3;
+}
+
+#menu-bg .modal-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  padding-bottom: 0.5rem !important;
+  border: 0;
+}
+
+#menu-bg .modal-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  padding: 0;
+  overflow: visible;
+  z-index: 2;
+}
+
+#menu-logo {
+  position: relative;
+  width: 390px;
+  aspect-ratio: 390 / 140;
+  background-image: url('../img/inventory/inventory-logo.png');
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  z-index: 2;
+}
+
+.menu-panel {
+  position: relative;
+  box-sizing: border-box;
+  z-index: 2;
+}
+
+.menu-button-bg {
+  min-width: 300px;
+  background-color: #010804b3 !important;
+}
+
+.menu-text-color {
+  font-family: 'Hand', sans-serif !important;
+  font-size: 2.2rem !important;
+  color: #54cf61 !important;
+}
+
+.menu-text-color-2 {
+  font-family: 'Hand', sans-serif !important;
+  font-size: 1.7rem !important;
+  color: #cfcfcf !important;
+  line-height: 1.5rem;
+}
+
+.menu-frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.frame-side {
+  position: absolute;
+  display: flex;
+  overflow: visible;
+}
+
+.frame-top, .frame-bottom {
+  left: calc(var(--frame-size) * -1);
+  width: calc(100% + var(--frame-size) * 2);
+  height: var(--frame-size);
+}
+
+.frame-top {
+  top: calc(var(--frame-size) * -1);
+}
+
+.frame-bottom {
+  bottom: calc(var(--frame-size) * -1);
+}
+
+.frame-left, .frame-right {
+  top: 0;
+  width: var(--frame-size);
+  height: 100%;
+  flex-direction: column;
+}
+
+.frame-left {
+  left: calc(var(--frame-size) * -1);
+}
+
+.frame-right {
+  right: calc(var(--frame-size) * -1);
+}
+
+
+.frame-top {
+  top: calc(var(--frame-size) * -0.84);
+  z-index: -1 !important;
+}
+
+.frame-bottom {
+  bottom: calc(var(--frame-size) * -0.84);
+  z-index: -1 !important;
+}
+
+.frame-half {
+  position: relative;
+  flex: 1 1 50%;
+  overflow: hidden;
+  background: transparent;
+}
+
+.frame-half::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url('../img/inventory/picture-border-bg.png');
+  background-repeat: repeat-x;
+  background-size: auto 100%;
+  background-position: left center;
+  transform-origin: center center;
+}
+
+.frame-top .frame-half-1::before {
+  transform: none;
+}
+
+.frame-top .frame-half-2::before {
+  transform: scaleX(-1);
+}
+
+.frame-bottom .frame-half-1::before {
+  transform: scaleY(-1);
+}
+
+.frame-bottom .frame-half-2::before {
+  transform: scale(-1, -1);
+}
+
+.frame-left .frame-half,
+.frame-right .frame-half {
+  position: relative;
+  overflow: hidden;
+  container-type: size;
+}
+
+.frame-left .frame-half::before,
+.frame-right .frame-half::before {
+  content: "";
+  position: absolute;
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  width: 100cqh;
+  height: 100cqw;
+  background-image: url('../img/inventory/picture-border-bg.png');
+  background-repeat: repeat-x;
+  background-size: auto 100%;
+  background-position: left center;
+  transform-origin: center center;
+}
+
+.frame-left .frame-half-1::before {
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.frame-left .frame-half-2::before {
+  transform: translate(-50%, -50%) rotate(-90deg) scaleX(-1);
+}
+
+.frame-right .frame-half-1::before {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.frame-right .frame-half-2::before {
+  transform: translate(-50%, -50%) rotate(90deg) scaleX(-1);
+}
+
+.frame-center {
+  position: absolute;
+  width: calc(var(--frame-size) * 1.85);
+  height: calc(var(--frame-size) * 1.85);
+  background: transparent;
+  background-image: url('../img/inventory/picture-ornament.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  z-index: 3;
+}
+
+.frame-top .frame-center {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.frame-bottom .frame-center {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(180deg);
+}
+
+.frame-left .frame-center {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.frame-right .frame-center {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+#local-savegame-message {
+  position: relative;
+  z-index: 2;
 }

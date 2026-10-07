@@ -286,7 +286,7 @@ export default class Loader {
     let loadType = null
     let savedgamesdir = null
 
-    if (ext == 'stuc' || ext == 'local') {
+    if (ext == 'stuc' || ext == 'local' || ext == 'memory') {
       loadType = 'loadgame'
       savedgamesdir = '__saved_games__'
       this.game.startGameInfoText = false; this.game.finishGameInfoText = false; this.game.waitingGameInfoText = false;
@@ -306,7 +306,9 @@ export default class Loader {
     this.game.addConsoleRow('--- loading map datas start ---', 'div', true, true)
 
     let response
-    if (ext == 'stuc' || ext == 'mtuc') {
+    if (ext == 'memory') {
+      response = this.game.deepCopy(this.game.menu.memorySave)
+    } else if (ext == 'stuc' || ext == 'mtuc') {
       response = await this.fetchData({ ajax: true, load: true, filename: filename, ext: ext, savedgamesdir: savedgamesdir })
     } else if (ext == 'local') {
       const localSaveData = localStorage.getItem(filename)
@@ -525,6 +527,10 @@ export default class Loader {
             }
           }
         }
+
+        console.log('DARK CONTRAST:', this.game.menu.options.darkContrast)
+        console.log('LIGHTS ON:', this.game.lightsOn)
+
         // MINIMUM AMBIENT LIGHT
         if (true) {
           const ambient = new THREE.AmbientLight('#ffffff', this.game.menu.options.darkContrast)
@@ -644,6 +650,16 @@ export default class Loader {
                 //
                 light.decay = light.decay ?? 2
                 const beingLight = new THREE.PointLight(`#${light.color}`, light.intensity, light.distance, light.decay)
+
+                beingLight.active = light.active ?? true
+
+                beingLight.defaultValues = {
+                  color: light.color,
+                  intensity: light.intensity,
+                  distance: light.distance,
+                  active: light.active ?? true
+                }
+
                 beingLight.position.copy(worldPos).add(offset)
 
                 this.game.loadedLights[light.id] = [light.name, beingLight]
@@ -1031,6 +1047,11 @@ export default class Loader {
       }
 
       const saveMapDataJSON = JSON.stringify(saveMapData)
+
+      if (mode == 'memory') {
+        this.game.menu.memorySave = JSON.parse(saveMapDataJSON)
+        return true
+      }
 
       if (mode == 'file') {
         // FILE SAVE

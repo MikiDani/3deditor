@@ -1,12 +1,9 @@
 import * as THREE from 'three'
 import $ from 'jquery'
-import * as bootstrap from 'bootstrap'
 
 export default class Input {
   constructor(game) {
     this.game = game
-
-    this.fistInteraction = false
 
     this.lastKeyTime = 0
     this.selectedObjectIndex = 0
@@ -23,15 +20,27 @@ export default class Input {
     this.lastActionCursorActive = false
     this.cursorOverGameUi = false
 
-    // TURN OFF BROWSER ZOOM
-    $(document).on("keydown", function(e) {
-      if (e.ctrlKey && (e.key === "+" || e.key === "-" || e.key === "0")) e.preventDefault();
+    // MOUSE MOVE
+    $(document).on('mousemove', event => {
+      this.checkMousePositionOptions(event)
     })
+
+    // MOUSE WHEEL
     document.addEventListener("wheel", function(e) {
       if (e.ctrlKey) e.preventDefault();
     }, { passive: false })
 
-    this.ideiglenesMenuInputs() // ! Ideiglenes
+    // TURN OFF BROWSER ZOOM
+    $(document).on("keydown", function(e) {
+      if (e.ctrlKey && (e.key === "+" || e.key === "-" || e.key === "0")) e.preventDefault();
+    })
+
+    // RESIZE
+    $(window).on('resize', () => {
+      this.game.graphics.reloadScreen()
+    })
+
+    this.checkLookingInterval()
   }
 
   resetautoMovePlayerData() {
@@ -40,219 +49,6 @@ export default class Input {
       mode: null,
       weapon: null,
     }
-  }
-
-  async ideiglenesMenuInputs() {
-     $(document).on('mousemove', (event) => { this.checkMousePositionOptions(event) })
-
-    const response = await this.game.loader.fetchData({ ajax: true, getfiles: true })  
-    if (response?.files) {
-      let elements = '';
-      for (const file of response.files) {        
-        if (file.extension != 'tuc' && file.extension != 'mtuc' && file.extension != 'otuc') continue;
-        elements += `<div class="filename-listelement text-start cursor-pointer" data-filename="${file.name}" data-ext="${file.extension}">• ${file.name}.${file.extension}</div>`
-      }      
-      $('#filelist-container').append(elements)
-    }
-
-    // ADD EVENT LISTENERS
-
-    // RELOAD SCREEN
-    $(window).on('resize', () => {
-      this.game.graphics.reloadScreen()
-    });
-
-    // FIRST INTERACTION BUTTON
-    $(document).on('click', '#first-interaction-button', () => {
-      this.fistInteraction = true      
-    });
-
-    // CLOSE BUTTON
-    $('.btn-close').on('click', function () {
-      setTimeout(function () {
-        if (document.activeElement) {
-          document.activeElement.blur()
-        }
-      }, 10);
-    });
-
-    $("#console-reset").on('click', () => {
-      $("#loading-console").html('')
-      $("#loading-console-last").html('')
-    });
-
-    $("#console-button1").on('click', (event) => {
-      let state = parseInt($(event.currentTarget).attr('data-state'))
-      if (state) {
-        $(event.currentTarget).attr('data-state', 0).text('ALL ROW')
-        $("#loading-console").hide()
-        $("#loading-console-last").show()
-      } else {
-        $(event.currentTarget).attr('data-state', 1).text('ONE LINE')
-        $("#loading-console").show()
-        $("#loading-console-last").hide()
-      }
-    });
-
-    // CHECK CURSOR POINT AND CLICK INTERVAL
-    this.checkLookingInterval()
-
-    $('#gravity-button').on('click', (event) => {
-      let $this = $(event.target)
-      this.game.gravity = $this.prop('checked') ? this.game.gravityValue : 0;
-    });
-
-    $('#lights-button').on('click', (event) => {
-      let $this = $(event.target)
-      this.game.lightsOn = $this.prop('checked')
-    });
-
-    $('#ghost-button').on('click', (event) => {
-      let $this = $(event.target)
-      this.game.ghostMode = $this.prop('checked')
-    });
-
-    $('#hints-button').on('click', (event) => {
-      let $this = $(event.target)
-      this.game.menu.options.hints = $this.prop('checked')
-      console.log($this.prop('checked'))
-    });
-
-    $('#darkcontrast-button').on('click', (event) => {
-      let $this = $(event.target)
-
-      console.log($this.prop('checked'))
-
-      // this.game.menu.options.darkContrast = $this.prop('checked') ? 0.008 : 0.004;
-      this.game.menu.options.darkContrast = $this.prop('checked') ? 0.012 : 0.004;
-    });
-
-    $(document).on('click', '.del-save-button', async (event) => {
-      const $this = $(event.target).prev()
-      const filename = $this.attr('data-filename')
-      const ext = $this.attr('data-ext')
-
-      // LOACAL SAVE
-      if (ext == 'local') {
-        localStorage.removeItem(filename)
-
-        $("#local-savegame-message").html(`<div class="text-center text-success">Törölve: ${filename}</div>`)
-        setTimeout(() => {
-          $("#local-savegame-message").html('')
-        }, 4000)
-
-        this.game.loader.loadSavedgamesList('local')
-        return true;
-      }
-
-      // FILE SAVE
-      const responseDelete = await this.game.loader.fetchData({
-        ajax: true,
-        delete: true,
-        filename: filename,
-        ext: ext,
-        savedgamesdir: '__saved_games__'
-      })
-
-      if (responseDelete.success) $("#savegame-message").html(`<div class="text-center text-success">${responseDelete.success}</div>`)
-      else $("#savegame-message").html(`<div class="text-center text-danger">${responseDelete.error}</div>`)
-
-      setTimeout(() => {
-        $("#savegame-message").html('')
-      }, 4000)
-
-      this.game.loader.loadSavedgamesList('file')
-    })
-
-    $('.start-button').on('click', () => {
-      const modal = bootstrap.Modal.getInstance(document.getElementById('topLayer'))
-      if (modal) modal.hide()
-
-      this.game.play = true
-      this.game.currentState = 'game'
-      this.game.showHideOptions('game')
-    });
-
-    $('#savegame-button').on('click', async () => {
-      if (this.game.mapLoading) {
-        const request = await this.game.loader.saveGame('file')
-        // RELOAD SAVED GAMES FILE LIST
-        if (request) await this.game.loader.loadSavedgamesList('file')
-      } else {
-        console.log('Error: not loaded map!');
-        $("#savegame-message").html(`<div class="text-center text-danger">Not loaded map!</div>`)
-        setTimeout(() => {$("#savegame-message").html('')}, 4000);
-        return true;
-      }
-    });
-
-    $('#local-savegame-button').on('click', async () => {
-      if (this.game.mapLoading) {
-
-        const request = await this.game.loader.saveGame('local')
-        // RELOAD SAVED GAMES FILE LIST
-        if (request) await this.game.loader.loadSavedgamesList('local')
-      } else {
-        console.log('Error: not loaded map!');
-        $("#local-savegame-message").html(`<div class="text-center text-danger">Not loaded map!</div>`)
-        setTimeout(() => {$("#local-savegame-message").html('')}, 4000);
-        return false;
-      }
-    });
-
-    $(document).on('click', '.filename-listelement, .savegame-listelement', (event) => {
-      const $this = $(event.currentTarget)
-      const filename = $this.attr('data-filename')
-      const ext = $this.attr('data-ext')
-
-      this.game.filename = filename
-      this.game.ext = ext
-
-      $('#file-input').val(filename).attr('data-ext', ext)
-    })
-
-    // LOADING SAVED GAME
-    $('#file-loadgame-button, #local-loadgame-button').on('click', async () => {
-      if (this.game.filename && this.game.ext && (this.game.ext == 'stuc' || this.game.ext == 'local')) {
-
-        this.game.forceClearAllTimers()
-
-        // DELETE ALL PLAYING SOUNDS
-        this.game.sound.removeAllPlayedAudio()
-
-        // DELETE ALL MESHS
-        this.game.deleteAllObjectInScene(this.game.scene)
-        this.game.deleteAllObjectInScene(this.game.heandScene)
-
-        this.game.loadedLights = []
-        this.game.loadedBeings = []
-        this.game.loadedHeands = []
-        this.game.loadedMeshs = []
-
-        // inventory datas
-        this.game.playerObjects = this.game.playerObjectsDefault
-
-        this.game.playerDeathReset()
-
-        // console.log(this.game.playerObjects)
-
-        this.game.mapLoading = false
-
-        //--- start
-        const modal = bootstrap.Modal.getInstance(document.getElementById('topLayer'))
-        if (modal) modal.hide()
-  
-        this.game.play = true
-        this.game.currentState = 'game'
-        this.game.showHideOptions('game')
-
-      } else {
-        console.log('Error: Not saved game selected!');
-        $("#savegame-message").html(`<div class="text-center text-danger">Not saved game selected!</div>`)
-        setTimeout(() => {$("#savegame-message").html('')}, 4000);
-        return true;
-      }
-    });
   }
 
   checkLookingInterval() {
@@ -397,6 +193,8 @@ export default class Input {
       // RIGHT MOUSE CLICK
       if (e.button == 2 || e.button == 0 && this.game.currentState == 'game' && $(e.target).attr('id') == 'inventory-selector') {
         e.preventDefault(); e.stopPropagation();
+
+        if (!this.game.move.active) return;
         if (this.game.startGameInfoText || this.game.finishGameInfoText || this.game.waitingGameInfoText) return;
 
         if (this.game.inventory.readArray.readType !== null) return;
@@ -534,25 +332,22 @@ export default class Input {
         return
       }
 
-      // ESC TO MENU
-      if (e.key != 'Escape' || !this.game.playerDead) return;
+      // ESC TO MENU AFTER DIE
+      if (e.key != 'Escape' || !this.game.playerDead) return
 
       e.preventDefault()
       e.stopImmediatePropagation()
 
-      const modal = bootstrap.Modal.getInstance(document.getElementById('topLayer'))
-      if (modal) modal.hide()
-
-      this.game.play = false
-      this.game.currentState = 'menu'
-      this.game.showHideOptions('menu')
-
-      if (this.fistInteraction) $('#first-interaction-button').trigger('click')
+      this.game.menu.open()
     }, true)
 
     // // // //
     // KEYS
     $(document).on('keydown', async (e) => {
+      if (e.key == 'Escape' && this.game.currentState == 'game') {
+        this.game.menu.open()
+        return;
+      }
 
       // STOP PLAYER MOVE
       if (!this.game.move.active) {
@@ -628,25 +423,6 @@ export default class Input {
 
       // GAME KEYS
       if (this.game.currentState == 'game') {
-        if(e.key =='Escape') {
-          const modal = bootstrap.Modal.getInstance(document.getElementById('topLayer'))
-          if (modal) modal.hide()
-
-          if (this.game.currentState =='game') {
-            this.game.play = false
-            this.game.currentState = 'menu'
-            this.game.showHideOptions('menu')
-
-            if (this.fistInteraction) $('#first-interaction-button').trigger('click');
-
-          } else if (this.game.currentState =='menu' || this.game.currentState =='inventory') {
-            this.game.playerMouse.selectedObject = null
-            this.game.play = true
-            this.game.currentState = 'game'
-            this.game.showHideOptions('game')
-          }
-        }
-
         if(e.key =='0') {
           e.preventDefault(); e.stopPropagation()
         if (this.game.finishGameInfoText) return;

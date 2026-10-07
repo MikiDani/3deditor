@@ -646,8 +646,8 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 .note-close-button {
   position: absolute;
-  right: -30px;
-  top: 2px;
+  right: 18px;
+  top: 18px;
   width: 20px;
   height: 20px;
   background-image: url("../img/inventory/close-button.png");
@@ -743,8 +743,8 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 #inventory-exit {
   position: absolute;
-  right: 3.90625%;
-  top: 6.9444444444%;
+  right: 1.015625%;
+  top: 2.3611111111%;
   z-index: 2;
 }
 
@@ -929,8 +929,8 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 .book-close-button {
   position: absolute;
-  right: -20px;
-  top: 0.1em;
+  right: 24px;
+  top: 18px;
   width: 20px;
   height: 20px;
   background-image: url("../img/inventory/close-button.png");
@@ -1387,4 +1387,347 @@ a:hover, button:hover, input:hover, textarea:hover {
   -moz-transform: rotate(-1.5deg);
   -ms-transform: rotate(-1.5deg);
   -o-transform: rotate(-1.5deg);
+}
+
+#menu-main {
+  width: 450px !important;
+  min-height: 250px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center !important;
+}
+
+#menu-load {
+  width: 550px;
+  min-height: 300px;
+}
+
+#menu-save {
+  width: 550px;
+  min-height: 250px;
+}
+
+#menu-options {
+  width: 650px;
+  min-height: 450px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-image: url("../img/inventory/menu-bg.png") !important;
+  padding: 2rem;
+  color: #c9c9c9 !important;
+  text-align: center;
+}
+
+#menu-information {
+  width: 850px;
+  min-height: 600px;
+}
+
+#topLayer .modal-dialog {
+  position: relative;
+  width: -moz-max-content;
+  width: max-content;
+  max-width: none;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#menu-bg {
+  position: relative;
+  width: -moz-fit-content;
+  width: fit-content;
+  min-height: 400px;
+  padding: 4rem !important;
+  padding-top: 1.7rem !important;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-image: url("../img/inventory/menu-bg-paint.png") !important;
+  --frame-size: 80px;
+}
+
+.frame-corner-1 {
+  position: absolute;
+  left: -115px;
+  top: -97px;
+  transform: rotate(-45rad);
+  width: calc(var(--frame-size) * 1.85);
+  height: calc(var(--frame-size) * 1.85);
+  background: transparent;
+  background-image: url("../img/inventory/picture-ornament.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  z-index: 3;
+}
+
+.frame-corner-2 {
+  position: absolute;
+  right: -115px;
+  top: -97px;
+  transform: rotate(-125rad);
+  width: calc(var(--frame-size) * 1.85);
+  height: calc(var(--frame-size) * 1.85);
+  background: transparent;
+  background-image: url("../img/inventory/picture-ornament.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  z-index: 3;
+}
+
+.frame-corner-3 {
+  position: absolute;
+  left: -115px;
+  bottom: -97px;
+  transform: rotate(450rad);
+  width: calc(var(--frame-size) * 1.85);
+  height: calc(var(--frame-size) * 1.85);
+  background: transparent;
+  background-image: url("../img/inventory/picture-ornament.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  z-index: 3;
+}
+
+.frame-corner-4 {
+  position: absolute;
+  right: -115px;
+  bottom: -97px;
+  transform: rotate(-450rad);
+  width: calc(var(--frame-size) * 1.85);
+  height: calc(var(--frame-size) * 1.85);
+  background: transparent;
+  background-image: url("../img/inventory/picture-ornament.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  z-index: 3;
+}
+
+#menu-bg .modal-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  padding-bottom: 0.5rem !important;
+  border: 0;
+}
+
+#menu-bg .modal-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  padding: 0;
+  overflow: visible;
+  z-index: 2;
+}
+
+#menu-logo {
+  position: relative;
+  width: 390px;
+  aspect-ratio: 390/140;
+  background-image: url("../img/inventory/inventory-logo.png");
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  z-index: 2;
+}
+
+.menu-panel {
+  position: relative;
+  box-sizing: border-box;
+  z-index: 2;
+}
+
+.menu-button-bg {
+  min-width: 300px;
+  background-color: rgba(1, 8, 4, 0.7019607843) !important;
+}
+
+.menu-text-color {
+  font-family: "Hand", sans-serif !important;
+  font-size: 2.2rem !important;
+  color: #54cf61 !important;
+}
+
+.menu-text-color-2 {
+  font-family: "Hand", sans-serif !important;
+  font-size: 1.7rem !important;
+  color: #cfcfcf !important;
+  line-height: 1.5rem;
+}
+
+.menu-frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.frame-side {
+  position: absolute;
+  display: flex;
+  overflow: visible;
+}
+
+.frame-top, .frame-bottom {
+  left: calc(var(--frame-size) * -1);
+  width: calc(100% + var(--frame-size) * 2);
+  height: var(--frame-size);
+}
+
+.frame-top {
+  top: calc(var(--frame-size) * -1);
+}
+
+.frame-bottom {
+  bottom: calc(var(--frame-size) * -1);
+}
+
+.frame-left, .frame-right {
+  top: 0;
+  width: var(--frame-size);
+  height: 100%;
+  flex-direction: column;
+}
+
+.frame-left {
+  left: calc(var(--frame-size) * -1);
+}
+
+.frame-right {
+  right: calc(var(--frame-size) * -1);
+}
+
+.frame-top {
+  top: calc(var(--frame-size) * -0.84);
+  z-index: -1 !important;
+}
+
+.frame-bottom {
+  bottom: calc(var(--frame-size) * -0.84);
+  z-index: -1 !important;
+}
+
+.frame-half {
+  position: relative;
+  flex: 1 1 50%;
+  overflow: hidden;
+  background: transparent;
+}
+
+.frame-half::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("../img/inventory/picture-border-bg.png");
+  background-repeat: repeat-x;
+  background-size: auto 100%;
+  background-position: left center;
+  transform-origin: center center;
+}
+
+.frame-top .frame-half-1::before {
+  transform: none;
+}
+
+.frame-top .frame-half-2::before {
+  transform: scaleX(-1);
+}
+
+.frame-bottom .frame-half-1::before {
+  transform: scaleY(-1);
+}
+
+.frame-bottom .frame-half-2::before {
+  transform: scale(-1, -1);
+}
+
+.frame-left .frame-half,
+.frame-right .frame-half {
+  position: relative;
+  overflow: hidden;
+  container-type: size;
+}
+
+.frame-left .frame-half::before,
+.frame-right .frame-half::before {
+  content: "";
+  position: absolute;
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  width: 100cqh;
+  height: 100cqw;
+  background-image: url("../img/inventory/picture-border-bg.png");
+  background-repeat: repeat-x;
+  background-size: auto 100%;
+  background-position: left center;
+  transform-origin: center center;
+}
+
+.frame-left .frame-half-1::before {
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.frame-left .frame-half-2::before {
+  transform: translate(-50%, -50%) rotate(-90deg) scaleX(-1);
+}
+
+.frame-right .frame-half-1::before {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.frame-right .frame-half-2::before {
+  transform: translate(-50%, -50%) rotate(90deg) scaleX(-1);
+}
+
+.frame-center {
+  position: absolute;
+  width: calc(var(--frame-size) * 1.85);
+  height: calc(var(--frame-size) * 1.85);
+  background: transparent;
+  background-image: url("../img/inventory/picture-ornament.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  z-index: 3;
+}
+
+.frame-top .frame-center {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.frame-bottom .frame-center {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(180deg);
+}
+
+.frame-left .frame-center {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.frame-right .frame-center {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+#local-savegame-message {
+  position: relative;
+  z-index: 2;
 }/*# sourceMappingURL=game.css.map */
