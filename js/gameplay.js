@@ -45,7 +45,7 @@ export default class Gameplay {
         }, 4000)
       }
 
-      return
+      return;
     }
     if (this.game.waitingGameInfoText) return;
 
@@ -62,11 +62,8 @@ export default class Gameplay {
 
     // LAMP CENTER
     await this.autoMovePlayer(deltaTime)
-
     await this.updateBeings(deltaTime)
-
     await this.updateHeand(deltaTime)
-
     await this.startActions(deltaTime)
 
     this.updateOpenFx(deltaTime)
@@ -1838,8 +1835,8 @@ export default class Gameplay {
     }
 
     switch(data.id) {
+      // RANDOM COLOR 100ms
       case 0:
-        // RANDOM COLOR 100ms
         if (!(light instanceof THREE.PointLight)) return
 
         setTimeout(() => {
@@ -1850,8 +1847,8 @@ export default class Gameplay {
         }, data.time)
       break
 
+      // TURN OFF LIGHT / ON   
       case 1:
-        // TURN OFF LIGHT / ON   
         if (data[eventId] == null) getDefaultLightStates(data, light);
 
         if (data[eventId].state) {
@@ -1879,8 +1876,8 @@ export default class Gameplay {
         this.refreshHeandLights()
       break
 
+      // TURN ON LIGHT
       case 2:
-        // TURN ON LIGHT
         if (data[eventId] == null) getDefaultLightStates(data, light);
 
         data[eventId].state = true
@@ -1893,8 +1890,8 @@ export default class Gameplay {
         this.refreshHeandLights()
       break
 
+      // TURN OFF LIGHT
       case 3:
-        // TURN OFF LIGHT
         if (data[eventId] == null) getDefaultLightStates(data, light);
 
         data[eventId].state = false
@@ -1911,8 +1908,8 @@ export default class Gameplay {
         this.refreshHeandLights()
       break
 
+      // RANDOM RED COLOR 100ms
       case 4:
-        // RANDOM RED COLOR 100ms
         if (!(light instanceof THREE.PointLight)) return
 
         setTimeout(() => {
@@ -1924,8 +1921,8 @@ export default class Gameplay {
         }, data.time)
       break
 
+      // RED COLOR 1
       case 10:
-        // RED COLOR 1
         if (!(light instanceof THREE.PointLight)) return
 
         setTimeout(() => {
@@ -1937,8 +1934,8 @@ export default class Gameplay {
         }, data.time)
       break
 
+      // GREEN COLOR 1
       case 15:
-        // GREEN COLOR 1
         if (!(light instanceof THREE.PointLight)) return
 
         setTimeout(() => {
@@ -1948,8 +1945,8 @@ export default class Gameplay {
         }, data.time)
       break
 
+      // BLUE COLOR 1
       case 20:
-        // BLUE COLOR 1
         if (!(light instanceof THREE.PointLight)) return
 
         setTimeout(() => {
@@ -1964,8 +1961,8 @@ export default class Gameplay {
   // MOVE FX
   moveFx(deltaTime, eventId, mesh, data) {    
     switch(data.id) {
+      //  Open-1 (fridge) x:min y:min z:max
       case 0:
-        //  Open-1 (fridge) x:min y:min z:max
         if (!data[eventId]) {
           data[eventId] = []
           data[eventId] = {
@@ -1988,8 +1985,8 @@ export default class Gameplay {
         this.openFx(deltaTime, data[eventId], mesh)
         break
 
+      // Open-2 (doorA) PULL x:min y:min z:min
       case 1:
-        // Open-2 (doorA) PULL x:min y:min z:min
         if (!data[eventId]) {
           data[eventId] = []
           data[eventId] = {
@@ -2012,8 +2009,8 @@ export default class Gameplay {
         this.openFx(deltaTime, data[eventId], mesh)
       break
 
+      // Open-3 (doorA) PUSH x:min y:max z:max
       case 2:
-        // Open-3 (doorA) PUSH x:min y:max z:max
         if (!data[eventId]) {
           data[eventId] = []
           data[eventId] = {
@@ -2036,8 +2033,8 @@ export default class Gameplay {
         this.openFx(deltaTime, data[eventId], mesh)
       break
 
+      // Open-4 (doorB) PULL 90 deg x:min y:max z:min
       case 3:
-        // Open-4 (doorB) PULL 90 deg x:min y:max z:min
         if (!data[eventId]) {
           data[eventId] = {
             meshId: mesh.objId,
@@ -2059,8 +2056,8 @@ export default class Gameplay {
         this.openFx(deltaTime, data[eventId], mesh)
       break
 
+      // Open-5 (doorB) PUSH 90 deg x:max y:min z:min"
       case 4:
-        // Open-5 (doorB) PUSH 90 deg x:max y:min z:min"
         if (!data[eventId]) {
           data[eventId] = {
             meshId: mesh.objId,
@@ -2082,8 +2079,8 @@ export default class Gameplay {
         this.openFx(deltaTime, data[eventId], mesh)
       break
 
+      // Open-6 (floor-door) x:min y:max z:min
       case 5:
-        // Open-6 (floor-door) x:min y:max z:min
         if (!data[eventId]) {
           data[eventId] = {
             meshId: mesh.objId,
@@ -2105,8 +2102,8 @@ export default class Gameplay {
         this.openFx(deltaTime, data[eventId], mesh)
       break
 
+      // Open-7 (cheast-box) x:min y:min z:max
       case 6:
-        // Open-7 (cheast-box) x:min y:min z:max
         if (!data[eventId]) {
           data[eventId] = {
             meshId: mesh.objId,
@@ -2128,8 +2125,8 @@ export default class Gameplay {
         this.openFx(deltaTime, data[eventId], mesh)
       break
 
+      // Open-8 (wc-board) x:max y:min z:min
       case 7:
-        // Open-8 (wc-board) x:max y:min z:min
         if (!data[eventId]) {
           data[eventId] = {
             meshId: mesh.objId,
@@ -2151,8 +2148,8 @@ export default class Gameplay {
         this.openFx(deltaTime, data[eventId], mesh)
       break
 
+      // Open-9 Z (wc-board) x:max y:max z:min
       case 8:
-        // Open-9 Z (wc-board) x:max y:max z:min
         if (!data[eventId]) {
           data[eventId] = {
             meshId: mesh.objId,
@@ -2177,8 +2174,8 @@ export default class Gameplay {
         this.openFx(deltaTime, data[eventId], mesh)
       break
 
+      // Open-4/2 (doorB) PULL 90 deg x:max y:max z:min
       case 9:
-        // Open-4/2 (doorB) PULL 90 deg x:max y:max z:min
         if (!data[eventId]) {
           data[eventId] = {
             meshId: mesh.objId,
@@ -2200,8 +2197,8 @@ export default class Gameplay {
         this.openFx(deltaTime, data[eventId], mesh)
       break
 
+      // Open-9 (Secret-cabinet-up-open) x:max y:min z:min
       case 22:
-        // Open-9 (Secret-cabinet-up-open) x:max y:min z:min
         if (!data[eventId]) {
           data[eventId] = {
             meshId: mesh.objId,
@@ -2224,18 +2221,18 @@ export default class Gameplay {
         this.openFx(deltaTime, data[eventId], mesh)
       break
 
+      // SWITCH TEXTURE CHANGE
       case 10:
-        // SWITCH TEXTURE CHANGE
         this.textureOnOff(mesh, data, eventId, 'switch-1-on', 'switch-1-off')
       break
 
+      // SWITCH CARPET 2
       case 11:
-        // SWITCH CARPET 2
         this.textureOnOff(mesh, data, eventId, 'carpet-2', 'carpet-2-2')
       break
 
+      // BoundingBox ON, mesh marad a scene-ben
       case 12:
-        // BoundingBox ON, mesh marad a scene-ben
         if (!data[eventId]) data[eventId] = { meshId: mesh.objId, meshName: mesh.name, state: false }
 
         data[eventId].meshId = mesh.objId
@@ -2245,8 +2242,8 @@ export default class Gameplay {
         this.game.setMeshBoundingBoxActive(mesh, true)
       break
 
+      // BoundingBox OFF, mesh marad a scene-ben
       case 13:
-        // BoundingBox OFF, mesh marad a scene-ben
         if (!data[eventId]) data[eventId] = { meshId: mesh.objId, meshName: mesh.name, state: false }
 
         data[eventId].meshId = mesh.objId
@@ -2256,23 +2253,23 @@ export default class Gameplay {
         this.game.setMeshBoundingBoxActive(mesh, false)
       break
 
+      // SWITCH FIREPLACE
       case 14:
-        // SWITCH FIREPLACE
         this.textureOnOff(mesh, data, eventId, 'fireplace-anim', 'fireplace-anim-2')
       break
 
+      // SWITCH SHROUD-DIRTY-CUT
       case 15:
-        // SWITCH SHROUD-DIRTY-CUT
         this.textureOnOff(mesh, data, eventId, 'shroud-dirty-cut1', 'shroud-dirty-cut2')
       break
 
+      // FILM SCROLL ANIM
       case 16:
-        // FILM SCROLL ANIM
         this.textureOnOff(mesh, data, eventId, 'film-scroll1', 'film-scroll-anim1')
       break
 
+      // RADIO ON / OFF
       case 20:
-        // RADIO ON / OFF
         if (!mesh.radioSwitch) mesh.radioSwitch = data.state;
 
         if (mesh.radioSwitch == "off") {
@@ -2301,8 +2298,8 @@ export default class Gameplay {
         }
       break
 
+      // RADIO PAUSE / RESUME
       case 21:
-        // RADIO PAUSE / RESUME
         if (!mesh.radioSwitch) mesh.radioSwitch = data.state ?? "off"
 
         if (mesh.radioSwitch == "off") {
@@ -2339,13 +2336,18 @@ export default class Gameplay {
         }
       break
 
+      // SWITCH GIRL PICTURE CHANGE 1
       case 23:
-        // SWITCH GIRL PICTURE CHANGE 1
         this.textureOnOff(mesh, data, eventId, 'ghost2-picture-on', 'ghost2-picture-off')
       break
 
+      // SWITCH DEEP TEXTURE
+      case 24:
+        this.textureOnOff(mesh, data, eventId, 'wall-deep-point', 'wall-deep-draw')
+      break
+
+      // STOP/START ANIMATED TEXTURE
       case 40:
-        // STOP/START ANIMATED TEXTURE
         mesh.texture.playingState = !mesh.texture.playingState
         // SAVE LOADING FILES
         this.game.config['animationtextures'][mesh.texture.name].playingState = mesh.texture.playingState
@@ -2362,8 +2364,8 @@ export default class Gameplay {
         }
       break
 
+      // PLAYER DEMAGE (Trap)
       case 50:
-        // PLAYER DEMAGE (Trap)
         if (typeof mesh.waitTimer !== 'number') mesh.waitTimer = 0
         mesh.waitTimer += deltaTime
 
@@ -2373,25 +2375,25 @@ export default class Gameplay {
         }
       break
 
+      // DELETE MESH OF SCREEN
       case 60:
-        // DELETE MESH OF SCREEN
         this.meshDeleteState(mesh, data, eventId)
         // let selectedMapDataStructure = this.game.findMeshById(this.game.map.structure, mesh.objId)
         // if (selectedMapDataStructure) selectedMapDataStructure.active = 0;
       break
 
+      // Mesh visible ON
       case 65:
-        // Mesh visible ON
         this.meshVisibleState(mesh, data, eventId, true)
       break
 
+      // Mesh visible OFF
       case 66:
-        // Mesh visible OFF
         this.meshVisibleState(mesh, data, eventId, false)
       break
 
+      // Add Cigarette in heand
       case 67: {
-        // Add Cigarette in heand
         if (!data[eventId]) data[eventId] = { state: false }
         if (data[eventId].state) break;
 
@@ -2409,8 +2411,8 @@ export default class Gameplay {
       }
       break
 
+      // Teleport to the cell
       case 68: {
-        // Teleport to the cell
           if (this.game.autoMovePlayerData.teleportActive) break
           setTimeout(() => {
             this.game.move.active = false
@@ -2426,8 +2428,8 @@ export default class Gameplay {
       }
       break
 
+      // Finish game
       case 80:
-        // Finish game
         if (document.pointerLockElement == this.game.canvas) document.exitPointerLock()
 
         if (this.game.autoMovePlayerData.mode != 'finish-center' && !this.game.finishGameInfoText) {
@@ -2438,24 +2440,24 @@ export default class Gameplay {
         }
       break
 
+      // Pick up lamp
       case 100:
-        // Pick up lamp
         this.game.playerMouse.lamp = true
         $("#weapon1-selector").show()
         this.game.sound.play(15 /* fire1 */, null, true, mesh)
         $(document).trigger($.Event('keydown', { key: '1', which: 49, keyCode: 49 }))
       break
 
+      // Pick up knife
       case 101:
-        // Pick up knife
         this.game.playerMouse.knife = true
         $("#weapon2-selector").show()
         // this.game.sound.play(210 /* knife1 */, null, true, mesh)
         $(document).trigger($.Event('keydown', { key: '2', which: 50, keyCode: 50 }))
       break
 
+      // Pick up cigatette
       case 102:
-        // Pick up cigatette
         this.game.playerMouse.cigarette = true
         $("#weapon3-selector").show()
         $(document).trigger($.Event('keydown', { key: '3', which: 51, keyCode: 51 }))
@@ -2466,8 +2468,8 @@ export default class Gameplay {
   // BEING FX
   beingFx(deltaTime, eventId, being, data) {
     switch(data.id) {
+      // Active Being OFF / ON
       case 0:
-        // Active Being OFF / ON
         if (!data[eventId]) data[eventId] = { active: being.active };
 
         being.active = !being.active
@@ -2476,8 +2478,8 @@ export default class Gameplay {
         this.game.beingActiveOptions(being, being.active)
       break
 
+      // Active Being ON
       case 1:
-        // Active Being ON
         if (!data[eventId]) data[eventId] = { active: being.active };
 
         being.active = true
@@ -2486,8 +2488,8 @@ export default class Gameplay {
         this.game.beingActiveOptions(being, true)
       break
 
+      // Active Being OFF
       case 2:
-        // Active Being OFF
         if (!data[eventId]) data[eventId] = { active: being.active };
 
         being.active = false
@@ -2496,8 +2498,8 @@ export default class Gameplay {
         this.game.beingActiveOptions(being, false)
       break
 
+      // AUTO: TALISMAN GHOST ON / OFF
       case 10:
-        // AUTO: TALISMAN GHOST ON / OFF    
         if (!this.game.playerObjects.includes(14)) {
           if (!data[eventId]) {
             data[eventId] = []
@@ -2551,8 +2553,8 @@ export default class Gameplay {
         }
       break
 
+      // AUTO: FLY-CLOUDS
       case 11:
-        // AUTO: FLY-CLOUDS
 
         if (!data[eventId]) {
           data[eventId] = {
@@ -2750,7 +2752,6 @@ export default class Gameplay {
   }
 
   refreshOpenFxState(deltaTime, data, mesh) {
-
     if (deltaTime == null) {
       data.openFxMoving = false
       data.openFxElapsed = 0
@@ -2788,7 +2789,6 @@ export default class Gameplay {
         this.game.scene.add(helper)
       }
     }
-
     return mesh
   }
 

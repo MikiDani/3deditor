@@ -325,6 +325,10 @@ export default class Loader {
       this.game.map.player = {... this.game.config['player'], ...this.game.deepCopy(response.player)}
       this.game.map.player.nowtime = performance.now()
 
+      this.game.input.isCrouching = false
+      this.game.playerBoundingBox.y = 0.6
+      if (this.game.map.player.isCrouching) this.game.input.forceCrouch()
+
       if (response.playerObjects != null) this.game.playerObjects = response.playerObjects;
       
       if (response.playerMouse != null) {
@@ -765,6 +769,13 @@ export default class Loader {
       this.game.addConsoleRow(`--- Map loaded: ${(endTime - startTime)} millisecond ---`, 'div', true, true)
 
       //--
+
+      setTimeout(() => {
+        window.dispatchEvent(new KeyboardEvent('keyup', { key: 'c' }))
+        console.log('oeiqpwoeipqwoei')
+        
+
+      }, 20)
      
       this.game.energyModifyScreen()
       this.game.oilModifyScreen()
@@ -984,6 +995,7 @@ export default class Loader {
         fXaw: this.game.pitchObject.rotation._x,
         oil: this.game.map.player.oil,
         energy: this.game.map.player.energy,
+        isCrouching: this.game.input.isCrouching,
       }
 
       // IF HAME REMOVE HEAND LIGHT IS SCENE

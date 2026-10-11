@@ -56,7 +56,7 @@ export default class Game {
     this.activePlayedSounds = []
 
     // inventory datas
-    this.playerObjectsDefault = [58, 57, 12, 13, 0, 56, 15, 18, 19, 49, 48, 46, 47, 4, 45, 44, 43, 42, 17, 41, 32, 2, 16, 17, 28, 38, 39, 40]
+    this.playerObjectsDefault = [23, 58, 57, 12, 13, 0, 56, 15, 18, 19, 49, 48, 46, 47, 4, 45, 44, 43, 42, 17, 41, 32, 2, 16, 17, 28, 38, 39, 40]
     this.playerObjects = [...this.playerObjectsDefault]
     this.playerProtectedObjects = [4, 5, 6, 17, 23, 35]
 
@@ -113,6 +113,28 @@ export default class Game {
     this.lightsOn = true
 
     this.boxHelp = false
+
+    //----
+    /*
+    const hangok = speechSynthesis.getVoices()
+    const magyarHang = hangok.find(voice => voice.lang.startsWith("hu"))
+   
+    const szoveg = new SpeechSynthesisUtterance("Something else came through with De Alvarenga's ghost: a whole swarm of zombie horseflies. Ghost-like creatures, or at least something just as disgusting.They settled down in the cellar, around one of the wine barrels, right next to the guest room.I keep trying to send them back with the summoning spell, but it does not work.< br >And they bite.Like hell.Until I bleed! There is only one thing I noticed they cannot stand: smoke. As soon as they sense it, they scatter and stay away.These days, whenever I go down to the cellar for wine, I always light a cigarette.")
+
+    if (magyarHang) {
+      szoveg.voice = magyarHang
+    }
+
+    szoveg.lang = "en-US"
+    //szoveg.lang = "en-GB"
+    szoveg.rate = 1
+    szoveg.pitch = 0
+    szoveg.volume = 1
+
+    speechSynthesis.cancel()
+    speechSynthesis.speak(szoveg)
+    */
+    //----
 
     this.init()
   }
@@ -173,7 +195,7 @@ export default class Game {
 
       // PLAY MUSIC
       this.music = $("#music-button").prop("checked")
-     if (this.music) this.sound.play(1, {volume: 0.2, loop: true})
+     if (this.music) this.sound.play(1, {volume: 0.5, loop: true})
     }
 
     // REAL LOOP
@@ -428,7 +450,7 @@ export default class Game {
         <div class="delta-time-inventory text-white"></div>
       </div>`);
 
-    this.$loading.hide(); // !!! KIVENNI
+    // this.$loading.hide(); // !!! KIVENNI
     // this.$menu.hide();
     // this.$game.hide();
     this.$inventory.hide();
@@ -821,6 +843,8 @@ export default class Game {
 
   playerDie() {
     this.playerDead = true
+    this.playerDeathTime = Date.now()
+
     this.playerMouse.selectedHeand = 0
 
     // STOP PLAYER MOVE

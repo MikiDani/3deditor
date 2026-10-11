@@ -18,7 +18,7 @@
   width: 0;
   height: 0;
   overflow: hidden;
-  background-image: url("../img/inventory/click-selector.png"), url("../img/inventory/mouse-selector.png"), url("../img/cursors/cursor-default.png"), url("../img/cursors/cursor-use-on.png"), url("../img/cursors/cursor-use-off.png"), url("../img/cursors/cursor-get-on.png"), url("../img/cursors/cursor-get-off.png"), url("../img/cursors/cursor-look2-on.png"), url("../img/cursors/cursor-look2-off.png"), url("../img/inventory/text-border.png"), url("../img/inventory/green-dark-bg.png"), url("../img/check-mark.png"), url("../img/error-mark.png"), url("../img/inventory/close-button.png"), url("../img/inventory/use-selector.png"), url("../img/inventory/look-selector.png"), url("../img/inventory/inventory-read-bg.png"), url("../img/inventory/note-bg.png"), url("../img/inventory/arrow2-off.png"), url("../img/inventory/arrow2-on.png"), url("../img/inventory/book-bg-red.png"), url("../img/inventory/book-bg-blue.png"), url("../img/inventory/inventory-bg.png"), url("../img/inventory/inventory-logo.png"), url("../img/inventory/arrow-off.png"), url("../img/inventory/arrow-on.png"), url("../img/inventory/line.png");
+  background-image: url("../img/inventory/click-selector.png"), url("../img/inventory/mouse-selector.png"), url("../img/cursors/cursor-default.png"), url("../img/cursors/cursor-use-on.png"), url("../img/cursors/cursor-use-off.png"), url("../img/cursors/cursor-get-on.png"), url("../img/cursors/cursor-get-off.png"), url("../img/cursors/cursor-look2-on.png"), url("../img/cursors/cursor-look2-off.png"), url("../img/inventory/text-border.png"), url("../img/inventory/green-dark-bg.png"), url("../img/check-mark.png"), url("../img/error-mark.png"), url("../img/inventory/close-button.png"), url("../img/inventory/use-selector.png"), url("../img/inventory/look-selector.png"), url("../img/inventory/inventory-selector.png"), url("../img/inventory/weapon0-selector.png"), url("../img/inventory/weapon1-selector.png"), url("../img/inventory/weapon2-selector.png"), url("../img/inventory/weapon3-selector.png"), url("../img/inventory/inventory-read-bg.png"), url("../img/inventory/note-bg.png"), url("../img/inventory/letter-bg.png"), url("../img/inventory/arrow2-off.png"), url("../img/inventory/arrow2-on.png"), url("../img/inventory/book-bg-red.png"), url("../img/inventory/book-bg-blue.png"), url("../img/inventory/book-bg-gold.png"), url("../img/inventory/inventory-bg.png"), url("../img/inventory/inventory-logo.png"), url("../img/inventory/arrow-off.png"), url("../img/inventory/arrow-on.png"), url("../img/inventory/line.png"), url("../img/inventory/picture-border-bg.png"), url("../img/inventory/picture-ornament.png"), url("../img/inventory/menu-bg-paint.png"), url("../img/inventory/menu-bg-papper.png"), url("../img/inventory/book-img-blood2.png"), url("../img/inventory/book-img-devil.png"), url("../img/inventory/book-img-blood1.png"), url("../img/inventory/book-img-magic.png"), url("../img/inventory/book-img-cauldron.png"), url("../img/inventory/book-img-cattail.png"), url("../img/inventory/book-img-swamp.png"), url("../img/inventory/book-img-horseeye.png"), url("../img/inventory/book-img-frogbile.png"), url("../img/inventory/book-img-witchclaw.png"), url("../img/inventory/book-img-bg1.png"), url("../img/inventory/book-img-pentagram.png"), url("../img/inventory/book-img-bet.png"), url("../img/inventory/book-img-bet2.png"), url("../img/inventory/book-img-spider.png"), url("../img/inventory/book-img-ghost.png"), url("../img/inventory/crimson-illustration-4.png"), url("../img/inventory/crimson-illustration-3.png"), url("../img/inventory/crimson-illustration-2.png"), url("../img/inventory/crimson-illustration-1.png"), url("../img/inventory/crimson-treshold-logo.png"), url("/img/blood/blood3.png");
 }
 
 .d-block {
@@ -137,8 +137,8 @@ html, body {
   padding: 0 !important;
   background: black !important;
   -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
+  -moz-user-select: none;
+       user-select: none;
 }
 
 #loading-container,
@@ -285,6 +285,55 @@ a:hover, button:hover, input:hover, textarea:hover {
   width: 100vw;
   height: 100vh;
   background-color: black;
+}
+
+#menu-container {
+  position: relative;
+  min-height: 100vh;
+  background: #000;
+  overflow: hidden;
+}
+
+#menu-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 20%, rgba(0, 0, 0, 0.9) 100%);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 2;
+}
+
+#first-interaction-button {
+  z-index: 2;
+  background-image: url("../img/inventory/picture-border-bg.png");
+  width: 400px;
+  height: 128px;
+  font-family: "Hand", sans-serif !important;
+  font-size: 3.2rem !important;
+  letter-spacing: 0.8rem;
+  border: 0 !important;
+  padding-top: 14px;
+}
+#first-interaction-button:hover {
+  transform: scale(1.05);
+}
+
+.menu-container-bg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(100% + 50px);
+  height: calc(100% + 50px);
+  transform: translate(-50%, -50%);
+  background-image: url("../img/inventory/menu-bg-paint.png") !important;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  filter: blur(15px);
+  opacity: 0.7;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .small-size {
@@ -1390,8 +1439,12 @@ a:hover, button:hover, input:hover, textarea:hover {
 }
 
 #menu-main {
-  width: 450px !important;
-  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 550px !important;
+  min-height: 350px;
   margin-left: auto;
   margin-right: auto;
   text-align: center !important;
@@ -1408,20 +1461,25 @@ a:hover, button:hover, input:hover, textarea:hover {
 }
 
 #menu-options {
-  width: 650px;
-  min-height: 450px;
+  min-width: 450px;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  background-image: url("../img/inventory/menu-bg.png") !important;
   padding: 2rem;
   color: #c9c9c9 !important;
   text-align: center;
 }
 
 #menu-information {
-  width: 850px;
-  min-height: 600px;
+  width: 450px;
+  min-height: 400px;
+}
+
+.papper-bg {
+  aspect-ratio: 527/796;
+  background-image: url("../img/inventory/menu-bg-papper.png") !important;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
 }
 
 #topLayer .modal-dialog {
@@ -1443,6 +1501,7 @@ a:hover, button:hover, input:hover, textarea:hover {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  background-color: transparent !important;
   background-image: url("../img/inventory/menu-bg-paint.png") !important;
   --frame-size: 80px;
 }
@@ -1550,20 +1609,22 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 .menu-button-bg {
   min-width: 300px;
-  background-color: rgba(1, 8, 4, 0.7019607843) !important;
+  background-color: rgba(1, 8, 4, 0.5254901961) !important;
+  border: 0 !important;
 }
 
 .menu-text-color {
   font-family: "Hand", sans-serif !important;
   font-size: 2.2rem !important;
-  color: #54cf61 !important;
 }
 
-.menu-text-color-2 {
+.menu-text-title {
   font-family: "Hand", sans-serif !important;
-  font-size: 1.7rem !important;
-  color: #cfcfcf !important;
-  line-height: 1.5rem;
+  font-size: 3rem !important;
+  letter-spacing: 0.7rem;
+  color: #529632 !important;
+  -webkit-text-stroke: 0.8rem black;
+  paint-order: stroke fill;
 }
 
 .menu-frame {

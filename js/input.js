@@ -332,11 +332,21 @@ export default class Input {
         return
       }
 
+      // DISABLE ESC IN MENU
+      if (this.game.currentState == 'menu' && e.key == 'Escape') {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        return;
+      }
+
       // ESC TO MENU AFTER DIE
-      if (e.key != 'Escape' || !this.game.playerDead) return
+      if (e.key != 'Escape' || !this.game.playerDead) return;
 
       e.preventDefault()
       e.stopImmediatePropagation()
+
+      // WAIT 3 SEC AFTER THE DIE
+      if (Date.now() - this.game.playerDeathTime < 8000) return;
 
       this.game.menu.open()
     }, true)

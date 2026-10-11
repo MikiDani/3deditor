@@ -127,6 +127,11 @@
       "state": "off"
     },
     {
+      "id": 24,
+      "name": "Switch Deep Texture",
+      "state": "off"
+    },
+    {
       "id": 30,
       "name": "Picture Change"
     },
@@ -540,6 +545,15 @@
       "setRolloffFactor": 3
     },
     {
+      "id": 35,
+      "name": "scare6",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
       "id": 100,
       "name": "bet-attack1",
       "volume": 1,
@@ -721,6 +735,15 @@
       "name": "click2",
       "volume": 1,
       "loop": false
+    },
+    {
+      "id": 400,
+      "name": "menu-music",
+      "volume": 0.5,
+      "loop": true,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
     },
     {
       "id": 1000,
@@ -1285,6 +1308,6 @@
     }
   },
   "protectedPickupMash": [21],
-  "oneShotClickActions": [70, 88, 102, 114, 126],
+  "oneShotClickActions": [70, 88, 102, 114, 126, 144],
   "beingNotHaveHitbox": ["bush", "ghost2"]
 }
