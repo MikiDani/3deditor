@@ -195,7 +195,7 @@ export default class Game {
 
       // PLAY MUSIC
       this.music = $("#music-button").prop("checked")
-     if (this.music) this.sound.play(1, {volume: 0.5, loop: true})
+     if (this.music) this.sound.play(400 /* game-music */, {volume: 0.5, loop: true})
     }
 
     // REAL LOOP

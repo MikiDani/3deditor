@@ -16,6 +16,7 @@ export default class Menu {
     this.currentPanel = 'main'
     this.mainMenuPosition = 0
     this.panelPosition = 0
+    this.selectedSlotPosition = { load: 0, save: 0 }
 
     this.saveEditActive = false
     this.saveEditOriginalName = ''
@@ -54,6 +55,7 @@ export default class Menu {
           <div class="modal" id="topLayer" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
               <div id="menu-bg" class="modal-content">
+                <div id="bugs"></div>
                 <div class="frame-corner-1"></div>
                 <div class="frame-corner-2"></div>
                 <div class="frame-corner-3"></div>
@@ -94,17 +96,17 @@ export default class Menu {
                   </div>
 
                   <div id="menu-load" class="menu-panel menu-text-color-2" style="display:none;">
-                    <h5>Load Game</h5>
+                    <h5 class="menu-text-title text-center w-100">Load Game</h5>
                     <div id="menu-load-slot-list" class="d-flex flex-column justify-content-start align-items-center mb-3">${loadSlots}</div>
-                    <button id="local-loadgame-button" class="btn btn-success w-100 mb-2">Load</button>
-                    <button class="menu-back-button btn btn-dark w-100">Back</button>
+                    <button id="local-loadgame-button" class="btn menu-load-button menu-text-color menu-nav-item text-uppercase w-100 mb-2">Load</button>
+                    <button class="menu-back-button menu-text-color menu-nav-item btn btn-dark w-100">Back</button>
                   </div>
 
                   <div id="menu-save" class="menu-panel menu-text-color-2" style="display:none;">
-                    <h5>Save Game</h5>
+                    <h5 class="menu-text-title text-center w-100">Save Game</h5>
                     <div id="local-savegame-save-list" class="d-flex flex-column justify-content-start align-items-center mb-3">${saveSlots}</div>
-                    <button id="local-savegame-button" class="btn btn-danger w-100 mb-2">Save</button>
-                    <button class="menu-back-button btn btn-dark w-100">Back</button>
+                    <button id="local-savegame-button" class="btn menu-save-button menu-text-color menu-nav-item text-uppercase w-100 mb-2">Save</button>
+                    <button class="menu-back-button menu-text-color menu-nav-item btn btn-dark w-100">Back</button>
                   </div>
 
                   <div id="menu-options" class="menu-panel menu-text-color-2" style="display:none;">
@@ -146,7 +148,7 @@ export default class Menu {
                         <span>Ghost Mode</span>
                       </div>
                     </div>
-                    <button class="menu-back-button menu-nav-item btn btn-dark w-100 mt-2">Back</button>
+                    <button class="menu-back-button menu-text-color menu-nav-item btn btn-dark text-uppercase w-100 mt-2">Back</button>
                   </div>
 
                   <div id="menu-information" class="menu-panel menu-text-color-2 p-1" style="display:none;">
@@ -155,11 +157,10 @@ export default class Menu {
                       Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio. Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio.<br>
                       Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio. Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio.<br>
                     </div>
-                    <button class="menu-back-button menu-nav-item btn btn-dark w-100">Back</button>
+                    <button class="menu-back-button menu-text-color menu-nav-item btn btn-dark w-100">Back</button>
                   </div>
                   <div id="local-savegame-message" class="text-center w-100 mt-2"></div>
                 </div>
-
               </div>
             </div>
           </div>
@@ -187,10 +188,13 @@ export default class Menu {
     $(document).on('click', '#first-interaction-button', () => {
       this.firstInteraction = true
       this.game.listener.context.resume()
-      this.mainMenuPosition = 0
+      
+      this.mainMenuPosition = 3
       this.refreshMenuSelection()
-      this.showModal()
+      $('#main-information-button').css('color', '#32ad0c')
 
+      this.game.sound.play(300, { volume: 0.5, loop: false })
+      this.showModal()
       this.startMenuMusic()
     })
 
@@ -266,6 +270,7 @@ export default class Menu {
 
       const $items = $('#menu-save .menu-save-slot')
       this.panelPosition = $items.index(event.currentTarget)
+      this.selectedSlotPosition.save = this.panelPosition
 
       this.refreshMenuSelection()
     })
@@ -283,16 +288,16 @@ export default class Menu {
     $(document).on('click', '.menu-load-slot', event => {
       const $items = $('#menu-load .menu-load-slot')
       this.panelPosition = $items.index(event.currentTarget)
-
+      this.selectedSlotPosition.load = this.panelPosition
       this.refreshMenuSelection()
     })
 
     $(document).on('click', '#menu-main .menu-nav-item:visible', event => {
       const $items = this.getMainMenuItems()
-
       this.mainMenuPosition = $items.index(event.currentTarget)
-
       this.refreshMenuSelection()
+
+      if (event.originalEvent) this.game.sound.play(300, { volume: 0.5, loop: false })
     })
 
     $(document).on('click', '#menu-options .menu-option-row', event => {
@@ -341,34 +346,35 @@ export default class Menu {
 
     $('.menu-back-button').on('click', () => {
       if (this.saveEditActive) this.cancelSaveNameEdit()
+      this.game.sound.play(300, { volume: 0.5, loop: false })
       this.showPanel('main', false)
     })
   }
 
   menuKeyboardControls() {
     $(document).on('keydown.menu', async event => {
-      if (this.game.currentState != 'menu') return
+      if (this.game.currentState != 'menu') return;
+
+      if (event.key == 'Enter' && this.firstInteraction) {
+        this.game.sound.play(300, { volume: 0.5, loop: false })
+        event.stopImmediatePropagation()
+      }
 
       if (this.saveEditActive) {
         if (event.key == 'Escape') {
           event.preventDefault()
           event.stopPropagation()
-
           this.cancelSaveNameEdit()
-
-          return
+          return;
         }
 
         if (event.key == 'Enter') {
           event.preventDefault()
           event.stopPropagation()
-
           await this.confirmSaveNameEdit()
-
-          return
+          return;
         }
-
-        return
+        return;
       }
 
       if (event.key == 'Escape' || event.key == 'Backspace') {
@@ -421,26 +427,16 @@ export default class Menu {
   }
 
   getMainMenuItems() {
-    return $('#menu-main .menu-nav-item:visible')
+    return $('#menu-main .menu-nav-item').filter(function () {
+      return $(this).css('display') !== 'none'
+    })
   }
 
   getPanelItems(panelName = this.currentPanel) {
-    if (panelName == 'load') {
-      return $('#menu-load .menu-load-slot')
-    }
-
-    if (panelName == 'save') {
-      return $('#menu-save .menu-save-slot')
-    }
-
-    if (panelName == 'options') {
-      return $('#menu-options .menu-nav-item:visible')
-    }
-
-    if (panelName == 'information') {
-      return $('#menu-information .menu-back-button:visible')
-    }
-
+    if (panelName == 'load') { return $('#menu-load .menu-nav-item:visible') }
+    if (panelName == 'save') { return $('#menu-save .menu-nav-item:visible') }
+    if (panelName == 'options') { return $('#menu-options .menu-nav-item:visible') }
+    if (panelName == 'information') { return $('#menu-information .menu-back-button:visible') }
     return $()
   }
 
@@ -449,13 +445,16 @@ export default class Menu {
       ? this.getMainMenuItems()
       : this.getPanelItems()
 
-    if (!$items.length) return
+    if (!$items.length) return;
 
     if (this.currentPanel == 'main') {
-      this.mainMenuPosition = Math.max(0, Math.min( this.mainMenuPosition + direction, $items.length - 1))
+      this.mainMenuPosition = Math.max(0, Math.min(this.mainMenuPosition + direction, $items.length - 1))
     } else {
-      this.panelPosition = Math.max(0, Math.min(this.panelPosition + direction,$items.length - 1)
-      )
+      this.panelPosition = Math.max(0, Math.min(this.panelPosition + direction, $items.length - 1))
+
+      if ((this.currentPanel == 'load' || this.currentPanel == 'save') && this.panelPosition < this.saveSlotCount) {
+        this.selectedSlotPosition[this.currentPanel] = this.panelPosition
+      }
     }
 
     this.refreshMenuSelection()
@@ -472,13 +471,40 @@ export default class Menu {
     }
 
     if (this.currentPanel == 'load') {
+      const $selected = this.getPanelItems('load').eq(this.panelPosition)
+      if (!$selected.length) return;
+
+      if ($selected.hasClass('menu-back-button')) {
+        this.showPanel('main', false)
+        return;
+      }
+
+      if ($selected.is('#local-loadgame-button')) {
+        $selected.trigger('click')
+        return;
+      }
+
       const slotName = this.getSelectedSlotName('load')
-      if (!slotName || !this.hasSaveSlot(slotName)) return
+      if (!slotName || !this.hasSaveSlot(slotName)) return;
+
       await this.loadGame(slotName)
       return;
     }
 
     if (this.currentPanel == 'save') {
+      const $selected = this.getPanelItems('save').eq(this.panelPosition)
+      if (!$selected.length) return;
+
+      if ($selected.hasClass('menu-back-button')) {
+        this.showPanel('main', false)
+        return;
+      }
+
+      if ($selected.is('#local-savegame-button')) {
+        $selected.trigger('click')
+        return;
+      }
+
       this.startSaveNameEdit()
       return;
     }
@@ -611,7 +637,7 @@ export default class Menu {
     if (this.currentPanel == 'main') {
       const $items = this.getMainMenuItems()
 
-      if (!$items.length) return
+      if (!$items.length) return;
 
       this.mainMenuPosition = Math.max(
         0,
@@ -621,16 +647,14 @@ export default class Menu {
         )
       )
 
-      $items
-        .eq(this.mainMenuPosition)
-        .css('color', selectedColor)
+      $items.eq(this.mainMenuPosition).css('color', selectedColor)
 
-      return
+      return;
     }
 
     const $items = this.getPanelItems()
 
-    if (!$items.length) return
+    if (!$items.length) return;
 
     this.panelPosition = Math.max(
       0,
@@ -656,20 +680,19 @@ export default class Menu {
     $('.menu-panel').hide()
     $(`#menu-${panelName}`).show()
 
+    // BUGS
+    $('#bugs').toggle(panelName == 'main')
+
     this.currentPanel = panelName
 
     if (panelName == 'main') {
       this.refreshMainMenu()
     } else if (resetSelection) {
       this.panelPosition = 0
+      if (panelName == 'load' || panelName == 'save') this.selectedSlotPosition[panelName] = 0
     }
 
-    if (
-      panelName == 'load' ||
-      panelName == 'save'
-    ) {
-      this.refreshSaveSlots()
-    }
+    if (panelName == 'load' || panelName == 'save') this.refreshSaveSlots();
 
     if (panelName == 'options') {
       $('#darkcontrast-button').prop(
@@ -687,7 +710,7 @@ export default class Menu {
       : '#menu-load .menu-load-slot'
 
     const $items = $(selector)
-    const $selected = $items.eq(this.panelPosition)
+    const $selected = $items.eq(this.selectedSlotPosition[type] ?? 0)
 
     return $selected.attr('data-slot') ?? null
   }
@@ -1045,8 +1068,8 @@ export default class Menu {
   }
 
   pauseGameMusic() {
-    const musicData = this.game.loadedSounds.find(sound => sound.id == 1)
-    if (!musicData) return
+    const musicData = this.game.loadedSounds.find(sound => sound.id == 400 /* game-music */)
+    if (!musicData) return;
 
     this.game.activePlayedSounds.forEach(audio => {
       if (audio?.buffer == musicData.buffer && audio.isPlaying) audio.pause()
@@ -1056,15 +1079,15 @@ export default class Menu {
   resumeGameMusic() {
     if (!$('#music-button').prop('checked') || !this.game.mapLoading) return
 
-    const musicData = this.game.loadedSounds.find(sound => sound.id == 1)
-    if (!musicData) return
+    const musicData = this.game.loadedSounds.find(sound => sound.id == 400 /* game-music */)
+    if (!musicData) return;
 
     const music = this.game.activePlayedSounds.find(audio => audio?.buffer == musicData.buffer && audio.context == this.game.listener.context)
 
     if (music) {
       if (!music.isPlaying) music.play()
     } else {
-      this.game.sound.play(1, { volume: 0.2, loop: true })
+      this.game.sound.play(400 /* game-music */, { volume: 0.2, loop: true })
     }
   }
 
@@ -1073,7 +1096,7 @@ export default class Menu {
 
     this.game.music = musicOn
 
-    const musicData = this.game.loadedSounds.find(sound => sound.id == 1)
+    const musicData = this.game.loadedSounds.find(sound => sound.id == 400 /* game-music */)
 
     if (!musicData) return;
 
@@ -1108,10 +1131,10 @@ export default class Menu {
       return
     }
 
-    const musicData = this.game.loadedSounds.find(sound => sound.id == 400)
+    const musicData = this.game.loadedSounds.find(sound => sound.id == 401)
     if (!musicData) return
 
-    this.game.sound.play(400, { loop: true })
+    this.game.sound.play(401, /* menu-music */ { loop: true })
 
     this.menuMusic = this.game.activePlayedSounds.find(audio => audio?.buffer == musicData.buffer && audio.context == this.game.listener.context) ?? null
 
@@ -1119,7 +1142,7 @@ export default class Menu {
   }
 
   pauseMenuMusic() {
-    if (!this.menuMusic) return
+    if (!this.menuMusic) return;
 
     if (this.menuMusic.isPlaying) this.menuMusic.pause()
     this.menuMusicOffset = this.menuMusic.offset

@@ -17,6 +17,8 @@ export default class Loader {
 
       const response = await fetch('config.json')
       this.game.config = await response.json()
+      this.game.originalConfig = this.game.deepCopy(this.game.config)
+
     } catch (e) { this.game.loadingError = true; return; }
     if (logOn) console.log(this.game.config);
 
@@ -292,6 +294,7 @@ export default class Loader {
       this.game.startGameInfoText = false; this.game.finishGameInfoText = false; this.game.waitingGameInfoText = false;
     } else {
       loadType = 'newgame'
+      this.game.config = this.game.deepCopy(this.game.originalConfig)
       this.game.startGameInfoText = true; this.game.finishGameInfoText = false; this.game.waitingGameInfoText = false;
     }
 
@@ -495,26 +498,29 @@ export default class Loader {
 
         if (this.game.map?.lights && this.game.map.lights.length > 0) {
           for (const light of this.game.map.lights) {
-            //console.log('light.visible: ', light.visible)
-            if (light.visible) {
-              // console.log(light.color); console.log(light.editcolor); console.log(light.intensity); console.log(light.distance); console.log(light.type);
+            const lightVisible = light.visible === true || light.visible === 1 || light.visible === '1' || light.visible === 'true'
+            const lightActive = light.active === true || light.active === 1 || light.active === '1' || light.active === 'true'
 
+            if (lightVisible) {
+              // console.log(light.color); console.log(light.editcolor); console.log(light.intensity); console.log(light.distance); console.log(light.type);
               // console.log('id: ', light.id, 'name: ', light.name, ' | active: ', light.active)
 
-              let pointLight = light.active
-              ? new THREE.PointLight(new THREE.Color(`#${light.color}`), light.intensity, light.distance)
-              : new THREE.PointLight(new THREE.Color(0, 0, 0), 0, 0)
+              let pointLight = lightActive
+                ? new THREE.PointLight(new THREE.Color(`#${light.color}`), light.intensity, light.distance)
+                : new THREE.PointLight(new THREE.Color(0, 0, 0), 0, 0)
 
-              pointLight.active = light.active
+              pointLight.active = lightActive
+
+              pointLight.userData.staticMapLightId = String(light.id)
 
               pointLight.defaultValues = {
                 'color': light.color,
                 'intensity': light.intensity,
                 'distance': light.distance,
-                'active': light.active,
+                'active': lightActive,
               }
 
-              light.decay = light.decay ??= 2
+              pointLight.decay = Number(light.decay ?? 2)
 
               pointLight.position.set(light.p.x, light.p.y, light.p.z)
               // PRIMARY LIGHT
@@ -666,7 +672,11 @@ export default class Loader {
 
                 beingLight.position.copy(worldPos).add(offset)
 
-                this.game.loadedLights[light.id] = [light.name, beingLight]
+                if (this.game.loadedLights[light.id]) {
+                  console.error(`LIGHT ID COLLISION: ${light.id} | Existing: ${this.game.loadedLights[light.id][0]} | Being: ${being.name} | Light: ${light.name}`)
+                } else {
+                  this.game.loadedLights[light.id] = [light.name, beingLight]
+                }
 
                 this.game.scene.add(beingLight)
               });
@@ -1001,26 +1011,27 @@ export default class Loader {
       // IF HAME REMOVE HEAND LIGHT IS SCENE
       this.game.gameplay.removeHeandLight()
 
-      // GET LIGHTS DATA
+      // GET STATIC LIGHTS DATA
       let convertLights = []
-      for (const [id, light] of Object.entries(this.game.loadedLights)) {
-        convertLights.push({
-          id: id,
-          name: light[0],
-          type: 'point',
-          color: light[1].defaultValues?.color ?? null,
-          distance: light[1].defaultValues?.distance ?? null,
-          intensity: light[1].defaultValues?.intensity ?? null,
-          decay: light[1].decay,
-          visible: light[1].visible,
-          active: light[1].active,
-          p: {
-            x: light[1].position.x,
-            y: light[1].position.y,
-            z: light[1].position.z,
-            w: 1
+
+      for (const mapLight of this.game.map?.lights ?? []) {
+        const savedLight = this.game.deepCopy(mapLight)
+        const runtimeLight = this.game.scene.children.find(object => object.isPointLight && object.userData?.staticMapLightId == String(mapLight.id))
+        if (runtimeLight) {
+          savedLight.active = runtimeLight.active
+          savedLight.visible = runtimeLight.visible
+          savedLight.color = runtimeLight.active ? runtimeLight.color.getHexString() : (runtimeLight.defaultValues?.color ?? mapLight.color)
+          savedLight.intensity = runtimeLight.active ? runtimeLight.intensity : (runtimeLight.defaultValues?.intensity ?? mapLight.intensity)
+          savedLight.distance = runtimeLight.active ? runtimeLight.distance : (runtimeLight.defaultValues?.distance ?? mapLight.distance)
+          savedLight.decay = runtimeLight.decay
+          savedLight.p = {
+            x: runtimeLight.position.x,
+            y: runtimeLight.position.y,
+            z: runtimeLight.position.z,
+            w: mapLight.p?.w ?? 1
           }
-        })
+        }
+        convertLights.push(savedLight)
       }
 
       // GET BEINGS DATA

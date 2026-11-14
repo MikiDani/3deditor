@@ -406,7 +406,8 @@ export default class Gameplay {
         beingGroup.beingOptionsDebugPrinted = true
       }
 
-      const canTakeDamage = isEnemy && beingGroup.damageState == true && beingGroup.waitDamage == null
+      // const canTakeDamage = isEnemy && beingGroup.damageState == true && beingGroup.waitDamage == null
+      const canTakeDamage = isEnemy && beingGroup.filename != 'ghost-2' && beingGroup.damageState == true && beingGroup.waitDamage == null
 
       if (canTakeDamage) {
         beingGroup.damageState = null
@@ -1742,7 +1743,7 @@ export default class Gameplay {
             for (const fx of event.lightfx) {
               let light = this.game.loadedLights[parseInt(fx[0])]?.[1] != null ? this.game.loadedLights[parseInt(fx[0])][1] : null;
               let fxData = this.game.config.lightfx.find(lfx => lfx.id == parseInt(fx[1]))
-              if (light && fxData) this.lightFx(event.id, light, fxData);
+              if (light && fxData) this.lightFx(event.id, light, fxData, fx[0])
             }
           } 
 
@@ -1824,14 +1825,15 @@ export default class Gameplay {
   //** ACTION FXS */
 
   // LIGHT FX
-  lightFx(eventId, light, data) {
+  lightFx(eventId, light, data, lightId) {
+    const stateKey = `${eventId}_${lightId}`
 
     function getDefaultLightStates(data, light) {
-      data[eventId] = {}
-      data[eventId].state = light.defaultValues.active
-      data[eventId].save_color = light.defaultValues.color
-      data[eventId].save_distance = light.defaultValues.distance
-      data[eventId].save_intensity = light.defaultValues.intensity
+      data[stateKey] = {}
+      data[stateKey].state = light.active
+      data[stateKey].save_color = light.defaultValues.color
+      data[stateKey].save_distance = light.defaultValues.distance
+      data[stateKey].save_intensity = light.defaultValues.intensity
     }
 
     switch(data.id) {
@@ -1847,63 +1849,70 @@ export default class Gameplay {
         }, data.time)
       break
 
-      // TURN OFF LIGHT / ON   
+      // TURN OFF LIGHT / ON
       case 1:
-        if (data[eventId] == null) getDefaultLightStates(data, light);
+        if (data[stateKey] == null) getDefaultLightStates(data, light)
 
-        if (data[eventId].state) {
+        if (light.active) {
           console.log('OFF', eventId)
+
+          data[stateKey].save_color = light.color.getHexString()
+          data[stateKey].save_distance = light.distance
+          data[stateKey].save_intensity = light.intensity
+
           // BLACK
           light.color = new THREE.Color(0, 0, 0)
           light.distance = 0
           light.intensity = 0
           light.active = false
 
-          data[eventId].state = false
+          data[stateKey].state = false
         } else {
           console.log('ON', eventId)
 
-          light.color = new THREE.Color(`#${data[eventId].save_color}`)
-          light.distance = data[eventId].save_distance
-          light.intensity = data[eventId].save_intensity
+          light.color = new THREE.Color(`#${data[stateKey].save_color}`)
+          light.distance = data[stateKey].save_distance
+          light.intensity = data[stateKey].save_intensity
           light.active = true
 
-          data[eventId].state = true
+          data[stateKey].state = true
         }
-
-        // data[eventId].state = !data[eventId].state
 
         this.refreshHeandLights()
       break
 
       // TURN ON LIGHT
       case 2:
-        if (data[eventId] == null) getDefaultLightStates(data, light);
+        if (data[stateKey] == null) getDefaultLightStates(data, light);
 
-        data[eventId].state = true
+        data[stateKey].state = true
 
         console.log('ON', eventId)
-        light.color = new THREE.Color(`#${data[eventId].save_color}`)
-        light.distance = data[eventId].save_distance
-        light.intensity = data[eventId].save_intensity
+        light.color = new THREE.Color(`#${data[stateKey].save_color}`)
+        light.distance = data[stateKey].save_distance
+        light.intensity = data[stateKey].save_intensity
+        light.active = true
 
         this.refreshHeandLights()
       break
 
       // TURN OFF LIGHT
       case 3:
-        if (data[eventId] == null) getDefaultLightStates(data, light);
+        if (data[stateKey] == null) getDefaultLightStates(data, light);
 
-        data[eventId].state = false
+        data[stateKey].state = false
 
         console.log('OFF', eventId)
-        data[eventId].save_color = light.color.getHexString()
-        data[eventId].save_distance = light.distance
-        data[eventId].save_intensity = light.intensity
+        if (light.active) {
+          data[stateKey].save_color = light.color.getHexString()
+          data[stateKey].save_distance = light.distance
+          data[stateKey].save_intensity = light.intensity
+        }
         // BLACK
         light.color = new THREE.Color(0, 0, 0)
         light.distance = 0
         light.intensity = 0
+        light.active = false
 
         this.refreshHeandLights()
       break

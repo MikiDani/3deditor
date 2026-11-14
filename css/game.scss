@@ -409,18 +409,21 @@ a:hover, button:hover, input:hover, textarea:hover {
 #first-interaction-button {
   z-index: 2;
   background-image: url('../img/inventory/picture-border-bg.png');
-  width: 400px;
-  height: 128px;
-
+  background-size: cover;
+  background-position: center center;
+  width: 350px;
+  height: 64px;
   font-family: 'Hand', sans-serif !important;
-  font-size: 3.2rem !important;
+  font-size: 2.0rem !important;
   letter-spacing: 0.8rem;
-
   border: 0 !important;
-  padding-top: 14px;
-
+  padding-top: 10px;
+  text-shadow: -3px -3px 0 #000, 3px -3px 0 #000, -3px  3px 0 #000, 3px  3px 0 #000, 0px  0px 5px #000;
+  color: #bac6ba !important;
+  
   &:hover {
-    transform: scale(1.05);
+    // transform: scale(1.03);
+    color: #efefef !important;
   }
 }
 
@@ -1625,8 +1628,8 @@ $book-text-line-height: 0.9em;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  width: 550px !important;
-  min-height: 350px;
+  width: 850px !important;
+  min-height: 320px;
   margin-left: auto;
   margin-right: auto;
   text-align: center !important;
@@ -1691,6 +1694,18 @@ $book-text-line-height: 0.9em;
   background-image: url('../img/inventory/menu-bg-paint.png') !important;
 
   --frame-size: 80px;
+}
+
+#bugs {
+  position: absolute;
+  left: -20px;
+  bottom: 0;
+  width: 250px;
+  height: 250px;
+  background: url('../img/inventory/bugs.gif') center / contain no-repeat;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.5;
 }
 
 $cornersize: calc(var(--frame-size) * 1.85);
@@ -1800,6 +1815,9 @@ $cornersize: calc(var(--frame-size) * 1.85);
   min-width: 300px;
   background-color: #01080486 !important;
   border: 0 !important;
+  &:hover {
+    color: white !important;
+  }
 }
 
 .menu-text-color {
@@ -1944,8 +1962,8 @@ $cornersize: calc(var(--frame-size) * 1.85);
 
 .frame-center {
   position: absolute;
-  width: calc(var(--frame-size) * 1.85);
-  height: calc(var(--frame-size) * 1.85);
+  width: calc(var(--frame-size) * 1.15);
+  height: calc(var(--frame-size) * 1.15);
   background: transparent;
   background-image: url('../img/inventory/picture-ornament.png');
   background-repeat: no-repeat;
@@ -1981,4 +1999,56 @@ $cornersize: calc(var(--frame-size) * 1.85);
 #local-savegame-message {
   position: relative;
   z-index: 2;
+}
+
+.menu-load-slot,
+.menu-save-slot
+{
+  font-family: 'Hand', sans-serif;
+  font-size: 24px;
+  letter-spacing: 10px;
+  border: 2px solid #1b541bc4 !important;
+  padding: 2px 6px 2px 14px !important;
+  background-color: #0000009c !important;
+  box-shadow: 3px 3px 4px  #0000009c !important;
+}
+
+.menu-back-button {
+  min-width: 300px;
+  font-size: 24px !important;
+  background-color: #01080486 !important;
+  border: 0 !important;
+  letter-spacing: 5px;
+  &:hover {
+    color: white !important;
+  }
+}
+
+.menu-save-button {
+  min-width: 300px;
+  font-size: 24px !important;
+  background-color: #9f000086 !important;
+  border: 0 !important;
+  letter-spacing: 5px;
+  color: white;
+  border: 1px solid #ff00007c !important;
+  &:hover {
+    color: white !important;
+  }
+}
+
+.menu-load-button {
+  min-width: 300px;
+  font-size: 24px !important;
+  background-color: #008d2886 !important;
+  border: 0 !important;
+  letter-spacing: 5px;
+  color: white;
+  &:hover {
+    color: white !important;
+  }
+}
+
+#topLayer.modal.modal-static .modal-dialog {
+  transform: none !important;
 }

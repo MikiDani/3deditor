@@ -307,16 +307,20 @@ a:hover, button:hover, input:hover, textarea:hover {
 #first-interaction-button {
   z-index: 2;
   background-image: url("../img/inventory/picture-border-bg.png");
-  width: 400px;
-  height: 128px;
+  background-size: cover;
+  background-position: center center;
+  width: 350px;
+  height: 64px;
   font-family: "Hand", sans-serif !important;
-  font-size: 3.2rem !important;
+  font-size: 2rem !important;
   letter-spacing: 0.8rem;
   border: 0 !important;
-  padding-top: 14px;
+  padding-top: 10px;
+  text-shadow: -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 3px 3px 0 #000, 0px 0px 5px #000;
+  color: #bac6ba !important;
 }
 #first-interaction-button:hover {
-  transform: scale(1.05);
+  color: #efefef !important;
 }
 
 .menu-container-bg {
@@ -1443,8 +1447,8 @@ a:hover, button:hover, input:hover, textarea:hover {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  width: 550px !important;
-  min-height: 350px;
+  width: 850px !important;
+  min-height: 320px;
   margin-left: auto;
   margin-right: auto;
   text-align: center !important;
@@ -1504,6 +1508,18 @@ a:hover, button:hover, input:hover, textarea:hover {
   background-color: transparent !important;
   background-image: url("../img/inventory/menu-bg-paint.png") !important;
   --frame-size: 80px;
+}
+
+#bugs {
+  position: absolute;
+  left: -20px;
+  bottom: 0;
+  width: 250px;
+  height: 250px;
+  background: url("../img/inventory/bugs.gif") center/contain no-repeat;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.5;
 }
 
 .frame-corner-1 {
@@ -1611,6 +1627,9 @@ a:hover, button:hover, input:hover, textarea:hover {
   min-width: 300px;
   background-color: rgba(1, 8, 4, 0.5254901961) !important;
   border: 0 !important;
+}
+.menu-button-bg:hover {
+  color: white !important;
 }
 
 .menu-text-color {
@@ -1754,8 +1773,8 @@ a:hover, button:hover, input:hover, textarea:hover {
 
 .frame-center {
   position: absolute;
-  width: calc(var(--frame-size) * 1.85);
-  height: calc(var(--frame-size) * 1.85);
+  width: calc(var(--frame-size) * 1.15);
+  height: calc(var(--frame-size) * 1.15);
   background: transparent;
   background-image: url("../img/inventory/picture-ornament.png");
   background-repeat: no-repeat;
@@ -1791,4 +1810,55 @@ a:hover, button:hover, input:hover, textarea:hover {
 #local-savegame-message {
   position: relative;
   z-index: 2;
+}
+
+.menu-load-slot,
+.menu-save-slot {
+  font-family: "Hand", sans-serif;
+  font-size: 24px;
+  letter-spacing: 10px;
+  border: 2px solid rgba(27, 84, 27, 0.768627451) !important;
+  padding: 2px 6px 2px 14px !important;
+  background-color: rgba(0, 0, 0, 0.6117647059) !important;
+  box-shadow: 3px 3px 4px rgba(0, 0, 0, 0.6117647059) !important;
+}
+
+.menu-back-button {
+  min-width: 300px;
+  font-size: 24px !important;
+  background-color: rgba(1, 8, 4, 0.5254901961) !important;
+  border: 0 !important;
+  letter-spacing: 5px;
+}
+.menu-back-button:hover {
+  color: white !important;
+}
+
+.menu-save-button {
+  min-width: 300px;
+  font-size: 24px !important;
+  background-color: rgba(159, 0, 0, 0.5254901961) !important;
+  border: 0 !important;
+  letter-spacing: 5px;
+  color: white;
+  border: 1px solid rgba(255, 0, 0, 0.4862745098) !important;
+}
+.menu-save-button:hover {
+  color: white !important;
+}
+
+.menu-load-button {
+  min-width: 300px;
+  font-size: 24px !important;
+  background-color: rgba(0, 141, 40, 0.5254901961) !important;
+  border: 0 !important;
+  letter-spacing: 5px;
+  color: white;
+}
+.menu-load-button:hover {
+  color: white !important;
+}
+
+#topLayer.modal.modal-static .modal-dialog {
+  transform: none !important;
 }/*# sourceMappingURL=game.css.map */

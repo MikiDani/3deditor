@@ -205,24 +205,26 @@ export default class Input {
       // MOUSE ACTION: USE
       if (e.button == 0 && this.game.currentState == 'game' && $(e.target).attr('id') == 'use-selector') {
         e.preventDefault(); e.stopPropagation();
+        if (this.game.playerMouse.selectedObject) this.removeUsedObject()
         this.useSelectorChange()
         return;
       }
 
       // MOUSE ACTION: LOOK
       if (e.button == 0 && this.game.currentState == 'game' && $(e.target).attr('id') == 'look-selector') {
-        e.preventDefault(); e.stopPropagation();        
+        e.preventDefault(); e.stopPropagation();
+        if (this.game.playerMouse.selectedObject) this.removeUsedObject()
         this.lookSelectorChange()
         return;
       }
 
-      // CLOSE TEXT BUTTON            
+      // CLOSE TEXT BUTTON
       if (e.button == 0 && this.game.currentState == 'game' && ( $(e.target).attr('id') == 'text-box-close-button' || $(e.target).closest('#text-box').length )) {
         e.preventDefault(); e.stopPropagation();
         if (this.game.finishGameInfoText) return;
 
         // START GAME TEXT REMOVE
-        if (this.game.startGameInfoText) {          
+        if (this.game.startGameInfoText) {
           this.game.startGameInfoText = false
           this.game.waitingGameInfoText = false
           $('#text-box-text').html('')
@@ -247,14 +249,14 @@ export default class Input {
       if (!this.game.inventory.inventoryMenu.selectedObject) {
         // DEFINITELY BACK
         if (this.game.inventory.inventoryMenu.objectSelected) this.definitelyBack();
-  
+
         // PERVIOUS OBJECT HIDE AND REFRESH LIST
         this.game.loadedObjects[this.game.inventory.selectedObject.id].visible = false
         this.game.inventory.inventoryMenu.reloadInventory = true;
-  
+
         let index = $(e.currentTarget).index('#inventory-item-text-container .item-text-container')
         this.game.inventory.inventoryMenu.inventoryPosition = index;
-  
+
         let selectedObjectIndex = this.game.playerObjects[this.game.inventory.inventoryMenu.inventoryStartIndex + this.game.inventory.inventoryMenu.inventoryPosition]
         this.setInventorySelectedMeshObject(selectedObjectIndex)
       }
@@ -395,7 +397,7 @@ export default class Input {
         console.log(this.game.config)
         console.log(this.game.loadedTextures)
         console.log(this.game.loadedSounds)
-    
+
         console.log(this.game.beingsList)
         console.log(this.game.heandsList)
         console.log(this.game.objectsList)
@@ -409,9 +411,9 @@ export default class Input {
         this.game.playerObjects.push(
           15, 18, 19, 50, 51, 52, 53, 54, 55, 56,
           1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-          11, 12, 13, 14, 15,16, 17, 18, 19, 20, 
-          21, 22, 23, 24, 25, 26, 27, 28, 28, 30, 
-          31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 
+          11, 12, 13, 14, 15,16, 17, 18, 19, 20,
+          21, 22, 23, 24, 25, 26, 27, 28, 28, 30,
+          31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
           41, 42, 43, 44, 45, 46, 47
         )
 
@@ -460,13 +462,13 @@ export default class Input {
             }
             return;
           }
-          
+
           $("#oil-container").show()
           if (this.game.playerMouse.selectedHeand != 1) this.game.gameplay.removeHeandLight()
           this.resetautoMovePlayerData()
 
           const camQuat = new THREE.Quaternion()
-          this.game.camera.getWorldQuaternion(camQuat)          
+          this.game.camera.getWorldQuaternion(camQuat)
           const euler = new THREE.Euler().setFromQuaternion(camQuat, 'YXZ') // X → pitch (fel–le nézés)
 
           // AUTO MOVE PLAYER HEAND CENTER
@@ -545,9 +547,9 @@ export default class Input {
           $("#loading-container").toggle()
 
           console.log(this.game.renderer.info)
- 
+
           this.game.graphics.resetScene()
-          
+
           // $("#loading-console").html('')
 
           this.game.currentState = 'menu'
@@ -574,6 +576,7 @@ export default class Input {
         if (e.key == 'e' || e.key == 'E') {
           e.preventDefault(); e.stopPropagation();
           if (this.game.finishGameInfoText) return;
+          if (this.game.playerMouse.selectedObject) this.removeUsedObject()
           this.useSelectorChange()
           return
         }
@@ -582,6 +585,7 @@ export default class Input {
         if (e.key == 'q' || e.key == 'Q') {
           e.preventDefault(); e.stopPropagation();
           if (this.game.finishGameInfoText) return;
+          if (this.game.playerMouse.selectedObject) this.removeUsedObject()
           this.lookSelectorChange()
           return
         }
@@ -699,7 +703,7 @@ export default class Input {
       }, 300)
       return;
     }
-    
+
     // BACK GAME
     this.removeUsedObject()
     this.game.play = true
@@ -712,6 +716,7 @@ export default class Input {
 
   changeGameOrInventory() {
     if (this.game.playerDead && this.game.currentState == 'game') return;
+    if (this.game.currentState == 'game' && (!this.game.mapLoading || this.game.$loading.is(':visible'))) return;
 
     if (this.game.currentState == 'game') {
       // GO INVENTORY
@@ -886,7 +891,7 @@ export default class Input {
 
   setupCameraControls() {
     console.log(this.game.move.rotateDeg)
-    
+
     this.game.rotateSpeed = THREE.MathUtils.degToRad(this.game.move.rotateDeg)
     this.game.keysPressed = new Set()
 
@@ -908,7 +913,7 @@ export default class Input {
       if (e.key == 'c' || e.key == 'C') {
         e.preventDefault()
         e.stopPropagation()
- 
+
         if (this.isCrouching) return;
         if (this.game.jumpState.isJumping || this.game.jumpState.isLocked || !this.game.isGrounded) return;
 
@@ -919,10 +924,10 @@ export default class Input {
 
         const newHeight = this.originalHeight * 0.5
         const diff = this.originalHeight - newHeight
-      
+
         box.y = newHeight
         // player.position.y -= diff / 2
-      
+
         this.isCrouching = true
         this.game.jumpState.isLocked = true
       }
@@ -930,7 +935,7 @@ export default class Input {
 
     window.addEventListener('keyup', (e) => {
       if (typeof e.key == 'string') this.game.keysPressed.delete(e.key.toLowerCase())
-      
+
       if (e.key == 'c' || e.key == 'C') {
         e.preventDefault()
         e.stopPropagation()
@@ -970,15 +975,15 @@ export default class Input {
     // SEE UP / DOWN
     document.addEventListener('wheel', (e) => {
       if (this.game.currentState != 'game' || this.game.isPointerLocked || this.game.finishGameInfoText || this.game.playerDead) return;
-  
+
       const pitchLimit = THREE.MathUtils.degToRad(this.game.playerMouse.mouseMaxPitch)
-  
+
       if (e.deltaY > 0) {
-        this.game.pitchObject.rotation.x -= this.game.rotateSpeed 
+        this.game.pitchObject.rotation.x -= this.game.rotateSpeed
       } else {
         this.game.pitchObject.rotation.x += this.game.rotateSpeed
       }
-  
+
       this.game.pitchObject.rotation.x = Math.max(
         -pitchLimit,
         Math.min(pitchLimit, this.game.pitchObject.rotation.x)
@@ -989,68 +994,68 @@ export default class Input {
 
   willCollide(testPos) {
     const size = this.game.playerBoundingBox.clone()
-  
+
     // HEAD AND JUMP CORRECTION
     const center = testPos.clone()
-    
+
     center.y += (this.game.playerYModify - size.y / 2)
-  
+
     const cameraBox = new THREE.Box3().setFromCenterAndSize(center, size)
-  
+
     return this.game.boundingBoxes.some(box =>
       box.intersectsBox(cameraBox)
     )
   }
-  
+
   hasGround(testPos) {
     const size = this.game.playerBoundingBox.clone()
-  
+
     size.x *= 0.75
     size.z *= 0.75
     size.y = 0.08
-  
+
     const center = testPos.clone()
     center.y += this.game.playerYModify - this.game.playerBoundingBox.y / 2 - 0.04
-  
+
     const groundBox = new THREE.Box3().setFromCenterAndSize(center, size)
-  
+
     return this.game.boundingBoxes.some(box =>
       box.intersectsBox(groundBox)
     )
   }
-  
+
   testMove(offset, allowStep = false) {
     const player = this.game.player
     const start = player.position.clone()
-  
+
     if (this.game.ghostMode) {
       player.position.add(offset)
       return true
     }
-  
+
     const isHorizontalMove = offset.y == 0
     const startHasGround = this.hasGround(start)
-  
+
     // 1) Teljes mozgás
     const target = start.clone().add(offset)
     if (!this.willCollide(target)) {
       if (isHorizontalMove && startHasGround && !this.hasGround(target)) return false
-  
+
       player.position.copy(target)
       return true
     }
-  
+
     // 2) Tengelyenkénti csúsztatás
     let moved = false
     let blocked = false
-  
+
     const dx = new THREE.Vector3(offset.x, 0, 0)
     const tryX = start.clone().add(dx)
     if (!this.willCollide(tryX) && (!isHorizontalMove || !startHasGround || this.hasGround(tryX))) {
       player.position.copy(tryX)
       moved = true
     } else blocked = true
-  
+
     const dz = new THREE.Vector3(0, 0, offset.z)
     const tryZ = player.position.clone().add(dz)
     if (!this.willCollide(tryZ) && (!isHorizontalMove || !startHasGround || this.hasGround(tryZ))) {
@@ -1059,11 +1064,11 @@ export default class Input {
     } else {
       blocked = true
     }
-  
+
     if (allowStep && blocked) {
       const originalY = player.position.y
       const up = new THREE.Vector3(0, this.game.stepHeight, 0)
-    
+
       const raised = player.position.clone().add(up)
       if (!this.willCollide(raised)) {
         const stepTarget = raised.clone().add(offset)
@@ -1076,10 +1081,10 @@ export default class Input {
           }
         }
       }
-    
+
       player.position.y = originalY
     }
-  
+
     return moved
   }
 
@@ -1104,6 +1109,10 @@ export default class Input {
 
     document.addEventListener('pointerlockchange', () => {
       this.game.isPointerLocked = document.pointerLockElement == this.game.canvas
+
+      if (this.game.currentState == 'game' && this.game.playerMouse.selectedObject) {
+        $('#cursor-text-box').toggle(!this.game.isPointerLocked)
+      }
 
       if (this.game.isPointerLocked) return;
 
@@ -1370,7 +1379,7 @@ export default class Input {
         this.handleClickEvent(event, 'mousedown');
       }, 150);
     });
-  
+
     // DBLCLICK
     $("#game-canvas").on('dblclick', (event) => {
       clearTimeout(clickTimer);
@@ -1399,11 +1408,11 @@ export default class Input {
 
     for (const action of this.game.map.actionelements) {
       if (this.game.gameplay.isOneShotClickDone(action[1])) continue;
-      
+
       if (action[1].conditions.click == clickType) {
         const intersects = raycaster.intersectObjects(action[0].children, true)
         // IF HAVE CLICK SHOT MESH
-        if (intersects.length > 0) {          
+        if (intersects.length > 0) {
 
           // 2. CHECK FISRT HIT MESH
           let sceneIntersects = raycaster.intersectObjects(Object.values(this.game.loadedMeshs), true)

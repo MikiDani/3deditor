@@ -239,15 +239,6 @@
   ],
   "sounds": [
     {
-      "id": 1,
-      "name": "music1",
-      "volume": 1,
-      "loop": true,
-      "setRefDistance": 1,
-      "setMaxDistance": 2,
-      "setRolloffFactor": 3
-    },
-    {
       "id": 2,
       "name": "open1",
       "volume": 1,
@@ -738,12 +729,15 @@
     },
     {
       "id": 400,
+      "name": "game-music",
+      "volume": 0.7,
+      "loop": true
+    },
+    {
+      "id": 401,
       "name": "menu-music",
-      "volume": 0.5,
-      "loop": true,
-      "setRefDistance": 1,
-      "setMaxDistance": 2,
-      "setRolloffFactor": 3
+      "volume": 0.2,
+      "loop": true
     },
     {
       "id": 1000,
@@ -1084,6 +1078,31 @@
       "knifeRange": 1.1,
       "knifeAim": 0.35
     },
+    "spider-1": {
+      "type": "enemy",
+      "backMove": 1,
+      "backAttack": 0.85,
+      "beingDistance": 0.75,
+      "rotateOn": true,
+      "moveOn": true,
+      "moveOnY": false,
+      "boundingBoxRatio": 0.2,
+      "attackSounds": [
+        100,
+        101,
+        102
+      ],
+      "damageSounds": [
+        100,
+        101,
+        102
+      ],
+      "dieSounds": [
+        103
+      ],
+      "knifeRange": 1.1,
+      "knifeAim": 0.35
+    },
     "bat-bnimationpoints-demo": {
       "type": "enemy",
       "backMove": 0.6,
@@ -1231,21 +1250,6 @@
       "knifeRange": 1.1,
       "knifeAim": 0.35
     },
-    "spider-1": {
-      "type": "enemy",
-      "backMove": 1,
-      "backAttack": 0.85,
-      "beingDistance": 0.75,
-      "rotateOn": true,
-      "moveOn": true,
-      "moveOnY": false,
-      "boundingBoxRatio": 0.2,
-      "attackSounds": [100,101,102],
-      "damageSounds": [100,101,102],
-      "dieSounds": [103],
-      "knifeRange": 1.1,
-      "knifeAim": 0.35
-    },
     "SPIDER-KITCHEN-1": {
       "type": "enemy",
       "backMove": 0.45,
@@ -1305,6 +1309,51 @@
       "dieSounds": [103],
       "knifeRange": 0.4,
       "knifeAim": 0.8
+    },
+    "SPIDER-MOVIE-1": {
+      "type": "enemy",
+      "backMove": 0.8,
+      "backAttack": 0.7,
+      "beingDistance": 0.6,
+      "rotateOn": true,
+      "moveOn": true,
+      "moveOnY": false,
+      "boundingBoxRatio": 0.2,
+      "attackSounds": [ 100, 101, 102 ],
+      "damageSounds": [ 100, 101, 102 ],
+      "dieSounds": [ 103 ],
+      "knifeRange": 1.1,
+      "knifeAim": 0.35
+    },
+    "BAT-GARDEN-CELLAR1": {
+      "type": "enemy",
+      "backMove": 0.6,
+      "backAttack": 0.5,
+      "beingDistance": 0.4,
+      "rotateOn": true,
+      "moveOn": true,
+      "moveOnY": true,
+      "boundingBoxRatio": 0.3,
+      "attackSounds": [ 100, 101, 102 ],
+      "damageSounds": [ 100, 101, 102 ],
+      "dieSounds": [ 103 ],
+      "knifeRange": 1.1,
+      "knifeAim": 0.35
+    },
+    "BAT-GARDEN-CELLAR2-KEY": {
+      "type": "enemy",
+      "backMove": 0.6,
+      "backAttack": 0.5,
+      "beingDistance": 0.4,
+      "rotateOn": true,
+      "moveOn": true,
+      "moveOnY": true,
+      "boundingBoxRatio": 0.3,
+      "attackSounds": [ 100, 101, 102 ],
+      "damageSounds": [ 100, 101, 102 ],
+      "dieSounds": [ 103 ],
+      "knifeRange": 1.1,
+      "knifeAim": 0.35
     }
   },
   "protectedPickupMash": [21],
