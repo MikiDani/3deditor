@@ -114,9 +114,9 @@ export default class Loader {
 
       const response3 = await this.fetchData({ ajax: true, getobjects: true })
       if (response3.files) {
-        for (const file of response3.files) {          
+        for (const file of response3.files) {
           const response4 = await this.fetchData({ ajax: true, load: true, filename: file.name, ext: file.extension, objectdir: '_objects' });
-          if (response4?.data && response4?.structure) {            
+          if (response4?.data && response4?.structure) {
             let exp = file.name.split('_')
 
             this.game.objectsList[exp[0]] = {
@@ -144,7 +144,7 @@ export default class Loader {
       this.game.addConsoleRow('+++ loading textures +++', 'div', true, true)
 
       await this.loadTextures()
-    } catch (e) { this.game.loadingError = true; return; }    
+    } catch (e) { this.game.loadingError = true; return; }
     if (logOn) console.log('TEXTURES: ', this.game.loadedTextures);
 
     try {
@@ -204,7 +204,7 @@ export default class Loader {
           const text = `${name}.png ERROR!`
           this.game.addConsoleRow(text, 'div', false, false)
           this.game.loadingError = true;
-          return;  
+          return;
         }
       } else {
         const text = `${name}.png ERROR!`
@@ -266,7 +266,7 @@ export default class Loader {
 
   startTextureMoveing(texture) {
     let currentTile = 0
-    if (texture.imagesLength > 1) {      
+    if (texture.imagesLength > 1) {
       if (texture.interval == null) {
         texture.interval = setInterval(() => {
           currentTile = (currentTile + 1) % texture.imagesLength;
@@ -282,7 +282,7 @@ export default class Loader {
     this.cleanupMapRuntimeHitboxes()
 
     this.game.graphics.distanceMode = $("input[name='distance-mode']:checked").val()
-    
+
     this.game.graphics.reloadScreen(this.game.graphics.distanceMode)
 
     let loadType = null
@@ -298,9 +298,10 @@ export default class Loader {
       this.game.startGameInfoText = true; this.game.finishGameInfoText = false; this.game.waitingGameInfoText = false;
     }
 
+    this.game.menu.clearAutoHideMessageTimer()
     $('#text-box').hide(); $('#text-box-text').html('');
 
-    this.game.map = this.game.mapVariableReset()    
+    this.game.map = this.game.mapVariableReset()
 
     this.game.map.map_filename = filename
     this.game.map.map_ext = ext
@@ -320,8 +321,6 @@ export default class Loader {
     }
 
     if (response?.data && response?.structure) {
-      // console.log('LOAD MAPDATA:', response)
-
       // CONFIG
       if (response.config != null) this.game.config = response.config
       // PLAYER
@@ -333,7 +332,7 @@ export default class Loader {
       if (this.game.map.player.isCrouching) this.game.input.forceCrouch()
 
       if (response.playerObjects != null) this.game.playerObjects = response.playerObjects;
-      
+
       if (response.playerMouse != null) {
         this.game.playerMouse = response.playerMouse
 
@@ -379,10 +378,10 @@ export default class Loader {
         let meshGroup = new THREE.Group() // (i) START MESHGROUP
 
         // CHECK VISIBLE (EDITOR MODE)
-        // let selectedMeshStructure = this.game.findMeshById(this.game.map.structure, mesh.id)        
+        // let selectedMeshStructure = this.game.findMeshById(this.game.map.structure, mesh.id)
         // if (selectedMeshStructure.visible != 1) continue; // EDITOR OFF
 
-        // GIVE MESH DATA TO MESHGROUP        
+        // GIVE MESH DATA TO MESHGROUP
         if (mesh.id) meshGroup.objId = mesh.id;                          // IF HAVE MESH ID
         if (mesh.name) meshGroup.name = mesh.name;                       // IF HAVE MESH NAME
         if (mesh.text) meshGroup.text = mesh.text;                       // IF HAVE MESH INFO TEXT ADD
@@ -407,7 +406,7 @@ export default class Loader {
             tri.t[2].u, 1 - tri.t[2].v,
           ]);
 
-          geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))  
+          geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
           geometry.computeVertexNormals()
 
           let triNormal = tri?.normal ? 'FrontSide' : 'DoubleSide';
@@ -538,8 +537,8 @@ export default class Loader {
           }
         }
 
-        console.log('DARK CONTRAST:', this.game.menu.options.darkContrast)
-        console.log('LIGHTS ON:', this.game.lightsOn)
+        // console.log('DARK CONTRAST:', this.game.menu.options.darkContrast)
+        // console.log('LIGHTS ON:', this.game.lightsOn)
 
         // MINIMUM AMBIENT LIGHT
         if (true) {
@@ -607,7 +606,7 @@ export default class Loader {
               box.getSize(size)
               if (size.z === 0) size.z = 0.01; if (size.x === 0) size.x = 0.01; if (size.y === 0) size.y = 0.01;
 
-              const volume = size.x * size.y * size.z             
+              const volume = size.x * size.y * size.z
 
               if (volume > largestVolume) {
                 largestVolume = volume
@@ -624,7 +623,7 @@ export default class Loader {
               if (size.z === 0) size.z = 0.01; if (size.x === 0) size.x = 0.01; if (size.y === 0) size.y = 0.01;
 
               const boundingBoxRatioSize = beingOptions.boundingBoxRatio ?? 1 * beingGroup.ratio
-              
+
               /*
               console.log('name:', beingGroup.name)
               console.log(boundingBoxRatioSize) // !!!
@@ -672,11 +671,7 @@ export default class Loader {
 
                 beingLight.position.copy(worldPos).add(offset)
 
-                if (this.game.loadedLights[light.id]) {
-                  console.error(`LIGHT ID COLLISION: ${light.id} | Existing: ${this.game.loadedLights[light.id][0]} | Being: ${being.name} | Light: ${light.name}`)
-                } else {
-                  this.game.loadedLights[light.id] = [light.name, beingLight]
-                }
+                if (!this.game.loadedLights[light.id]) this.game.loadedLights[light.id] = [light.name, beingLight];
 
                 this.game.scene.add(beingLight)
               });
@@ -762,10 +757,10 @@ export default class Loader {
               texture.minFilter = THREE.NearestFilter
               texture.generateMipmaps = false
               if (texture?.needsUpdate) texture.needsUpdate = false;
-        
+
               this.game.scene.background = texture
               this.game.addConsoleRow(`Added Sky files: ${files.join(', ')}`, 'div', false, true)
-        
+
               resolve(texture)
             },
             undefined,
@@ -782,11 +777,8 @@ export default class Loader {
 
       setTimeout(() => {
         window.dispatchEvent(new KeyboardEvent('keyup', { key: 'c' }))
-        console.log('oeiqpwoeipqwoei')
-        
-
       }, 20)
-     
+
       this.game.energyModifyScreen()
       this.game.oilModifyScreen()
       this.game.mapLoading = true
@@ -937,7 +929,7 @@ export default class Loader {
   }
 
   async loadSavedgamesList(mode) {
-    if (mode == 'file') {      
+    if (mode == 'file') {
       const response = await this.fetchData({ ajax: true, getsavegameslist: true, dirsstructure: '__saved_games__' })
       if (response?.files) {
         $("#savegame-list").html('')
@@ -946,7 +938,7 @@ export default class Loader {
           list += `<div class="d-inline-flex align-items-center gap-2 mb-2"><span class="savegame-listelement text-dark cursor-pointer px-2 py-1" data-filename="${files.name}" data-ext="${files.extension}">${files.name}.${files.extension}</span><span class="del-save-button cursor-pointer rounded-circle bg-danger text-white d-flex justify-content-center align-items-center p-1">&#x2716;</span></div>`
         })
         $("#savegame-list").html(list)
-  
+
       } else throw('Savegames list didn\'t load.')
 
     } else if (mode == 'local') {

@@ -23,10 +23,7 @@ export default class Game {
     this.soundsLoading = false
     this.mapLoading = false
 
-    // this.filename = 'test-map-3'
-    this.filename = 'cottage-1'
-    // this.filename = 'cabinet-wall'
-
+    this.filename = 'cottage'
     this.ext = 'mtuc'
 
     this.timers = {
@@ -35,9 +32,10 @@ export default class Game {
     }
 
     this.music
-    this.gravity
-    this.lightsOn
-    this.ghostMode
+
+    this.lightsOn = false
+    this.gravity = true
+    this.ghostMode = false
 
     // --- memory datas
     this.config = {}
@@ -56,7 +54,7 @@ export default class Game {
     this.activePlayedSounds = []
 
     // inventory datas
-    this.playerObjectsDefault = [23, 58, 57, 12, 13, 0, 56, 15, 18, 19, 49, 48, 46, 47, 4, 45, 44, 43, 42, 17, 41, 32, 2, 16, 17, 28, 38, 39, 40]
+    this.playerObjectsDefault = [6, 59, 60, 23, 58, 57, 12, 13, 0, 56, 15, 18, 19, 49, 48, 46, 47, 4, 45, 44, 43, 42, 17, 41, 32, 2, 16, 17, 28, 38, 39, 40]
     this.playerObjects = [...this.playerObjectsDefault]
     this.playerProtectedObjects = [4, 5, 6, 17, 23, 35]
 
@@ -108,17 +106,11 @@ export default class Game {
     this.playerBoundingBox = new THREE.Vector3(0.4, 0.6, 0.4)
     this.playerYModify = -0.02
 
-    // HELP 
-    this.ghostMode = false
-    this.lightsOn = true
-
-    this.boxHelp = false
-
     //----
     /*
     const hangok = speechSynthesis.getVoices()
     const magyarHang = hangok.find(voice => voice.lang.startsWith("hu"))
-   
+
     const szoveg = new SpeechSynthesisUtterance("Something else came through with De Alvarenga's ghost: a whole swarm of zombie horseflies. Ghost-like creatures, or at least something just as disgusting.They settled down in the cellar, around one of the wine barrels, right next to the guest room.I keep trying to send them back with the summoning spell, but it does not work.< br >And they bite.Like hell.Until I bleed! There is only one thing I noticed they cannot stand: smoke. As soon as they sense it, they scatter and stay away.These days, whenever I go down to the cellar for wine, I always light a cigarette.")
 
     if (magyarHang) {
@@ -242,7 +234,7 @@ export default class Game {
       objects: [],
       lights: [],
       player: { /* config.json */ }
-    }   
+    }
 
     return this.map;
   }
@@ -271,7 +263,7 @@ export default class Game {
 
     for (let mesh of data) {
       if (!mesh || typeof mesh !== "object") continue;
-  
+
       if (mesh.id == meshId) {
         return mesh;
       }
@@ -358,7 +350,7 @@ export default class Game {
             <div id="loading-console" style="display:none;"></div>
             <div id="loading-console-last"></div>
             <div id="console-reset">RESET</div>
-            <div id="console-button1" data-state="0">ONE LINE</div>
+            <div id="console-button1" data-state="0">ALL LINES</div>
             </div>
           </div>
       </div>`)
@@ -450,12 +442,31 @@ export default class Game {
         <div class="delta-time-inventory text-white"></div>
       </div>`);
 
-    // this.$loading.hide(); // !!! KIVENNI
-    // this.$menu.hide();
-    // this.$game.hide();
     this.$inventory.hide();
 
     $("body").append(this.$loading, this.$game, this.$inventory)
+
+    // RESET CONSOLE
+    $("#console-reset").on("click", () => {
+      $("#loading-console, #loading-console-last").empty()
+    })
+
+    // CONSOLE ONE LINE / ALL LINES
+    $("#console-button1").on("click", function () {
+      const state = $(this).attr("data-state") == "0" ? "1" : "0"
+
+      $(this).attr("data-state", state)
+
+      if (state == "1") {
+        $("#loading-console").show()
+        $("#loading-console-last").hide()
+        $(this).text("ONE LINE")
+      } else {
+        $("#loading-console").hide()
+        $("#loading-console-last").show()
+        $(this).text("ALL LINES")
+      }
+    })
   }
 
   checkPlayerObject(objects = []) {
@@ -485,17 +496,17 @@ export default class Game {
       this.boundingBoxes = this.boundingBoxes.filter(box => box !== threeObject.container._boundingBox)
       threeObject.container._boundingBox = null
     }
-  
+
     threeObject.traverse(obj => {
       if (obj.geometry && obj.geometry.boundingBox) {
         const childBox = obj.geometry.boundingBox.clone()
-  
+
         const pos = new THREE.Vector3()
         obj.getWorldPosition(pos)
-  
+
         childBox.min.add(pos)
         childBox.max.add(pos)
-  
+
         this.boundingBoxes = this.boundingBoxes.filter(box => !box.equals(childBox))
       }
     })
@@ -506,12 +517,6 @@ export default class Game {
       this.map.actionelements = this.map.actionelements.filter(
         ([group, _]) => group !== threeObject
       )
-    }
-
-    if (this.boxHelp && scene.children.length > 0) {
-      scene.children = scene.children.filter(obj => {
-        return !(obj.type === 'LineSegments' && obj.material.color?.getHex() === 0xffff00)
-      })
     }
 
     for (const [id, meshGroup] of Object.entries(this.loadedMeshs)) {
@@ -597,7 +602,7 @@ export default class Game {
     if (mesh._boundingBox) {
       this.boundingBoxes = this.boundingBoxes.filter(box => box !== mesh._boundingBox)
     }
-  
+
     // új box berakása
     this.boundingBoxes.push(updatedBox)
 
@@ -606,6 +611,7 @@ export default class Game {
   }
 
   //--
+
   removeBoundingBoxOfMap(mesh) {
     if (!mesh) return
 
@@ -697,6 +703,7 @@ export default class Game {
 
     return true
   }
+
   //--
 
   forceClearAllTimers() {
@@ -728,7 +735,7 @@ export default class Game {
         })
       })
     })
-  
+
     return box
   }
 
@@ -748,54 +755,39 @@ export default class Game {
     }
 
     mesh.updateMatrixWorld(true)
-  
+
     const box = new THREE.Box3().setFromObject(mesh)
     const center = new THREE.Vector3()
     box.getCenter(center)
-  
+
     await this.sound.play(soundData.soundid, { volume: soundData.volume }, soundData.loop, mesh).then(phantom => {
-      if (!phantom) return
+      if (!phantom) return;
 
       phantom.position.copy(center)
-
       const audio = phantom.children[0]
-  
+
       if (audio) {
-        console.log(soundData.setRefDistance, soundData.setMaxDistance, soundData.setRolloffFactor)
-        
         if (soundData.setRefDistance != null) audio.setRefDistance(soundData.setRefDistance)
         if (soundData.setMaxDistance != null) audio.setMaxDistance(soundData.setMaxDistance)
         if (soundData.setRolloffFactor != null) audio.setRolloffFactor(soundData.setRolloffFactor)
       }
-  
+
       mesh.playSound = phantom
       mesh.playSound.audio = audio
-
-      // HELPER
-      if (false && !mesh.soundHelper) {
-        const geometry = new THREE.SphereGeometry(0.05, 12, 12)
-        const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
-        const helper = new THREE.Mesh(geometry, material)
-
-        helper.position.copy(center)
-        this.scene.add(helper)
-
-        mesh.soundHelper = helper
-      }
 
     }).catch(err => console.warn("Sound play error:", err))
   }
 
-  stopBeingSound(mesh) {    
+  stopBeingSound(mesh) {
     if (!mesh?.playSound) return;
 
     const phantom = mesh.playSound
     const audio = phantom.audio || phantom.children?.[0]
-  
+
     if (audio && audio.isPlaying) audio.stop()
     if (phantom.parent) phantom.parent.remove(phantom)
     if (audio) audio.disconnect()
-  
+
     mesh.playSound = null
   }
 
@@ -838,7 +830,6 @@ export default class Game {
     $("#energy-container .energy").css('width', `${this.map.player.energy}%`)
 
     if (value < 0 && this.map.player.energy <= 0 && !this.playerDead) this.playerDie();
-    
   }
 
   playerDie() {

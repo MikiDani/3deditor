@@ -14,6 +14,8 @@ export default class Gameplay {
   }
 
   async waitForGameInfo(text) {
+    this.game.menu.clearAutoHideMessageTimer()
+
     while (this.game.startGameInfoText || this.game.finishGameInfoText) {
       $('#text-box-text').html(text)
       $('#text-box').addClass('text-box-centered').show()
@@ -40,17 +42,27 @@ export default class Gameplay {
       if (textName == 'start_text') {
         this.game.move.active = false
 
+        /* //!!!
         setTimeout(() => {
           this.game.move.active = true
         }, 4000)
+        */
+
+        this.game.move.active = true
       }
 
       return;
     }
     if (this.game.waitingGameInfoText) return;
 
+    // MS AND TRIANGLE INFO
     const triCount = this.game.renderer.info.render.triangles
-    $(".delta-time-game").html(`${deltaTime.toFixed(0)} | tris: ${triCount}`)
+    if (this.game.menu.devTools && this.game.menu.renderInfo) {
+      const triCount = this.game.renderer.info.render.triangles
+      $('.delta-time-game').html(`${deltaTime.toFixed(0)} ms | tris: ${triCount}`).show()
+    } else {
+      $('.delta-time-game').hide()
+    }
 
     // GRAVITI RESPONE
     if (this.game.player.position.y < -5) this.game.player.position.y = 7  // !!
@@ -166,7 +178,6 @@ export default class Gameplay {
         } else {
           this.game.pitchObject.rotation.x += x > 0 ? -step : step
         }
-
         break
       }
 
@@ -180,6 +191,9 @@ export default class Gameplay {
             ...this.game.autoMovePlayerData,
             mode: null
           }
+          // FINISH TEXT + MUSIC
+          this.game.menu.pauseGameMusic()
+          this.game.sound.play(403, { volume: 1, loop: false })
           this.game.finishGameInfoText = true
         } else {
           this.game.pitchObject.rotation.x += x > 0 ? -step : step
@@ -207,7 +221,6 @@ export default class Gameplay {
         } else {
           this.game.pitchObject.rotation.x += x > target ? -step : step
         }
-
         break
       }
 
@@ -252,7 +265,6 @@ export default class Gameplay {
         } else {
           this.game.pitchObject.rotation.x += x > target ? -step : step
         }
-
         break
       }
 
@@ -272,9 +284,7 @@ export default class Gameplay {
         this.game.move.push = false
         this.game.move.active = true
 
-        $("#text-box-text").html('What was that fog...? Something was wrong with it. I blacked out... Where the hell am I now?!')
-        $("#text-box").removeClass('text-box-centered').show()
-
+        this.game.menu.showGameMessage('What was that fog...? Something was wrong with it. I blacked out... Where the hell am I now?!')
         break
       }
 
@@ -317,7 +327,6 @@ export default class Gameplay {
           this.game.autoMovePlayerData.mode = 'hand-up'
           this.game.autoMovePlayerData.time = 0
         }
-
         break
       }
 
@@ -1804,17 +1813,14 @@ export default class Gameplay {
       case "use":
         let message = `<div class="text-center">You was used the <strong class="text-white">${useObject}</strong> here!<br>${this.game.menu.options.hints ? 'You neaded objects:' : ''}</div>`
         if (this.game.menu.options.hints) message += listElements
-        $("#text-box-text").html(message)
-        $("#text-box").show()
+        this.game.menu.showGameMessage(message)
       break
       case "cantuse":
-        $("#text-box-text").html(`You can't use the ${cantUseObject} here!`)
-        $("#text-box").show()
+        this.game.menu.showGameMessage(`You can't use the ${cantUseObject} here!`)
         removeCursor()
       break
       case "actionmessage":
-        $("#text-box-text").html(actionText)
-        $("#text-box").show()
+        this.game.menu.showGameMessage(actionText)
         removeCursor()
       break
     }

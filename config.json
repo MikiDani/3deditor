@@ -6,7 +6,7 @@
       "z": 0,
       "fYaw": 0,
       "fXaw": 0,
-      "energy": 30,
+      "energy": 95,
       "oil": 100,
       "hitdelay": 1000,
       "nowtime": 0
@@ -545,6 +545,24 @@
       "setRolloffFactor": 3
     },
     {
+      "id": 36,
+      "name": "sushi1",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
+      "id": 37,
+      "name": "water2",
+      "volume": 1,
+      "loop": false,
+      "setRefDistance": 1,
+      "setMaxDistance": 2,
+      "setRolloffFactor": 3
+    },
+    {
       "id": 100,
       "name": "bet-attack1",
       "volume": 1,
@@ -737,6 +755,12 @@
       "id": 401,
       "name": "menu-music",
       "volume": 0.2,
+      "loop": true
+    },
+    {
+      "id": 403,
+      "name": "end-music",
+      "volume": 1,
       "loop": true
     },
     {
@@ -996,13 +1020,13 @@
     {
       "id": "start_text",
       "text": [
-        "It came as a surprise. The letter was from your Italian uncle's lawyers: you have inherited his manor in southern Italy. You vaguely remember spending a few summers there as a child, before your parents moved across the ocean. Now you have left New York to satisfy your curiosity and deal with the inheritance in person.<br><br>As you travelled through the beautiful Italian countryside, the small villages, frozen in time, slowly filled you with a dreamlike calm. Tangled olive groves and rich vineyards cover the sunny hills, ancient castle ruins watch from above, and around here it sometimes feels as if wine really flows like water.<br><br>But now you are here.<br><br>The old house servant let you in and greeted you as if you had never really left. The afternoon sunlight barely reaches through the heavy curtains. Inside, the house is cool, still, and strangely quiet. The dark manor surrounds you like a giant insect, pressing down on you as if it decided the moment you arrived that it would never let you leave.<br><br>“Good to see a familiar face, young master,” says Albert Gregovics. “Dark days have come to this place since your uncle passed away. It is good to have you back after all these years. Feel free to look around. I mean... of course, the manor belongs to you now. I will prepare dinner, but it is getting rather late. Allow me to return to my room. We can talk later.”<br><br>With these quietly spoken words, Gregovics disappears down the hallway.<br><br>“Your story begins here...”"
+        "It came as a surprise. The letter was from your Italian uncle's lawyers: you have inherited his manor in southern Italy. You vaguely remember spending a few summers there as a child, before your parents moved across the ocean. Now you have left New York to satisfy your curiosity and deal with the inheritance in person.<br><br>As you travelled through the beautiful Italian countryside, the small villages, frozen in time, slowly filled you with a dreamlike calm. Tangled olive groves and rich vineyards cover the sunny hills, ancient castle ruins watch from above, and around here it sometimes feels as if wine really flows like water. But now you are here.<br><br>The old house servant let you in and greeted you as if you had never really left. The afternoon sunlight barely reaches through the heavy curtains. Inside, the house is cool, still, and strangely quiet. The dark manor surrounds you like a giant insect, pressing down on you as if it decided the moment you arrived that it would never let you leave.<br><br>“Good to see a familiar face, young master,” says Albert Gregovics. “Dark days have come to this place since your uncle passed away. It is good to have you back after all these years. Feel free to look around. I mean... of course, the manor belongs to you now. I will prepare dinner, but it is getting rather late. Allow me to return to my room. We can talk later.”<br><br>With these quietly spoken words, Gregovics disappears down the hallway.<br><br><div class='text-center text-white'>“Your story begins here...”</div>"
       ]
     },
     {
       "id": "finish_text",
       "text": [
-        "With great relief, you step through the wrought-iron gate. You have escaped this terrible place!<br><br>At first, you keep running until you finally reach the main road. Only then do you dare to stop and look back. You made it out of that cursed place alive.<br><br>Dawn is already breaking over the hills, and in the distance you can see the same olive groves, rows of vineyards, and peaceful rooftops you saw when you arrived. But now everything feels different. Now you know the truth. There is something on the other side. You don't know exactly what was released that night. You don't know how many creatures are still inside. And most of all, you don't know if the gate truly closed. But you don't care. You just want to forget all of it!<br><br>A church bell rings in the distance...<br><br>Feeling a little safer, you turn toward the sound and start walking to the village.<br><br>“Your story ends here.”"
+        "With great relief, you step through the wrought-iron gate. You have escaped this terrible place!<br><br>At first, you keep running until you finally reach the main road. Only then do you dare to stop and look back. You made it out of that cursed place alive.<br><br>Dawn is already breaking over the hills, and in the distance you can see the same olive groves, rows of vineyards, and peaceful rooftops you saw when you arrived. But now everything feels different. Now you know the truth. There is something on the other side. You don't know exactly what was released that night. You don't know how many creatures are still inside. And most of all, you don't know if the gate truly closed. But you don't care. You just want to forget all of it!<br><br>A church bell rings in the distance...<br><br>Feeling a little safer, you turn toward the sound and start walking to the village.<br><br><div class='text-center text-white'>“Your story ends here.”</div>"
       ]
     },
     {
@@ -1201,7 +1225,7 @@
             "y_axis": false,
             "z_axis": true,
             "x_pos": 0.1,
-            "y_pos": 0.68,
+            "y_pos": 0.6,
             "z_pos": 4.27,
             "next": "10",
             "sound": null
@@ -1212,7 +1236,7 @@
             "y_axis": false,
             "z_axis": true,
             "x_pos": -1,
-            "y_pos": 0.68,
+            "y_pos": 0.6,
             "z_pos": 4.27,
             "next": "remove",
             "sound": null
@@ -1357,6 +1381,6 @@
     }
   },
   "protectedPickupMash": [21],
-  "oneShotClickActions": [70, 88, 102, 114, 126, 144],
+  "oneShotClickActions": [70, 88, 102, 114, 126, 144, 149],
   "beingNotHaveHitbox": ["bush", "ghost2"]
 }

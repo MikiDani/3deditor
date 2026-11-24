@@ -232,7 +232,8 @@ export default class Input {
 
         this.game.sound.play(300 /* click1 */, { volume: 0.1, loop: false })
 
-        $("#text-box").removeClass('text-box-centered').hide()
+        this.game.menu.hideGameMessage()
+
         return;
       }
     })
@@ -267,7 +268,6 @@ export default class Input {
       if ($(e.currentTarget).html() == '') return;
 
       if (!this.game.inventory.inventoryMenu.selectedObject) {
-        console.log('DB click')
         this.game.inventory.inventoryMenu.objectSelected = true
         this.game.inventory.inventoryMenu.reloadInventory = true
         $('#inventory-item-text-container .item-selected-text-container').removeClass('text-hover').addClass('text-selected')
@@ -312,6 +312,7 @@ export default class Input {
     });
 
     $(document).on('click', '#mouseorkey-selector', () => {
+      this.game.menu.hideGameMessage()
       this.changeMouseLock()
     });
 
@@ -409,7 +410,7 @@ export default class Input {
       if (e.key == 'h') {
         // CHET
         this.game.playerObjects.push(
-          15, 18, 19, 50, 51, 52, 53, 54, 55, 56,
+          6, 15, 18, 19, 50, 51, 52, 53, 54, 55, 56,
           1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
           11, 12, 13, 14, 15,16, 17, 18, 19, 20,
           21, 22, 23, 24, 25, 26, 27, 28, 28, 30,
@@ -566,10 +567,9 @@ export default class Input {
           e.preventDefault(); e.stopPropagation();
           if (this.game.startGameInfoText || this.game.finishGameInfoText || this.game.waitingGameInfoText) return;
 
-          $('#text-box-text').html('')
-          $('#text-box').hide()
+          this.game.menu.hideGameMessage()
           this.changeMouseLock()
-          return
+          return;
         }
 
         // USE MOUSE MODE
@@ -578,7 +578,7 @@ export default class Input {
           if (this.game.finishGameInfoText) return;
           if (this.game.playerMouse.selectedObject) this.removeUsedObject()
           this.useSelectorChange()
-          return
+          return;
         }
 
         // LOOK MOUSE MODE
@@ -1001,6 +1001,8 @@ export default class Input {
     center.y += (this.game.playerYModify - size.y / 2)
 
     const cameraBox = new THREE.Box3().setFromCenterAndSize(center, size)
+    // cameraBox.max.y += 0.15
+    cameraBox.max.y += 0.095
 
     return this.game.boundingBoxes.some(box =>
       box.intersectsBox(cameraBox)
@@ -1066,23 +1068,28 @@ export default class Input {
     }
 
     if (allowStep && blocked) {
-      const originalY = player.position.y
-      const up = new THREE.Vector3(0, this.game.stepHeight, 0)
+      const stepIncrement = 0.02
 
-      const raised = player.position.clone().add(up)
-      if (!this.willCollide(raised)) {
+      for (let height = stepIncrement; height <= this.game.stepHeight + 0.0001; height += stepIncrement) {
+        const raised = start.clone()
+        raised.y += height
+
+        // Fej fölötti ütközés ellenőrzése
+        if (this.willCollide(raised)) break
+
+        // Előrelépés az adott magasságon
         const stepTarget = raised.clone().add(offset)
-        if (!this.willCollide(stepTarget)) {
-          const supportProbe = stepTarget.clone().add(new THREE.Vector3(0, -this.game.stepHeight - 0.01, 0))
-          const hasSupport = this.willCollide(supportProbe)
-          if (hasSupport) {
-            player.position.copy(stepTarget)
-            return true
-          }
-        }
-      }
+        if (this.willCollide(stepTarget)) continue
 
-      player.position.y = originalY
+        // Van-e alátámasztás a fellépéshez?
+        const supportProbe = stepTarget.clone()
+        supportProbe.y -= height + 0.01
+
+        if (!this.willCollide(supportProbe)) continue
+
+        player.position.copy(stepTarget)
+        return true
+      }
     }
 
     return moved
@@ -1429,17 +1436,13 @@ export default class Input {
 
           // IF LOOK MODE AND HAVE TEXT
           if (this.game.playerMouse.mode == 'look' && action[0].text && distance < action[1].conditions.distance_far) {
-
             this.game.sound.play(300 /* click1 */, { volume: 0.1, loop: false })
-
             if ($("#text-box").is(":visible") && $("#text-box-text").html() == action[0].text) {
-              $("#text-box").hide()
-              $("#text-box-text").html('')
-              continue
+              this.game.menu.hideGameMessage()
+              continue;
             } else {
-              $("#text-box-text").html(action[0].text)
-              $("#text-box").show()
-              continue
+              this.game.menu.showGameMessage(action[0].text)
+              continue;
             }
           }
 

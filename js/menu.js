@@ -10,13 +10,17 @@ export default class Menu {
     this.firstInteraction = false
     this.menuMusic = null
     this.menuMusicOffset = 0
+    this.autoHideMessageTimer = null
+
+    this.devTools = true
+    this.renderInfo = true
 
     this.saveSlotCount = 3
 
     this.currentPanel = 'main'
     this.mainMenuPosition = 0
     this.panelPosition = 0
-    this.selectedSlotPosition = { load: 0, save: 0 }
+    this.selectedSlotPosition = { load: null, save: null }
 
     this.saveEditActive = false
     this.saveEditOriginalName = ''
@@ -26,6 +30,7 @@ export default class Menu {
 
     this.options = {
       hints: false,
+      autoHideMessages: 0,
       darkContrast: 0.004
     }
 
@@ -44,6 +49,27 @@ export default class Menu {
       return `<div class="menu-load-slot menu-nav-item w-100 mb-2" data-slot="${slotName}">EMPTY</div>`
     }).join('')
 
+    this.game.devTools = this.devTools
+      ? `
+        <div class="my-3">--- Develop Tools ---</div>
+        <div class="menu-option-row menu-nav-item my-3" data-option="lights">
+          <input type="checkbox" id="lights-button" ${this.game.lightsOn ? 'checked' : ''}>
+          <span>All Lights On</span>
+        </div>
+        <div class="menu-option-row menu-nav-item my-3" data-option="gravity">
+          <input type="checkbox" id="gravity-button" ${this.game.gravity ? 'checked' : ''}>
+          <span>Gravity</span>
+        </div>
+        <div class="menu-option-row menu-nav-item my-3" data-option="ghost">
+          <input type="checkbox" id="ghost-button" ${this.game.ghostMode ? 'checked' : ''}>
+          <span>Ghost Mode</span>
+        </div>
+        <div class="menu-option-row menu-nav-item my-3" data-option="render">
+          <input type="checkbox" id="render-button" ${this.renderInfo ? 'checked' : ''}>
+          <span>Render Info</span>
+        </div>`
+      : '';
+
     this.game.$menu = $(`
       <div id="menu-container">
 
@@ -51,7 +77,12 @@ export default class Menu {
 
         <div class="full-size d-flex justify-content-center align-items-center">
           <div class="delta-time-menu text-white"></div>
-          <button id="first-interaction-button" class="btn btn-success text-white rounded-0">Start Game</button>
+
+          <div id="first-interaction-container">
+            <button id="first-interaction-button" class="btn btn-success text-white rounded-0">Start Game</button>
+            <div id="spider"></div>
+          </div>
+
           <div class="modal" id="topLayer" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
               <div id="menu-bg" class="modal-content">
@@ -87,34 +118,43 @@ export default class Menu {
                 </div>
                 <div class="modal-body">
                   <div id="menu-main" class="menu-panel text-center">
-                    <button id="main-start-button" class="d-block menu-button-bg menu-text-color menu-nav-item mb-2 p-0 rounded-0 mx-auto">New Game</button>
-                    <button id="main-load-button" class="d-block menu-button-bg menu-text-color menu-nav-item mb-2 p-0 rounded-0 mx-auto">Load Game</button>
-                    <button id="main-save-button" class="menu-button-bg menu-text-color menu-nav-item mb-2 p-0 rounded-0 mx-auto" style="display:none;">Save Game</button>
-                    <button id="main-end-button" class="menu-button-bg menu-text-color menu-nav-item mb-2 p-0 rounded-0 mx-auto" style="display:none;">End Game</button>
-                    <button id="main-options-button" class="d-block menu-button-bg menu-text-color menu-nav-item mb-2 p-0 rounded-0 mx-auto">Options</button>
-                    <button id="main-information-button" class="d-block menu-button-bg menu-text-color menu-nav-item p-0 rounded-0 mx-auto">Information</button>
+                    <button id="main-information-button" class="d-block menu-button-bg menu-text-font menu-nav-item mb-2 p-0 rounded-0 mx-auto">Information</button>
+                    <button id="main-options-button" class="d-block menu-button-bg menu-text-font menu-nav-item mb-2 p-0 rounded-0 mx-auto">Options</button>
+                    <button id="main-start-button" class="d-block menu-button-bg menu-text-font menu-nav-item mb-2 p-0 rounded-0 mx-auto">New Game</button>
+                    <button id="main-load-button" class="d-block menu-button-bg menu-text-font menu-nav-item mb-2 p-0 rounded-0 mx-auto">Load Game</button>
+                    <button id="main-save-button" class="menu-button-bg menu-text-font menu-nav-item mb-2 p-0 rounded-0 mx-auto" style="display:none;">Save Game</button>
+                    <button id="main-end-button" class="menu-button-bg menu-text-font menu-nav-item mb-2 p-0 rounded-0 mx-auto" style="display:none;">End Game</button>
                   </div>
 
-                  <div id="menu-load" class="menu-panel menu-text-color-2" style="display:none;">
+                  <div id="menu-load" class="menu-panel menu-text-font-2" style="display:none;">
                     <h5 class="menu-text-title text-center w-100">Load Game</h5>
                     <div id="menu-load-slot-list" class="d-flex flex-column justify-content-start align-items-center mb-3">${loadSlots}</div>
-                    <button id="local-loadgame-button" class="btn menu-load-button menu-text-color menu-nav-item text-uppercase w-100 mb-2">Load</button>
-                    <button class="menu-back-button menu-text-color menu-nav-item btn btn-dark w-100">Back</button>
+                    <button id="local-loadgame-button" class="btn menu-load-button menu-text-font menu-nav-item text-uppercase w-100 mb-2">Load</button>
+                    <button class="menu-back-button menu-text-font menu-nav-item btn btn-dark w-100">Back</button>
                   </div>
 
-                  <div id="menu-save" class="menu-panel menu-text-color-2" style="display:none;">
+                  <div id="menu-save" class="menu-panel menu-text-font-2" style="display:none;">
                     <h5 class="menu-text-title text-center w-100">Save Game</h5>
                     <div id="local-savegame-save-list" class="d-flex flex-column justify-content-start align-items-center mb-3">${saveSlots}</div>
-                    <button id="local-savegame-button" class="btn menu-save-button menu-text-color menu-nav-item text-uppercase w-100 mb-2">Save</button>
-                    <button class="menu-back-button menu-text-color menu-nav-item btn btn-dark w-100">Back</button>
+                    <button id="local-savegame-button" class="btn menu-save-button menu-text-font menu-nav-item text-uppercase w-100 mb-2">Save</button>
+                    <button class="menu-back-button menu-text-font menu-nav-item btn btn-dark w-100">Back</button>
                   </div>
 
-                  <div id="menu-options" class="menu-panel menu-text-color-2" style="display:none;">
+                  <div id="menu-options" class="menu-panel menu-text-font-2" style="display:none;">
                     <h5 class="menu-text-title text-center w-100">Options</h5>
-                    <div class="papper-bg p-5">
+                    <div class="papper-bg p-5 my-4">
+                      <div class="papper-bg-top"></div>
+                      <div class="papper-bg-bottom"></div>
                       <div class="menu-option-row menu-nav-item my-3" data-option="hints">
                         <input type="checkbox" id="hints-button">
                         <span>Hints</span>
+                      </div>
+                      <div class="menu-option-row menu-nav-item my-3" data-option="autohide">
+                        <div class="mb-2">Auto-hide messages</div>
+                        <label class="me-2"><input type="radio" name="auto-hide-messages" value="0" checked>Off</label>
+                        <label class="me-2"><input type="radio" name="auto-hide-messages" value="3">3s</label>
+                        <label class="me-2"><input type="radio" name="auto-hide-messages" value="5">5s</label>
+                        <label><input type="radio" name="auto-hide-messages" value="10">10s</label>
                       </div>
                       <div class="menu-option-row menu-nav-item my-3" data-option="darkcontrast">
                         <input type="checkbox" id="darkcontrast-button" checked>
@@ -127,37 +167,64 @@ export default class Menu {
                         <label><input type="radio" name="distance-mode" value="low" checked>Low</label>
                       </div>
                       <div class="menu-option-row menu-nav-item my-3" data-option="music">
-                        <input type="checkbox" id="music-button" checked>
+                        <input type="checkbox" id="music-button"                                 >
                         <span>Music On</span>
                       </div>
                       <div class="menu-option-row menu-nav-item my-3" data-option="menumusic">
-                        <input type="checkbox" id="menu-music-button" checked>
+                        <input type="checkbox" id="menu-music-button"                             >
                         <span>Menu Music On</span>
                       </div>
-                      <div class="my-3">--------</div>
-                      <div class="menu-option-row menu-nav-item my-3" data-option="lights">
-                        <input type="checkbox" id="lights-button" checked>
-                        <span>All Lights On</span>
-                      </div>
-                      <div class="menu-option-row menu-nav-item my-3" data-option="gravity">
-                        <input type="checkbox" id="gravity-button" checked>
-                        <span>Gravity</span>
-                      </div>
-                      <div class="menu-option-row menu-nav-item my-3" data-option="ghost">
-                        <input type="checkbox" id="ghost-button">
-                        <span>Ghost Mode</span>
-                      </div>
+                      ${this.game.devTools}
                     </div>
-                    <button class="menu-back-button menu-text-color menu-nav-item btn btn-dark text-uppercase w-100 mt-2">Back</button>
+                    <button class="menu-back-button menu-text-font menu-nav-item btn text-uppercase w-100 mt-2">Back</button>
                   </div>
 
-                  <div id="menu-information" class="menu-panel menu-text-color-2 p-1" style="display:none;">
-                    <h5 class="menu-text-title text-center w-100">Information</h5>
-                    <div class="papper-bg p-5 my-4">
-                      Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio. Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio.<br>
-                      Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio. Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio.<br>
+                  <div id="menu-information" class="menu-panel menu-text-font-2 p-1" style="display:none;">
+                    <div class="nav nav-tabs border-0" role="tablist">
+                        <button class="nav-link menu-top-button menu-text-font menu-nav-item me-2 rounded active" data-bs-toggle="tab" data-bs-target="#tab1" type="button" role="tab" aria-selected="true">Game Info</button>
+                        <button class="nav-link menu-top-button menu-text-font menu-nav-item me-2 rounded" data-bs-toggle="tab" data-bs-target="#tab2" type="button" role="tab" aria-selected="false">Képek</button>
+                    </div>                   
+
+                    <div class="tab-content p-3">
+                        <div class="tab-pane fade show active" id="tab1" role="tabpanel">
+                          <h5 class="menu-text-title mb-4 text-center w-100">Information</h5>
+                          <div class="papper-bg p-5 my-4">
+                            <div class="papper-bg-top"></div>
+                            <div class="papper-bg-bottom"></div>
+                            <div class="papper-text">
+                              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio. Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio.<br>
+                              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis.
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="tab2" role="tabpanel">
+                          <h5 class="menu-text-title mb-4 text-center w-100">My inspiration</h5>
+                          <div class="papper-bg p-5 pe-3 my-4">
+                            <div class="papper-bg-top"></div>
+                            <div class="papper-bg-bottom"></div>
+                            <div class="papper-text pe-3">
+                              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio. Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio.<br>
+                              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis.
+                              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio. Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio.<br>
+                              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis.
+                              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio. Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio.<br>
+                              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis.
+                              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio. Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio.<br>
+                              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis.
+                              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio. Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio.<br>
+                              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis.
+                              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio. Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio.<br>
+                              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis.
+                              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio. Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis provident quae est eum sit odio.<br>
+                              Lorem ipsum dolor sit amet consectetur adipisicing elit. Officiis molestias deserunt aliquam nemo recusandae numquam ex ut ratione nisi fugiat aperiam a, harum blanditiis.
+                            </div>
+                          </div>
+                        </div>
+
                     </div>
-                    <button class="menu-back-button menu-text-color menu-nav-item btn btn-dark w-100">Back</button>
+
+                    <button class="menu-back-button menu-text-font menu-nav-item btn btn-dark w-100">Back</button>
                   </div>
                   <div id="local-savegame-message" class="text-center w-100 mt-2"></div>
                 </div>
@@ -171,8 +238,6 @@ export default class Menu {
     $('body').append(this.game.$menu)
 
     this.game.gravity = this.game.gravityValue
-    this.game.lightsOn = true
-    this.game.ghostMode = false
 
     this.readInventoryMenuColors()
     this.refreshSaveSlots()
@@ -188,10 +253,9 @@ export default class Menu {
     $(document).on('click', '#first-interaction-button', () => {
       this.firstInteraction = true
       this.game.listener.context.resume()
-      
+
       this.mainMenuPosition = 3
       this.refreshMenuSelection()
-      $('#main-information-button').css('color', '#32ad0c')
 
       this.game.sound.play(300, { volume: 0.5, loop: false })
       this.showModal()
@@ -204,12 +268,13 @@ export default class Menu {
       }, 10)
     })
 
+    $('#render-button').on('change', event => {
+      this.renderInfo = $(event.currentTarget).prop('checked')
+    })
+
     $('#gravity-button').on('click', event => {
       const $this = $(event.currentTarget)
       this.game.gravity = $this.prop('checked') ? this.game.gravityValue : 0
-
-      console.log(this.game.gravity)
-      
     })
 
     $('#hints-button').on('click', event => {
@@ -225,9 +290,7 @@ export default class Menu {
     })
 
     $('#lights-button').on('click', event => {
-      const $this = $(event.currentTarget)
-
-      this.game.lightsOn = $this.prop('checked')
+      this.game.lightsOn = $(event.currentTarget).prop('checked')
       this.optionsChanged = true
     })
 
@@ -249,6 +312,15 @@ export default class Menu {
       this.optionsChanged = true
     })
 
+    $("input[name='auto-hide-messages']").on('change', event => {
+      this.options.autoHideMessages = Number($(event.currentTarget).val())
+      this.clearAutoHideMessageTimer()
+    })
+
+    $('#menu-options input').on('change', () => {
+      this.game.sound.play(301, { volume: 0.7, loop: false })
+    })
+
     $('#local-savegame-button').on('click', async () => {
       if (this.saveEditActive) return
 
@@ -259,6 +331,8 @@ export default class Menu {
     })
 
     $('#local-loadgame-button').on('click', async () => {
+      this.selectedSlotPosition.load = this.panelPosition
+      this.refreshMenuSelection()
       const slotName = this.getSelectedSlotName('load')
       if (!slotName || !this.hasSaveSlot(slotName)) return
 
@@ -356,7 +430,7 @@ export default class Menu {
       if (this.game.currentState != 'menu') return;
 
       if (event.key == 'Enter' && this.firstInteraction) {
-        this.game.sound.play(300, { volume: 0.5, loop: false })
+        if (this.currentPanel != 'options') this.game.sound.play(300, { volume: 0.5, loop: false })
         event.stopImmediatePropagation()
       }
 
@@ -381,46 +455,43 @@ export default class Menu {
         if (this.currentPanel != 'main') {
           event.preventDefault()
           event.stopPropagation()
-
           this.showPanel('main', false)
         }
-
-        return
+        return;
       }
 
       if (this.currentPanel == 'information') {
         if (event.key == 'Enter') {
           event.preventDefault()
           event.stopPropagation()
-
           this.showPanel('main', false)
         }
+        return;
+      }
 
+      if (this.currentPanel == 'options' && (event.key == 'ArrowLeft' || event.key == 'ArrowRight')) {
+        event.preventDefault()
+        event.stopPropagation()
         return
       }
 
       if (event.key == 'ArrowUp' || event.key == 'w' || event.key == 'W') {
         event.preventDefault()
         event.stopPropagation()
-
         this.moveMenuSelection(-1)
-
-        return
+        return;
       }
 
       if (event.key == 'ArrowDown' || event.key == 's' || event.key == 'S') {
         event.preventDefault()
         event.stopPropagation()
-
         this.moveMenuSelection(1)
-
-        return
+        return;
       }
 
       if (event.key == 'Enter') {
         event.preventDefault()
         event.stopPropagation()
-
         await this.activateMenuSelection()
       }
     })
@@ -441,9 +512,7 @@ export default class Menu {
   }
 
   moveMenuSelection(direction) {
-    const $items = this.currentPanel == 'main'
-      ? this.getMainMenuItems()
-      : this.getPanelItems()
+    const $items = this.currentPanel == 'main' ? this.getMainMenuItems() : this.getPanelItems()
 
     if (!$items.length) return;
 
@@ -505,6 +574,9 @@ export default class Menu {
         return;
       }
 
+      this.selectedSlotPosition.save = this.panelPosition
+      this.refreshMenuSelection()
+
       this.startSaveNameEdit()
       return;
     }
@@ -515,6 +587,7 @@ export default class Menu {
       if (!$selected.length) return;
 
       if ($selected.hasClass('menu-back-button')) {
+        this.game.sound.play(300, { volume: 0.5, loop: false })
         this.showPanel('main', false)
         return;
       }
@@ -531,28 +604,21 @@ export default class Menu {
   activateOption(optionName) {
     if (optionName == 'menumusic') {
       $('#menu-music-button').prop('checked', !$('#menu-music-button').prop('checked')).trigger('change')
-      return
+      return;
     }
 
     if (optionName == 'hints') {
       $('#hints-button').trigger('click')
-
-      return
+      return;
     }
 
     if (optionName == 'darkcontrast') {
       $('#darkcontrast-button').trigger('click')
-
-      return
+      return;
     }
 
     if (optionName == 'music') {
-      $('#music-button')
-        .prop(
-          'checked',
-          !$('#music-button').prop('checked')
-        )
-        .trigger('change')
+      $('#music-button') .prop( 'checked', !$('#music-button').prop('checked') ) .trigger('change')
       return;
     }
 
@@ -571,146 +637,130 @@ export default class Menu {
       return;
     }
 
-    if (optionName == 'distance') {
-      const values = [
-        'best',
-        'medium',
-        'low'
-      ]
+    if (optionName == 'render') {
+      $('#render-button').trigger('click')
+      return;
+    }
 
+    if (optionName == 'autohide') {
+      const values = [0, 3, 5, 10]
+      const currentIndex = values.indexOf(this.options.autoHideMessages)
+      const nextValue = values[(currentIndex + 1) % values.length]
+      $(`input[name='auto-hide-messages'][value='${nextValue}']`).prop('checked', true).trigger('change')
+      return;
+    }
+
+    if (optionName == 'distance') {
+      const values = [ 'best', 'medium', 'low' ]
       const currentValue = $("input[name='distance-mode']:checked").val()
       const currentIndex = values.indexOf(currentValue)
-
-      const nextValue = values[
-        (currentIndex + 1) % values.length
-      ]
-
-      $(`input[name='distance-mode'][value='${nextValue}']`)
-        .prop('checked', true)
-        .trigger('change')
+      const nextValue = values[(currentIndex + 1) % values.length]
+      $(`input[name='distance-mode'][value='${nextValue}']`).prop('checked', true).trigger('change')
     }
+  }
+
+  clearAutoHideMessageTimer() {
+    if (this.autoHideMessageTimer == null) return;
+    clearTimeout(this.autoHideMessageTimer)
+    this.autoHideMessageTimer = null
+  }
+
+  showGameMessage(html) {
+    this.clearAutoHideMessageTimer()
+    $('#text-box-text').html(html)
+    $('#text-box').removeClass('text-box-centered').show()
+    const seconds = this.options.autoHideMessages
+    if (!seconds || this.game.startGameInfoText || this.game.finishGameInfoText) return;
+    this.autoHideMessageTimer = setTimeout(() => {
+      this.autoHideMessageTimer = null
+      if (this.game.startGameInfoText || this.game.finishGameInfoText) return;
+      this.hideGameMessage()
+    }, seconds * 1000)
+  }
+
+  hideGameMessage() {
+    this.clearAutoHideMessageTimer()
+    $('#text-box').removeClass('text-box-centered').hide()
+    $('#text-box-text').html('')
   }
 
   readInventoryMenuColors() {
     const $inventoryItem = $('#inventory-item-text-container .item-text-container').first()
-
-    if (!$inventoryItem.length) return
-
+    if (!$inventoryItem.length) return;
     const oldClass = $inventoryItem.attr('class')
-
     $inventoryItem.removeClass('text-hover text-selected')
-
-    this.menuDefaultColor = window
-      .getComputedStyle($inventoryItem[0])
-      .color
-
+    this.menuDefaultColor = window.getComputedStyle($inventoryItem[0]).color
     $inventoryItem.addClass('text-hover')
-
-    this.menuSelectedColor = window
-      .getComputedStyle($inventoryItem[0])
-      .color
-
+    this.menuSelectedColor = window.getComputedStyle($inventoryItem[0]).color
     $inventoryItem.attr('class', oldClass)
   }
 
   async mainMenuMouseClickEffect(button) {
     const $button = $(button)
-    const oldColor = $button.css('color')
-    const selectedColor = this.menuSelectedColor ?? '#00ff00'
+    const wasSelected = $button.hasClass('menu-selected')
 
-    $button.css('color', selectedColor)
-
+    $button.addClass('menu-selected')
     await new Promise(resolve => setTimeout(resolve, 100))
-
-    $button.css('color', oldColor)
+    if (!wasSelected) $button.removeClass('menu-selected')
   }
 
   refreshMenuSelection() {
-    const selectedColor = this.menuSelectedColor ?? '#00ff00'
-    const defaultColor = this.menuDefaultColor ?? '#6f9f6f'
+    $('#menu-container .menu-nav-item').removeClass('menu-selected')
+    $('.menu-save-slot, .menu-load-slot').removeClass('slot-selected')
 
-    $('#menu-container .menu-nav-item').css(
-      'color',
-      defaultColor
-    )
+    if (this.currentPanel == 'load' || this.currentPanel == 'save') {
+      const selectedIndex = this.selectedSlotPosition[this.currentPanel]
+      if (selectedIndex != null) {
+        $(`#menu-${this.currentPanel} .menu-${this.currentPanel}-slot`).eq(selectedIndex).addClass('slot-selected')
+      }
+    }
 
     if (this.currentPanel == 'main') {
       const $items = this.getMainMenuItems()
+      if (!$items.length) return
 
-      if (!$items.length) return;
-
-      this.mainMenuPosition = Math.max(
-        0,
-        Math.min(
-          this.mainMenuPosition,
-          $items.length - 1
-        )
-      )
-
-      $items.eq(this.mainMenuPosition).css('color', selectedColor)
-
-      return;
+      this.mainMenuPosition = Math.max(0, Math.min(this.mainMenuPosition, $items.length - 1))
+      $items.eq(this.mainMenuPosition).addClass('menu-selected')
+      return
     }
 
     const $items = this.getPanelItems()
+    if (!$items.length) return
 
-    if (!$items.length) return;
-
-    this.panelPosition = Math.max(
-      0,
-      Math.min(
-        this.panelPosition,
-        $items.length - 1
-      )
-    )
-
-    $items
-      .eq(this.panelPosition)
-      .css('color', selectedColor)
+    this.panelPosition = Math.max(0, Math.min(this.panelPosition, $items.length - 1))
+    $items.eq(this.panelPosition).addClass('menu-selected')
   }
 
   showPanel(panelName, resetSelection = true) {
-    if (
-      this.saveEditActive &&
-      panelName != 'save'
-    ) {
-      this.cancelSaveNameEdit()
-    }
+    if ( this.saveEditActive && panelName != 'save' ) { this.cancelSaveNameEdit()}
 
     $('.menu-panel').hide()
     $(`#menu-${panelName}`).show()
 
     // BUGS
     $('#bugs').toggle(panelName == 'main')
+    $('#menu-logo').toggle(panelName == 'main')
 
     this.currentPanel = panelName
 
-    if (panelName == 'main') {
-      this.refreshMainMenu()
-    } else if (resetSelection) {
+    if (panelName == 'main') { this.refreshMainMenu() } else if (resetSelection) {
       this.panelPosition = 0
-      if (panelName == 'load' || panelName == 'save') this.selectedSlotPosition[panelName] = 0
+      if (panelName == 'load' || panelName == 'save') this.selectedSlotPosition[panelName] = panelName == 'load' ? 0 : null
     }
 
     if (panelName == 'load' || panelName == 'save') this.refreshSaveSlots();
-
-    if (panelName == 'options') {
-      $('#darkcontrast-button').prop(
-        'checked',
-        this.options.darkContrast == 0.012
-      )
-    }
+    if (panelName == 'options') { $('#darkcontrast-button').prop( 'checked', this.options.darkContrast == 0.012 ) }
 
     this.refreshMenuSelection()
   }
 
   getSelectedSlotName(type) {
-    const selector = type == 'save'
-      ? '#menu-save .menu-save-slot'
-      : '#menu-load .menu-load-slot'
+    const selector = type == 'save' ? '#menu-save .menu-save-slot' : '#menu-load .menu-load-slot'
+    const selectedIndex = this.selectedSlotPosition[type]
+    if (selectedIndex == null) return null
 
     const $items = $(selector)
-    const $selected = $items.eq(this.selectedSlotPosition[type] ?? 0)
+    const $selected = $items.eq(selectedIndex)
 
     return $selected.attr('data-slot') ?? null
   }
@@ -720,17 +770,9 @@ export default class Menu {
   }
 
   getSlotStorageName(slotName) {
-    if (!this.hasSaveSlot(slotName)) {
-      return 'EMPTY'
-    }
-
-    const storageName = localStorage.getItem(
-      this.getStorageNameKey(slotName)
-    )
-
-    return storageName && storageName.trim()
-      ? storageName
-      : 'NO NAME'
+    if (!this.hasSaveSlot(slotName)) {return 'EMPTY'}
+    const storageName = localStorage.getItem(this.getStorageNameKey(slotName))
+    return storageName && storageName.trim() ? storageName : 'NO NAME'
   }
 
   hasSaveSlot(slotName) {
@@ -813,8 +855,12 @@ export default class Menu {
   }
 
   hideModal() {
-    const modal = bootstrap.Modal.getInstance( document.getElementById('topLayer'))
-    if (modal) {modal.hide()}
+    const element = document.getElementById('topLayer')
+    const modal = bootstrap.Modal.getInstance(element)
+    if (modal) {
+      if (element.contains(document.activeElement)) document.activeElement.blur()
+      modal.hide()
+    }
   }
 
   showModal() {
@@ -844,7 +890,7 @@ export default class Menu {
   async open() {
     this.pauseGameMusic()
 
-    if (this.game.playerDead) {
+    if (this.game.playerDead || this.game.finishGameInfoText) {
       this.endGame()
     } else if (this.game.mapLoading) {
       await this.game.loader.saveGame('memory')
@@ -942,7 +988,15 @@ export default class Menu {
 
     this.pauseMenuMusic()
 
+    this.hideModal()
+    this.game.currentState = 'loading'
+    this.game.showHideOptions('loading')
+    $('#loading-text').removeClass('text-green text-error').html('Loading...')
+    $('#loading-console').empty()
+    $('#loading-console-last').empty()
+    await new Promise(resolve => setTimeout(resolve, 50))
     this.game.forceClearAllTimers()
+
     this.game.sound.removeAllPlayedAudio()
     this.game.deleteAllObjectInScene( this.game.scene )
     this.game.deleteAllObjectInScene( this.game.heandScene )
@@ -997,7 +1051,7 @@ export default class Menu {
   }
 
   newGame() {
-    this.game.filename = 'cottage-1'
+    this.game.filename = 'cottage'
     this.game.ext = 'mtuc'
     this.game.mapLoading = false
 
@@ -1025,7 +1079,7 @@ export default class Menu {
     this.game.mapVariableReset()
 
     this.game.mapLoading = false
-    this.game.filename = 'cottage-1'
+    this.game.filename = 'cottage'
     this.game.ext = 'mtuc'
 
     this.game.play = false

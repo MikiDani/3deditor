@@ -769,7 +769,7 @@ class Editor {
 
   async loadMapData() {
     // DEFAULT MAP
-    let filename = 'cottage-1'; let ext = 'mtuc';
+    let filename = 'cottage'; let ext = 'mtuc';
     
     $("#modal-ext").val(ext)
     this.mapVariableReset(ext)
@@ -2907,11 +2907,260 @@ class Editor {
       }
 
       // INFO
+
       if (mode == 'info') {
-        
+        const infoSections = [
+          {
+            id: 'layout',
+            title: '1. Editor Layout',
+            intro: 'The 3D Editor is used to create game maps, 3D objects, and animations. A triangle is the smallest part of a 3D surface. Triangles make objects (meshes), and objects can be placed in groups.',
+            rows: [
+              ['Top Menu', 'File tools, editing tools, undo, and other commands.'],
+              ['View Windows', 'See and edit the scene in 3D or from different 2D directions.'],
+              ['Right Panel', 'Manage objects, triangles, textures, lights, beings, and settings.']
+            ]
+          },
+          {
+            id: 'files',
+            title: '2. Files and Project Types',
+            intro: 'The editor supports two main file types: MTUC for maps and OTUC for objects.',
+            rows: [
+              ['MTUC (Map)', 'Build levels with objects, lights, beings, and game actions.'],
+              ['OTUC (Object)', 'Build individual 3D objects and frame-based animations.'],
+              ['New', 'Create a new map or object project.'],
+              ['Load', 'Open a saved file.'],
+              ['Save', 'Save the current project with a chosen file name.'],
+              ['Fast Save', 'Quickly save using the current file name.'],
+              ['Import', 'Insert an external object into the selected group.'],
+              ['Textures', 'Manage texture files and folders.'],
+              ['Game Actions', 'Edit actions used in the game.'],
+              ['Info', 'Open this user guide.']
+            ],
+            note: 'Save your work before loading another file or changing the project type. Changing the type may remove some data.'
+          },
+          {
+            id: 'views',
+            title: '3. Views and Navigation',
+            intro: 'There is one 3D view and three 2D views. Each 2D view shows two axes.',
+            rows: [
+              ['3D View (F1)', 'See the scene in 3D.'],
+              ['XY View (F2)', 'Edit along the X and Y axes.'],
+              ['XZ View (F3)', 'Edit along the X and Z axes.'],
+              ['ZY View (F4)', 'Edit along the Z and Y axes.'],
+              ['Ratio', 'Set the zoom level of a 2D view.'],
+              ['Freq.', 'Set the grid step size.'],
+              ['10 / 50 / 250 / 500 / 1000 / 2500 / 5000', 'Quick zoom presets.'],
+              ['Fullscr.', 'Expand or restore the selected view.'],
+              ['Dots', 'Show or hide editing points.'],
+              ['Grid', 'Show or hide the grid.'],
+              ['Grid Value', 'Show the current grid spacing.'],
+              ['Reset Center', 'Move the view back to its default center.'],
+              ['3D: Textured', 'Turn texture display on or off.'],
+              ['3D: Fill', 'Turn filled surfaces on or off.'],
+              ['3D: Grid', 'Turn the 3D guide grid on or off.'],
+              ['3D: Realtime', 'Turn continuous 3D updating on or off.']
+            ],
+            note: 'Use the mouse wheel to zoom. Use Move to pan a 2D view. Click the 3D view to look around with the mouse, and press Esc to release the mouse.'
+          },
+          {
+            id: 'tools',
+            title: '4. Editing Tools',
+            intro: 'Select a tool to change what happens when you click in a view.',
+            rows: [
+              ['Move (1)', 'Move or pan a 2D view.'],
+              ['Origo (2)', 'Move the editing origin. If a light or being is selected, change its position.'],
+              ['Grebs (3)', 'Select an object in a 2D view.'],
+              ['Point (4)', 'Move a point of the selected triangle.'],
+              ['Add Triangle (5)', 'Create a triangle by choosing three points.'],
+              ['Add Rectangle (6)', 'Create a rectangle by choosing two opposite corners.']
+            ],
+            note: 'Select an object before adding a triangle or rectangle. Right-click the Grebs tool to change the selection order for overlapping objects.'
+          },
+          {
+            id: 'objects',
+            title: '5. Objects and Groups',
+            intro: 'The Object List shows a tree of objects and their triangles. A group can contain triangles and other groups.',
+            rows: [
+              ['Add New Object', 'Create a new main object group.'],
+              ['Click an Object Name', 'Select the object and open its settings.'],
+              ['Open / Close', 'Expand or collapse a group.'],
+              ['Show / Hide', 'Show or hide an object.'],
+              ['Add Group', 'Create a child group inside another group.'],
+              ['Duplicate', 'Copy an object and its children.'],
+              ['Up / Down', 'Change the order of objects in the list.'],
+              ['Move Back Parent', 'Move an object one level up in the group tree.'],
+              ['Blend into Parent', 'Merge an object\'s triangles into its parent group.'],
+              ['Cut / Copy', 'Move or copy an object to the clipboard.'],
+              ['Delete Group', 'Delete a group and its children.']
+            ],
+            note: 'You can also change an object\'s name, description, line color, Pervious setting, and active state.'
+          },
+          {
+            id: 'triangles',
+            title: '6. Triangles and Textures',
+            intro: 'Every surface is made from triangles. A triangle has three 3D points and three texture coordinates.',
+            rows: [
+              ['Add Triangle', 'Click three points to create a new triangle.'],
+              ['Add Rectangle', 'Choose two opposite corners. The editor creates two triangles.'],
+              ['P1 / P2 / P3', 'Change the X, Y, and Z position of each point.'],
+              ['U / V', 'Change how the texture is placed on the triangle.'],
+              ['Normal', 'Set which side of the surface is used.'],
+              ['Transparent', 'Turn transparency on or off.'],
+              ['Animate / AnimSpeed', 'Set animated texture options.'],
+              ['Delete', 'Delete the selected triangle.'],
+              ['Texture List', 'Choose a texture and apply it to a selected triangle.'],
+              ['Texture Ratio U / V', 'Change horizontal and vertical texture scale.'],
+              ['Texture Positions', 'Use a preset texture alignment.'],
+              ['Invert Normal', 'Reverse the order of the triangle points.'],
+              ['Move Points', 'Change the order of the points.'],
+              ['Textures File Manager', 'Upload, rename, reorder, or delete PNG images and folders.']
+            ],
+            note: 'Animated textures can use several image frames.'
+          },
+          {
+            id: 'transform',
+            title: '7. Move, Rotate, and Copy',
+            intro: 'Use these controls to change the selected geometry or manage the clipboard.',
+            rows: [
+              ['Move Size', 'Set the distance used by each move step.'],
+              ['Angle Size', 'Set the amount of rotation.'],
+              ['Direction Buttons', 'Move along the axes of the selected view.'],
+              ['Rotate', 'Rotate an object or surface.'],
+              ['Mirror', 'Mirror the geometry.'],
+              ['Clipboard Insert', 'Paste items from the clipboard.'],
+              ['Clipboard Insert & Delete', 'Paste items, then remove the pasted clipboard data.'],
+              ['Clipboard Reset', 'Clear the clipboard.'],
+              ['Back', 'Undo a previous editing state.']
+            ],
+            note: 'The editor keeps up to 30 saved undo states.'
+          },
+          {
+            id: 'lights-beings',
+            title: '8. Lights and Beings',
+            intro: 'Lights and beings are mainly used when editing a map.',
+            rows: [
+              ['Lights: Add New Light', 'Place a new light source.'],
+              ['Lights: Show / Hide All', 'Show or hide all lights in the editor.'],
+              ['Lights: Name', 'Change the light name.'],
+              ['Lights: Position X / Y / Z', 'Set the light position.'],
+              ['Lights: Color', 'Set the light color.'],
+              ['Lights: Intensity', 'Set the brightness.'],
+              ['Lights: Distance', 'Set how far the light reaches.'],
+              ['Lights: Duplicate / Delete', 'Copy or remove a light.'],
+              ['Beings: Add New Being', 'Place a being of the selected type.'],
+              ['Beings: Show / Hide All', 'Show or hide all beings in the editor.'],
+              ['Beings: Let Go', 'Clear the current being selection.'],
+              ['Beings: Position X / Y / Z', 'Set the being position.'],
+              ['Beings: Angle', 'Turn the being.'],
+              ['Beings: Ratio', 'Change its scale.'],
+              ['Beings: Speed', 'Set its speed.'],
+              ['Beings: Energy / Damage', 'Set its energy and damage values.'],
+              ['Beings: Gravity / Active', 'Change gravity and active settings.'],
+              ['Beings: Duplicate / Delete', 'Copy or remove a being.']
+            ]
+          },
+          {
+            id: 'animation',
+            title: '9. Frames and Animations',
+            intro: 'Object projects can use several frames. Each frame contains one version of the object. An animation plays selected frames in order.',
+            rows: [
+              ['Frame Select', 'Choose the frame to edit.'],
+              ['Clone Frame', 'Copy the current frame into a new frame.'],
+              ['Delete Frame', 'Delete a frame. The first frame cannot be deleted.'],
+              ['Add Animation', 'Create a new animation.'],
+              ['Add Animation Frame', 'Add a frame to the selected animation.'],
+              ['Play / Stop', 'Start or stop an animation preview.'],
+              ['Repeat', 'Choose one-time or looping playback.'],
+              ['Up / Down', 'Change the order of animation frames.'],
+              ['Segment', 'Set how many steps are used between frames.']
+            ]
+          },
+          {
+            id: 'actions',
+            title: '10. Game Actions',
+            intro: 'Game Actions let you make objects react in the game. An Action has conditions and one or more Events.',
+            rows: [
+              ['Add Action', 'Create a new action.'],
+              ['Action Name', 'Set the action name.'],
+              ['Click', 'Choose how it starts: Auto, Auto Once, Mousedown, or Double Click.'],
+              ['Distance Near / Far', 'Set the distance needed to activate the action.'],
+              ['Isset Objects', 'Choose items the player must have.'],
+              ['Success Text', 'Text shown when the action succeeds.'],
+              ['Failed Text', 'Text shown when the action fails.'],
+              ['Add Event', 'Add a new step to the action.'],
+              ['Timer', 'Delay before the event, in milliseconds.'],
+              ['Interval / Counter', 'Control repeated events.'],
+              ['Add Objects', 'Give items to the player.'],
+              ['Add Sound', 'Play a sound.'],
+              ['MoveFx', 'Run a movement effect on an object.'],
+              ['LightFx', 'Run a lighting effect.'],
+              ['BeingFx', 'Run an effect linked to a being.'],
+              ['Up / Down / Delete', 'Reorder or remove an event.']
+            ],
+            note: 'Connect the Action to the correct map object, then save your work.'
+          },
+          {
+            id: 'keys',
+            title: '11. Keyboard Shortcuts',
+            intro: 'Shortcuts work when you are not typing in a text or number field. Some movement keys depend on the selected view.',
+            rows: [
+              ['1 / 2 / 3', 'Move / Origo / Grebs.'],
+              ['4 / 5 / 6', 'Point / Add Triangle / Add Rectangle.'],
+              ['F1 / F2 / F3 / F4', 'Expand or restore the 3D / XY / XZ / ZY view.'],
+              ['F6 / F7 / F8', 'Center the XY / XZ / ZY view.'],
+              ['W / S', 'Move forward or backward in 3D; pan vertically in 2D.'],
+              ['A / D', 'Turn left or right in 3D; pan horizontally in 2D.'],
+              ['Shift + W / S', 'Move up or down in 3D.'],
+              ['R / F', 'Look up or down in 3D.'],
+              ['Arrow Keys', 'Move the current view.'],
+              ['Mouse Wheel', 'Zoom the 2D view or move forward/backward in 3D.'],
+              ['Esc', 'Release mouse control or leave the active view.'],
+              ['T / O / C', 'Jump to Textures / Object List / Clipboard in the right panel.']
+            ]
+          },
+          {
+            id: 'workflow',
+            title: '12. Basic Workflow',
+            intro: 'A simple order for making a map or an object:',
+            rows: [
+              ['Step 1', 'Click New and choose Map or Object.'],
+              ['Step 2', 'Create a group with Add New Object.'],
+              ['Step 3', 'Build surfaces with Add Triangle or Add Rectangle.'],
+              ['Step 4', 'Select triangles and apply textures.'],
+              ['Step 5', 'Adjust positions, sizes, and surface options.'],
+              ['Step 6', 'For maps, add lights, beings, and actions. For objects, add animation frames.'],
+              ['Step 7', 'Check the result in the 3D view and click Save.']
+            ]
+          }
+        ]
+
+        const infoRowHtml = ([label, description]) => `
+          <div class="editor-info-row">
+            <div class="editor-info-label">${label}</div>
+            <div class="editor-info-description">${description}</div>
+          </div>`;
+
+        const infoHtml = `
+          <div class="editor-info">
+            <h1 class="editor-info-title">TuccMann 3D Editor - User Guide</h1>
+            <p class="editor-info-subtitle">A short guide to the editor layout, buttons, and basic use.</p>
+            <div class="editor-info-toc">
+              ${infoSections.map(section => `<a class="d-block w-100" href="#editor-info-${section.id}">${section.title}</a>`).join('')}
+            </div>
+
+            ${infoSections.map(section => `
+              <section class="editor-info-section" id="editor-info-${section.id}">
+                <h2>${section.title}</h2>
+                <p class="editor-info-intro">${section.intro}</p>
+                <div class="editor-info-rows">${section.rows.map(infoRowHtml).join('')}</div>
+                ${section.note ? `<p class="editor-info-note">${section.note}</p>` : ''}
+              </section>
+            `).join('')}
+          </div>`;
+
         $("#modal-back").hide()
         $("#modal-content").hide()
-        $("#modal-message").html('Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur! Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam incidunt ad nulla ea inventore eum ipsum non deserunt eos impedit hic, deleniti quasi culpa similique ipsa voluptatem perferendis in consequuntur!').show()
+        $("#modal-message").html(infoHtml).show()
 
         $("#modal-bg").show()
         $("#modal-container").show()
@@ -2921,7 +3170,7 @@ class Editor {
       }
 
       // GAME ACTIONS
-      if(mode == 'gameactions') {
+      if (mode == 'gameactions') {
         $("#modal-back").hide()
         $("#modal-content").hide()
 
@@ -2936,9 +3185,7 @@ class Editor {
         $("#modal-file").hide()
 
         // CLOSE ALL ACTION TAB
-        setTimeout(() =>{
-          $("#modal-close-all-action").trigger('click')
-        },50)
+        $("#modal-close-all-action").trigger('click')
 
         return;
       }
